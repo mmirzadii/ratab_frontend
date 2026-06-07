@@ -1,15 +1,14 @@
-import { Building2, CircleHelp, Home, Menu, Wifi } from "lucide-react";
+import { Building2, CircleHelp, Menu, Wifi } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
+import { classNames } from "../utils/classNames";
 import { IconButton } from "./IconButton";
 import { ThemeToggle } from "./ThemeToggle";
 import { Tooltip } from "./Tooltip";
-import { classNames } from "../utils/classNames";
 
 const navItems = [
-  { label: "نمای کلی", icon: Home, to: "/" },
+  { label: "شرکت‌ها", icon: Building2, to: "/companies" },
   { label: "سلامت سرویس", icon: Wifi, to: "/status" },
-  { label: "شرکت‌ها", icon: Building2 },
   { label: "راهنما", icon: CircleHelp }
 ];
 

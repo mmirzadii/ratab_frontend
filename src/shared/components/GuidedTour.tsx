@@ -1,4 +1,5 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, X } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
@@ -10,24 +11,68 @@ import {
 import { Button } from "./Button";
 import { GlassCard } from "./GlassCard";
 
-const tourSteps = [
+const defaultTourSteps = [
   {
-    title: "نمای کلی رتب",
-    body: "این صفحه فقط پیش‌نمایش طراحی فاز ۲ است و هنوز داشبورد عملیاتی شرکت یا صورت‌بها نیست."
+    title: "فضای کاری رتب",
+    body: "بعد از ورود، مسیر اصلی از فهرست شرکت‌ها شروع می‌شود و داده‌ها از API واقعی خوانده می‌شوند."
   },
   {
     title: "حالت روشن و تاریک",
     body: "از دکمه پایین نوار راست می‌توانید ظاهر برنامه را تغییر دهید. انتخاب شما روی همین دستگاه ذخیره می‌شود."
   },
   {
-    title: "مسیر فازهای بعدی",
-    body: "ورود، شرکت‌ها، فهرست‌بها و اسناد مالی در فازهای بعدی به همین ساختار اضافه می‌شوند."
+    title: "مرز فاز فعلی",
+    body: "در این فاز شرکت ساخته می‌شود، اما پروژه، صورت‌بها و پیام‌های واقعی هنوز فعال نشده‌اند."
   }
 ];
 
+const companyListTourSteps = [
+  {
+    title: "فهرست شرکت‌ها",
+    body: "اینجا شرکت‌های قابل دسترس شما از بک‌اند خوانده می‌شوند. اگر شرکتی ندارید، همان صفحه فرم ساخت شرکت را نشان می‌دهد."
+  },
+  {
+    title: "افزودن شرکت",
+    body: "دکمه افزودن شرکت فقط فیلدهای پشتیبانی‌شده توسط API را ارسال می‌کند و بعد از ساخت، شما را وارد داشبورد همان شرکت می‌کند."
+  },
+  {
+    title: "بعد از ساخت",
+    body: "داشبورد شرکت در همین فاز با صفحه پیام‌های شرکت شروع می‌شود و جریان صورت‌بها در فاز بعدی فعال خواهد شد."
+  }
+];
+
+const companyDashboardTourSteps = [
+  {
+    title: "داشبورد شرکت",
+    body: "این صفحه پوسته شرکت و ناوبری داخلی را نشان می‌دهد. صفحه پیش‌فرض، پیام‌های شرکت است."
+  },
+  {
+    title: "ناوبری دوگانه",
+    body: "نوار راست برای مسیرهای اصلی برنامه است و تب‌های داخل صفحه برای بخش‌های همان شرکت استفاده می‌شوند."
+  },
+  {
+    title: "دکمه صورت‌بها",
+    body: "دکمه پایین چپ جای شروع ساخت صورت‌بهاست. در فاز ۴ فقط معرفی می‌شود و هنوز جریان واقعی را باز نمی‌کند."
+  }
+];
+
+function getTourSteps(pathname: string) {
+  if (/^\/companies\/\d+/.test(pathname)) {
+    return companyDashboardTourSteps;
+  }
+
+  if (pathname.startsWith("/companies")) {
+    return companyListTourSteps;
+  }
+
+  return defaultTourSteps;
+}
+
 export function GuidedTour() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const { activeTourStep, hasDismissedOnboarding } = useAppSelector((state) => state.ui);
+  const tourSteps = getTourSteps(location.pathname);
 
   if (hasDismissedOnboarding) {
     return null;
