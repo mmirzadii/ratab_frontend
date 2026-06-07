@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import type { ThemeMode } from "./uiSlice";
 
-export function usePersistedTheme(theme: ThemeMode) {
+export function usePersistedUiState(theme: ThemeMode, hasDismissedOnboarding: boolean) {
   useEffect(() => {
     document.documentElement.lang = "fa";
     document.documentElement.dir = "rtl";
@@ -10,4 +10,11 @@ export function usePersistedTheme(theme: ThemeMode) {
     document.documentElement.classList.toggle("dark", theme === "dark");
     window.localStorage.setItem("ratab.theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      "ratab.onboarding.dismissed",
+      String(hasDismissedOnboarding)
+    );
+  }, [hasDismissedOnboarding]);
 }
