@@ -444,6 +444,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ActivePriceSet: {
+            readonly id: number;
+            readonly code: string;
+            readonly title_fa: string;
+            readonly is_active: boolean;
+        };
         AppUser: {
             readonly id: number;
             readonly phone_number: string;
@@ -979,6 +985,7 @@ export interface components {
             readonly title_fa: string;
             readonly currency_code: string;
             readonly is_locked: boolean;
+            readonly active_price_set: components["schemas"]["ActivePriceSet"] | null;
         };
         PricebookGroup: {
             readonly id: number;

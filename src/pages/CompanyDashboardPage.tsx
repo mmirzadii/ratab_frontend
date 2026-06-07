@@ -1,8 +1,10 @@
+import { useState } from "react";
 import {
   Building2,
   FileText,
   Loader2,
   MessageCircle,
+  Paperclip,
   Plus,
   Settings,
   SlidersHorizontal,
@@ -58,6 +60,7 @@ export function CompanyDashboardPage() {
     skip: !hasValidCompanyId
   });
   const hasDismissedOnboarding = useAppSelector((state) => state.ui.hasDismissedOnboarding);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
   if (!hasValidCompanyId) {
     return (
@@ -125,8 +128,8 @@ export function CompanyDashboardPage() {
                 {company.name}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 light:text-slate-600">
-                داشبورد شرکت با ناوبری داخلی شروع شده است. پیام‌های واقعی، پروژه‌ها و صورت‌بهاها
-                در فازهای بعدی به همین پوسته اضافه می‌شوند.
+                پیام‌های شرکت صفحه پیش‌فرض این فضاست. برای افزودن صورت‌بها، از دکمه + کنار کادر
+                پیام استفاده کنید؛ مثل اضافه کردن یک پیوست در گفتگو.
               </p>
             </div>
           </div>
@@ -196,8 +199,58 @@ export function CompanyDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-white/10 bg-slate-950/35 p-4 light:border-slate-200 light:bg-white">
+            <div className="relative rounded-lg border border-white/10 bg-slate-950/35 p-4 light:border-slate-200 light:bg-white">
+              {isAddMenuOpen ? (
+                <div className="absolute bottom-[76px] right-4 z-20 w-[min(22rem,calc(100vw-3rem))] rounded-lg border border-white/10 bg-slate-950/95 p-2 shadow-2xl backdrop-blur-xl light:border-slate-200 light:bg-white/95">
+                  <Link
+                    className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-emerald-400/10 light:hover:bg-emerald-50"
+                    onClick={() => setIsAddMenuOpen(false)}
+                    to={`/companies/${company.id}/cost-reports/new`}
+                  >
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-400/15 text-emerald-200 light:text-emerald-700">
+                      <FileText className="h-4 w-4" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-black text-white light:text-slate-950">
+                        افزودن صورت‌بها از فهرست‌بها
+                      </span>
+                      <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
+                        شروع از فهرست‌بهای فعال ۱۴۰۴ و مرور فصل‌ها، گروه‌ها و آیتم‌ها.
+                      </span>
+                    </span>
+                  </Link>
+                  <button
+                    className="mt-1 flex w-full cursor-not-allowed items-start gap-3 rounded-lg px-3 py-3 text-right opacity-55"
+                    disabled
+                    type="button"
+                  >
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200">
+                      <Paperclip className="h-4 w-4" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-black text-white light:text-slate-950">
+                        پیوست فایل
+                      </span>
+                      <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
+                        در فازهای بعدی فعال می‌شود.
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              ) : null}
               <div className="flex items-center gap-3">
+                <button
+                  aria-expanded={isAddMenuOpen}
+                  aria-label="افزودن از گفتگو"
+                  className={classNames(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 light:text-emerald-700",
+                    !hasDismissedOnboarding && "ring-4 ring-emerald-200/35"
+                  )}
+                  onClick={() => setIsAddMenuOpen((current) => !current)}
+                  type="button"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
                 <div className="h-10 flex-1 rounded-lg border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-slate-500 light:border-slate-200 light:bg-slate-50">
                   نوشتن پیام در فازهای بعدی فعال می‌شود
                 </div>
@@ -215,23 +268,11 @@ export function CompanyDashboardPage() {
       </div>
 
       {!hasDismissedOnboarding ? (
-        <div className="pointer-events-none fixed bottom-20 left-5 z-30 hidden max-w-xs rounded-lg border border-emerald-300/25 bg-slate-950/85 p-4 text-sm leading-7 text-emerald-100 shadow-2xl backdrop-blur-xl lg:block">
-          این دکمه در فاز بعدی شروع ساخت صورت‌بها خواهد بود.
+        <div className="pointer-events-none fixed bottom-28 right-10 z-30 hidden max-w-xs rounded-lg border border-emerald-300/25 bg-slate-950/85 p-4 text-sm leading-7 text-emerald-100 shadow-2xl backdrop-blur-xl lg:block">
+          از دکمه + کنار پیام، صورت‌بها را مثل یک پیوست به گفتگوی شرکت اضافه کنید.
         </div>
       ) : null}
 
-      <button
-        aria-label="افزودن صورت‌بها در فاز بعدی"
-        className={classNames(
-          "fixed bottom-5 left-5 z-30 flex h-14 w-14 cursor-not-allowed items-center justify-center rounded-full bg-gradient-to-tr from-emerald-400 to-teal-300 text-slate-950 shadow-emerald-soft transition",
-          !hasDismissedOnboarding && "ring-4 ring-emerald-200/45 ring-offset-4 ring-offset-slate-950"
-        )}
-        disabled
-        title="افزودن صورت‌بها در فاز بعدی فعال می‌شود"
-        type="button"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
     </div>
   );
 }

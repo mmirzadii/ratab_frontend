@@ -194,7 +194,7 @@ Nested custom list actions usually return plain arrays, for example `/api/compan
 ### Flow C: Browse Pricebook
 
 1. `GET /api/pricebooks/` to list active pricebooks.
-2. `GET /api/pricebooks/{pricebook_id}/editions/` to list editions.
+2. `GET /api/pricebooks/{pricebook_id}/editions/` to list editions and their active/default price set when available.
 3. `GET /api/pricebook-editions/{edition_id}/chapters/` to list chapters.
 4. `GET /api/pricebook-chapters/{chapter_id}/groups/` to list groups.
 5. `GET /api/pricebook-items/?edition_id={edition_id}&chapter_id={chapter_id}&group_id={group_id}&q={search}` to list items.
@@ -249,7 +249,7 @@ The backend validator currently accepts some future keys, but the v0.0 resolver 
 5. `POST /api/financial-documents/{document_id}/lock/` to lock. Locked documents reject further edits in v0.0.
 6. `GET /api/financial-documents/{document_id}/preview/` to render HTML preview.
 
-Current v0.0 gap: financial document creation requires `price_set_id`, but no API endpoint currently lists price sets. The frontend can get `pricebook_edition_id` from the editions route, but `price_set_id` must be provided out of band for now or a future backend route must be added. Do not invent a price-set route in the frontend.
+Use `active_price_set.id` from `GET /api/pricebooks/{pricebook_id}/editions/` as `price_set_id` when creating a financial document. If `active_price_set` is `null`, the frontend may browse and calculate supported pricebook items, but should not create a financial document until an active price set exists for the selected edition.
 
 ### Flow G: HTML Preview And Export
 
@@ -430,10 +430,18 @@ Response `201`:
     "year": 1404,
     "title_fa": "<Persian edition title>",
     "currency_code": "IRR",
-    "is_locked": true
+    "is_locked": true,
+    "active_price_set": {
+      "id": 7,
+      "code": "ABN1404-1404-prices",
+      "title_fa": "Unit prices 1404",
+      "is_active": true
+    }
   }
 ]
 ```
+
+If no active price set exists for the edition, `active_price_set` is `null`.
 
 `GET /api/pricebook-editions/{edition_id}/chapters/`
 
@@ -925,7 +933,7 @@ Status: `409 Conflict`.
 - Blank Excel prices must not be treated as official zero prices.
 - Frontend must not assume every pricebook item has an official unit price.
 - Current backend rejects manual-price calculations with `requires_manual_unit_price=true`.
-- Financial document creation currently needs `price_set_id`, but no route lists price sets yet.
+- Financial document creation needs `price_set_id`; use the selected edition's `active_price_set.id`. If `active_price_set` is `null`, do not create the document yet.
 - PDF binary generation is not available in v0.0.
 - Export metadata can be created, but download may return `409 Conflict`.
 - Frontend should display backend validation errors clearly.
@@ -943,7 +951,7 @@ Status: `409 Conflict`.
 6. Browse ABN1404 pricebook.
 7. Calculate a priced item.
 8. Create coefficient set and values if needed.
-9. Create a financial document only if a valid `price_set_id` is available.
+9. Create a financial document only if the selected edition includes a non-null `active_price_set`.
 10. Add lines, recalculate, preview HTML, and test export metadata.
 11. Expect PDF download to return `409` until a PDF renderer is approved.
 
