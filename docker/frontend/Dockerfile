@@ -9,6 +9,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 COPY . .
+RUN test -n "$VITE_API_BASE_URL" || (echo "VITE_API_BASE_URL is required" && exit 1)
 RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
