@@ -5,6 +5,8 @@ import {
   Calculator,
   CheckCircle2,
   ChevronDown,
+  Download,
+  Eye,
   FileText,
   FolderKanban,
   Layers3,
@@ -34,12 +36,16 @@ import {
 } from "../features/coefficients/coefficientApi";
 import {
   type FinancialDocument,
+  type FinancialDocumentExport,
   type FinancialDocumentLine,
+  useCreateFinancialDocumentExportMutation,
   useCreateFinancialDocumentLineMutation,
   useCreateProjectFinancialDocumentMutation,
   useDeleteFinancialDocumentLineMutation,
+  useDownloadFinancialDocumentExportMutation,
   useLockFinancialDocumentMutation,
   useRecalculateFinancialDocumentMutation,
+  useLazyRetrieveFinancialDocumentPreviewQuery,
   useUpdateFinancialDocumentLineMutation
 } from "../features/financialDocuments/financialDocumentApi";
 import {
@@ -1359,10 +1365,15 @@ function CurrentDocumentPanel({
   const [editingQuantity, setEditingQuantity] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [latestExport, setLatestExport] = useState<FinancialDocumentExport | null>(null);
   const [recalculateDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
   const [lockDocument, lockState] = useLockFinancialDocumentMutation();
   const [updateLine, updateLineState] = useUpdateFinancialDocumentLineMutation();
   const [deleteLine, deleteLineState] = useDeleteFinancialDocumentLineMutation();
+  const [retrievePreview, previewState] = useLazyRetrieveFinancialDocumentPreviewQuery();
+  const [createExport, createExportState] = useCreateFinancialDocumentExportMutation();
+  const [downloadExport, downloadExportState] = useDownloadFinancialDocumentExportMutation();
   const lines = document?.lines ?? [];
   const totals = getDocumentTotals(document);
   const isLocked = isFinancialDocumentLocked(document);
@@ -1370,7 +1381,10 @@ function CurrentDocumentPanel({
     recalculateState.isLoading ||
     lockState.isLoading ||
     updateLineState.isLoading ||
-    deleteLineState.isLoading;
+    deleteLineState.isLoading ||
+    previewState.isFetching ||
+    createExportState.isLoading ||
+    downloadExportState.isLoading;
 
   function startEditingLine(line: FinancialDocumentLine) {
     setActionError(null);
@@ -1463,6 +1477,85 @@ function CurrentDocumentPanel({
     }
   }
 
+  async function handlePreviewDocument() {
+    if (!document) {
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const html = await retrievePreview(document.id).unwrap();
+      setPreviewHtml(html);
+      setActionSuccess("پیش‌نمایش HTML صورت‌بها آماده است.");
+    } catch (error) {
+      setActionError(getApiErrorMessage(error));
+    }
+  }
+
+  async function handleCreateExport() {
+    if (!document) {
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const exportRecord = await createExport(document.id).unwrap();
+      setLatestExport(exportRecord);
+      if (exportRecord.status === "ready" && exportRecord.file_id) {
+        setActionSuccess("خروجی ثبت شد و فایل آماده دانلود است.");
+      } else {
+        setActionSuccess(
+          "خروجی PDF هنوز در نسخه آزمایشی فعال نیست. پیش‌نمایش HTML قابل مشاهده است."
+        );
+      }
+    } catch (error) {
+      setActionError(getApiErrorMessage(error));
+    }
+  }
+
+  async function handleDownloadExport() {
+    if (!latestExport) {
+      setActionError("ابتدا خروجی را ایجاد کنید.");
+      return;
+    }
+
+    if (latestExport.status !== "ready" || !latestExport.file_id) {
+      setActionError(
+        "خروجی PDF هنوز در نسخه آزمایشی فعال نیست. پیش‌نمایش HTML قابل مشاهده است."
+      );
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const pdfBlob = await downloadExport(latestExport.id).unwrap();
+      const downloadUrl = window.URL.createObjectURL(pdfBlob);
+      const link = window.document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `${document?.document_number ?? "ratab-cost-report"}.pdf`;
+      window.document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setActionSuccess("دانلود فایل خروجی شروع شد.");
+    } catch (error) {
+      const status = typeof error === "object" && error && "status" in error ? String(error.status) : "";
+      if (status === "409") {
+        setActionError(
+          "خروجی PDF هنوز در نسخه آزمایشی فعال نیست. پیش‌نمایش HTML قابل مشاهده است."
+        );
+        return;
+      }
+      setActionError(getApiErrorMessage(error));
+    }
+  }
+
   return (
     <GlassCard className="p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1533,6 +1626,45 @@ function CurrentDocumentPanel({
               )}
               قفل کردن صورت‌بها
             </Button>
+            <Button
+              disabled={isActionBusy}
+              onClick={() => void handlePreviewDocument()}
+              type="button"
+              variant="secondary"
+            >
+              {previewState.isFetching ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+              پیش‌نمایش صورت‌بها
+            </Button>
+            <Button
+              disabled={isActionBusy}
+              onClick={() => void handleCreateExport()}
+              type="button"
+              variant="secondary"
+            >
+              {createExportState.isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              خروجی گرفتن
+            </Button>
+            <Button
+              disabled={isActionBusy || !latestExport}
+              onClick={() => void handleDownloadExport()}
+              type="button"
+              variant="ghost"
+            >
+              {downloadExportState.isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              دانلود PDF
+            </Button>
             {isLocked ? (
               <p className="text-xs leading-6 text-violet-100 light:text-violet-800">
                 سند قفل شده است؛ ویرایش، حذف و افزودن خط غیرفعال شده‌اند.
@@ -1549,6 +1681,40 @@ function CurrentDocumentPanel({
             <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
               {actionError}
             </p>
+          ) : null}
+
+          {latestExport ? (
+            <div className="rounded-lg border border-violet-300/20 bg-violet-400/10 p-3 text-sm leading-7 text-violet-100 light:text-violet-800">
+              <p className="font-black">
+                وضعیت خروجی: {latestExport.status === "ready" ? "آماده" : latestExport.status === "failed" ? "ناموفق" : "در حال پردازش"}
+              </p>
+              {latestExport.error_message ? <p className="mt-1">{latestExport.error_message}</p> : null}
+              {latestExport.status !== "ready" || !latestExport.file_id ? (
+                <p className="mt-1">
+                  خروجی PDF هنوز در نسخه آزمایشی فعال نیست. پیش‌نمایش HTML قابل مشاهده است.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {previewHtml ? (
+            <section className="overflow-hidden rounded-lg border border-emerald-300/20 bg-emerald-400/10">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-300/15 px-4 py-3">
+                <div>
+                  <h3 className="font-black text-white light:text-slate-950">پیش‌نمایش HTML صورت‌بها</h3>
+                  <p className="mt-1 text-xs leading-6 text-emerald-100 light:text-emerald-800">
+                    پیش‌نمایش در iframe sandbox شده نمایش داده می‌شود.
+                  </p>
+                </div>
+                <StatusBadge tone="emerald">آماده مشاهده</StatusBadge>
+              </div>
+              <iframe
+                className="h-[70vh] w-full bg-white"
+                sandbox=""
+                srcDoc={previewHtml}
+                title="پیش‌نمایش HTML صورت‌بها"
+              />
+            </section>
           ) : null}
 
           <div className="overflow-hidden rounded-lg border border-white/10 light:border-slate-200">
@@ -1679,7 +1845,7 @@ function CurrentDocumentPanel({
           ) : null}
 
           <div className="rounded-lg border border-violet-300/20 bg-violet-400/10 p-3 text-sm leading-7 text-violet-100 light:text-violet-800">
-            پیش‌نمایش و خروجی PDF در مرحله بعدی کامل می‌شود؛ در v0.0 تولید فایل PDF ممکن است در backend مسدود باشد.
+            پیش‌نمایش HTML از backend دریافت می‌شود. خروجی PDF در v0.0 ممکن است به‌صورت metadata ناموفق ثبت شود و تا تایید موتور رندر، دانلود فایل واقعی فعال نیست.
           </div>
         </div>
       ) : null}

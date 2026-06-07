@@ -41,10 +41,10 @@ export function LoginPage() {
   const [devLogin, { error, isLoading }] = useDevLoginMutation();
   const normalizedPhone = useMemo(() => normalizeNumberInput(phoneNumber), [phoneNumber]);
   const canContinue = normalizedPhone.length >= 8 && normalizedPhone.length <= 20;
-  const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/";
+  const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/companies";
 
   if (token) {
-    return <Navigate replace to="/" />;
+    return <Navigate replace to="/companies" />;
   }
 
   async function handlePhoneStep(event: FormEvent<HTMLFormElement>) {

@@ -13,6 +13,8 @@ export type PatchedFinancialDocumentUpdateRequest =
   components["schemas"]["PatchedFinancialDocumentUpdateRequest"];
 export type PaginatedFinancialDocumentList =
   components["schemas"]["PaginatedFinancialDocumentList"];
+export type FinancialDocumentExport = components["schemas"]["FinancialDocumentExport"];
+export type ExportNotReady = components["schemas"]["ExportNotReady"];
 
 export const financialDocumentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -117,17 +119,44 @@ export const financialDocumentApi = baseApi.injectEndpoints({
         { type: "FinancialDocument", id: documentId },
         { type: "FinancialDocument", id: "LIST" }
       ]
+    }),
+    retrieveFinancialDocumentPreview: builder.query<string, number>({
+      query: (documentId) => ({
+        url: `/api/financial-documents/${documentId}/preview/`,
+        responseHandler: (response) => response.text()
+      }),
+      providesTags: (_result, _error, documentId) => [
+        { type: "FinancialDocument", id: documentId }
+      ]
+    }),
+    createFinancialDocumentExport: builder.mutation<FinancialDocumentExport, number>({
+      query: (documentId) => ({
+        url: `/api/financial-documents/${documentId}/exports/`,
+        method: "POST"
+      }),
+      invalidatesTags: (_result, _error, documentId) => [
+        { type: "FinancialDocument", id: documentId }
+      ]
+    }),
+    downloadFinancialDocumentExport: builder.mutation<Blob, number>({
+      query: (exportId) => ({
+        url: `/api/financial-document-exports/${exportId}/download/`,
+        responseHandler: (response) => response.blob()
+      })
     })
   })
 });
 
 export const {
+  useCreateFinancialDocumentExportMutation,
   useCreateFinancialDocumentLineMutation,
   useCreateProjectFinancialDocumentMutation,
   useDeleteFinancialDocumentLineMutation,
+  useDownloadFinancialDocumentExportMutation,
   useLockFinancialDocumentMutation,
   useListProjectFinancialDocumentsQuery,
   useRecalculateFinancialDocumentMutation,
+  useLazyRetrieveFinancialDocumentPreviewQuery,
   useRetrieveFinancialDocumentQuery,
   useUpdateFinancialDocumentLineMutation,
   useUpdateFinancialDocumentMutation
