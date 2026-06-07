@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BookOpen,
@@ -8,8 +8,13 @@ import {
   FileText,
   FolderKanban,
   Layers3,
+  Lock,
   Loader2,
+  Pencil,
+  RefreshCcw,
+  Save,
   Search,
+  Trash2,
   X,
   XCircle
 } from "lucide-react";
@@ -17,17 +22,32 @@ import { Link, useParams } from "react-router-dom";
 
 import { useRetrieveCompanyQuery } from "../features/companies/companyApi";
 import {
+  type ProjectCoefficientSet,
+  type ProjectCoefficientValue,
+  type ScopeEnum,
+  useCreateCoefficientValueMutation,
+  useCreateProjectCoefficientSetMutation,
+  useDeleteCoefficientValueMutation,
+  useListCoefficientValuesQuery,
+  useListProjectCoefficientSetsQuery,
+  useUpdateCoefficientValueMutation
+} from "../features/coefficients/coefficientApi";
+import {
   type FinancialDocument,
   type FinancialDocumentLine,
   useCreateFinancialDocumentLineMutation,
   useCreateProjectFinancialDocumentMutation,
-  useRecalculateFinancialDocumentMutation
+  useDeleteFinancialDocumentLineMutation,
+  useLockFinancialDocumentMutation,
+  useRecalculateFinancialDocumentMutation,
+  useUpdateFinancialDocumentLineMutation
 } from "../features/financialDocuments/financialDocumentApi";
 import {
   type Pricebook,
   type PricebookChapter,
   type PricebookEdition,
   type PricebookGroup,
+  type PricebookCalculateInputRequest,
   type PricebookCalculateResponse,
   type PricebookItemDetail,
   type PricebookItemList,
@@ -45,6 +65,7 @@ import { EmptyState } from "../shared/components/EmptyState";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
 import { classNames } from "../shared/utils/classNames";
+import { formatMoneyAmount } from "../shared/utils/formatters";
 import { normalizeNumberInput, normalizeRowCode } from "../shared/utils/numberText";
 
 type WizardStep = "setup" | "browser";
@@ -100,6 +121,44 @@ const chapterFilters = [
   { id: "40-49", label: "مصالح پای کار", min: 40, max: 49 },
   { id: "90-99", label: "تجهیز کارگاه", min: 90, max: 99 }
 ] as const;
+
+const coefficientKeyOptions = [
+  { id: "regional", label: "ضریب منطقه" },
+  { id: "overhead", label: "ضریب بالاسری" },
+  { id: "floor", label: "ضریب طبقات" },
+  { id: "proposal", label: "ضریب پیشنهادی" },
+  { id: "custom_1", label: "ضریب سفارشی ۱" },
+  { id: "custom_2", label: "ضریب سفارشی ۲" }
+] as const;
+
+const coefficientScopeOptions = [
+  { id: "project", label: "کل پروژه" },
+  { id: "chapter", label: "فصل" },
+  { id: "row", label: "ردیف" }
+] as const;
+
+type CoefficientKey = (typeof coefficientKeyOptions)[number]["id"];
+type CoefficientScope = (typeof coefficientScopeOptions)[number]["id"];
+
+type CoefficientValueFormState = {
+  coefficient_key: CoefficientKey;
+  scope: CoefficientScope;
+  chapter_id: string;
+  row_id: string;
+  label_fa: string;
+  multiplier: string;
+  is_active: boolean;
+};
+
+const initialCoefficientValueForm: CoefficientValueFormState = {
+  coefficient_key: "overhead",
+  scope: "project",
+  chapter_id: "",
+  row_id: "",
+  label_fa: "ضریب بالاسری",
+  multiplier: "1",
+  is_active: true
+};
 
 const inputClasses =
   "h-12 w-full rounded-lg border border-white/10 bg-slate-950/45 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
@@ -170,20 +229,20 @@ function matchesChapterFilter(chapter: PricebookChapter, filterId: string) {
   return chapterNumber >= filter.min && chapterNumber <= filter.max;
 }
 
-function formatPrice(value: string | null | undefined) {
-  if (value === null || value === undefined || value === "") {
-    return "فاقد قیمت رسمی";
-  }
-
-  return value;
-}
-
 function normalizeQuantityValue(value: string) {
   return normalizeNumberInput(value).replace(/[٬,]/g, "").replace(/٫/g, ".");
 }
 
 function isPositiveDecimal(value: string) {
   return /^\d+(\.\d+)?$/.test(value) && !/^0+(\.0+)?$/.test(value);
+}
+
+function getCoefficientKeyLabel(key: string) {
+  return coefficientKeyOptions.find((item) => item.id === key)?.label ?? key;
+}
+
+function getCoefficientScopeLabel(scope: string | undefined) {
+  return coefficientScopeOptions.find((item) => item.id === scope)?.label ?? scope ?? "کل پروژه";
 }
 
 function hasManualUnitPrice(item: PricebookItemDetail) {
@@ -232,42 +291,117 @@ function getDefaultEdition(editions: PricebookEdition[]) {
   );
 }
 
-function getListResults<T>(data: { results?: readonly T[] } | readonly T[] | undefined): T[] {
+function getListResults<T>(data: { results?: readonly T[] } | readonly T[] | T | undefined): T[] {
   if (Array.isArray(data)) {
     return [...data];
   }
 
-  const payload = data as { results?: readonly T[] } | undefined;
-  return [...(payload?.results ?? [])];
+  if (!data || typeof data !== "object") {
+    return [];
+  }
+
+  if ("results" in data) {
+    return [...((data as { results?: readonly T[] }).results ?? [])];
+  }
+
+  return [data as T];
 }
 
-function getDocumentTotal(document: FinancialDocument | null) {
-  const snapshot = document?.totals_snapshot_json;
+type DocumentTotals = {
+  coefficientAmount: string | null;
+  lineCount: number;
+  pricebookAmount: string | null;
+  totalAmount: string | null;
+};
 
+function getSnapshotString(snapshot: unknown, keys: string[]) {
   if (!snapshot || typeof snapshot !== "object") {
     return null;
   }
 
-  const total = (snapshot as { total_amount?: unknown; final_total_amount?: unknown }).total_amount;
-  const finalTotal = (snapshot as { final_total_amount?: unknown }).final_total_amount;
+  const record = snapshot as Record<string, unknown>;
+  const value = keys.map((key) => record[key]).find((item) => item !== undefined && item !== null);
 
-  if (typeof total === "string") {
-    return total;
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
   }
 
-  return typeof finalTotal === "string" ? finalTotal : null;
+  return null;
+}
+
+function getDocumentTotals(document: FinancialDocument | null): DocumentTotals {
+  const snapshot = document?.totals_snapshot_json;
+
+  return {
+    coefficientAmount: getSnapshotString(snapshot, [
+      "coefficient_amount",
+      "coefficient_total_amount"
+    ]),
+    lineCount:
+      Number(getSnapshotString(snapshot, ["line_count"])) ||
+      document?.lines.length ||
+      0,
+    pricebookAmount: getSnapshotString(snapshot, [
+      "pricebook_amount",
+      "base_amount",
+      "raw_total_amount"
+    ]),
+    totalAmount: getSnapshotString(snapshot, ["total_amount", "final_total_amount"])
+  };
+}
+
+function isFinancialDocumentLocked(document: FinancialDocument | null) {
+  return document?.status === "locked" || Boolean(document?.locked_at);
+}
+
+function getDocumentStatusLabel(status: FinancialDocument["status"] | undefined) {
+  if (status === "locked") {
+    return "قفل‌شده";
+  }
+
+  if (status === "calculated") {
+    return "محاسبه‌شده";
+  }
+
+  if (status === "draft") {
+    return "پیش‌نویس";
+  }
+
+  return status ?? "نامشخص";
+}
+
+function getDocumentStatusTone(status: FinancialDocument["status"] | undefined) {
+  if (status === "locked") {
+    return "violet";
+  }
+
+  if (status === "calculated") {
+    return "emerald";
+  }
+
+  if (status === "draft") {
+    return "amber";
+  }
+
+  return "slate";
 }
 
 function ItemDetailModal({
+  coefficientSets,
   document,
   itemId,
+  onSelectedCoefficientSetIdChange,
   onDocumentUpdated,
-  onClose
+  onClose,
+  selectedCoefficientSetId
 }: {
+  coefficientSets: ProjectCoefficientSet[];
   document: FinancialDocument | null;
   itemId: number;
+  onSelectedCoefficientSetIdChange: (setId: number | null) => void;
   onDocumentUpdated: (document: FinancialDocument) => void;
   onClose: () => void;
+  selectedCoefficientSetId: number | null;
 }) {
   const { data: item, error, isLoading } = useRetrievePricebookItemQuery(itemId);
 
@@ -309,9 +443,12 @@ function ItemDetailModal({
 
           {item ? (
             <ItemDetailContent
+              coefficientSets={coefficientSets}
               document={document}
               item={item}
+              onSelectedCoefficientSetIdChange={onSelectedCoefficientSetIdChange}
               onDocumentUpdated={onDocumentUpdated}
+              selectedCoefficientSetId={selectedCoefficientSetId}
             />
           ) : null}
         </div>
@@ -321,13 +458,19 @@ function ItemDetailModal({
 }
 
 function ItemDetailContent({
+  coefficientSets,
   document,
   item,
-  onDocumentUpdated
+  onSelectedCoefficientSetIdChange,
+  onDocumentUpdated,
+  selectedCoefficientSetId
 }: {
+  coefficientSets: ProjectCoefficientSet[];
   document: FinancialDocument | null;
   item: PricebookItemDetail;
+  onSelectedCoefficientSetIdChange: (setId: number | null) => void;
   onDocumentUpdated: (document: FinancialDocument) => void;
+  selectedCoefficientSetId: number | null;
 }) {
   const [quantity, setQuantity] = useState("1");
   const [quantityError, setQuantityError] = useState<string | null>(null);
@@ -339,6 +482,7 @@ function ItemDetailContent({
   const [createFinancialDocumentLine, createLineState] = useCreateFinancialDocumentLineMutation();
   const [recalculateFinancialDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
   const requiresManualPrice = hasManualUnitPrice(item);
+  const documentLocked = isFinancialDocumentLocked(document);
   const manualRows = item.rows.filter(
     (row) => row.requires_manual_unit_price || row.unit_price === null || row.unit_price === ""
   );
@@ -363,12 +507,17 @@ function ItemDetailContent({
     }
 
     try {
+      const calculateBody: PricebookCalculateInputRequest = {
+        quantity: normalizedQuantity
+      };
+
+      if (selectedCoefficientSetId) {
+        calculateBody.coefficient_set_id = selectedCoefficientSetId;
+      }
+
       const result = await calculatePricebookItem({
         itemId: item.id,
-        body: {
-          quantity: normalizedQuantity,
-          coefficient_set_id: null
-        }
+        body: calculateBody
       }).unwrap();
       setQuantity(normalizedQuantity);
       setCalculation(result);
@@ -392,9 +541,12 @@ function ItemDetailContent({
     }
 
     if (!document) {
-      setLineError(
-        "برای افزودن به صورت‌بها، سند قابل ثبت خط هنوز در این محیط آزمایشی آماده نیست؛ مرور و محاسبه فهرست‌بها فعال است."
-      );
+      setLineError("سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید.");
+      return;
+    }
+
+    if (documentLocked) {
+      setLineError("این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد.");
       return;
     }
 
@@ -414,12 +566,22 @@ function ItemDetailContent({
     }
   }
 
+  const addLineDisabledReason = !calculation
+    ? "بعد از محاسبه موفق می‌توانید آیتم را به صورت‌بها اضافه کنید."
+    : requiresManualPrice || calculation.requires_manual_unit_price
+      ? "آیتم‌های دارای قیمت ستاره‌دار در این نسخه به صورت‌بها اضافه نمی‌شوند."
+      : !document
+        ? "سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید."
+        : documentLocked
+          ? "این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد."
+          : null;
+
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-4">
         <InfoBox label="کلید آیتم" value={item.item_key} />
         <InfoBox label="واحد" value={item.unit} />
-        <InfoBox label="قیمت واحد" value={formatPrice(item.unit_price)} />
+        <InfoBox label="قیمت واحد" value={formatMoneyAmount(item.unit_price)} />
         <InfoBox label="وضعیت قیمت" value={requiresManualPrice ? "نیازمند قیمت دستی" : "قیمت رسمی"} />
       </div>
 
@@ -449,7 +611,7 @@ function ItemDetailContent({
               </span>
               <span>{row.title_fa || row.short_title_fa}</span>
               <span>{row.unit}</span>
-              <span>{row.requires_manual_unit_price ? "قیمت دستی" : formatPrice(row.unit_price)}</span>
+              <span>{row.requires_manual_unit_price ? "قیمت دستی" : formatMoneyAmount(row.unit_price)}</span>
             </div>
           ))}
         </div>
@@ -458,7 +620,36 @@ function ItemDetailContent({
       <NotesSection notes={item.requirements} title="requirments" />
       <NotesSection notes={item.footnotes} title="پانوشت‌ها" />
 
+      <label className="block space-y-2 rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50">
+        <span className="text-sm font-bold text-slate-200 light:text-slate-700">
+          مجموعه ضرایب برای محاسبه
+        </span>
+        <select
+          className={inputClasses}
+          onChange={(event) =>
+            onSelectedCoefficientSetIdChange(
+              event.target.value ? Number(event.target.value) : null
+            )
+          }
+          value={selectedCoefficientSetId ?? ""}
+        >
+          <option value="">بدون ضریب</option>
+          {coefficientSets.map((set) => (
+            <option key={set.id} value={set.id}>
+              {set.name}
+              {set.is_default ? " - پیش‌فرض" : ""}
+            </option>
+          ))}
+        </select>
+        {coefficientSets.length === 0 ? (
+          <span className="text-xs leading-6 text-slate-400 light:text-slate-500">
+            برای محاسبه با ضریب، ابتدا در بخش ضرایب پروژه مجموعه بسازید.
+          </span>
+        ) : null}
+      </label>
+
       <CalculationSection
+        addLineDisabledReason={addLineDisabledReason}
         calculation={calculation}
         calculationError={calculationError}
         isCalculating={calculateState.isLoading}
@@ -471,7 +662,7 @@ function ItemDetailContent({
         lineError={lineError}
         lineSuccess={lineSuccess}
         onAddLine={handleAddLine}
-        canAddLine={Boolean(document && calculation && !calculation.requires_manual_unit_price)}
+        canAddLine={!addLineDisabledReason}
         setQuantity={setQuantity}
       />
     </div>
@@ -479,6 +670,7 @@ function ItemDetailContent({
 }
 
 function CalculationSection({
+  addLineDisabledReason,
   canAddLine,
   calculation,
   calculationError,
@@ -494,6 +686,7 @@ function CalculationSection({
   requiresManualPrice,
   setQuantity
 }: {
+  addLineDisabledReason: string | null;
   canAddLine: boolean;
   calculation: PricebookCalculateResponse | null;
   calculationError: string | null;
@@ -599,14 +792,14 @@ function CalculationSection({
         <div className="mt-4 space-y-4 rounded-lg border border-white/10 bg-slate-950/35 p-4 light:border-slate-200 light:bg-white">
           <div className="grid gap-3 sm:grid-cols-4">
             <InfoBox label="کد ردیف" value={calculation.row_code} />
-            <InfoBox label="بهای واحد" value={calculation.unit_price} />
+            <InfoBox label="بهای واحد" value={formatMoneyAmount(calculation.unit_price)} />
             <InfoBox label="مقدار" value={`${calculation.quantity} ${calculation.unit}`} />
             <InfoBox label="قیمت دستی" value={calculation.requires_manual_unit_price ? "بله" : "خیر"} />
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <InfoBox label="مبلغ پایه" value={calculation.base_amount} />
-            <InfoBox label="مبلغ ضرایب" value={calculation.coefficient_amount} />
-            <InfoBox label="مبلغ کل" value={calculation.total_amount} />
+            <InfoBox label="مبلغ پایه" value={formatMoneyAmount(calculation.base_amount)} />
+            <InfoBox label="مبلغ ضرایب" value={formatMoneyAmount(calculation.coefficient_amount)} />
+            <InfoBox label="مبلغ کل" value={formatMoneyAmount(calculation.total_amount)} />
           </div>
           {calculation.applied_coefficients.length > 0 ? (
             <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50">
@@ -617,7 +810,8 @@ function CalculationSection({
                     className="rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1 text-xs font-bold text-violet-100 light:text-violet-800"
                     key={`${coefficient.coefficient_key}-${coefficient.scope}-${coefficient.coefficient_value_id}`}
                   >
-                    {coefficient.label_fa}: {coefficient.multiplier}
+                    {coefficient.label_fa}: {coefficient.multiplier}، اثر{" "}
+                    {formatMoneyAmount(coefficient.effect_amount)}
                   </span>
                 ))}
               </div>
@@ -645,9 +839,9 @@ function CalculationSection({
               {isAddingLine ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               افزودن به صورت‌بها
             </Button>
-            {!canAddLine ? (
+            {addLineDisabledReason ? (
               <p className="text-xs leading-6 text-amber-100 light:text-amber-800">
-                برای افزودن خط، ابتدا باید سند صورت‌بها در همین مسیر ساخته شده باشد.
+                {addLineDisabledReason}
               </p>
             ) : null}
           </div>
@@ -716,15 +910,558 @@ function InfoBox({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ProjectCoefficientPanel({
+  chapters,
+  coefficientSets,
+  isLoadingSets,
+  onSelectedCoefficientSetIdChange,
+  projectId,
+  selectedChapterId,
+  selectedCoefficientSetId,
+  setsError
+}: {
+  chapters: PricebookChapter[];
+  coefficientSets: ProjectCoefficientSet[];
+  isLoadingSets: boolean;
+  onSelectedCoefficientSetIdChange: (setId: number | null) => void;
+  projectId: number;
+  selectedChapterId: number | null;
+  selectedCoefficientSetId: number | null;
+  setsError: unknown;
+}) {
+  const selectedSet =
+    coefficientSets.find((set) => set.id === selectedCoefficientSetId) ?? null;
+  const [setName, setSetName] = useState("");
+  const [setError, setSetError] = useState<string | null>(null);
+  const [valueForm, setValueForm] = useState<CoefficientValueFormState>(
+    initialCoefficientValueForm
+  );
+  const [valueError, setValueError] = useState<string | null>(null);
+  const [createSet, createSetState] = useCreateProjectCoefficientSetMutation();
+  const [createValue, createValueState] = useCreateCoefficientValueMutation();
+  const [updateValue, updateValueState] = useUpdateCoefficientValueMutation();
+  const [deleteValue, deleteValueState] = useDeleteCoefficientValueMutation();
+  const {
+    data: values = [],
+    error: valuesError,
+    isLoading: isLoadingValues
+  } = useListCoefficientValuesQuery(selectedSet?.id ?? 0, { skip: !selectedSet });
+
+  async function handleCreateSet(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSetError(null);
+
+    const name = setName.trim();
+    if (!name) {
+      setSetError("نام مجموعه ضرایب را وارد کنید.");
+      return;
+    }
+
+    try {
+      const createdSet = await createSet({
+        projectId,
+        body: {
+          name,
+          is_default: coefficientSets.length === 0
+        }
+      }).unwrap();
+      setSetName("");
+      onSelectedCoefficientSetIdChange(createdSet.id);
+    } catch (error) {
+      setSetError(getApiErrorMessage(error));
+    }
+  }
+
+  function updateCoefficientKey(key: CoefficientKey) {
+    setValueForm((current) => ({
+      ...current,
+      coefficient_key: key,
+      label_fa: getCoefficientKeyLabel(key)
+    }));
+  }
+
+  function updateCoefficientScope(scope: CoefficientScope) {
+    setValueForm((current) => ({
+      ...current,
+      scope,
+      chapter_id:
+        scope === "chapter" ? current.chapter_id || String(selectedChapterId ?? "") : "",
+      row_id: scope === "row" ? current.row_id : ""
+    }));
+  }
+
+  async function handleCreateValue(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setValueError(null);
+
+    if (!selectedSet) {
+      setValueError("ابتدا یک مجموعه ضرایب بسازید یا انتخاب کنید.");
+      return;
+    }
+
+    const label = valueForm.label_fa.trim();
+    if (!label) {
+      setValueError("عنوان ضریب را وارد کنید.");
+      return;
+    }
+
+    const multiplier = normalizeQuantityValue(valueForm.multiplier);
+    if (!isPositiveDecimal(multiplier)) {
+      setValueError("ضریب باید یک عدد مثبت باشد.");
+      return;
+    }
+
+    const chapterId =
+      valueForm.scope === "chapter" ? parsePositiveInteger(valueForm.chapter_id) : null;
+    const rowId = valueForm.scope === "row" ? parsePositiveInteger(valueForm.row_id) : null;
+
+    if (valueForm.scope === "chapter" && !chapterId) {
+      setValueError("برای ضریب فصل، یک فصل را انتخاب کنید.");
+      return;
+    }
+
+    if (valueForm.scope === "row" && !rowId) {
+      setValueError("برای ضریب ردیف، شناسه ردیف معتبر لازم است.");
+      return;
+    }
+
+    try {
+      await createValue({
+        setId: selectedSet.id,
+        body: {
+          coefficient_key: valueForm.coefficient_key,
+          scope: valueForm.scope as ScopeEnum,
+          chapter_id: chapterId,
+          row_id: rowId,
+          label_fa: label,
+          multiplier,
+          is_active: valueForm.is_active
+        }
+      }).unwrap();
+      setValueForm({
+        ...initialCoefficientValueForm,
+        label_fa: getCoefficientKeyLabel(initialCoefficientValueForm.coefficient_key)
+      });
+    } catch (error) {
+      setValueError(getApiErrorMessage(error));
+    }
+  }
+
+  async function handleToggleValue(value: ProjectCoefficientValue) {
+    if (!selectedSet) {
+      return;
+    }
+
+    try {
+      await updateValue({
+        setId: selectedSet.id,
+        valueId: value.id,
+        body: { is_active: !value.is_active }
+      }).unwrap();
+    } catch (error) {
+      setValueError(getApiErrorMessage(error));
+    }
+  }
+
+  async function handleDeleteValue(value: ProjectCoefficientValue) {
+    if (!selectedSet) {
+      return;
+    }
+
+    try {
+      await deleteValue({ setId: selectedSet.id, valueId: value.id }).unwrap();
+    } catch (error) {
+      setValueError(getApiErrorMessage(error));
+    }
+  }
+
+  return (
+    <GlassCard className="p-0">
+      <details className="group">
+        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 p-5">
+          <div>
+            <h2 className="text-lg font-black text-white light:text-slate-950">
+              ضرایب پروژه
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
+              ضریب فعال برای محاسبه آیتم‌ها اینجا انتخاب می‌شود؛ مدیریت کامل در همین بخش باز می‌شود.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge tone={selectedSet ? "emerald" : "amber"}>
+              {selectedSet ? `ضریب فعال: ${selectedSet.name}` : "بدون ضریب"}
+            </StatusBadge>
+            <span className={linkButtonClasses}>
+              نمایش / ویرایش ضرایب
+              <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+            </span>
+          </div>
+        </summary>
+
+        <div className="border-t border-white/10 p-5 light:border-slate-200">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+        <div className="space-y-4">
+          <label className="block space-y-2">
+            <span className="text-sm font-bold text-slate-200 light:text-slate-700">
+              مجموعه فعال برای محاسبه
+            </span>
+            <select
+              className={inputClasses}
+              disabled={isLoadingSets}
+              onChange={(event) =>
+                onSelectedCoefficientSetIdChange(
+                  event.target.value ? Number(event.target.value) : null
+                )
+              }
+              value={selectedCoefficientSetId ?? ""}
+            >
+              <option value="">بدون ضریب</option>
+              {coefficientSets.map((set) => (
+                <option key={set.id} value={set.id}>
+                  {set.name}
+                  {set.is_default ? " - پیش‌فرض" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {isLoadingSets ? (
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              در حال دریافت مجموعه ضرایب
+            </div>
+          ) : null}
+
+          {setsError ? (
+            <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+              {getApiErrorMessage(setsError)}
+            </div>
+          ) : null}
+
+          {!isLoadingSets && !setsError && coefficientSets.length === 0 ? (
+            <div className="rounded-lg border border-white/10 bg-white/7 p-3 text-sm leading-7 text-slate-300 light:border-slate-200 light:bg-white light:text-slate-600">
+              هنوز مجموعه ضرایبی برای این پروژه ثبت نشده است.
+            </div>
+          ) : null}
+
+          {selectedSet ? (
+            <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-black text-white light:text-slate-950">
+                  مقادیر {selectedSet.name}
+                </p>
+                {isLoadingValues ? <Loader2 className="h-4 w-4 animate-spin text-emerald-200" /> : null}
+              </div>
+
+              {valuesError ? (
+                <div className="mt-3 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+                  {getApiErrorMessage(valuesError)}
+                </div>
+              ) : null}
+
+              {!isLoadingValues && !valuesError && values.length === 0 ? (
+                <p className="mt-3 text-sm leading-7 text-slate-400 light:text-slate-500">
+                  هنوز مقدار ضریبی ثبت نشده است.
+                </p>
+              ) : null}
+
+              <div className="mt-3 space-y-2">
+                {values.map((value) => (
+                  <div
+                    className="rounded-lg border border-white/10 bg-slate-950/35 p-3 light:border-slate-200 light:bg-white"
+                    key={value.id}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black text-white light:text-slate-950">
+                          {value.label_fa || getCoefficientKeyLabel(value.coefficient_key)}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+                          {getCoefficientKeyLabel(value.coefficient_key)} |{" "}
+                          {getCoefficientScopeLabel(value.scope)} | ضریب {value.multiplier ?? "1"}
+                        </p>
+                      </div>
+                      <StatusBadge tone={value.is_active === false ? "amber" : "emerald"}>
+                        {value.is_active === false ? "غیرفعال" : "فعال"}
+                      </StatusBadge>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        className={linkButtonClasses}
+                        disabled={updateValueState.isLoading}
+                        onClick={() => void handleToggleValue(value)}
+                        type="button"
+                      >
+                        {value.is_active === false ? "فعال‌کردن" : "غیرفعال‌کردن"}
+                      </button>
+                      <button
+                        className={linkButtonClasses}
+                        disabled={deleteValueState.isLoading}
+                        onClick={() => void handleDeleteValue(value)}
+                        type="button"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="space-y-4">
+          <form className="space-y-3" onSubmit={handleCreateSet}>
+            <Field label="ساخت مجموعه ضرایب">
+              <input
+                className={inputClasses}
+                onChange={(event) => setSetName(event.target.value)}
+                placeholder="مثلا ضرایب قرارداد اصلی"
+                value={setName}
+              />
+            </Field>
+            <Button disabled={createSetState.isLoading} type="submit">
+              {createSetState.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              ساخت مجموعه
+            </Button>
+            {setError ? (
+              <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+                {setError}
+              </p>
+            ) : null}
+          </form>
+
+          <form className="space-y-3 rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50" onSubmit={handleCreateValue}>
+            <p className="text-sm font-black text-white light:text-slate-950">
+              افزودن مقدار ضریب
+            </p>
+            <Field label="نوع ضریب">
+              <select
+                className={inputClasses}
+                onChange={(event) => updateCoefficientKey(event.target.value as CoefficientKey)}
+                value={valueForm.coefficient_key}
+              >
+                {coefficientKeyOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="عنوان نمایشی">
+              <input
+                className={inputClasses}
+                onChange={(event) =>
+                  setValueForm((current) => ({ ...current, label_fa: event.target.value }))
+                }
+                value={valueForm.label_fa}
+              />
+            </Field>
+            <Field label="ضریب">
+              <input
+                className={classNames(inputClasses, "text-left")}
+                dir="ltr"
+                inputMode="decimal"
+                onChange={(event) =>
+                  setValueForm((current) => ({ ...current, multiplier: event.target.value }))
+                }
+                placeholder="1.1"
+                value={valueForm.multiplier}
+              />
+            </Field>
+            <Field label="محدوده اثر">
+              <select
+                className={inputClasses}
+                onChange={(event) => updateCoefficientScope(event.target.value as CoefficientScope)}
+                value={valueForm.scope}
+              >
+                {coefficientScopeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {valueForm.scope === "chapter" ? (
+              <Field label="فصل">
+                <select
+                  className={inputClasses}
+                  onChange={(event) =>
+                    setValueForm((current) => ({ ...current, chapter_id: event.target.value }))
+                  }
+                  value={valueForm.chapter_id}
+                >
+                  <option value="">انتخاب فصل</option>
+                  {chapters.map((chapter) => (
+                    <option key={chapter.id} value={chapter.id}>
+                      {chapter.chapter_code} - {chapter.title_fa}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ) : null}
+            {valueForm.scope === "row" ? (
+              <Field label="شناسه ردیف">
+                <input
+                  className={classNames(inputClasses, "text-left")}
+                  dir="ltr"
+                  inputMode="numeric"
+                  onChange={(event) =>
+                    setValueForm((current) => ({ ...current, row_id: event.target.value }))
+                  }
+                  placeholder="شناسه ردیف از جزئیات آیتم"
+                  value={valueForm.row_id}
+                />
+              </Field>
+            ) : null}
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-200 light:text-slate-700">
+              <input
+                checked={valueForm.is_active}
+                onChange={(event) =>
+                  setValueForm((current) => ({ ...current, is_active: event.target.checked }))
+                }
+                type="checkbox"
+              />
+              فعال باشد
+            </label>
+            <Button disabled={!selectedSet || createValueState.isLoading} type="submit">
+              {createValueState.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              افزودن ضریب
+            </Button>
+            {valueError ? (
+              <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+                {valueError}
+              </p>
+            ) : null}
+          </form>
+        </div>
+      </div>
+        </div>
+      </details>
+    </GlassCard>
+  );
+}
+
 function CurrentDocumentPanel({
   document,
+  onDocumentUpdated,
+  selectedCoefficientSetName,
+  selectedEditionYear,
   setupNotice
 }: {
   document: FinancialDocument | null;
+  onDocumentUpdated: (document: FinancialDocument) => void;
+  selectedCoefficientSetName: string | null;
+  selectedEditionYear: number | undefined;
   setupNotice: string | null;
 }) {
+  const [editingLineId, setEditingLineId] = useState<number | null>(null);
+  const [editingQuantity, setEditingQuantity] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [recalculateDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
+  const [lockDocument, lockState] = useLockFinancialDocumentMutation();
+  const [updateLine, updateLineState] = useUpdateFinancialDocumentLineMutation();
+  const [deleteLine, deleteLineState] = useDeleteFinancialDocumentLineMutation();
   const lines = document?.lines ?? [];
-  const documentTotal = getDocumentTotal(document);
+  const totals = getDocumentTotals(document);
+  const isLocked = isFinancialDocumentLocked(document);
+  const isActionBusy =
+    recalculateState.isLoading ||
+    lockState.isLoading ||
+    updateLineState.isLoading ||
+    deleteLineState.isLoading;
+
+  function startEditingLine(line: FinancialDocumentLine) {
+    setActionError(null);
+    setActionSuccess(null);
+    setEditingLineId(line.id);
+    setEditingQuantity(line.quantity);
+  }
+
+  async function handleRecalculate() {
+    if (!document) {
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const updatedDocument = await recalculateDocument(document.id).unwrap();
+      onDocumentUpdated(updatedDocument);
+      setActionSuccess("صورت‌بها دوباره محاسبه شد.");
+    } catch (error) {
+      setActionError(getApiErrorMessage(error));
+    }
+  }
+
+  async function handleLockDocument() {
+    if (!document || isLocked) {
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const updatedDocument = await lockDocument(document.id).unwrap();
+      onDocumentUpdated(updatedDocument);
+      setActionSuccess("صورت‌بها قفل شد و دیگر قابل ویرایش نیست.");
+    } catch (error) {
+      setActionError(getApiErrorMessage(error));
+    }
+  }
+
+  async function handleSaveLine(line: FinancialDocumentLine) {
+    if (!document || isLocked) {
+      setActionError("این صورت‌بها قفل شده و قابل ویرایش نیست.");
+      return;
+    }
+
+    const normalizedQuantity = normalizeQuantityValue(editingQuantity);
+    if (!isPositiveDecimal(normalizedQuantity)) {
+      setActionError("مقدار خط باید یک عدد مثبت باشد.");
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      await updateLine({
+        documentId: document.id,
+        lineId: line.id,
+        body: { quantity: normalizedQuantity }
+      }).unwrap();
+      const updatedDocument = await recalculateDocument(document.id).unwrap();
+      onDocumentUpdated(updatedDocument);
+      setEditingLineId(null);
+      setEditingQuantity("");
+      setActionSuccess("مقدار خط به‌روزرسانی شد.");
+    } catch (error) {
+      setActionError(getApiErrorMessage(error));
+    }
+  }
+
+  async function handleDeleteLine(line: FinancialDocumentLine) {
+    if (!document || isLocked) {
+      setActionError("این صورت‌بها قفل شده و قابل ویرایش نیست.");
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      await deleteLine({ documentId: document.id, lineId: line.id }).unwrap();
+      const updatedDocument = await recalculateDocument(document.id).unwrap();
+      onDocumentUpdated(updatedDocument);
+      setActionSuccess("خط از صورت‌بها حذف شد.");
+    } catch (error) {
+      setActionError(getApiErrorMessage(error));
+    }
+  }
 
   return (
     <GlassCard className="p-5">
@@ -735,8 +1472,8 @@ function CurrentDocumentPanel({
             خطوطی که از محاسبه آیتم‌ها به سند اضافه می‌شوند، اینجا نمایش داده می‌شوند.
           </p>
         </div>
-        <StatusBadge tone={document ? "emerald" : "amber"}>
-          {document ? `${lines.length} خط` : "سند ساخته نشده"}
+        <StatusBadge tone={document ? getDocumentStatusTone(document.status) : "amber"}>
+          {document ? `${getDocumentStatusLabel(document.status)} - ${totals.lineCount} خط` : "سند ساخته نشده"}
         </StatusBadge>
       </div>
 
@@ -748,39 +1485,202 @@ function CurrentDocumentPanel({
       ) : null}
 
       {document ? (
-        <div className="mt-4 overflow-hidden rounded-lg border border-white/10 light:border-slate-200">
-          <div className="grid grid-cols-[90px_1fr_90px_90px_130px] gap-3 bg-white/7 px-4 py-3 text-xs font-bold text-slate-300 light:bg-slate-50 light:text-slate-600">
-            <span>کد</span>
-            <span>شرح</span>
-            <span>مقدار</span>
-            <span>واحد</span>
-            <span>مبلغ کل</span>
+        <div className="mt-4 space-y-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <InfoBox label="عنوان سند" value={document.title} />
+            <InfoBox label="شماره سند" value={document.document_number ?? "—"} />
+            <InfoBox
+              label="سال فهرست‌بها"
+              value={selectedEditionYear ? String(selectedEditionYear) : "—"}
+            />
+            <InfoBox label="ضریب فعال" value={selectedCoefficientSetName ?? "بدون ضریب"} />
           </div>
+
+          <div className="grid gap-3 md:grid-cols-4">
+            <InfoBox label="جمع فهرست‌بها" value={formatMoneyAmount(totals.pricebookAmount)} />
+            <InfoBox label="جمع ضرایب" value={formatMoneyAmount(totals.coefficientAmount)} />
+            <InfoBox label="جمع کل" value={formatMoneyAmount(totals.totalAmount)} />
+            <InfoBox
+              label="آخرین محاسبه"
+              value={document.calculated_at ? "ثبت شده" : "در انتظار محاسبه"}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              disabled={isActionBusy || isLocked}
+              onClick={() => void handleRecalculate()}
+              type="button"
+              variant="secondary"
+            >
+              {recalculateState.isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCcw className="h-4 w-4" />
+              )}
+              محاسبه مجدد
+            </Button>
+            <Button
+              disabled={isActionBusy || isLocked}
+              onClick={() => void handleLockDocument()}
+              type="button"
+              variant="secondary"
+            >
+              {lockState.isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Lock className="h-4 w-4" />
+              )}
+              قفل کردن صورت‌بها
+            </Button>
+            {isLocked ? (
+              <p className="text-xs leading-6 text-violet-100 light:text-violet-800">
+                سند قفل شده است؛ ویرایش، حذف و افزودن خط غیرفعال شده‌اند.
+              </p>
+            ) : null}
+          </div>
+
+          {actionSuccess ? (
+            <p className="rounded-lg border border-emerald-300/25 bg-emerald-400/10 p-3 text-sm leading-7 text-emerald-100 light:text-emerald-800">
+              {actionSuccess}
+            </p>
+          ) : null}
+          {actionError ? (
+            <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+              {actionError}
+            </p>
+          ) : null}
+
+          <div className="overflow-hidden rounded-lg border border-white/10 light:border-slate-200">
+            <div className="overflow-x-auto">
+              <div className="min-w-[1120px]">
+                <div className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px] gap-3 bg-white/7 px-4 py-3 text-xs font-bold text-slate-300 light:bg-slate-50 light:text-slate-600">
+                  <span>ردیف</span>
+                  <span>کد</span>
+                  <span>شرح</span>
+                  <span>مقدار</span>
+                  <span>واحد</span>
+                  <span>بهای واحد</span>
+                  <span>مبلغ پایه</span>
+                  <span>مبلغ ضرایب</span>
+                  <span>مبلغ کل</span>
+                </div>
           {lines.length === 0 ? (
             <div className="px-4 py-5 text-center text-sm text-slate-400 light:text-slate-500">
               هنوز خطی به صورت‌بها اضافه نشده است.
             </div>
           ) : null}
-          {lines.map((line: FinancialDocumentLine) => (
-            <div
-              className="grid grid-cols-[90px_1fr_90px_90px_130px] gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-200 light:border-slate-200 light:text-slate-700"
-              key={line.id}
-            >
-              <span className="font-mono text-emerald-200 light:text-emerald-700">
-                {line.row_code_snapshot}
-              </span>
-              <span>{line.description_snapshot}</span>
-              <span>{line.quantity}</span>
-              <span>{line.unit_snapshot}</span>
-              <span>{line.total_amount_snapshot}</span>
+                <div className="max-h-[36vh] overflow-y-auto [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]">
+                  {lines.map((line: FinancialDocumentLine) => (
+                    <div
+                      className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px] gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-200 light:border-slate-200 light:text-slate-700"
+                      key={line.id}
+                    >
+                      <span>{line.line_no}</span>
+                      <span className="font-mono text-emerald-200 light:text-emerald-700">
+                        {line.row_code_snapshot}
+                      </span>
+                      <span>{line.description_snapshot}</span>
+                      <span>
+                        {editingLineId === line.id ? (
+                          <input
+                            className={classNames(inputClasses, "h-9 text-left")}
+                            dir="ltr"
+                            inputMode="decimal"
+                            onChange={(event) => setEditingQuantity(event.target.value)}
+                            value={editingQuantity}
+                          />
+                        ) : (
+                          line.quantity
+                        )}
+                      </span>
+                      <span>{line.unit_snapshot}</span>
+                      <span>{formatMoneyAmount(line.unit_price_snapshot)}</span>
+                      <span>{formatMoneyAmount(line.base_amount_snapshot)}</span>
+                      <span>{formatMoneyAmount(line.coefficient_amount_snapshot)}</span>
+                      <span className="font-bold text-slate-100 light:text-slate-900">
+                        {formatMoneyAmount(line.total_amount_snapshot)}
+                      </span>
+                      <div className="col-span-9 flex flex-wrap gap-2">
+                        {editingLineId === line.id ? (
+                          <>
+                            <button
+                              className={linkButtonClasses}
+                              disabled={isActionBusy || isLocked}
+                              onClick={() => void handleSaveLine(line)}
+                              type="button"
+                            >
+                              <Save className="h-4 w-4" />
+                              ذخیره مقدار
+                            </button>
+                            <button
+                              className={linkButtonClasses}
+                              disabled={isActionBusy}
+                              onClick={() => {
+                                setEditingLineId(null);
+                                setEditingQuantity("");
+                              }}
+                              type="button"
+                            >
+                              انصراف
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className={linkButtonClasses}
+                              disabled={isActionBusy || isLocked}
+                              onClick={() => startEditingLine(line)}
+                              type="button"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              ویرایش مقدار
+                            </button>
+                            <button
+                              className={linkButtonClasses}
+                              disabled={isActionBusy || isLocked}
+                              onClick={() => void handleDeleteLine(line)}
+                              type="button"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              حذف خط
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-      ) : null}
+          </div>
 
-      {documentTotal ? (
-        <div className="mt-4 flex justify-end">
-          <StatusBadge tone="violet">جمع سند: {documentTotal}</StatusBadge>
+          {document.chapter_totals.length > 0 ? (
+            <details className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50">
+              <summary className="cursor-pointer text-sm font-black text-white light:text-slate-950">
+                جمع فصل‌ها
+              </summary>
+              <div className="mt-3 grid gap-2 md:grid-cols-2">
+                {document.chapter_totals.map((chapterTotal) => (
+                  <div
+                    className="rounded-lg border border-white/10 bg-slate-950/35 p-3 text-sm light:border-slate-200 light:bg-white"
+                    key={chapterTotal.id}
+                  >
+                    <p className="font-bold text-slate-100 light:text-slate-900">
+                      {chapterTotal.chapter_code_snapshot} - {chapterTotal.chapter_title_snapshot}
+                    </p>
+                    <p className="mt-2 text-xs text-slate-400 light:text-slate-500">
+                      جمع نهایی: {formatMoneyAmount(chapterTotal.final_total_amount)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
+
+          <div className="rounded-lg border border-violet-300/20 bg-violet-400/10 p-3 text-sm leading-7 text-violet-100 light:text-violet-800">
+            پیش‌نمایش و خروجی PDF در مرحله بعدی کامل می‌شود؛ در v0.0 تولید فایل PDF ممکن است در backend مسدود باشد.
+          </div>
         </div>
       ) : null}
     </GlassCard>
@@ -807,6 +1707,7 @@ export function CostReportWizardPage() {
   const [activeChapterFilter, setActiveChapterFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [selectedCoefficientSetId, setSelectedCoefficientSetId] = useState<number | null>(null);
 
   const { data: company } = useRetrieveCompanyQuery(parsedCompanyId, {
     skip: !hasValidCompanyId
@@ -869,6 +1770,28 @@ export function CostReportWizardPage() {
     { skip: !selectedEdition || !selectedChapterId }
   );
   const items = getListResults<PricebookItemList>(itemsData);
+
+  const {
+    data: coefficientSets = [],
+    error: coefficientSetsError,
+    isLoading: isLoadingCoefficientSets
+  } = useListProjectCoefficientSetsQuery(createdProject?.id ?? 0, { skip: !createdProject });
+
+  useEffect(() => {
+    setSelectedCoefficientSetId((current) => {
+      if (coefficientSets.length === 0) {
+        return current === null ? current : null;
+      }
+
+      if (current && coefficientSets.some((set) => set.id === current)) {
+        return current;
+      }
+
+      return (coefficientSets.find((set) => set.is_default) ?? coefficientSets[0]).id;
+    });
+  }, [coefficientSets]);
+  const selectedCoefficientSet =
+    coefficientSets.find((set) => set.id === selectedCoefficientSetId) ?? null;
 
   const [createProject, createProjectState] = useCreateCompanyProjectMutation();
   const [createDocument, createDocumentState] = useCreateProjectFinancialDocumentMutation();
@@ -961,6 +1884,11 @@ export function CostReportWizardPage() {
     const priceSetId = selectedActivePriceSet?.id ?? fallbackPriceSetId;
     const baseYear = parsePositiveInteger(form.base_year) ?? 1404;
 
+    if (!priceSetId) {
+      setFormError("برای این سال هنوز مجموعه قیمت فعال ثبت نشده است.");
+      return;
+    }
+
     try {
       const project = await createProject({
         companyId: parsedCompanyId,
@@ -980,36 +1908,24 @@ export function CostReportWizardPage() {
         }
       }).unwrap();
 
-      let document: FinancialDocument | null = null;
-      let setupNotice: string | null = null;
-
-      if (priceSetId) {
-        try {
-          document = await createDocument({
-            projectId: project.id,
-            body: {
-              document_type: "cost_report",
-              document_number: omitEmpty(form.document_number),
-              title: form.document_title.trim(),
-              report_title: omitEmpty(form.report_title),
-              document_date: optionalDate(form.document_date),
-              period_start_on: optionalDate(form.period_start_on),
-              period_end_on: optionalDate(form.period_end_on),
-              pricebook_edition_id: selectedEdition.id,
-              price_set_id: priceSetId
-            }
-          }).unwrap();
-        } catch {
-          setupNotice =
-            "مرور فهرست‌بها فعال شد، اما ساخت سند قابل افزودن خط در این محیط کامل نشد. تنظیم آزمایشی فهرست‌بها را بررسی کنید.";
+      const document = await createDocument({
+        projectId: project.id,
+        body: {
+          document_type: "cost_report",
+          document_number: omitEmpty(form.document_number),
+          title: form.document_title.trim(),
+          report_title: omitEmpty(form.report_title),
+          document_date: optionalDate(form.document_date),
+          period_start_on: optionalDate(form.period_start_on),
+          period_end_on: optionalDate(form.period_end_on),
+          pricebook_edition_id: selectedEdition.id,
+          price_set_id: priceSetId
         }
-      } else {
-        setupNotice = "برای این سال هنوز مجموعه قیمت فعال ثبت نشده است.";
-      }
+      }).unwrap();
 
       setCreatedProject(project);
       setCreatedDocument(document);
-      setDocumentSetupNotice(setupNotice);
+      setDocumentSetupNotice(null);
       setStep("browser");
     } catch (error) {
       setFormError(getApiErrorMessage(error));
@@ -1363,7 +2279,26 @@ export function CostReportWizardPage() {
             </div>
           </GlassCard>
 
-          <CurrentDocumentPanel document={createdDocument} setupNotice={documentSetupNotice} />
+          <CurrentDocumentPanel
+            document={createdDocument}
+            onDocumentUpdated={setCreatedDocument}
+            selectedCoefficientSetName={selectedCoefficientSet?.name ?? null}
+            selectedEditionYear={selectedEdition?.year}
+            setupNotice={documentSetupNotice}
+          />
+
+          {createdProject ? (
+            <ProjectCoefficientPanel
+              chapters={chapters}
+              coefficientSets={coefficientSets}
+              isLoadingSets={isLoadingCoefficientSets}
+              onSelectedCoefficientSetIdChange={setSelectedCoefficientSetId}
+              projectId={createdProject.id}
+              selectedChapterId={selectedChapterId}
+              selectedCoefficientSetId={selectedCoefficientSetId}
+              setsError={coefficientSetsError}
+            />
+          ) : null}
 
           <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
             <GlassCard className="p-4">
@@ -1514,7 +2449,7 @@ export function CostReportWizardPage() {
                       {isFetchingItems ? <Loader2 className="h-4 w-4 animate-spin text-emerald-200" /> : null}
                     </div>
                   </div>
-                  <div className="divide-y divide-white/10 light:divide-slate-200">
+                  <div className="max-h-[50vh] divide-y divide-white/10 overflow-y-auto [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin] md:max-h-[62vh] light:divide-slate-200">
                     {itemsError ? (
                       <div className="p-6 text-center text-sm leading-7 text-rose-100 light:text-rose-700">
                         دریافت آیتم‌ها ناموفق بود.
@@ -1540,7 +2475,7 @@ export function CostReportWizardPage() {
                         </span>
                         <span className="text-sm text-slate-300 light:text-slate-600">{item.unit}</span>
                         <span className="text-sm text-slate-300 light:text-slate-600">
-                          {formatPrice(item.unit_price)}
+                          {formatMoneyAmount(item.unit_price)}
                         </span>
                       </button>
                     ))}
@@ -1560,10 +2495,13 @@ export function CostReportWizardPage() {
 
       {selectedItemId ? (
         <ItemDetailModal
+          coefficientSets={coefficientSets}
           document={createdDocument}
           itemId={selectedItemId}
+          onSelectedCoefficientSetIdChange={setSelectedCoefficientSetId}
           onClose={() => setSelectedItemId(null)}
           onDocumentUpdated={setCreatedDocument}
+          selectedCoefficientSetId={selectedCoefficientSetId}
         />
       ) : null}
     </div>

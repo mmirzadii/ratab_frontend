@@ -32,6 +32,20 @@ export type CalculatePricebookItemArgs = {
   body: PricebookCalculateInputRequest;
 };
 
+type ListResponse<T> = { results?: readonly T[] } | readonly T[] | T;
+
+function normalizeListResponse<T>(response: ListResponse<T>): T[] {
+  if (Array.isArray(response)) {
+    return [...response];
+  }
+
+  if (response && typeof response === "object" && "results" in response) {
+    return [...((response as { results?: readonly T[] }).results ?? [])];
+  }
+
+  return response ? [response as T] : [];
+}
+
 function appendQuery(url: string, params: Record<string, number | string | undefined>) {
   const search = new URLSearchParams();
 
@@ -51,8 +65,10 @@ export const pricebookApi = baseApi.injectEndpoints({
       query: () => "/api/pricebooks/",
       providesTags: [{ type: "Pricebook", id: "LIST" }]
     }),
-    listPricebookEditions: builder.query<PaginatedPricebookEditionList, number>({
+    listPricebookEditions: builder.query<PricebookEdition[], number>({
       query: (pricebookId) => `/api/pricebooks/${pricebookId}/editions/`,
+      transformResponse: (response: ListResponse<PricebookEdition>) =>
+        normalizeListResponse(response),
       providesTags: (_result, _error, pricebookId) => [
         { type: "Pricebook", id: `editions-${pricebookId}` }
       ]

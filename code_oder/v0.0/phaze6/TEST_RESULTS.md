@@ -2,23 +2,37 @@
 
 ## Commands Run
 
-Backend active-price-set follow-up:
+Inspection:
 
 ```powershell
-Copy-Item -LiteralPath D:\work\ratab\ratab_backend\docs\openapi_v0_0.yaml -Destination "backend_docs/v0.0/ratab v0.0 Backend API.yaml" -Force
+rg -n "createProject|createDocument|createProjectFinancialDocument|setCreatedDocument|setStep\(|selectedActivePriceSet|priceSetId|VITE_DEFAULT_PRICE_SET_ID|documentSetupNotice|برای افزودن خط|canAddLine|createFinancialDocumentLine|recalculateFinancialDocument" src/pages/CostReportWizardPage.tsx
 ```
 
 ```powershell
-Copy-Item -LiteralPath D:\work\ratab\ratab_backend\docs\openapi_v0_0.yaml -Destination "backend_docs/v0.0/openapi_v0_0.yaml" -Force
+Get-Content -Raw src/features/financialDocuments/financialDocumentApi.ts
 ```
 
 ```powershell
-Copy-Item -LiteralPath D:\work\ratab\ratab_backend\docs\frontend_handoff_v0_0.md -Destination "backend_docs/v0.0/frontend_handoff_v0_0.md" -Force
+Get-Content -Raw src/features/projects/projectApi.ts
 ```
 
 ```powershell
-npm run generate:api
+Get-Content -Raw src/features/pricebooks/pricebookApi.ts
 ```
+
+```powershell
+rg -n "FinancialDocumentCreateRequest|FinancialDocumentLineCreateRequest|ActivePriceSet|PricebookEdition" src/shared/api/generated/schema.ts
+```
+
+```powershell
+rg -n "ActivePriceSet|PricebookEdition|FinancialDocumentCreateRequest|FinancialDocumentLineCreateRequest|PricebookCalculateInputRequest|PricebookCalculateResponse|/api/pricebooks/\{id\}/editions/|/api/projects/\{id\}/financial-documents/|/api/financial-documents/\{id\}/lines/" "backend_docs/v0.0/ratab v0.0 Backend API.yaml"
+```
+
+```powershell
+rg -n "formatPrice|formatMoneyAmount|base_amount|coefficient_amount|total_amount|effect_amount|total_amount_snapshot|unit_price" src/pages/CostReportWizardPage.tsx src/shared/utils/formatters.ts
+```
+
+Verification:
 
 ```powershell
 npm run build
@@ -28,26 +42,16 @@ npm run build
 npm run lint
 ```
 
-Inspection:
-
-```powershell
-rg -n "active_price_set|VITE_DEFAULT_PRICE_SET_ID|price_set_id|deprecated|advanced|مجموعه قیمت|تنظیمات پیشرفته" src/pages/CostReportWizardPage.tsx src/shared/components/GuidedTour.tsx .env.example src/vite-env.d.ts src/shared/api/generated/schema.ts
-```
-
-```powershell
-git diff --name-only
-```
-
-```powershell
-git diff --check
-```
-
 ## Results
 
-- Backend docs/OpenAPI were synced into the frontend `backend_docs/v0.0/` folder.
-- `npm run generate:api`: passed.
-  - Generated schema includes `ActivePriceSet`.
-  - Generated `PricebookEdition` includes `active_price_set`.
+- Inspection confirmed the financial document API hooks already use documented endpoints.
+- Inspection confirmed `FinancialDocumentCreateRequest` requires `pricebook_edition_id` and `price_set_id`.
+- Inspection confirmed `FinancialDocumentLineCreateRequest` is `pricebook_item_id` plus `quantity`.
+- Inspection confirmed `PricebookEdition` includes `active_price_set`.
+- Inspection found `listPricebookEditions` was typed as paginated while local backend behavior returns a singleton edition object.
+- `listPricebookEditions` now normalizes paginated, array, and singleton responses to `PricebookEdition[]`, preserving `active_price_set`.
+- The wizard normalizer also remains robust for other nested response shapes.
+- `formatMoneyAmount` was added and applied to financial amount displays without changing backend payload values or quantity strings.
 - `npm run build`: passed.
   - OpenAPI types regenerated.
   - TypeScript build passed.
@@ -55,9 +59,6 @@ git diff --check
 - `npm run lint`: passed.
   - OpenAPI types regenerated.
   - ESLint completed without reported errors.
-- Inspection confirmed the normal flow uses `selectedEdition.active_price_set.id`.
-- Inspection confirmed `VITE_DEFAULT_PRICE_SET_ID` remains only as a deprecated hidden fallback.
-- `git diff --check`: passed with only Git CRLF normalization warnings.
 
 ## Failed Tests
 
@@ -73,9 +74,9 @@ Not applicable.
 
 - Build and lint validate the TypeScript and static code path only.
 - Manual browser checks are still required for:
-  - normal ABN1404 / 1404 draft document creation from `active_price_set`;
+  - ABN1404 / 1404 draft document creation from `active_price_set`;
+  - staying on the setup form when document creation fails;
   - priced-item calculation;
   - `افزودن به صورت‌بها`;
   - current cost-report line list refresh;
-  - no-active-price-set browsing behavior;
   - missing/manual-price blocking.
