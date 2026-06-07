@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متروپلن | نسل جدید صورت وضعیت نویسی آنلاین</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    
+    <style>
+        body { 
+            font-family: 'Vazirmatn', sans-serif; 
+            background-color: #05050a;
+            overflow-x: hidden;
+        }
+        #webgl-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .content-wrapper {
+            position: relative;
+            z-index: 2;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .neon-glow-emerald {
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.15);
+        }
+        /* اسکرول‌بار سفارشی برای بخش چت تلگرامی */
+        .chat-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+        }
+    </style>
+</head>
+<body class="text-slate-200 min-h-screen selection:bg-emerald-500 selection:text-slate-900" x-data="{ chatModal: false }">
+
+    <canvas id="webgl-canvas"></canvas>
+
+    <aside class="fixed top-0 right-0 h-screen w-20 z-50 flex flex-col items-center py-6 glass-card bg-slate-950/40 border-l border-white/10">
+        <button class="w-12 h-12 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all mb-8">
+            <svg xmlns="http://www.w3.org/2000/xl" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+        </button>
+
+        <nav class="flex flex-col gap-6 items-center w-full px-2">
+            <button @click="chatModal = true" class="group relative w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span class="absolute right-24 bg-slate-950 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity border border-white/5 z-50">پروژه جدید</span>
+            </button>
+<a href="#" class="group relative w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                </svg>
+                <span class="absolute right-24 bg-slate-950 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity border border-white/5 z-50">خرید اشتراک</span>
+            </a>
+
+            <div class="relative group" x-data="{ open: false }">
+                <button @click="open = !open" @click.outside="open = false" class="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 border border-transparent hover:border-violet-500/20 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827a1.125 1.125 0 0 1 .26 1.43l-1.297 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.936 6.936 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                </button>
+                <span class="absolute right-24 top-3 bg-slate-950 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity border border-white/5 z-50">امکانات بیشتر</span>
+
+                <div x-show="open" class="absolute right-20 top-0 w-48 glass-card bg-slate-950/90 border border-white/10 rounded-xl p-2 shadow-xl z-50 flex flex-col gap-1" style="display: none;">
+                    <a href="#" class="px-3 py-2 text-xs text-slate-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">📊 آنالیز بها جدید</a>
+                    <a href="#" class="px-3 py-2 text-xs text-slate-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">📥 خروجی ریزمتره</a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <div class="content-wrapper pr-20">
+<header class="border-b border-slate-800/40 sticky top-0 backdrop-blur-md z-40 bg-slate-950/20">
+            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-reverse space-x-3">
+                    <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 w-10 h-10 rounded-xl font-black text-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">M</div>
+                    <span class="text-xl font-black bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">METROPLAN</span>
+                </div>
+                <nav class="hidden md:flex space-x-reverse space-x-8 text-sm font-medium text-slate-400">
+                    <a href="#features" class="hover:text-emerald-400 transition-colors">صفحه اصلی</a>
+                    <a href="#pricing" class="hover:text-emerald-400 transition-colors">قیمت</a>
+                    <a href="#faq" class="hover:text-emerald-400 transition-colors">پشتیبانی</a>
+                </nav>
+                <a href="#" class="glass-card hover:bg-slate-800/50 text-slate-200 px-5 py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-700/50">ورود به پنل</a>
+            </div>
+        </header>
+
+        <section class="container mx-auto px-6 pt-20 pb-32 flex flex-col lg:flex-row items-center justify-between gap-16 relative">
+            <div class="lg:w-1/2 space-y-8 text-center lg:text-right">
+                <div class="inline-flex items-center gap-2 bg-slate-950/80 border border-emerald-500/30 text-emerald-400 px-4 py-2 rounded-full text-xs font-semibold backdrop-blur">
+                    <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    تحول دیجیتال در دفتر فنی و متره
+                </div>
+                <h1 class="text-4xl md:text-6xl font-black text-white leading-tight md:leading-[1.2] opacity-0 translate-y-10 transition-all duration-1000" id="hero-title">
+                    تهیه <span class="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">صورت وضعیت</span> <br>
+                    در محیطی کاملا هوشمند  
+                </h1>
+                <p class="text-slate-400 text-base md:text-lg leading-relaxed max-w-xl mx-auto lg:mx-0 opacity-0 translate-y-10 transition-all duration-1000 delay-200" id="hero-desc">
+                    نرم‌افزار تحت وب متروپلن، اکسل‌های سنتی را به یک سیستم ابری یکپارچه تبدیل کرده است. کدهای فهرست بها را زنده فراخوانی کنید و ریزمتره را با بالاترین استانداردهای کارفرمایی تحویل بگیرید. !
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
+                    <button @click="chatModal = true" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black px-8 py-4 rounded-2xl text-center transition-all transform hover:-translate-y-1 shadow-lg shadow-emerald-500/20 text-sm cursor-pointer">
+                        ساخت پروژه رایگان
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:w-1/2 w-full relative">
+                <div class="glass-card p-6 rounded-2xl relative shadow-2xl border border-white/10 overflow-hidden neon-glow-emerald">
+                    <div class="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 bg-red-500/60 rounded-full"></span>
+                            <span class="w-3 h-3 bg-yellow-500/60 rounded-full"></span>
+                            <span class="w-3 h-3 bg-emerald-500/60 rounded-full"></span>
+                        </div>
+                        <div class="bg-slate-950/60 px-4 py-1.5 rounded-lg text-[10px] font-mono text-slate-400 border border-white/5">
+                            Project_No_405 / فهرست_بها.dat
+                        </div>
+                    </div>
+<div class="grid grid-cols-3 gap-3 mb-6">
+                        <div class="bg-slate-950/40 p-3 rounded-xl border border-white/5 text-center">
+                            <div class="text-[10px] text-slate-400 mb-1">بهای کل پروژه</div>
+                            <div class="text-sm font-black text-emerald-400">۴.۸۰۰.۰۰۰ <span class="text-[9px] font-normal text-slate-500">ریال</span></div>
+                        </div>
+                        <div class="bg-slate-950/40 p-3 rounded-xl border border-white/5 text-center">
+                            <div class="text-[10px] text-slate-400 mb-1">اقلام ستاره‌دار</div>
+                            <div class="text-sm font-black text-amber-400">۱۵ آیتم</div>
+                        </div>
+                        <div class="bg-slate-950/40 p-3 rounded-xl border border-white/5 text-center">
+                            <div class="text-[10px] text-slate-400 mb-1">ضریب منطقه</div>
+                            <div class="text-sm font-black text-violet-400">۱.۱۸۰</div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl bg-slate-950/30 border border-white/5">
+                        <table class="w-full text-right text-xs">
+                            <thead>
+                                <tr class="bg-slate-950/60 text-slate-400 border-b border-white/5">
+                                    <th class="p-3">کد آیتم</th>
+                                    <th class="p-3">شرح عملیات</th>
+                                    <th class="p-3 text-left">کارکرد</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5 text-slate-300">
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="p-3 font-mono text-emerald-400 font-bold">۰۳۰۱۰۱۰۱</td>
+                                    <td class="p-3">عملیات خاکی در زمین‌های نرم...</td>
+                                    <td class="p-3 text-left font-bold text-white">۳,۴۵۰</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="features" class="py-24 border-t border-white/5 bg-slate-950/20 trigger-section">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-2xl mx-auto mb-20 space-y-4">
+                    <h2 class="text-3xl md:text-4xl font-black text-white text-animate opacity-0">پردازش کلان داده‌های فهرست بها</h2>
+                    <p class="text-slate-400 text-sm">اسکرول کنید تا سرعت کهکشان داده‌ها و عمق گرافیک سیستم تغییر کند.</p>
+                </div>
+                
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="glass-card p-8 rounded-2xl hover:border-emerald-500/30 transition-all duration-300 group text-animate opacity-0">
+                        <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center text-xl mb-6">🔍</div>
+                        <h3 class="text-lg font-bold text-white mb-3">سرعت نجومی جستجو</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">کدها و شرح ردیف‌ها به محض کلیک در ساختار حافظه آماده و فیلتر می‌شوند.</p>
+                    </div>
+                    <div class="glass-card p-8 rounded-2xl hover:border-violet-500/30 transition-all duration-300 group text-animate opacity-0">
+                        <div class="w-12 h-12 bg-violet-500/10 border border-violet-500/20 text-violet-400 rounded-xl flex items-center justify-center text-xl mb-6">🧬</div>
+                        <h3 class="text-lg font-bold text-white mb-3">اتصال به ریزمتره</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">محاسبات طول و عرض و ارتفاع به صورت زنجیره‌ای به خلاصه مالی متصل هستند.</p>
+                    </div>
+                    <div class="glass-card p-8 rounded-2xl hover:border-teal-500/30 transition-all duration-300 group text-animate opacity-0">
+                        <div class="w-12 h-12 bg-teal-500/10 border border-teal-500/20 text-teal-400 rounded-xl flex items-center justify-center text-xl mb-6">💾</div>
+                        <h3 class="text-lg font-bold text-white mb-3">خروجی زنده اکسل</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">فایل نهایی حاوی فرمول‌های کاملاً باز و پویا جهت تحویل به دستگاه نظارت است.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+<footer class="bg-slate-950/80 text-slate-600 text-xs py-8 text-center border-t border-white/5 backdrop-blur">
+            <p>© ۱۴۰۵ پلتفرم آنلاین METROPLAN. قدرت گرفته از پارتیکل‌های سه‌بعدی محاسباتی.</p>
+        </footer>
+
+    </div>
+
+    <div x-show="chatModal" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-lg"
+         style="display: none;">
+        
+        <div class="w-full max-w-4xl h-[85vh] bg-[#0e1621] border border-white/10 rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
+            
+            <div class="bg-[#17212b] px-6 py-4 border-b border-white/5 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 font-bold text-lg flex items-center justify-center shadow">🤖</div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">دستیار هوشمند متروپلن</h3>
+                        <p class="text-[10px] text-emerald-400 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> آنلاین
+                        </p>
+                    </div>
+                </div>
+                <button @click="chatModal = false" class="text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-xl text-xs font-bold">
+                    ✕ خروج از چت
+                </button>
+            </div>
+<div class="flex-1 p-6 overflow-y-auto chat-scroll flex flex-col gap-4 bg-[#0e1621]">
+                
+                <div class="flex items-end gap-2 max-w-[70%]">
+                    <div class="bg-[#182533] p-3.5 rounded-2xl rounded-br-none text-xs text-slate-200 leading-relaxed border border-white/5 shadow-sm">
+                        سلام مهندس عزیز! به متروپلن خوش آمدید. 👋
+                        <br><br>
+                        من اینجام تا بهت کمک کنم سریع‌تر صورت وضعیتت رو جمع کنی. برای شروع پروژه جدید، ابتدا سال و نوع فهرست بها رو از منوی پایین انتخاب کن.
+                        <span class="block text-left text-[9px] text-slate-500 mt-2">۱۰:۱۴</span>
+                    </div>
+                </div>
+
+                <div class="flex items-end gap-2 max-w-[70%] self-end">
+                    <div class="bg-[#2b5278] p-3.5 rounded-2xl rounded-bl-none text-xs text-white leading-relaxed shadow-sm">
+                        ممنون، می‌خوام یه پروژه بر اساس فهرست بهای ابنیه سال ۱۴۰۵ بسازم.
+                        <span class="block text-right text-[9px] text-slate-300/60 mt-2">۱۰:۱۵</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="bg-[#17212b] p-4 border-t border-white/5 flex flex-col gap-3">
+                
+                <div class="flex flex-wrap items-center gap-3 bg-[#101921] p-2.5 rounded-xl border border-white/5">
+                    <span class="text-xs text-slate-400 flex items-center gap-1">📚 <strong>انتخاب فهرست بها:</strong></span>
+                    
+                    <select class="bg-[#17212b] text-xs text-slate-200 px-3 py-1.5 rounded-lg border border-white/10 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer">
+                        <option value="abnieh">رشته ابنیه</option>
+                        <option value="bargh">رشته تاسیسات برقی</option>
+                        <option value="mechanic">رشته تاسیسات مکانیکی</option>
+                        <option value="rah">رشته راه و باند</option>
+                    </select>
+
+                    <select class="bg-[#17212b] text-xs text-slate-200 px-3 py-1.5 rounded-lg border border-white/10 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer">
+                        <option value="1405">سال ۱۴۰۵</option>
+                        <option value="1404">سال ۱۴۰۴</option>
+                        <option value="1403">سال ۱۴۰۳</option>
+                    </select>
+
+                    <button class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold px-4 py-1.5 rounded-lg transition-all mr-auto cursor-pointer">
+                        ➕ بارگذاری در پروژه
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button class="text-slate-400 hover:text-white p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer" title="ارسال فایل">
+                        📎
+                    </button>
+                    
+                    <input type="text" placeholder="پیام خود را بنویسید..." class="flex-1 bg-[#101921] border border-white/5 text-xs text-slate-200 px-4 py-3 rounded-xl focus:outline-none focus:border-emerald-500/50 transition-colors placeholder-slate-500">
+                    
+                    <button class="w-10 h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 flex items-center justify-center font-bold text-lg transition-transform hover:scale-105 cursor-pointer">
+                        ◀️
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('hero-title').style.opacity = '1';
+            document.getElementById('hero-title').style.transform = 'translateY(0)';
+            document.getElementById('hero-desc').style.opacity = '1';
+            document.getElementById('hero-desc').style.transform = 'translateY(0)';
+        });
+
+        const canvas = document.querySelector('#webgl-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 2;
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const particlesCount = 3500;
+        const posArray = new Float32Array(particlesCount * 3);
+        for(let i=0; i < particlesCount * 3; i++) { posArray[i] = (Math.random() - 0.5) * 6; }
+        const particlesGeometry = new THREE.BufferGeometry();
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ size: 0.006, color: '#10b981', transparent: true, blending: THREE.AdditiveBlending });
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        gsap.to(particlesMesh.position, { z: 1.1, scrollTrigger: { trigger: '.trigger-section', start: 'top bottom', end: 'top top', scrub: 2 } });
+        gsap.to(particlesMaterial, { size: 0.012, scrollTrigger: { trigger: '.trigger-section', start: 'top bottom', end: 'top top', scrub: 1 } });
+        gsap.to('.text-animate', { opacity: 1, stagger: 0.2, scrollTrigger: { trigger: '.trigger-section', start: 'top 70%', toggleActions: 'play none none reverse' } });
+
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', (event) => { mouseX = (event.clientX / window.innerWidth) * 2 - 1; mouseY = -(event.clientY / window.innerHeight) * 2 + 1; });
+        const clock = new THREE.Clock();
+        const animate = () => {
+            const elapsedTime = clock.getElapsedTime();
+            particlesMesh.rotation.y = elapsedTime * 0.03;
+            particlesMesh.rotation.x = -elapsedTime * 0.01;
+            if (mouseX !== 0) { particlesMesh.rotation.y += (mouseX * 0.15 - particlesMesh.rotation.y) * 0.05; particlesMesh.rotation.x += (-mouseY * 0.15 - particlesMesh.rotation.x) * 0.05; }
+            renderer.render(scene, camera);
+            window.requestAnimationFrame(animate);
+        };
+        animate();
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+    </script>
+</body>
+</html>
