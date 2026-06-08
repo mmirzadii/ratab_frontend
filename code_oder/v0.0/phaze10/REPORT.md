@@ -1,20 +1,19 @@
-# Frontend Phase 10 Browser PDF Export Follow-up Report
+# Frontend Phase 10 Report
 
 ## Summary
 
 Status: done.
 
-This focused Phase 10 follow-up added a temporary browser-side PDF option for the current financial document. The new action is labeled `دانلود PDF آزمایشی`, opens a print-ready browser document, and relies on the user's browser print dialog to save as PDF. Backend preview/export behavior remains unchanged, and the browser PDF is explicitly labeled as experimental and not the official final backend-generated archive.
+This focused Phase 10 follow-up restructured the cost report builder into a clearer five-section workflow: project information, cost report information, pricebook browsing, coefficients, and final review. The existing backend-backed project/document creation, item calculation, line creation, recalculation, HTML preview, backend export, and browser PDF demo behavior remain intact.
 
 ## Scope
 
-- Implemented only the frontend v0.0 demo browser-PDF follow-up.
+- Implemented only frontend Phase 10 cost-report builder restructuring.
 - Did not touch backend code.
-- Did not invent backend endpoints.
-- Did not create backend export records or storage files.
-- Did not mutate financial data.
-- Kept backend as the source of truth for document lines, totals, and calculations.
-- Kept the existing backend HTML preview and backend export/download actions separate.
+- Did not invent endpoints.
+- Did not hardcode backend URLs, database ids, or `price_set_id`.
+- Did not change financial calculations or treat missing prices as zero.
+- Preserved the existing add-to-cost-report and browser PDF demo flows.
 
 ## Files Created
 
@@ -28,54 +27,67 @@ Not applicable.
 
 ## Implementation Details
 
-- Added `buildBrowserPdfPrintDoc()` to build a print-ready RTL HTML document from the current `FinancialDocument` snapshot already loaded in the frontend.
-- Added `handleBrowserPdfDownload()` to open a new browser window, write the print document, and call `window.print()` after content is ready.
-- Added loading, success, and blocked-popup error handling for the browser print flow.
-- Added a separate `دانلود PDF آزمایشی` action beside the existing backend export buttons.
-- Added an always-visible note: `این PDF به‌صورت آزمایشی در مرورگر ساخته می‌شود و نسخه رسمی نهایی نیست.`
-- Kept the existing backend `پیش‌نمایش صورت‌بها`, backend export metadata action, and backend PDF download action intact.
+- Added a dedicated builder section model and navigator for:
+  - `اطلاعات پروژه`
+  - `اطلاعات صورت‌بها`
+  - `مرور فهرست‌بها`
+  - `ضرایب`
+  - `نهایی کردن صورت‌بها`
+- Split the old two-step setup/browser flow so project details and document details are separate user-facing screens.
+- Locked sections 3, 4, and 5 until a real draft financial document exists.
+- Kept document creation on the documented backend flow and still uses `selectedEdition.active_price_set.id` for `price_set_id`.
+- Reused existing draft project/document state when returning between sections to avoid duplicate backend records.
+- Moved the full document line/totals/preview/export panel into the final review section.
+- Added a compact current cost-report summary inside the pricebook browser section.
+- Moved coefficient management into its own section and kept the selected coefficient set available for item calculation.
+- Added a final-review action that clearly saves/acknowledges the draft state without pretending to call an unavailable official finalization endpoint.
 
-## Browser PDF Notes
+## UI/UX Notes
 
-- The browser-generated PDF uses the current frontend document data and does not contact or update the backend.
-- The print document uses `dir="rtl"`, Persian labels, Metril branding, and A4 print CSS.
-- The print stylesheet references the bundled B Nazanin font asset through the frontend build pipeline.
-- The output includes document metadata, line rows, chapter totals when present, final summary totals, and signature placeholders.
-- Summary table cells such as `جمع بهای فهرست` are center-aligned.
-- App chrome, navigation, and buttons are not part of the print window.
+- The builder now has a left-side section navigator on desktop and compact horizontal navigation on smaller screens.
+- Later sections show as disabled until project/document setup is complete.
+- The pricebook browser is less cluttered while users choose items.
+- Final review is the place for line list, totals, preview, export, browser PDF, and send/attach actions.
+- Normal UI does not expose raw `price_set_id` or require `VITE_DEFAULT_PRICE_SET_ID`.
 
 ## API Contract Notes
 
 - No API contract changes were made.
-- No frontend PDF state is sent to the backend.
-- Backend export state is not faked; failed or unavailable backend exports still behave as before.
-- The browser PDF is not stored in `StorageFile` and is not an authoritative archive.
+- Existing documented endpoints remain in use:
+  - project creation;
+  - financial document creation;
+  - item calculation;
+  - financial document line creation;
+  - document recalculation;
+  - preview/export endpoints already present in the page.
+- Official finalization/locking is not faked because no product-approved frontend endpoint was introduced for that in this task.
 
 ## Issues and Findings
 
-- Browser print output can vary by browser, OS, and user print settings.
-- Pop-up blockers can prevent the print window from opening; the UI now shows a friendly error for that case.
+- The previous implementation was effectively a two-state `setup | browser` page, so coefficients and final review were not first-class workflow steps.
+- Official final submission remains a backend/product gap for this frontend phase; the UI now labels the action as draft-state acknowledgement.
 - `npm run build` still emits the existing non-blocking Vite chunk-size warning.
 - No `npm test` script exists in `package.json`.
 
 ## Risks and Assumptions
 
-- Assumed browser print/save-as-PDF is acceptable for the v0.0 demo.
-- Assumed official PDF generation and storage remains a backend responsibility.
-- Assumed B Nazanin loading through the built asset URL is acceptable for print styling.
-- Assumed financial snapshots already loaded in the current document are sufficient for the temporary demo PDF.
+- Assumed the existing backend-tested create project -> create document -> calculate item -> add line -> recalculate flow remains the source of truth.
+- Assumed final official locking/submission belongs to a later backend/API decision.
+- Assumed keeping the hidden development fallback code out of the normal flow is acceptable while normal flow uses `active_price_set`.
 
 ## User Actions Required
 
-- Manually open a current صورت‌بها with at least one line and click `دانلود PDF آزمایشی`.
-- Confirm the browser print dialog opens and saving as PDF keeps Persian RTL text readable.
-- Confirm the note clearly says the PDF is experimental and not the official final version.
-- Confirm existing backend HTML preview and backend export/download actions still work unchanged.
+- Manually test the cost report builder from the company dashboard plus/attachment entry point.
+- Confirm sections 3, 4, and 5 stay disabled until the draft document is created.
+- Confirm project info -> cost report info creates the draft document and opens the pricebook browser.
+- Add a calculated item to the cost report, then verify it appears in the final review section.
+- Review the coefficient section with an active project and confirm coefficient selection still affects calculation.
+- Confirm final review preview/export/browser PDF actions still work as before.
 
 ## Suggested Commit Message
 
-feat(frontend-phase10): add browser pdf export
+fix(frontend-phase10): restructure cost report builder workflow
 
 ## Next Step
 
-Use this only for v0.0 demo review. Keep official PDF generation/storage as a backend follow-up.
+After manual browser review, proceed only with the next approved frontend phase.

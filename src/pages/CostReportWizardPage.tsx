@@ -76,6 +76,7 @@ import { cleanDisplayText, formatMoneyAmount } from "../shared/utils/formatters"
 import { normalizeNumberInput, normalizeRowCode } from "../shared/utils/numberText";
 
 type WizardStep = "setup" | "browser";
+type BuilderSection = "project" | "document" | "pricebook" | "coefficients" | "finalize";
 
 type CostReportBuilderState = {
   existingDocument?: FinancialDocument;
@@ -123,6 +124,81 @@ const initialForm: WizardFormState = {
   period_end_on: "",
   price_set_id: ""
 };
+
+function getInitialWizardForm(builderState: CostReportBuilderState | null): WizardFormState {
+  return {
+    ...initialForm,
+    project_code: builderState?.existingProject?.project_code ?? "",
+    project_name: builderState?.existingProject?.name ?? "",
+    contract_number: builderState?.existingProject?.contract_number ?? "",
+    employer_name: builderState?.existingProject?.employer_name ?? "",
+    consultant_name: builderState?.existingProject?.consultant_name ?? "",
+    contractor_name: builderState?.existingProject?.contractor_name ?? "",
+    executive_agency_name: builderState?.existingProject?.executive_agency_name ?? "",
+    base_year: String(builderState?.existingProject?.base_year ?? initialForm.base_year),
+    starts_on: builderState?.existingProject?.starts_on ?? "",
+    ends_on: builderState?.existingProject?.ends_on ?? "",
+    description: builderState?.existingProject?.description ?? "",
+    document_number: builderState?.existingDocument?.document_number ?? "",
+    document_title: builderState?.existingDocument?.title ?? "",
+    report_title: builderState?.existingDocument?.report_title ?? "",
+    document_date: builderState?.existingDocument?.document_date ?? "",
+    period_start_on: builderState?.existingDocument?.period_start_on ?? "",
+    period_end_on: builderState?.existingDocument?.period_end_on ?? ""
+  };
+}
+
+const builderSections: Array<{
+  id: BuilderSection;
+  number: string;
+  shortLabel: string;
+  title: string;
+  description: string;
+  icon: typeof FolderKanban;
+}> = [
+  {
+    id: "project",
+    number: "۱",
+    shortLabel: "پروژه",
+    title: "اطلاعات پروژه",
+    description: "مشخصات قرارداد و کارگاه",
+    icon: FolderKanban
+  },
+  {
+    id: "document",
+    number: "۲",
+    shortLabel: "صورت‌بها",
+    title: "اطلاعات صورت‌بها",
+    description: "دوره، شماره و سال فهرست‌بها",
+    icon: FileText
+  },
+  {
+    id: "pricebook",
+    number: "۳",
+    shortLabel: "فهرست‌بها",
+    title: "مرور فهرست‌بها",
+    description: "انتخاب آیتم و افزودن ردیف‌ها",
+    icon: BookOpen
+  },
+  {
+    id: "coefficients",
+    number: "۴",
+    shortLabel: "ضرایب",
+    title: "ضرایب",
+    description: "مدیریت ضرایب پروژه",
+    icon: SlidersHorizontal
+  },
+  {
+    id: "finalize",
+    number: "۵",
+    shortLabel: "نهایی‌سازی",
+    title: "نهایی کردن صورت‌بها",
+    description: "بازبینی، پیش‌نمایش و ارسال",
+    icon: CheckCircle2
+  }
+];
+
+const lockedBuilderSectionMessage = "ابتدا اطلاعات پروژه و صورت‌بها را تکمیل کنید.";
 
 const chapterFilters = [
   { id: "all", label: "همه فصل‌ها" },
@@ -1359,6 +1435,72 @@ function InfoBox({ label, value }: { label: string; value: string }) {
   );
 }
 
+function BuilderSectionNav({
+  activeSection,
+  completedSections,
+  isUnlocked,
+  onSelect
+}: {
+  activeSection: BuilderSection;
+  completedSections: Partial<Record<BuilderSection, boolean>>;
+  isUnlocked: boolean;
+  onSelect: (section: BuilderSection) => void;
+}) {
+  return (
+    <GlassCard className="sticky top-20 h-fit p-3" dir="rtl">
+      <div className="mb-3 hidden px-2 lg:block">
+        <p className="text-xs font-bold text-slate-400 light:text-slate-500">مراحل ساخت صورت‌بها</p>
+      </div>
+      <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+        {builderSections.map((section) => {
+          const enabled =
+            section.id === "project" || section.id === "document" || isUnlocked;
+          const isActive = activeSection === section.id;
+          const isDone = completedSections[section.id] === true;
+          const Icon = section.icon;
+
+          return (
+            <button
+              className={classNames(
+                "group flex min-w-[104px] items-center gap-2 rounded-lg border p-2 text-right transition lg:min-w-0",
+                isActive
+                  ? "border-emerald-300/45 bg-emerald-400/15 text-white shadow-lg shadow-emerald-950/20 light:text-slate-950"
+                  : "border-white/10 bg-white/6 text-slate-300 hover:border-white/20 hover:bg-white/10 light:border-slate-200 light:bg-white light:text-slate-700",
+                !enabled && "cursor-not-allowed opacity-45 hover:border-white/10 hover:bg-white/6"
+              )}
+              disabled={!enabled}
+              key={section.id}
+              onClick={() => onSelect(section.id)}
+              title={enabled ? section.title : lockedBuilderSectionMessage}
+              type="button"
+            >
+              <span
+                className={classNames(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-xs font-black",
+                  isDone
+                    ? "border-emerald-300/45 bg-emerald-400/20 text-emerald-100 light:text-emerald-700"
+                    : "border-white/10 bg-slate-950/30 text-slate-300 light:border-slate-200 light:bg-slate-50 light:text-slate-600"
+                )}
+              >
+                {isDone ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-black">
+                  <span className="me-1">{section.number}</span>
+                  {section.shortLabel}
+                </span>
+                <span className="hidden text-[11px] leading-5 text-slate-400 light:text-slate-500 sm:block lg:block">
+                  {section.description}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+    </GlassCard>
+  );
+}
+
 function ProjectCoefficientPanel({
   chapters,
   coefficientSets,
@@ -1380,7 +1522,11 @@ function ProjectCoefficientPanel({
 }) {
   const selectedSet =
     coefficientSets.find((set) => set.id === selectedCoefficientSetId) ?? null;
-  const [isOpen, setIsOpen] = useState(false);
+  const isOpen = true;
+  function setIsOpen(_isOpen: boolean) {
+    void _isOpen;
+    return undefined;
+  }
   const [setName, setSetName] = useState("");
   const [setError, setSetError] = useState<string | null>(null);
   const [valueForm, setValueForm] = useState<CoefficientValueFormState>(
@@ -1396,24 +1542,6 @@ function ProjectCoefficientPanel({
     error: valuesError,
     isLoading: isLoadingValues
   } = useListCoefficientValuesQuery(selectedSet?.id ?? 0, { skip: !selectedSet });
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    }
-
-    window.document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
 
   async function handleCreateSet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1544,8 +1672,8 @@ function ProjectCoefficientPanel({
   }
 
   return (
-    <>
-      <div className="fixed left-4 top-24 z-30 flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-slate-950/88 p-2 shadow-2xl backdrop-blur-xl light:border-slate-200 light:bg-[#f5fbf8]/92">
+    <GlassCard className="p-0">
+      <div className="hidden">
         <StatusBadge tone={selectedSet ? "emerald" : "amber"}>
           {selectedSet ? `ضریب: ${selectedSet.name}` : "بدون ضریب"}
         </StatusBadge>
@@ -1561,7 +1689,7 @@ function ProjectCoefficientPanel({
 
       {isOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-start bg-slate-950/60 p-3 pt-20 backdrop-blur-sm sm:p-5 sm:pt-24"
+          className="contents"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setIsOpen(false);
@@ -1834,7 +1962,7 @@ function ProjectCoefficientPanel({
           </GlassCard>
         </div>
       ) : null}
-    </>
+    </GlassCard>
   );
 }
 
@@ -2399,7 +2527,10 @@ export function CostReportWizardPage() {
   const hasValidCompanyId = Number.isInteger(parsedCompanyId) && parsedCompanyId > 0;
 
   const [step, setStep] = useState<WizardStep>(builderState?.existingDocument ? "browser" : "setup");
-  const [form, setForm] = useState<WizardFormState>(initialForm);
+  const [activeSection, setActiveSection] = useState<BuilderSection>(
+    builderState?.existingDocument ? "pricebook" : "project"
+  );
+  const [form, setForm] = useState<WizardFormState>(() => getInitialWizardForm(builderState));
   const [formError, setFormError] = useState<string | null>(null);
   const [createdProject, setCreatedProject] = useState<Project | null>(
     builderState?.existingProject ?? null
@@ -2419,6 +2550,7 @@ export function CostReportWizardPage() {
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [selectedCoefficientSetId, setSelectedCoefficientSetId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [finalizationMessage, setFinalizationMessage] = useState<string | null>(null);
 
   const { data: company } = useRetrieveCompanyQuery(parsedCompanyId, {
     skip: !hasValidCompanyId
@@ -2503,6 +2635,16 @@ export function CostReportWizardPage() {
   }, [coefficientSets]);
   const selectedCoefficientSet =
     coefficientSets.find((set) => set.id === selectedCoefficientSetId) ?? null;
+  const isBuilderUnlocked = Boolean(createdDocument);
+  const activeBuilderSection =
+    builderSections.find((section) => section.id === activeSection) ?? builderSections[0];
+  const completedSections: Partial<Record<BuilderSection, boolean>> = {
+    project: Boolean(createdProject || form.project_name.trim()),
+    document: Boolean(createdDocument),
+    pricebook: Boolean(createdDocument && (createdDocument.lines?.length ?? 0) > 0),
+    coefficients: Boolean(selectedCoefficientSet),
+    finalize: Boolean(finalizationMessage)
+  };
 
   useEffect(() => {
     if (!toastMessage) {
@@ -2518,6 +2660,43 @@ export function CostReportWizardPage() {
   const [createDocument, createDocumentState] = useCreateProjectFinancialDocumentMutation();
   const isSubmitting = createProjectState.isLoading || createDocumentState.isLoading;
   const deprecatedConfiguredPriceSetId = getDeprecatedConfiguredPriceSetId();
+
+  function handleBuilderSectionSelect(section: BuilderSection) {
+    const isEnabled = section === "project" || section === "document" || isBuilderUnlocked;
+    if (!isEnabled) {
+      setFormError(lockedBuilderSectionMessage);
+      return;
+    }
+
+    setFormError(null);
+    setFinalizationMessage(null);
+    setStep(section === "project" || section === "document" ? "setup" : "browser");
+    setActiveSection(section);
+  }
+
+  function handleProjectInfoNext() {
+    setFormError(null);
+    setFinalizationMessage(null);
+
+    if (!form.project_name.trim()) {
+      setFormError("نام پروژه را وارد کنید.");
+      return;
+    }
+
+    setActiveSection("document");
+    setStep("setup");
+  }
+
+  function handleFinalizeDraft() {
+    if (!createdDocument) {
+      setFormError(lockedBuilderSectionMessage);
+      return;
+    }
+
+    setFinalizationMessage(
+      "در نسخه آزمایشی، صورت‌بها به‌صورت پیش‌نویس ذخیره شده است. ثبت نهایی رسمی هنوز به تایید backend نیاز دارد."
+    );
+  }
 
   function handleAttachToMessage() {
     if (!createdDocument) {
@@ -2582,6 +2761,7 @@ export function CostReportWizardPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
+    setFinalizationMessage(null);
 
     if (!form.project_name.trim()) {
       setFormError("نام پروژه الزامی است.");
@@ -2631,43 +2811,48 @@ export function CostReportWizardPage() {
     }
 
     try {
-      const project = await createProject({
-        companyId: parsedCompanyId,
-        body: {
-          project_code: omitEmpty(form.project_code),
-          name: form.project_name.trim(),
-          contract_number: omitEmpty(form.contract_number),
-          employer_name: omitEmpty(form.employer_name),
-          consultant_name: omitEmpty(form.consultant_name),
-          contractor_name: omitEmpty(form.contractor_name),
-          executive_agency_name: omitEmpty(form.executive_agency_name),
-          base_year: baseYear,
-          status: "draft",
-          starts_on: optionalDate(form.starts_on),
-          ends_on: optionalDate(form.ends_on),
-          description: omitEmpty(form.description)
-        }
-      }).unwrap();
+      const project =
+        createdProject ??
+        (await createProject({
+          companyId: parsedCompanyId,
+          body: {
+            project_code: omitEmpty(form.project_code),
+            name: form.project_name.trim(),
+            contract_number: omitEmpty(form.contract_number),
+            employer_name: omitEmpty(form.employer_name),
+            consultant_name: omitEmpty(form.consultant_name),
+            contractor_name: omitEmpty(form.contractor_name),
+            executive_agency_name: omitEmpty(form.executive_agency_name),
+            base_year: baseYear,
+            status: "draft",
+            starts_on: optionalDate(form.starts_on),
+            ends_on: optionalDate(form.ends_on),
+            description: omitEmpty(form.description)
+          }
+        }).unwrap());
 
-      const document = await createDocument({
-        projectId: project.id,
-        body: {
-          document_type: "cost_report",
-          document_number: omitEmpty(form.document_number),
-          title: form.document_title.trim(),
-          report_title: omitEmpty(form.report_title),
-          document_date: optionalDate(form.document_date),
-          period_start_on: optionalDate(form.period_start_on),
-          period_end_on: optionalDate(form.period_end_on),
-          pricebook_edition_id: selectedEdition.id,
-          price_set_id: priceSetId
-        }
-      }).unwrap();
+      const document =
+        createdDocument ??
+        (await createDocument({
+          projectId: project.id,
+          body: {
+            document_type: "cost_report",
+            document_number: omitEmpty(form.document_number),
+            title: form.document_title.trim(),
+            report_title: omitEmpty(form.report_title),
+            document_date: optionalDate(form.document_date),
+            period_start_on: optionalDate(form.period_start_on),
+            period_end_on: optionalDate(form.period_end_on),
+            pricebook_edition_id: selectedEdition.id,
+            price_set_id: priceSetId
+          }
+        }).unwrap());
 
       setCreatedProject(project);
       setCreatedDocument(document);
       setDocumentSetupNotice(null);
       setStep("browser");
+      setActiveSection("pricebook");
     } catch (error) {
       setFormError(getApiErrorMessage(error));
     }
@@ -2699,7 +2884,16 @@ export function CostReportWizardPage() {
         </div>
       </GlassCard>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]" dir="ltr">
+        <BuilderSectionNav
+          activeSection={activeSection}
+          completedSections={completedSections}
+          isUnlocked={isBuilderUnlocked}
+          onSelect={handleBuilderSectionSelect}
+        />
+
+        <div className="min-w-0 space-y-5" dir="rtl">
+          <div className="hidden">
         <GlassCard
           className={classNames(
             "p-3 sm:p-4",
@@ -2743,7 +2937,19 @@ export function CostReportWizardPage() {
       </div>
 
       {step === "setup" ? (
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        <form
+          className="space-y-5"
+          onSubmit={(event) => {
+            if (activeSection === "project") {
+              event.preventDefault();
+              handleProjectInfoNext();
+              return;
+            }
+
+            void handleSubmit(event);
+          }}
+        >
+          {activeSection === "project" ? (
           <GlassCard className="p-5 sm:p-6">
             <div className="mb-5 flex items-start gap-3">
               <FolderKanban className="mt-1 h-5 w-5 text-emerald-200" />
@@ -2846,8 +3052,16 @@ export function CostReportWizardPage() {
                 />
               </Field>
             </div>
+            <div className="mt-5 flex justify-end">
+              <Button onClick={handleProjectInfoNext} type="button">
+                بعدی: اطلاعات صورت‌بها
+              </Button>
+            </div>
           </GlassCard>
+          ) : null}
 
+          {activeSection === "document" ? (
+          <>
           <GlassCard className="p-5 sm:p-6">
             <div className="mb-5 flex items-start gap-3">
               <FileText className="mt-1 h-5 w-5 text-violet-200" />
@@ -3018,12 +3232,17 @@ export function CostReportWizardPage() {
               بعد از موفقیت، فصل‌های فهرست‌بها از سرویس خوانده می‌شوند.
             </p>
           </div>
+          </>
+          ) : null}
         </form>
       ) : (
         <div className="space-y-5">
           <GlassCard className="p-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
+                <p className="mb-1 text-sm font-black text-emerald-100 light:text-emerald-700">
+                  {activeBuilderSection.title}
+                </p>
                 <h2 className="text-lg font-black text-white light:text-slate-950">مرور فهرست‌بها</h2>
                 <p className="mt-1 text-xs leading-6 text-slate-300 light:text-slate-600">
                   پروژه: {createdProject?.name} | صورت‌بها: {createdDocument?.title ?? form.document_title}
@@ -3031,6 +3250,30 @@ export function CostReportWizardPage() {
               </div>
               <StatusBadge tone="emerald">سال {selectedEdition?.year ?? "۱۴۰۴"}</StatusBadge>
             </div>
+          </GlassCard>
+
+          {activeSection === "finalize" ? (
+          <>
+          <GlassCard className="p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black text-white light:text-slate-950">
+                  نهایی کردن صورت‌بها
+                </h2>
+                <p className="mt-1 text-xs leading-6 text-slate-300 light:text-slate-600">
+                  ردیف‌ها، جمع‌ها و پیش‌نمایش را بررسی کنید. ثبت نهایی رسمی در v0.0 هنوز backend جداگانه ندارد.
+                </p>
+              </div>
+              <Button onClick={handleFinalizeDraft} type="button">
+                <CheckCircle2 className="h-4 w-4" />
+                نهایی کردن و ثبت
+              </Button>
+            </div>
+            {finalizationMessage ? (
+              <p className="mt-4 rounded-lg border border-emerald-300/25 bg-emerald-400/10 p-3 text-sm leading-7 text-emerald-100 light:text-emerald-800">
+                {finalizationMessage}
+              </p>
+            ) : null}
           </GlassCard>
 
           <CurrentDocumentPanel
@@ -3041,8 +3284,24 @@ export function CostReportWizardPage() {
             selectedEditionYear={selectedEdition?.year}
             setupNotice={documentSetupNotice}
           />
+          </>
+          ) : null}
 
-          {createdProject ? (
+          {activeSection === "coefficients" && createdProject ? (
+            <>
+            <GlassCard className="p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-black text-white light:text-slate-950">ضرایب</h2>
+                  <p className="mt-1 text-xs leading-6 text-slate-300 light:text-slate-600">
+                    مجموعه ضرایب پروژه را برای محاسبات بعدی مدیریت کنید.
+                  </p>
+                </div>
+                <Button onClick={() => setActiveSection("finalize")} type="button" variant="secondary">
+                  رفتن به نهایی‌سازی
+                </Button>
+              </div>
+            </GlassCard>
             <ProjectCoefficientPanel
               chapters={chapters}
               coefficientSets={coefficientSets}
@@ -3053,7 +3312,45 @@ export function CostReportWizardPage() {
               selectedCoefficientSetId={selectedCoefficientSetId}
               setsError={coefficientSetsError}
             />
+            </>
           ) : null}
+
+          {activeSection === "pricebook" ? (
+          <>
+          <GlassCard className="p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black text-white light:text-slate-950">
+                  مرور فهرست‌بها
+                </h2>
+                <p className="mt-1 text-xs leading-6 text-slate-300 light:text-slate-600">
+                  آیتم‌ها را از فهرست‌بها انتخاب و بعد از محاسبه به صورت‌بهای جاری اضافه کنید.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => setActiveSection("coefficients")} type="button" variant="secondary">
+                  مدیریت ضرایب
+                </Button>
+                <Button onClick={() => setActiveSection("finalize")} type="button" variant="secondary">
+                  بازبینی صورت‌بها
+                </Button>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <InfoBox
+                label="ردیف‌های افزوده‌شده"
+                value={`${createdDocument?.lines?.length ?? 0}`}
+              />
+              <InfoBox
+                label="ضریب فعال"
+                value={selectedCoefficientSet?.name ?? "بدون ضریب"}
+              />
+              <InfoBox
+                label="جمع فعلی"
+                value={formatMoneyAmount(getDocumentTotals(createdDocument).totalAmount)}
+              />
+            </div>
+          </GlassCard>
 
           <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
             <GlassCard className="p-4">
@@ -3245,8 +3542,13 @@ export function CostReportWizardPage() {
               )}
             </div>
           </div>
+          </>
+          ) : null}
         </div>
       )}
+
+        </div>
+      </div>
 
       {selectedItemId ? (
         <ItemDetailModal
