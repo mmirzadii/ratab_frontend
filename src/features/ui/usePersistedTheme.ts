@@ -8,12 +8,12 @@ export function usePersistedUiState(theme: ThemeMode, hasDismissedOnboarding: bo
     document.documentElement.dir = "rtl";
     document.documentElement.dataset.theme = theme;
     document.documentElement.classList.toggle("dark", theme === "dark");
-    window.localStorage.setItem("ratab.theme", theme);
+    window.localStorage.setItem("metril.theme", theme);
   }, [theme]);
 
   useEffect(() => {
     window.localStorage.setItem(
-      "ratab.onboarding.dismissed",
+      "metril.onboarding.dismissed",
       String(hasDismissedOnboarding)
     );
   }, [hasDismissedOnboarding]);

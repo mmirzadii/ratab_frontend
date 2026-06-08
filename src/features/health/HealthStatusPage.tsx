@@ -26,7 +26,7 @@ export function HealthStatusPage() {
               <div className="space-y-3">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-200">
                   <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.85)]" />
-                  محیط توسعه رتب
+                  محیط توسعه متریل
                 </div>
                 <div className="space-y-2">
                   <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">

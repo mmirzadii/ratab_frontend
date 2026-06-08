@@ -32,7 +32,7 @@ const previewCards = [
   },
   {
     title: "فهرست‌بها ۱۴۰۴",
-    description: "مرور فصل‌ها و آیتم‌ها در فازهای بعدی به API واقعی وصل می‌شود.",
+    description: "مرور فصل‌ها و آیتم‌ها در فازهای بعدی به سرویس واقعی وصل می‌شود.",
     icon: ClipboardList,
     tone: "amber"
   }
@@ -133,7 +133,7 @@ export function DashboardPreviewPage() {
                 <p className="mt-1 font-bold text-slate-100 light:text-slate-900">{sampleRowCode}</p>
               </div>
               <div>
-                <p className="text-slate-400 light:text-slate-500">ارسال امن به API</p>
+                <p className="text-slate-400 light:text-slate-500">آماده ارسال امن</p>
                 <p className="mt-1 font-bold text-slate-100 light:text-slate-900" dir="ltr">
                   {normalizeRowCode(sampleRowCode)}
                 </p>
@@ -151,7 +151,7 @@ export function DashboardPreviewPage() {
             <StatusBadge tone="emerald">ورود توسعه</StatusBadge>
             <StatusBadge tone="violet">مسیر محافظت‌شده</StatusBadge>
             <StatusBadge tone="amber">بدون رمز ساختگی</StatusBadge>
-            <StatusBadge>بدون API شرکت</StatusBadge>
+            <StatusBadge>بدون داده شرکت</StatusBadge>
           </div>
           <p className="mt-5 text-sm leading-7 text-slate-300 light:text-slate-600">
             رمز عبور، OTP، شرکت‌ها، پروژه‌ها و محاسبات مالی در این فاز شبیه‌سازی نشده‌اند. رفتار

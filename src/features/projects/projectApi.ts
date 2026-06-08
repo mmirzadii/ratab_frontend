@@ -5,13 +5,28 @@ export type Project = components["schemas"]["Project"];
 export type ProjectRequest = components["schemas"]["ProjectRequest"];
 export type PaginatedProjectList = components["schemas"]["PaginatedProjectList"];
 
+type ListResponse<T> = { results?: readonly T[] } | readonly T[] | T;
+
+function normalizeListResponse<T>(response: ListResponse<T>): T[] {
+  if (Array.isArray(response)) {
+    return [...response];
+  }
+
+  if (response && typeof response === "object" && "results" in response) {
+    return [...((response as { results?: readonly T[] }).results ?? [])];
+  }
+
+  return response ? [response as T] : [];
+}
+
 export const projectApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    listCompanyProjects: builder.query<PaginatedProjectList, number>({
+    listCompanyProjects: builder.query<Project[], number>({
       query: (companyId) => `/api/companies/${companyId}/projects/`,
+      transformResponse: (response: ListResponse<Project>) => normalizeListResponse(response),
       providesTags: (result) => [
         { type: "Project", id: "LIST" },
-        ...(result?.results ?? []).map((project) => ({
+        ...(result ?? []).map((project) => ({
           type: "Project" as const,
           id: project.id
         }))

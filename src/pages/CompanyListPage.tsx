@@ -136,26 +136,25 @@ export function CompanyListPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-      <GlassCard className="relative overflow-hidden p-6 sm:p-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-10 pt-5 sm:px-6 lg:px-8">
+      <GlassCard className="relative overflow-hidden p-4 sm:p-6">
         <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-l from-transparent via-emerald-300/70 to-transparent" />
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl space-y-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl space-y-3">
             <StatusBadge tone="emerald">
               <Sparkles className="h-3.5 w-3.5" />
-              فاز ۴ رتب
+              فضای شرکت‌های متریل
             </StatusBadge>
-            <div className="space-y-3">
-              <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
+            <div className="space-y-2">
+              <h1 className="text-2xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
                 شرکت‌های شما
               </h1>
               <p className="text-sm leading-7 text-slate-300 light:text-slate-600">
-                بعد از ورود، فهرست شرکت‌ها از بک‌اند خوانده می‌شود. برای شروع کار در رتب، یک شرکت
-                بسازید یا وارد داشبورد شرکت موجود شوید.
+                یک شرکت را انتخاب کنید یا شرکت تازه بسازید تا وارد پیام‌ها و صورت‌بها شوید.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <Button
               className={classNames(
                 "shrink-0",
@@ -176,14 +175,13 @@ export function CompanyListPage() {
       </GlassCard>
 
       {isFormOpen ? (
-        <GlassCard className="p-5 sm:p-6">
-          <form className="space-y-5" onSubmit={handleCreateCompany}>
+        <GlassCard className="p-4 sm:p-5">
+          <form className="space-y-4" onSubmit={handleCreateCompany}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-xl font-black text-white light:text-slate-950">افزودن شرکت</h2>
                 <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
-                  فقط فیلدهای پشتیبانی‌شده توسط API ارسال می‌شوند. شناسه‌ها با حفظ مقدار متنی به
-                  سرور فرستاده می‌شوند.
+                  فقط نام شرکت الزامی است. سایر اطلاعات را هر زمان لازم بود تکمیل کنید.
                 </p>
               </div>
               <Button
@@ -198,21 +196,19 @@ export function CompanyListPage() {
               </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام شرکت</span>
                 <input
                   className={inputClasses}
                   onChange={(event) => updateField("name", event.target.value)}
-                  placeholder="مثلاً شرکت نمونه رتب"
+                  placeholder="مثلاً شرکت نمونه متریل"
                   required
                   value={form.name}
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-bold text-slate-200 light:text-slate-700">
-                  نام حقوقی
-                </span>
+                <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام حقوقی</span>
                 <input
                   className={inputClasses}
                   onChange={(event) => updateField("legal_name", event.target.value)}
@@ -221,9 +217,7 @@ export function CompanyListPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm font-bold text-slate-200 light:text-slate-700">
-                  شماره ثبت
-                </span>
+                <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره ثبت</span>
                 <input
                   className={inputClasses}
                   inputMode="numeric"
@@ -243,9 +237,7 @@ export function CompanyListPage() {
                 />
               </label>
               <label className="space-y-2 md:col-span-2">
-                <span className="text-sm font-bold text-slate-200 light:text-slate-700">
-                  شناسه کوتاه شرکت
-                </span>
+                <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه کوتاه شرکت</span>
                 <input
                   className={classNames(inputClasses, "text-left")}
                   dir="ltr"
@@ -263,19 +255,14 @@ export function CompanyListPage() {
               </div>
             ) : null}
 
-            <div className="flex flex-wrap items-center gap-3">
-              <Button disabled={createState.isLoading} type="submit">
-                {createState.isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                ساخت شرکت و ورود
-              </Button>
-              <p className="text-xs leading-6 text-slate-400 light:text-slate-500">
-                بعد از ساخت، مستقیم وارد داشبورد همان شرکت می‌شوید.
-              </p>
-            </div>
+            <Button disabled={createState.isLoading} type="submit">
+              {createState.isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+              ساخت شرکت و ورود
+            </Button>
           </form>
         </GlassCard>
       ) : null}
@@ -311,7 +298,7 @@ export function CompanyListPage() {
               افزودن شرکت
             </Button>
           }
-          description="هنوز شرکتی برای این حساب ثبت نشده است. ساخت شرکت، نقطه ورود به داشبورد شرکت در رتب است."
+          description="هنوز شرکتی برای این حساب ثبت نشده است. ساخت شرکت، نقطه ورود به فضای کار متریل است."
           icon={<Building2 className="h-7 w-7" />}
           title="اولین شرکت خود را بسازید"
         />
@@ -323,39 +310,34 @@ export function CompanyListPage() {
             <h2 className="text-lg font-black text-white light:text-slate-950">
               {companyCount} شرکت قابل دسترس
             </h2>
-            {data?.next ? (
-              <StatusBadge tone="amber">صفحه‌بندی بیشتر در فازهای بعدی تکمیل می‌شود</StatusBadge>
-            ) : null}
+            {data?.next ? <StatusBadge tone="amber">صفحه‌های بعدی در نسخه‌های آینده تکمیل می‌شود</StatusBadge> : null}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {companies.map((company) => (
-              <GlassCard className="p-5" interactive key={company.id}>
+              <GlassCard className="p-4" interactive key={company.id}>
                 <Link className="block focus:outline-none" to={`/companies/${company.id}`}>
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-3">
+                    <div className="min-w-0 space-y-2">
                       <StatusBadge tone={company.is_active ? "emerald" : "amber"}>
                         {company.is_active ? "فعال" : "غیرفعال"}
                       </StatusBadge>
                       <div>
-                        <h3 className="text-lg font-black text-white light:text-slate-950">
+                        <h3 className="truncate text-lg font-black text-white light:text-slate-950">
                           {company.name}
                         </h3>
                         {company.legal_name ? (
-                          <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
+                          <p className="mt-1 truncate text-sm text-slate-300 light:text-slate-600">
                             {company.legal_name}
                           </p>
                         ) : null}
                       </div>
                     </div>
-                    <ArrowLeft className="mt-2 h-5 w-5 text-emerald-200" />
+                    <ArrowLeft className="mt-2 h-5 w-5 shrink-0 text-emerald-200" />
                   </div>
-                  <div className="mt-5 grid gap-3 text-xs text-slate-400 light:text-slate-500">
-                    <p>شناسه شرکت: {company.id}</p>
+                  <div className="mt-4 grid gap-2 text-xs text-slate-400 light:text-slate-500">
                     {company.national_id ? <p>شناسه ملی: {company.national_id}</p> : null}
-                    {company.registration_number ? (
-                      <p>شماره ثبت: {company.registration_number}</p>
-                    ) : null}
+                    {company.registration_number ? <p>شماره ثبت: {company.registration_number}</p> : null}
                   </div>
                 </Link>
               </GlassCard>

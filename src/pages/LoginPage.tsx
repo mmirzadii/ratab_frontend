@@ -89,10 +89,10 @@ export function LoginPage() {
           <div className="mb-8 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 text-xl font-black text-slate-950 shadow-emerald-soft">
-                ر
+                م
               </div>
               <div>
-                <p className="text-xl font-black text-white light:text-slate-950">ورود توسعه رتب</p>
+                <p className="text-xl font-black text-white light:text-slate-950">ورود توسعه متریل</p>
                 <p className="text-xs text-slate-400 light:text-slate-500">بدون OTP و فقط برای محیط dev</p>
               </div>
             </div>
@@ -135,7 +135,7 @@ export function LoginPage() {
                 بک‌اند فعلا رمز عبور را پشتیبانی نمی‌کند
               </StatusBadge>
               <p className="text-sm leading-7 text-slate-300 light:text-slate-600">
-                طبق قرارداد فعلی، ورود فقط با endpoint توسعه انجام می‌شود. رمز یا کد یکبارمصرف در
+                طبق قرارداد فعلی، ورود فقط با مسیر ورود آزمایشی انجام می‌شود. رمز یا کد یکبارمصرف در
                 فرانت‌اند شبیه‌سازی نمی‌شود.
               </p>
 
@@ -151,7 +151,7 @@ export function LoginPage() {
                     id="display-name"
                     maxLength={160}
                     onChange={(event) => setDisplayName(event.target.value)}
-                    placeholder="مثلا: کاربر توسعه رتب"
+                    placeholder="مثلا: کاربر توسعه متریل"
                     value={displayName}
                   />
                 </div>

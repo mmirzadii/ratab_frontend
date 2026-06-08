@@ -13,7 +13,8 @@ function getInitialTheme(): ThemeMode {
     return "dark";
   }
 
-  const storedTheme = window.localStorage.getItem("ratab.theme");
+  const storedTheme =
+    window.localStorage.getItem("metril.theme") ?? window.localStorage.getItem("ratab.theme");
   return storedTheme === "light" ? "light" : "dark";
 }
 
@@ -22,7 +23,10 @@ function getInitialOnboardingDismissed(): boolean {
     return false;
   }
 
-  return window.localStorage.getItem("ratab.onboarding.dismissed") === "true";
+  return (
+    window.localStorage.getItem("metril.onboarding.dismissed") ??
+    window.localStorage.getItem("ratab.onboarding.dismissed")
+  ) === "true";
 }
 
 const initialState: UiState = {
@@ -42,10 +46,10 @@ const uiSlice = createSlice({
       state.theme = state.theme === "dark" ? "light" : "dark";
     },
     setActiveTourStep(state, action: PayloadAction<number>) {
-      state.activeTourStep = Math.max(0, Math.min(action.payload, 2));
+      state.activeTourStep = Math.max(0, Math.min(action.payload, 6));
     },
     nextTourStep(state) {
-      state.activeTourStep = Math.min(state.activeTourStep + 1, 2);
+      state.activeTourStep = Math.min(state.activeTourStep + 1, 6);
     },
     previousTourStep(state) {
       state.activeTourStep = Math.max(state.activeTourStep - 1, 0);

@@ -11,7 +11,7 @@ export function AppShell() {
 
       <RightSidebar />
 
-      <div className="relative z-10 pr-20">
+      <div className="relative z-10 pr-16 sm:pr-20">
         <TopHeader />
         <main>
           <Outlet />

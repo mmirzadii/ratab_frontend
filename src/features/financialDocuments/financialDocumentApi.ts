@@ -154,6 +154,7 @@ export const {
   useDeleteFinancialDocumentLineMutation,
   useDownloadFinancialDocumentExportMutation,
   useLockFinancialDocumentMutation,
+  useLazyListProjectFinancialDocumentsQuery,
   useListProjectFinancialDocumentsQuery,
   useRecalculateFinancialDocumentMutation,
   useLazyRetrieveFinancialDocumentPreviewQuery,

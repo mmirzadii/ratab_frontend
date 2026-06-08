@@ -5,14 +5,15 @@ import { HealthStatusPage } from "../features/health/HealthStatusPage";
 import { CompanyDashboardPage } from "../pages/CompanyDashboardPage";
 import { CompanyListPage } from "../pages/CompanyListPage";
 import { CostReportWizardPage } from "../pages/CostReportWizardPage";
-import { LandingPage } from "../pages/LandingPage";
+import { HelpPage } from "../pages/HelpPage";
 import { LoginPage } from "../pages/LoginPage";
+import { RootPage } from "../pages/RootPage";
 import { AppShell } from "../shared/components/AppShell";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <LandingPage />
+    element: <RootPage />
   },
   {
     path: "/login",
@@ -51,6 +52,10 @@ export const router = createBrowserRouter([
       {
         path: "companies/:companyId/cost-reports/new",
         element: <CostReportWizardPage />
+      },
+      {
+        path: "help",
+        element: <HelpPage />
       }
     ]
   }

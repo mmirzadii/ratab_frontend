@@ -1,18 +1,24 @@
-import type { PropsWithChildren } from "react";
+import type { HTMLAttributes, PropsWithChildren } from "react";
 
-type GlassCardProps = PropsWithChildren<{
+type GlassCardProps = PropsWithChildren<HTMLAttributes<HTMLElement> & {
   className?: string;
   interactive?: boolean;
 }>;
 
-export function GlassCard({ children, className = "", interactive = false }: GlassCardProps) {
+export function GlassCard({
+  children,
+  className = "",
+  interactive = false,
+  ...props
+}: GlassCardProps) {
   return (
     <section
-      className={`rounded-lg border border-white/10 bg-slate-950/42 shadow-2xl shadow-slate-950/30 backdrop-blur-xl light:border-slate-200 light:bg-white/72 light:shadow-slate-200/60 ${
+      className={`rounded-lg border border-white/14 bg-slate-950/52 shadow-2xl shadow-slate-950/35 backdrop-blur-xl light:border-slate-200 light:bg-white/82 light:shadow-slate-200/60 ${
         interactive
           ? "transition hover:border-emerald-300/35 hover:bg-slate-900/55 light:hover:bg-white"
           : ""
       } ${className}`}
+      {...props}
     >
       {children}
     </section>
