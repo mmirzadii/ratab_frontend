@@ -54,6 +54,12 @@ const uiSlice = createSlice({
     previousTourStep(state) {
       state.activeTourStep = Math.max(state.activeTourStep - 1, 0);
     },
+    setOnboardingDismissed(state, action: PayloadAction<boolean>) {
+      state.hasDismissedOnboarding = action.payload;
+      if (!action.payload) {
+        state.activeTourStep = 0;
+      }
+    },
     dismissOnboarding(state) {
       state.hasDismissedOnboarding = true;
     },
@@ -70,6 +76,7 @@ export const {
   previousTourStep,
   resetOnboarding,
   setActiveTourStep,
+  setOnboardingDismissed,
   setTheme,
   toggleTheme
 } = uiSlice.actions;

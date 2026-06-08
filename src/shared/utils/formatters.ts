@@ -22,3 +22,30 @@ export function formatMoneyAmount(value: number | string | null | undefined) {
 
   return `${sign}${groupedInteger}`;
 }
+
+const mojibakeMarkers = ["Ã", "Â", "�", "Ø", "Ù", "Û", "Ú"];
+
+export function isMojibakeText(value: unknown) {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  return mojibakeMarkers.some((marker) => value.includes(marker));
+}
+
+export function cleanDisplayText(
+  value: number | string | null | undefined,
+  fallback = "—"
+) {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  const text = String(value).trim();
+
+  if (!text || isMojibakeText(text)) {
+    return fallback;
+  }
+
+  return text;
+}

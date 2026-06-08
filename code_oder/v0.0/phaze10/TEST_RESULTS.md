@@ -1,4 +1,4 @@
-# Frontend Phase 10 Second Corrective Follow-up Test Results
+# Frontend Phase 10 Browser PDF Export Follow-up Test Results
 
 ## Commands Run
 
@@ -24,33 +24,22 @@ Not applicable.
 ## Tests Not Run
 
 - `npm test` was not run because `package.json` does not define a `test` script.
-- Browser/manual responsive checks were not run in this environment.
-- Docker build was not run because Docker files were not changed in this corrective pass.
+- Browser print/PDF manual verification was not run in this environment.
+- Docker build was not run because Docker files were not changed.
 
 ## Manual Smoke Checklist
 
-- Verify logged-out `/` still shows the Metril landing page.
-- Verify logged-in `/` still enters `/companies`.
-- Verify the main sidebar no longer shows health/status and includes the requested account/company actions.
-- Verify the company dashboard messages section still works as local-only messaging.
-- Verify the `صورت‌بهاها` section lists saved backend financial documents and does not directly open creation.
-- Verify the `صورت‌بهای جدید` CTA opens the builder.
-- Verify the cost-report builder compact stepper clearly shows active/completed/inactive state.
-- Verify the browser step opens without excessive header height.
-- Verify chapter and item lists scroll inside fixed-height containers.
-- Verify long item titles are clamped to two lines.
-- Verify coefficient management opens from the compact top-left drawer button and closes on Escape/outside click.
-- Verify item modal calculation, optional footnote selection, edit/send flow, manual-price blocking, and line add/recalculate.
-- Verify line edit/delete icon buttons are tappable on mobile.
-- Verify HTML preview uses the injected B Nazanin styling and centered table cells.
-- Verify PDF download shows backend-provided ready file only if available, and otherwise shows unavailable-PDF messaging.
-- Verify Help includes guidance for cost-report list, HTML preview, PDF download, footnotes, coefficients, and trial limitations.
-- Verify light mode on desktop and mobile.
+- Open a financial document with line rows.
+- Click `دانلود PDF آزمایشی`.
+- Confirm a print-ready browser window opens.
+- Confirm the browser print dialog opens after the content is ready.
+- Save as PDF and inspect RTL Persian text, line rows, totals, chapter totals, and signature placeholders.
+- Confirm the warning note says the PDF is experimental and not the official final version.
+- Confirm backend HTML preview still works.
+- Confirm backend export metadata and backend PDF download behavior remains unchanged.
 
 ## Notes
 
-- No backend files or commands were touched.
-- Persistent company messages still require backend endpoints.
-- Footnote-aware calculation still requires backend calculate payload support.
-- Real PDF download still requires backend PDF rendering and stored file support.
-- Account update/delete still requires backend account APIs.
+- No backend files or endpoints were changed.
+- No PDF file is uploaded or stored in the backend.
+- The browser-generated PDF uses frontend snapshot display data only.

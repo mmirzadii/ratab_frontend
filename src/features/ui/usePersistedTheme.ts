@@ -1,8 +1,26 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
-import type { ThemeMode } from "./uiSlice";
+import { useAppDispatch } from "../../app/hooks";
+import { setOnboardingDismissed, type ThemeMode } from "./uiSlice";
 
-export function usePersistedUiState(theme: ThemeMode, hasDismissedOnboarding: boolean) {
+function getOnboardingStorageKey(userKey: string | null | undefined) {
+  return userKey
+    ? `metril.onboarding.dismissed.${userKey}`
+    : "metril.onboarding.dismissed.anonymous";
+}
+
+export function usePersistedUiState(
+  theme: ThemeMode,
+  hasDismissedOnboarding: boolean,
+  userKey?: string | null
+) {
+  const dispatch = useAppDispatch();
+  const skipNextOnboardingPersist = useRef(false);
+  const onboardingStorageKey = useMemo(
+    () => getOnboardingStorageKey(userKey),
+    [userKey]
+  );
+
   useEffect(() => {
     document.documentElement.lang = "fa";
     document.documentElement.dir = "rtl";
@@ -12,9 +30,20 @@ export function usePersistedUiState(theme: ThemeMode, hasDismissedOnboarding: bo
   }, [theme]);
 
   useEffect(() => {
+    const storedValue = window.localStorage.getItem(onboardingStorageKey);
+    skipNextOnboardingPersist.current = true;
+    dispatch(setOnboardingDismissed(storedValue === "true"));
+  }, [dispatch, onboardingStorageKey]);
+
+  useEffect(() => {
+    if (skipNextOnboardingPersist.current) {
+      skipNextOnboardingPersist.current = false;
+      return;
+    }
+
     window.localStorage.setItem(
-      "metril.onboarding.dismissed",
+      onboardingStorageKey,
       String(hasDismissedOnboarding)
     );
-  }, [hasDismissedOnboarding]);
+  }, [hasDismissedOnboarding, onboardingStorageKey]);
 }

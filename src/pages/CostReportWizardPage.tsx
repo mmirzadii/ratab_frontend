@@ -72,7 +72,7 @@ import { EmptyState } from "../shared/components/EmptyState";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
 import { classNames } from "../shared/utils/classNames";
-import { formatMoneyAmount } from "../shared/utils/formatters";
+import { cleanDisplayText, formatMoneyAmount } from "../shared/utils/formatters";
 import { normalizeNumberInput, normalizeRowCode } from "../shared/utils/numberText";
 
 type WizardStep = "setup" | "browser";
@@ -408,6 +408,267 @@ function buildPreviewSrcDoc(html: string) {
   }
 
   return `${previewStyle}${html}`;
+}
+
+function escapeHtml(value: number | string | null | undefined, fallback = "") {
+  return cleanDisplayText(value, fallback)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function buildBrowserPdfPrintDoc({
+  document,
+  selectedCoefficientSetName,
+  selectedEditionYear,
+  totals
+}: {
+  document: FinancialDocument;
+  selectedCoefficientSetName: string | null;
+  selectedEditionYear: number | undefined;
+  totals: DocumentTotals;
+}) {
+  const title = escapeHtml(document.title || document.report_title || "صورت‌بها");
+  const documentNumber = escapeHtml(document.document_number, "—");
+  const documentDate = escapeHtml(document.document_date, "—");
+  const editionYear = escapeHtml(selectedEditionYear ? String(selectedEditionYear) : "—");
+  const coefficientName = escapeHtml(selectedCoefficientSetName ?? "بدون ضریب");
+  const lines = document.lines ?? [];
+  const chapterTotals = document.chapter_totals ?? [];
+  const lineRows = lines
+    .map(
+      (line) => `
+        <tr>
+          <td>${escapeHtml(line.line_no)}</td>
+          <td class="code">${escapeHtml(line.row_code_snapshot)}</td>
+          <td class="description">${escapeHtml(line.description_snapshot, "شرح ثبت نشده")}</td>
+          <td>${escapeHtml(line.unit_snapshot, "—")}</td>
+          <td>${formatMoneyAmount(line.unit_price_snapshot)}</td>
+          <td>${escapeHtml(line.quantity)}</td>
+          <td>${formatMoneyAmount(line.total_amount_snapshot)}</td>
+        </tr>
+      `
+    )
+    .join("");
+  const chapterRows = chapterTotals
+    .map(
+      (chapter) => `
+        <tr>
+          <td class="code">${escapeHtml(chapter.chapter_code_snapshot)}</td>
+          <td class="description">${escapeHtml(chapter.chapter_title_snapshot, "فصل بدون عنوان")}</td>
+          <td>${formatMoneyAmount(chapter.raw_total_amount)}</td>
+          <td>${formatMoneyAmount(chapter.coefficient_total_amount)}</td>
+          <td>${formatMoneyAmount(chapter.final_total_amount)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  return `<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>${title}</title>
+    <style>
+      @font-face {
+        font-family: "B Nazanin";
+        src: url("${bNazaninFontUrl}") format("truetype");
+        font-weight: normal;
+        font-style: normal;
+      }
+      @page {
+        size: A4;
+        margin: 14mm 12mm;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #fff;
+        color: #111827;
+        direction: rtl;
+        font-family: "B Nazanin", Vazirmatn, Tahoma, sans-serif;
+        font-size: 13px;
+        line-height: 1.75;
+      }
+      body {
+        padding: 0;
+      }
+      .sheet {
+        width: 100%;
+      }
+      .brand {
+        border-bottom: 2px solid #111827;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 10px;
+        margin-bottom: 14px;
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+      .brand p,
+      .demo-note {
+        margin: 4px 0 0;
+      }
+      .demo-note {
+        border: 1px solid #f59e0b;
+        background: #fffbeb;
+        color: #92400e;
+        padding: 8px 10px;
+        margin-bottom: 14px;
+        text-align: center;
+      }
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .meta div {
+        border: 1px solid #d1d5db;
+        padding: 7px 8px;
+        min-height: 48px;
+      }
+      .meta span {
+        display: block;
+        color: #6b7280;
+        font-size: 11px;
+      }
+      .meta strong {
+        display: block;
+        margin-top: 2px;
+        font-size: 13px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0 18px;
+        page-break-inside: auto;
+      }
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      th,
+      td {
+        border: 1px solid #9ca3af;
+        padding: 6px 7px;
+        text-align: center;
+        vertical-align: middle;
+      }
+      th {
+        background: #f3f4f6;
+        font-weight: 700;
+      }
+      .description {
+        text-align: right;
+      }
+      .code {
+        direction: ltr;
+        font-family: Consolas, "Courier New", monospace;
+      }
+      .summary {
+        max-width: 420px;
+        margin-right: auto;
+      }
+      .summary td,
+      .summary th {
+        text-align: center;
+      }
+      .signatures {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .signature {
+        border-top: 1px solid #111827;
+        padding-top: 8px;
+        min-height: 54px;
+        text-align: center;
+      }
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="sheet">
+      <header class="brand">
+        <div>
+          <h1>متریل</h1>
+          <p>صورت‌بهای پروژه</p>
+        </div>
+        <strong>${title}</strong>
+      </header>
+      <p class="demo-note">این PDF به‌صورت آزمایشی در مرورگر ساخته می‌شود و نسخه رسمی نهایی نیست.</p>
+      <section class="meta">
+        <div><span>شماره سند</span><strong>${documentNumber}</strong></div>
+        <div><span>تاریخ سند</span><strong>${documentDate}</strong></div>
+        <div><span>سال فهرست‌بها</span><strong>${editionYear}</strong></div>
+        <div><span>ضریب فعال</span><strong>${coefficientName}</strong></div>
+      </section>
+      <table>
+        <thead>
+          <tr>
+            <th>ردیف</th>
+            <th>شماره</th>
+            <th>شرح</th>
+            <th>واحد</th>
+            <th>بهای واحد</th>
+            <th>مقدار</th>
+            <th>بهای کل</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${
+            lineRows ||
+            '<tr><td colspan="7">هنوز ردیفی به این صورت‌بها اضافه نشده است.</td></tr>'
+          }
+        </tbody>
+      </table>
+      ${
+        chapterRows
+          ? `<h2>جمع فصل‌ها</h2>
+             <table>
+               <thead>
+                 <tr>
+                   <th>کد فصل</th>
+                   <th>عنوان فصل</th>
+                   <th>جمع فهرست‌بها</th>
+                   <th>جمع ضرایب</th>
+                   <th>جمع کل</th>
+                 </tr>
+               </thead>
+               <tbody>${chapterRows}</tbody>
+             </table>`
+          : ""
+      }
+      <table class="summary">
+        <tbody>
+          <tr><th>جمع بهای فهرست</th><td>${formatMoneyAmount(totals.pricebookAmount)}</td></tr>
+          <tr><th>جمع ضرایب</th><td>${formatMoneyAmount(totals.coefficientAmount)}</td></tr>
+          <tr><th>جمع کل</th><td>${formatMoneyAmount(totals.totalAmount)}</td></tr>
+        </tbody>
+      </table>
+      <section class="signatures">
+        <div class="signature">تهیه‌کننده</div>
+        <div class="signature">تاییدکننده</div>
+        <div class="signature">کارفرما</div>
+      </section>
+    </main>
+  </body>
+</html>`;
 }
 
 function isFinancialDocumentLocked(document: FinancialDocument | null) {
@@ -1598,6 +1859,7 @@ function CurrentDocumentPanel({
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [latestExport, setLatestExport] = useState<FinancialDocumentExport | null>(null);
+  const [isBrowserPdfPreparing, setIsBrowserPdfPreparing] = useState(false);
   const [recalculateDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
   const [updateLine, updateLineState] = useUpdateFinancialDocumentLineMutation();
   const [deleteLine, deleteLineState] = useDeleteFinancialDocumentLineMutation();
@@ -1613,7 +1875,8 @@ function CurrentDocumentPanel({
     deleteLineState.isLoading ||
     previewState.isFetching ||
     createExportState.isLoading ||
-    downloadExportState.isLoading;
+    downloadExportState.isLoading ||
+    isBrowserPdfPreparing;
 
   function startEditingLine(line: FinancialDocumentLine) {
     setActionError(null);
@@ -1768,6 +2031,54 @@ function CurrentDocumentPanel({
     }
   }
 
+  function handleBrowserPdfDownload() {
+    if (!document) {
+      setActionError("ابتدا سند صورت‌بها را بسازید.");
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+    setIsBrowserPdfPreparing(true);
+
+    try {
+      const printWindow = window.open("", "_blank", "width=1024,height=768");
+
+      if (!printWindow) {
+        setActionError("مرورگر پنجره چاپ را مسدود کرد. اجازه pop-up را برای این سایت فعال کنید.");
+        setIsBrowserPdfPreparing(false);
+        return;
+      }
+
+      printWindow.document.open();
+      printWindow.document.write(
+        buildBrowserPdfPrintDoc({
+          document,
+          selectedCoefficientSetName,
+          selectedEditionYear,
+          totals
+        })
+      );
+      printWindow.document.close();
+
+      printWindow.setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        setActionSuccess(
+          "PDF آزمایشی در پنجره چاپ مرورگر آماده شد. برای ذخیره، گزینه Save as PDF را انتخاب کنید."
+        );
+        setIsBrowserPdfPreparing(false);
+      }, 350);
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "ساخت PDF آزمایشی در مرورگر ناموفق بود."
+      );
+      setIsBrowserPdfPreparing(false);
+    }
+  }
+
   return (
     <GlassCard className="p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1792,8 +2103,8 @@ function CurrentDocumentPanel({
       {document ? (
         <div className="mt-4 space-y-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <InfoBox label="عنوان سند" value={document.title} />
-            <InfoBox label="شماره سند" value={document.document_number ?? "—"} />
+            <InfoBox label="عنوان سند" value={cleanDisplayText(document.title, "صورت‌بهای بدون عنوان")} />
+            <InfoBox label="شماره سند" value={cleanDisplayText(document.document_number, "—")} />
             <InfoBox
               label="سال فهرست‌بها"
               value={selectedEditionYear ? String(selectedEditionYear) : "—"}
@@ -1872,12 +2183,29 @@ function CurrentDocumentPanel({
               )}
               دانلود PDF
             </Button>
+            <Button
+              disabled={isActionBusy}
+              onClick={handleBrowserPdfDownload}
+              type="button"
+              variant="secondary"
+            >
+              {isBrowserPdfPreparing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              دانلود PDF آزمایشی
+            </Button>
             {isLocked ? (
               <p className="text-xs leading-6 text-violet-100 light:text-violet-800">
                 سند قفل شده است؛ ویرایش، حذف و افزودن خط غیرفعال شده‌اند.
               </p>
             ) : null}
           </div>
+
+          <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-sm leading-7 text-amber-100 light:text-amber-800">
+            این PDF به‌صورت آزمایشی در مرورگر ساخته می‌شود و نسخه رسمی نهایی نیست.
+          </p>
 
           {actionSuccess ? (
             <p className="rounded-lg border border-emerald-300/25 bg-emerald-400/10 p-3 text-sm leading-7 text-emerald-100 light:text-emerald-800">
@@ -1953,7 +2281,7 @@ function CurrentDocumentPanel({
                       <span className="font-mono text-emerald-200 light:text-emerald-700">
                         {line.row_code_snapshot}
                       </span>
-                      <span>{line.description_snapshot}</span>
+                      <span>{cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}</span>
                       <span>
                         {editingLineId === line.id ? (
                           <input
@@ -1967,7 +2295,7 @@ function CurrentDocumentPanel({
                           line.quantity
                         )}
                       </span>
-                      <span>{line.unit_snapshot}</span>
+                      <span>{cleanDisplayText(line.unit_snapshot, "—")}</span>
                       <span>{formatMoneyAmount(line.unit_price_snapshot)}</span>
                       <span>{formatMoneyAmount(line.base_amount_snapshot)}</span>
                       <span>{formatMoneyAmount(line.coefficient_amount_snapshot)}</span>
@@ -2202,7 +2530,7 @@ export function CostReportWizardPage() {
         pendingCostReportAttachment: {
           document: createdDocument,
           project: createdProject,
-          title: createdDocument.title,
+          title: cleanDisplayText(createdDocument.title, "صورت‌بهای بدون عنوان"),
           description: `${getDocumentTotals(createdDocument).lineCount} ردیف - جمع کل ${formatMoneyAmount(
             getDocumentTotals(createdDocument).totalAmount
           )}`

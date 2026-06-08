@@ -1,4 +1,4 @@
-import { CircleHelp, LogOut, Sparkles } from "lucide-react";
+import { CircleHelp, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -61,10 +61,7 @@ export function TopHeader() {
           {token && user ? (
             <StatusBadge tone="violet">{user.display_name || user.phone_number}</StatusBadge>
           ) : null}
-          <StatusBadge tone="emerald">
-            <Sparkles className="h-3.5 w-3.5" />
-            آماده RTL
-          </StatusBadge>
+
           <Link
             className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-3 text-sm font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-white light:text-slate-800"
             to="/help"

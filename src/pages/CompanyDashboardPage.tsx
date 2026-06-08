@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import {
+  Ban,
   Building2,
   CirclePlus,
   Edit3,
@@ -28,7 +29,7 @@ import { EmptyState } from "../shared/components/EmptyState";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
 import { classNames } from "../shared/utils/classNames";
-import { formatMoneyAmount } from "../shared/utils/formatters";
+import { cleanDisplayText, formatMoneyAmount } from "../shared/utils/formatters";
 
 type LocalAttachment = {
   title: string;
@@ -61,13 +62,13 @@ type DashboardRouteState = {
 };
 
 const companyNavItems = [
-  { label: "پیام‌های شرکت", icon: MessageCircle, active: true },
-  { label: "اطلاعات شرکت", icon: Building2 },
-  { label: "اعضا", icon: Users },
-  { label: "صورت‌بهاها", icon: FileText, costReport: true },
-  { label: "ضرایب", icon: SlidersHorizontal },
-  { label: "تنظیمات", icon: Settings }
-];
+  { id: "messages", label: "پیام‌های شرکت", icon: MessageCircle, section: "messages" },
+  { id: "company", label: "اطلاعات شرکت", icon: Building2 },
+  { id: "members", label: "اعضا", icon: Users },
+  { id: "costReports", label: "صورت‌بهاها", icon: FileText, section: "costReports" },
+  { id: "coefficients", label: "ضرایب", icon: SlidersHorizontal },
+  { id: "settings", label: "تنظیمات", icon: Settings }
+] as const;
 
 const linkButtonClasses =
   "inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-4 text-sm font-bold text-slate-100 transition hover:border-violet-300/35 hover:bg-violet-400/15 light:border-slate-200 light:bg-white light:text-slate-800";
@@ -121,13 +122,54 @@ function getSnapshotString(snapshot: unknown, keys: string[]) {
 function getDocumentLineCount(document: FinancialDocument) {
   return (
     Number(getSnapshotString(document.totals_snapshot_json, ["line_count"])) ||
-    document.lines.length ||
+    (document.lines ?? []).length ||
     0
   );
 }
 
 function getDocumentTotalAmount(document: FinancialDocument) {
   return getSnapshotString(document.totals_snapshot_json, ["total_amount", "final_total_amount"]);
+}
+
+function getDocumentTitle(document: FinancialDocument) {
+  return cleanDisplayText(document.title || document.report_title, "صورت‌بهای بدون عنوان");
+}
+
+function getProjectName(project: Project | null | undefined) {
+  return cleanDisplayText(project?.name, "پروژه بدون عنوان");
+}
+
+function getDocumentStatusLabel(status: FinancialDocument["status"]) {
+  if (status === "draft") {
+    return "پیش‌نویس";
+  }
+
+  if (status === "calculated") {
+    return "محاسبه‌شده";
+  }
+
+  if (status === "locked") {
+    return "قفل‌شده";
+  }
+
+  return cleanDisplayText(status, "نامشخص");
+}
+
+function buildAttachment(
+  document: FinancialDocument,
+  project: Project | null | undefined,
+  companyId: number
+): LocalAttachment {
+  const lineCount = getDocumentLineCount(document);
+  const totalAmount = formatMoneyAmount(getDocumentTotalAmount(document));
+
+  return {
+    title: getDocumentTitle(document),
+    description: `${lineCount} ردیف - جمع کل ${totalAmount}`,
+    document,
+    project,
+    to: `/companies/${companyId}/cost-reports/new`
+  };
 }
 
 function SavedCostReportsPanel({
@@ -149,24 +191,22 @@ function SavedCostReportsPanel({
             <FileText className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-white light:text-slate-950">
-              ØµÙˆØ±Øªâ€ŒØ¨Ù‡Ø§Ù‡Ø§
-            </h2>
+            <h2 className="text-lg font-black text-white light:text-slate-950">صورت‌بهاها</h2>
             <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
-              Ø³Ù†Ø¯Ù‡Ø§ÛŒ Ø°Ø®ÛŒØ±Ù‡â€ŒØ´Ø¯Ù‡ Ø§Ø² Ø¨Ú©â€ŒØ§Ù†Ø¯
+              اسناد ذخیره‌شده روی سرور
             </p>
           </div>
         </div>
         <Link className={linkButtonClasses} to={`/companies/${companyId}/cost-reports/new`}>
           <CirclePlus className="h-4 w-4" />
-          ØµÙˆØ±Øªâ€ŒØ¨Ù‡Ø§ÛŒ Ø¬Ø¯ÛŒØ¯
+          صورت‌بهای جدید
         </Link>
       </div>
 
       {isLoading ? (
         <div className="flex min-h-64 items-center justify-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
           <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
-          Ø¯Ø± Ø­Ø§Ù„ Ø¯Ø±ÛŒØ§ÙØª ØµÙˆØ±Øªâ€ŒØ¨Ù‡Ø§Ù‡Ø§
+          در حال دریافت صورت‌بهاها
         </div>
       ) : null}
 
@@ -183,14 +223,14 @@ function SavedCostReportsPanel({
               <FileText className="h-7 w-7" />
             </div>
             <h3 className="mt-4 text-xl font-black text-white light:text-slate-950">
-              Ù‡Ù†ÙˆØ² ØµÙˆØ±Øªâ€ŒØ¨Ù‡Ø§ÛŒÛŒ Ø«Ø¨Øª Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª
+              هنوز صورت‌بهایی ذخیره نشده است
             </h3>
             <p className="mt-3 text-sm leading-7 text-slate-300 light:text-slate-600">
-              Ø§Ø¨ØªØ¯Ø§ ÛŒÚ© ØµÙˆØ±Øªâ€ŒØ¨Ù‡Ø§ Ø¨Ø³Ø§Ø²ÛŒØ¯Ø› Ø¨Ø¹Ø¯ Ø§Ø² Ø°Ø®ÛŒØ±Ù‡ØŒ Ø§ÛŒÙ†Ø¬Ø§ Ù…Ø§Ù†Ø¯Ú¯Ø§Ø± Ù†Ù…Ø§ÛŒØ´ Ø¯Ø§Ø¯Ù‡ Ù…ÛŒâ€ŒØ´ÙˆØ¯.
+              از مسیر پیام‌های شرکت یک صورت‌بها بسازید. بعد از ثبت، اینجا از بک‌اند خوانده می‌شود و برای ادامه کار قابل باز کردن است.
             </p>
             <Link className={classNames(linkButtonClasses, "mt-4")} to={`/companies/${companyId}/cost-reports/new`}>
               <CirclePlus className="h-4 w-4" />
-              Ø³Ø§Ø®Øª ØµÙˆØ±Øªâ€ŒØ¨Ù‡Ø§
+              ساخت صورت‌بها
             </Link>
           </div>
         </div>
@@ -206,25 +246,25 @@ function SavedCostReportsPanel({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="truncate text-base font-black text-white light:text-slate-950">
-                    {document.title}
+                    {getDocumentTitle(document)}
                   </h3>
                   <p className="mt-1 truncate text-xs text-slate-400 light:text-slate-500">
-                    {project.name}
+                    {getProjectName(project)}
                   </p>
                 </div>
                 <StatusBadge tone={document.status === "draft" ? "amber" : "emerald"}>
-                  {document.status === "draft" ? "Ù¾ÛŒØ´â€ŒÙ†ÙˆÛŒØ³" : document.status}
+                  {getDocumentStatusLabel(document.status)}
                 </StatusBadge>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                 <div className="rounded-lg border border-white/10 bg-slate-950/25 p-3 light:border-slate-200 light:bg-white">
-                  <span className="block text-slate-400 light:text-slate-500">Ø±Ø¯ÛŒÙâ€ŒÙ‡Ø§</span>
+                  <span className="block text-slate-400 light:text-slate-500">ردیف‌ها</span>
                   <span className="mt-1 block font-black text-slate-100 light:text-slate-900">
                     {getDocumentLineCount(document)}
                   </span>
                 </div>
                 <div className="rounded-lg border border-white/10 bg-slate-950/25 p-3 light:border-slate-200 light:bg-white">
-                  <span className="block text-slate-400 light:text-slate-500">Ø¬Ù…Ø¹ Ú©Ù„</span>
+                  <span className="block text-slate-400 light:text-slate-500">جمع کل</span>
                   <span className="mt-1 block font-black text-slate-100 light:text-slate-900">
                     {formatMoneyAmount(getDocumentTotalAmount(document))}
                   </span>
@@ -236,7 +276,7 @@ function SavedCostReportsPanel({
                 to={`/companies/${companyId}/cost-reports/new`}
               >
                 <Edit3 className="h-4 w-4" />
-                Ø¨Ø§Ø² Ú©Ø±Ø¯Ù† / ÙˆÛŒØ±Ø§ÛŒØ´
+                باز کردن / ویرایش
               </Link>
             </article>
           ))}
@@ -392,12 +432,11 @@ export function CompanyDashboardPage() {
 
     const attachment = routeState.pendingCostReportAttachment;
     setPendingAttachment({
-      title: attachment.title,
-      description: attachment.description,
-      document: attachment.document,
-      project: attachment.project ?? null,
-      to: `/companies/${company.id}/cost-reports/new`
+      ...buildAttachment(attachment.document, attachment.project, company.id),
+      description: cleanDisplayText(attachment.description, buildAttachment(attachment.document, attachment.project, company.id).description),
+      title: cleanDisplayText(attachment.title, buildAttachment(attachment.document, attachment.project, company.id).title)
     });
+    setActiveSection("messages");
     navigate(location.pathname, { replace: true, state: null });
   }, [company, location.pathname, navigate, routeState]);
 
@@ -483,6 +522,8 @@ export function CompanyDashboardPage() {
     );
   }
 
+  const companyName = cleanDisplayText(company.name, "شرکت بدون نام");
+
   return (
     <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-20 pt-5 sm:px-6 lg:px-8">
       <GlassCard className="relative overflow-hidden p-4 sm:p-6">
@@ -494,10 +535,10 @@ export function CompanyDashboardPage() {
             </StatusBadge>
             <div>
               <h1 className="truncate text-2xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
-                {company.name}
+                {companyName}
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-300 light:text-slate-600">
-                پیام‌ها صفحه پیش‌فرض شرکت است. برای ساخت صورت‌بها از دکمه + کنار کادر پیام استفاده کنید.
+                پیام‌های شرکت صفحه پیش‌فرض این فضاست. صورت‌بها را مثل یک پیوست از دکمه + کنار کادر پیام بسازید و بعد از ثبت، برای ارسال آماده کنید.
               </p>
             </div>
           </div>
@@ -517,35 +558,28 @@ export function CompanyDashboardPage() {
           <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
             {companyNavItems.map((item) => {
               const Icon = item.icon;
-              if ("costReport" in item && item.costReport) {
-                return (
-                  <button
-                    className={classNames(
-                      "flex h-11 min-w-max items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition lg:w-full",
-                      activeSection === "costReports"
-                        ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-                        : "border-transparent text-slate-400 hover:border-emerald-300/30 hover:bg-emerald-400/10 hover:text-emerald-100 light:text-slate-600 light:hover:text-emerald-800"
-                    )}
-                    key={item.label}
-                    onClick={() => setActiveSection("costReports")}
-                    type="button"
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              }
+              const section = "section" in item ? item.section : null;
+              const isActive = section === activeSection;
+              const isEnabled = Boolean(section);
 
               return (
                 <button
                   className={classNames(
                     "flex h-11 min-w-max items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition lg:w-full",
-                    item.active
+                    isActive
                       ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-                      : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/8 light:text-slate-500 light:hover:bg-slate-100"
+                      : isEnabled
+                        ? "border-transparent text-slate-400 hover:border-emerald-300/30 hover:bg-emerald-400/10 hover:text-emerald-100 light:text-slate-600 light:hover:text-emerald-800"
+                        : "cursor-not-allowed border-transparent text-slate-500 opacity-65 light:text-slate-400"
                   )}
-                  key={item.label}
-                  title={item.active ? item.label : "در نسخه‌های بعدی فعال می‌شود"}
+                  disabled={!isEnabled}
+                  key={item.id}
+                  onClick={() => {
+                    if (section) {
+                      setActiveSection(section);
+                    }
+                  }}
+                  title={isEnabled ? item.label : "در نسخه‌های بعدی فعال می‌شود"}
                   type="button"
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -566,184 +600,194 @@ export function CompanyDashboardPage() {
             />
           ) : (
             <>
-          <div className="border-b border-white/10 px-4 py-3 light:border-slate-200 sm:px-5 sm:py-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200">
-                  <MessageCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black text-white light:text-slate-950">پیام‌های شرکت</h2>
-                  <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
-                    گفت‌وگوی کاری و پیوست صورت‌بها
-                  </p>
-                </div>
-              </div>
-              <StatusBadge>مسیر پیام‌رسان آزمایشی</StatusBadge>
-            </div>
-            <p className="mt-3 text-xs leading-6 text-amber-100 light:text-amber-800">
-              پیام‌ها در این نسخه روی سرور ذخیره نمی‌شوند؛ برای ماندگاری بعد از refresh به زیرساخت پیام‌های شرکت نیاز است.
-            </p>
-          </div>
-
-          <div className="flex min-h-[492px] flex-col justify-between p-4 sm:p-5">
-            <div className="flex flex-1 flex-col gap-3 overflow-y-auto pb-5">
-              {messages.length === 0 ? (
-                <div className="flex flex-1 items-center justify-center">
-                  <div className="mx-auto max-w-md text-center">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200">
-                      <MessageCircle className="h-8 w-8" />
+              <div className="border-b border-white/10 px-4 py-3 light:border-slate-200 sm:px-5 sm:py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200">
+                      <MessageCircle className="h-5 w-5" />
                     </div>
-                    <h3 className="mt-5 text-xl font-black text-white light:text-slate-950">
-                      هنوز پیامی برای این شرکت وجود ندارد
-                    </h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-300 light:text-slate-600">
-                      برای شروع، یک پیام کوتاه بنویسید یا صورت‌بها را مثل یک پیوست از دکمه + اضافه کنید.
-                    </p>
+                    <div>
+                      <h2 className="text-lg font-black text-white light:text-slate-950">
+                        پیام‌های شرکت
+                      </h2>
+                      <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+                        گفت‌وگوی کاری و پیوست صورت‌بها
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link className={linkButtonClasses} to={`/companies/${company.id}/cost-reports/new`}>
+                      <Paperclip className="h-4 w-4" />
+                      افزودن صورت‌بها
+                    </Link>
+                    <StatusBadge>پیام‌ها محلی هستند</StatusBadge>
                   </div>
                 </div>
-              ) : (
-                messages.map((message) => (
-                  <div
-                    className="mr-auto max-w-[min(34rem,100%)] rounded-2xl rounded-bl-sm border border-emerald-300/20 bg-emerald-400/12 p-4 text-sm leading-7 text-slate-100 light:bg-emerald-50 light:text-slate-800"
-                    key={message.id}
-                  >
-                    {message.text ? <p>{message.text}</p> : null}
-                    {message.attachment ? (
-                      <div
-                        className="mt-3 flex items-start gap-3 rounded-lg border border-white/10 bg-slate-950/35 p-3 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-white"
-                      >
-                        <FileText className="mt-1 h-5 w-5 shrink-0 text-emerald-200 light:text-emerald-700" />
-                        <div className="min-w-0 flex-1">
-                          <Link
-                            className="block font-black transition hover:text-emerald-200 light:hover:text-emerald-700"
-                            state={getAttachmentEditState(message.attachment)}
-                            to={message.attachment.to}
-                          >
-                            {message.attachment.title}
-                          </Link>
-                          <span className="mt-1 block text-xs text-slate-400 light:text-slate-500">
-                            {message.attachment.description}
-                          </span>
-                          <Link
-                            className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/8 px-3 text-xs font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-slate-50 light:text-slate-800"
-                            state={getAttachmentEditState(message.attachment)}
-                            to={message.attachment.to}
-                          >
-                            ویرایش
-                          </Link>
+                <p className="mt-3 text-xs leading-6 text-amber-100 light:text-amber-800">
+                  پیام‌ها در این نسخه فقط در همین نشست مرورگر نگهداری می‌شوند. صورت‌بهاها روی بک‌اند ذخیره می‌شوند و از تب صورت‌بهاها دوباره قابل باز شدن هستند.
+                </p>
+              </div>
+
+              <div className="flex min-h-[492px] flex-col justify-between p-4 sm:p-5">
+                <div className="flex flex-1 flex-col gap-3 overflow-y-auto pb-5">
+                  {messages.length === 0 ? (
+                    <div className="flex flex-1 items-center justify-center">
+                      <div className="mx-auto max-w-md text-center">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200">
+                          <MessageCircle className="h-8 w-8" />
                         </div>
+                        <h3 className="mt-5 text-xl font-black text-white light:text-slate-950">
+                          هنوز پیامی برای این شرکت وجود ندارد
+                        </h3>
+                        <p className="mt-3 text-sm leading-7 text-slate-300 light:text-slate-600">
+                          یک پیام کوتاه بنویسید یا صورت‌بها را مثل یک پیوست از دکمه + اضافه کنید.
+                        </p>
+                        <Link className={classNames(linkButtonClasses, "mt-4")} to={`/companies/${company.id}/cost-reports/new`}>
+                          <Paperclip className="h-4 w-4" />
+                          افزودن صورت‌بها از فهرست‌بها
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    messages.map((message) => (
+                      <div
+                        className="mr-auto max-w-[min(34rem,100%)] rounded-2xl rounded-bl-sm border border-emerald-300/20 bg-emerald-400/12 p-4 text-sm leading-7 text-slate-100 light:bg-emerald-50 light:text-slate-800"
+                        key={message.id}
+                      >
+                        {message.text ? <p>{message.text}</p> : null}
+                        {message.attachment ? (
+                          <div className="mt-3 flex items-start gap-3 rounded-lg border border-white/10 bg-slate-950/35 p-3 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-white">
+                            <FileText className="mt-1 h-5 w-5 shrink-0 text-emerald-200 light:text-emerald-700" />
+                            <div className="min-w-0 flex-1">
+                              <Link
+                                className="block font-black transition hover:text-emerald-200 light:hover:text-emerald-700"
+                                state={getAttachmentEditState(message.attachment)}
+                                to={message.attachment.to}
+                              >
+                                {message.attachment.title}
+                              </Link>
+                              <span className="mt-1 block text-xs text-slate-400 light:text-slate-500">
+                                {message.attachment.description}
+                              </span>
+                              <Link
+                                className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/8 px-3 text-xs font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-slate-50 light:text-slate-800"
+                                state={getAttachmentEditState(message.attachment)}
+                                to={message.attachment.to}
+                              >
+                                ویرایش
+                              </Link>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <form
+                  className="relative rounded-lg border border-white/10 bg-slate-950/35 p-3 light:border-slate-200 light:bg-white"
+                  onSubmit={handleSendMessage}
+                >
+                  {pendingAttachment ? (
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100 light:text-emerald-800">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        <Link
+                          className="font-bold transition hover:text-white light:hover:text-emerald-950"
+                          state={getAttachmentEditState(pendingAttachment)}
+                          to={pendingAttachment.to}
+                        >
+                          {pendingAttachment.title}
+                        </Link>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Link
+                          className="text-xs font-bold text-emerald-100 transition hover:text-white light:text-emerald-800 light:hover:text-emerald-950"
+                          state={getAttachmentEditState(pendingAttachment)}
+                          to={pendingAttachment.to}
+                        >
+                          ویرایش
+                        </Link>
+                        <button
+                          className="text-xs font-bold text-slate-300 transition hover:text-white light:text-slate-600 light:hover:text-slate-950"
+                          onClick={() => setPendingAttachment(null)}
+                          type="button"
+                        >
+                          حذف پیوست
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-end gap-2" ref={addMenuRef}>
+                    {isAddMenuOpen ? (
+                      <div className="absolute bottom-[72px] right-3 z-20 w-[min(22rem,calc(100vw-5rem))] rounded-lg border border-white/10 bg-slate-950/95 p-2 shadow-2xl backdrop-blur-xl light:border-slate-200 light:bg-white/95">
+                        <Link
+                          className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-emerald-400/10 light:hover:bg-emerald-50"
+                          onClick={() => setIsAddMenuOpen(false)}
+                          to={`/companies/${company.id}/cost-reports/new`}
+                        >
+                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-400/15 text-emerald-200 light:text-emerald-700">
+                            <Paperclip className="h-4 w-4" />
+                          </span>
+                          <span>
+                            <span className="block text-sm font-black text-white light:text-slate-950">
+                              افزودن صورت‌بها از فهرست‌بها
+                            </span>
+                            <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
+                              وارد سازنده می‌شوید و بعد از ثبت، صورت‌بها مثل پیوست آماده ارسال برمی‌گردد.
+                            </span>
+                          </span>
+                        </Link>
+                        <button
+                          className="mt-1 flex w-full cursor-not-allowed items-start gap-3 rounded-lg px-3 py-3 text-right opacity-60"
+                          disabled
+                          type="button"
+                        >
+                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200 light:text-violet-700">
+                            <Ban className="h-4 w-4" />
+                          </span>
+                          <span>
+                            <span className="block text-sm font-black text-white light:text-slate-950">
+                              ارسال فایل آماده
+                            </span>
+                            <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
+                              به‌زودی فعال می‌شود.
+                            </span>
+                          </span>
+                        </button>
                       </div>
                     ) : null}
-                  </div>
-                ))
-              )}
-            </div>
 
-            <form
-              className="relative rounded-lg border border-white/10 bg-slate-950/35 p-3 light:border-slate-200 light:bg-white"
-              onSubmit={handleSendMessage}
-            >
-              {pendingAttachment ? (
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100 light:text-emerald-800">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <Link
-                      className="font-bold transition hover:text-white light:hover:text-emerald-950"
-                      state={getAttachmentEditState(pendingAttachment)}
-                      to={pendingAttachment.to}
-                    >
-                      {pendingAttachment.title}
-                    </Link>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Link
-                      className="text-xs font-bold text-emerald-100 transition hover:text-white light:text-emerald-800 light:hover:text-emerald-950"
-                      state={getAttachmentEditState(pendingAttachment)}
-                      to={pendingAttachment.to}
-                    >
-                      ویرایش
-                    </Link>
                     <button
-                      className="text-xs font-bold text-slate-300 transition hover:text-white light:text-slate-600 light:hover:text-slate-950"
-                      onClick={() => setPendingAttachment(null)}
+                      aria-expanded={isAddMenuOpen}
+                      aria-label="افزودن پیوست"
+                      className={classNames(
+                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 light:text-emerald-700",
+                        !hasDismissedOnboarding && "ring-4 ring-emerald-200/35"
+                      )}
+                      onClick={() => setIsAddMenuOpen((current) => !current)}
                       type="button"
                     >
-                      حذف پیوست
+                      <Plus className="h-4 w-4" />
+                    </button>
+                    <textarea
+                      className="min-h-11 flex-1 resize-none rounded-lg border border-white/10 bg-slate-900/60 px-4 py-3 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-slate-50 light:text-slate-950"
+                      onChange={(event) => setMessageText(event.target.value)}
+                      placeholder="پیام خود را بنویسید..."
+                      rows={1}
+                      value={messageText}
+                    />
+                    <button
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-45 light:border-slate-200 light:bg-white light:text-slate-800"
+                      disabled={!messageText.trim() && !pendingAttachment}
+                      type="submit"
+                    >
+                      <Send className="h-4 w-4" />
                     </button>
                   </div>
-                </div>
-              ) : null}
-
-              <div className="flex items-end gap-2" ref={addMenuRef}>
-                {isAddMenuOpen ? (
-                  <div className="absolute bottom-[72px] right-3 z-20 w-[min(22rem,calc(100vw-5rem))] rounded-lg border border-white/10 bg-slate-950/95 p-2 shadow-2xl backdrop-blur-xl light:border-slate-200 light:bg-white/95">
-                    <Link
-                      className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-emerald-400/10 light:hover:bg-emerald-50"
-                      onClick={() => setIsAddMenuOpen(false)}
-                      to={`/companies/${company.id}/cost-reports/new`}
-                    >
-                      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-400/15 text-emerald-200 light:text-emerald-700">
-                        <Paperclip className="h-4 w-4" />
-                      </span>
-                      <span>
-                        <span className="block text-sm font-black text-white light:text-slate-950">
-                          افزودن صورت‌بها از فهرست‌بها
-                        </span>
-                        <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
-                          ابتدا وارد سازنده می‌شوید؛ بعد از ثبت، صورت‌بها مثل پیوست آماده ارسال برمی‌گردد.
-                        </span>
-                      </span>
-                    </Link>
-                    <Link
-                      className="mt-1 flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-violet-400/10 light:hover:bg-violet-50"
-                      onClick={() => setIsAddMenuOpen(false)}
-                      to={`/companies/${company.id}/cost-reports/new`}
-                    >
-                      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200 light:text-violet-700">
-                        <FileText className="h-4 w-4" />
-                      </span>
-                      <span>
-                        <span className="block text-sm font-black text-white light:text-slate-950">
-                          شروع ساخت صورت‌بها
-                        </span>
-                        <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
-                          ورود به فهرست‌بها، محاسبه آیتم‌ها و ارسال ردیف‌ها.
-                        </span>
-                      </span>
-                    </Link>
-                  </div>
-                ) : null}
-
-                <button
-                  aria-expanded={isAddMenuOpen}
-                  aria-label="افزودن پیوست"
-                  className={classNames(
-                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 light:text-emerald-700",
-                    !hasDismissedOnboarding && "ring-4 ring-emerald-200/35"
-                  )}
-                  onClick={() => setIsAddMenuOpen((current) => !current)}
-                  type="button"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-                <textarea
-                  className="min-h-11 flex-1 resize-none rounded-lg border border-white/10 bg-slate-900/60 px-4 py-3 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-slate-50 light:text-slate-950"
-                  onChange={(event) => setMessageText(event.target.value)}
-                  placeholder="پیام خود را بنویسید..."
-                  rows={1}
-                  value={messageText}
-                />
-                <button
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-45 light:border-slate-200 light:bg-white light:text-slate-800"
-                  disabled={!messageText.trim() && !pendingAttachment}
-                  type="submit"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
+                </form>
               </div>
-            </form>
-          </div>
             </>
           )}
         </GlassCard>
