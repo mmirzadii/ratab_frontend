@@ -25,12 +25,12 @@ export function ContextHeader() {
           </p>
           {wizardCtx.isLastStep ? (
             <button
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-violet-300/30 bg-violet-400/15 px-3 text-xs font-black text-violet-100 transition hover:bg-violet-400/25 light:text-violet-800"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-violet-300/30 bg-violet-400/15 px-3 text-sm font-black text-violet-100 transition hover:bg-violet-400/25 light:text-violet-800"
               onClick={wizardCtx.onFinalize}
               type="button"
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              نهایی
+              <CheckCircle2 className="h-4 w-4" />
+              نهایی کردن
             </button>
           ) : (
             <button

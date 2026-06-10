@@ -113,6 +113,8 @@ function ItemDetailContent({
   const [lineSuccess, setLineSuccess] = useState<string | null>(null);
   const [confirmedFootnotes, setConfirmedFootnotes] = useState<Record<number, boolean>>({});
   const [showAddedRows, setShowAddedRows] = useState(false);
+  const [manualUnitPrice, setManualUnitPrice] = useState("");
+  const [manualUnitPriceError, setManualUnitPriceError] = useState<string | null>(null);
   const [calculatePricebookItem, calculateState] = useCalculatePricebookItemMutation();
   const [createFinancialDocumentLine, createLineState] = useCreateFinancialDocumentLineMutation();
   const [recalculateFinancialDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
@@ -134,9 +136,21 @@ function ItemDetailContent({
     setLineError(null);
     setLineSuccess(null);
     setCalculation(null);
+    setManualUnitPriceError(null);
 
     if (requiresManualPrice) {
-      setCalculationError("محاسبه قیمت ستاره‌دار در این نسخه پشتیبانی نمی‌شود.");
+      const normalizedManualPrice = normalizeQuantityValue(manualUnitPrice);
+      if (!normalizedManualPrice) {
+        setManualUnitPriceError("قیمت واحد پیشنهادی الزامی است.");
+        return;
+      }
+      if (!isPositiveDecimal(normalizedManualPrice)) {
+        setManualUnitPriceError("قیمت باید عدد مثبت معتبر باشد.");
+        return;
+      }
+      setCalculationError(
+        "قیمت واحد پیشنهادی دریافت شد. در نسخه v0.0 بک‌اند، ارسال قیمت دستی به سرور پشتیبانی نمی‌شود. این قابلیت در نسخه‌های بعدی پیاده‌سازی می‌شود."
+      );
       return;
     }
 
@@ -171,6 +185,7 @@ function ItemDetailContent({
     setCalculationError(null);
     setLineError(null);
     setLineSuccess(null);
+    setManualUnitPriceError(null);
   }
 
   async function handleAddLine() {
@@ -183,7 +198,9 @@ function ItemDetailContent({
     }
 
     if (requiresManualPrice || calculation.requires_manual_unit_price) {
-      setLineError("آیتم‌های دارای قیمت ستاره‌دار در این نسخه به صورت‌بها اضافه نمی‌شوند.");
+      setLineError(
+        "آیتم‌های ستاره‌دار در نسخه v0.0 به صورت‌بها اضافه نمی‌شوند. بک‌اند این نسخه فیلد قیمت دستی را نمی‌پذیرد."
+      );
       return;
     }
 
@@ -214,15 +231,17 @@ function ItemDetailContent({
     }
   }
 
-  const addLineDisabledReason = !calculation
-    ? "بعد از محاسبه موفق می‌توانید آیتم را به صورت‌بها اضافه کنید."
-    : requiresManualPrice || calculation.requires_manual_unit_price
-      ? "آیتم‌های دارای قیمت ستاره‌دار در این نسخه به صورت‌بها اضافه نمی‌شوند."
-      : !document
-        ? "سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید."
-        : documentLocked
-          ? "این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد."
-          : null;
+  const addLineDisabledReason = requiresManualPrice
+    ? "آیتم‌های ستاره‌دار در نسخه v0.0 به صورت‌بها اضافه نمی‌شوند (بک‌اند فیلد قیمت دستی را در این نسخه نمی‌پذیرد)."
+    : !calculation
+      ? "بعد از محاسبه موفق می‌توانید آیتم را به صورت‌بها اضافه کنید."
+      : calculation.requires_manual_unit_price
+        ? "آیتم‌های ستاره‌دار در نسخه v0.0 به صورت‌بها اضافه نمی‌شوند (بک‌اند فیلد قیمت دستی را در این نسخه نمی‌پذیرد)."
+        : !document
+          ? "سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید."
+          : documentLocked
+            ? "این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد."
+            : null;
 
   return (
     <div className="space-y-5">
@@ -232,7 +251,10 @@ function ItemDetailContent({
         calculationError={calculationError}
         isCalculating={calculateState.isLoading}
         manualRows={manualRows}
+        manualUnitPrice={manualUnitPrice}
+        manualUnitPriceError={manualUnitPriceError}
         onCalculate={handleCalculate}
+        onManualUnitPriceChange={setManualUnitPrice}
         quantity={quantity}
         quantityError={quantityError}
         requiresManualPrice={requiresManualPrice}

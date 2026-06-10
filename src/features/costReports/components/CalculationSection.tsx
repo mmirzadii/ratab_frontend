@@ -21,9 +21,12 @@ export function CalculationSection({
   lineError,
   lineSuccess,
   manualRows,
+  manualUnitPrice,
+  manualUnitPriceError,
   onAddLine,
   onCalculate,
   onEditCalculation,
+  onManualUnitPriceChange,
   quantity,
   quantityError,
   requiresManualPrice,
@@ -39,9 +42,12 @@ export function CalculationSection({
   lineError: string | null;
   lineSuccess: string | null;
   manualRows: PricebookItemDetail["rows"];
+  manualUnitPrice: string;
+  manualUnitPriceError: string | null;
   onAddLine: () => void;
   onCalculate: (event: FormEvent<HTMLFormElement>) => void;
   onEditCalculation: () => void;
+  onManualUnitPriceChange: (value: string) => void;
   quantity: string;
   quantityError: string | null;
   requiresManualPrice: boolean;
@@ -71,8 +77,9 @@ export function CalculationSection({
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-1 h-4 w-4 shrink-0" />
             <p>
-              این آیتم قیمت رسمی کامل ندارد. متریل قیمت خالی را صفر فرض نمی‌کند و ثبت یا محاسبه قیمت
-              ستاره‌دار در این نسخه پشتیبانی نمی‌شود.
+              این آیتم قیمت رسمی کامل ندارد. متریل قیمت خالی را صفر فرض نمی‌کند. قیمت
+              واحد پیشنهادی خود را وارد کنید. در نسخه v0.0 این قیمت به سرور ارسال نمی‌شود
+              و محاسبه ستاره‌دار در نسخه‌های بعدی فعال می‌شود.
             </p>
           </div>
           {manualRows.length > 0 ? (
@@ -88,12 +95,21 @@ export function CalculationSection({
             </div>
           ) : null}
           <label className="block space-y-2">
-            <span className="text-xs font-bold">قیمت ستاره‌دار</span>
+            <span className="text-xs font-bold">قیمت واحد پیشنهادی</span>
             <input
-              className={classNames(inputClasses, "cursor-not-allowed opacity-60")}
-              disabled
-              placeholder="در فاز آینده از کاربر دریافت می‌شود"
+              className={inputClasses}
+              dir="ltr"
+              disabled={isCalculationLocked}
+              inputMode="decimal"
+              onChange={(event) => onManualUnitPriceChange(event.target.value)}
+              placeholder="مثلاً 150000"
+              value={manualUnitPrice}
             />
+            {manualUnitPriceError ? (
+              <p className="text-xs font-bold text-rose-300 light:text-rose-700">
+                {manualUnitPriceError}
+              </p>
+            ) : null}
           </label>
         </div>
       ) : null}
@@ -113,7 +129,7 @@ export function CalculationSection({
         </label>
         <Button
           className="self-end"
-          disabled={requiresManualPrice || isCalculating || isCalculationLocked}
+          disabled={isCalculating || isCalculationLocked}
           type="submit"
         >
           {isCalculating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calculator className="h-4 w-4" />}

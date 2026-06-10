@@ -58,6 +58,34 @@ npm run lint
 - `npm run build`: passed. All 1664 modules transformed; existing non-blocking 500 kB chunk-size warning unchanged.
 - `npm run lint`: passed after fixing six unused-import errors introduced during extraction (unused `Calculator`, `StatusBadge`, `classNames` in `ItemDetailModal.tsx`; unused `chapters` prop in `PricebookBrowserSection.tsx`; unused `SlidersHorizontal` in `ProjectCoefficientPanel.tsx`; unused `Loader2` in `CostReportWizardPage.tsx`).
 
+## Starred/Manual-Price Support Pass — Commands Run
+
+```
+npm run build
+```
+
+```
+npm run lint
+```
+
+## Starred/Manual-Price Support Pass — Results
+
+- `npm run build`: passed. 1670 modules transformed; existing non-blocking 500 kB chunk-size warning unchanged.
+- `npm run lint`: passed with no errors.
+
+## Starred/Manual-Price Support Pass — Changes
+
+- `src/features/costReports/components/CalculationSection.tsx`: enabled `قیمت واحد پیشنهادی` input (was disabled), wired up `manualUnitPrice`/`onManualUnitPriceChange`/`manualUnitPriceError` props, removed `requiresManualPrice` from calculate button disabled condition, updated amber-box limitation text to reference v0.0 explicitly.
+- `src/features/costReports/components/ItemDetailModal.tsx`: added `manualUnitPrice` and `manualUnitPriceError` state, validate manual price (required + positive decimal) before calculate, show clear v0.0 limitation message when validation passes (price cannot be sent to backend), updated `addLineDisabledReason` and `handleAddLine` guard messages for starred items.
+
+## Starred/Manual-Price — Limitation Note (v0.0)
+
+Backend v0.0 `PricebookCalculateInputRequest` and `FinancialDocumentLineCreateRequest` do not include a `manual_unit_price` field. Therefore:
+- Frontend validates and records the proposed price but does **not** send it to the backend.
+- Calculation and line-add for starred items remain blocked with a clear Persian message.
+- `ManualPriceValidationError` / `ManualPriceLineValidationError` shapes from the backend are handled via `getManualPriceValidationMessage`.
+- Missing prices are never treated as zero.
+
 ## Notes
 
 - No backend files or endpoints were changed.

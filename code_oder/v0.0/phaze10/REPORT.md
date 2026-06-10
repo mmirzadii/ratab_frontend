@@ -69,6 +69,15 @@ Not applicable.
 - `npm run build` still emits the existing non-blocking Vite chunk-size warning.
 - No `npm test` script exists in `package.json`.
 
+### Starred/Manual-Price Limitation (v0.0)
+
+- `PricebookCalculateInputRequest` (v0.0) has only `quantity` and `coefficient_set_id`; **no `manual_unit_price` field**.
+- `FinancialDocumentLineCreateRequest` (v0.0) has only `pricebook_item_id` and `quantity`; **no `manual_unit_price` field**.
+- Frontend detects starred items via `hasManualUnitPrice(item)` (checks `row.requires_manual_unit_price` and null/blank `unit_price`).
+- The UI shows a `قیمت واحد پیشنهادی` input where users can record a proposed price; this is validated (required, positive decimal) but **not sent to the backend** because the v0.0 API contract does not accept it.
+- Attempting to calculate or add a starred item shows a clear Persian message explaining the v0.0 limitation; the backend error shape `ManualPriceValidationError` / `ManualPriceLineValidationError` is handled by `getManualPriceValidationMessage`.
+- Missing prices are never treated as zero anywhere in the frontend.
+
 ## Risks and Assumptions
 
 - Assumed the existing backend-tested create project -> create document -> calculate item -> add line -> recalculate flow remains the source of truth.

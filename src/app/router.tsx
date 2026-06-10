@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { RequireAuth } from "../features/auth/RequireAuth";
 import { HealthStatusPage } from "../features/health/HealthStatusPage";
+import { CompanyCreatePage } from "../pages/CompanyCreatePage";
 import { CompanyDashboardPage } from "../pages/CompanyDashboardPage";
 import { CompanyListPage } from "../pages/CompanyListPage";
 import { CostReportWizardPage } from "../pages/CostReportWizardPage";
@@ -44,6 +45,10 @@ export const router = createBrowserRouter([
       {
         path: "companies",
         element: <CompanyListPage />
+      },
+      {
+        path: "companies/new",
+        element: <CompanyCreatePage />
       },
       {
         path: "companies/:companyId",
