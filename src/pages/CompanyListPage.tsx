@@ -61,6 +61,7 @@ export function CompanyListPage() {
                 shouldHighlightCreateCompany &&
                   "ring-2 ring-emerald-200/80 ring-offset-2 ring-offset-slate-950"
               )}
+              data-tour="add-company-btn"
               onClick={goToCreate}
             >
               <Plus className="h-4 w-4" />
@@ -120,7 +121,7 @@ export function CompanyListPage() {
             {data?.next ? <StatusBadge tone="amber">صفحه‌های بعدی در نسخه‌های آینده تکمیل می‌شود</StatusBadge> : null}
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-tour="company-list">
             {companies.map((company) => (
               <GlassCard className="p-4" interactive key={company.id}>
                 <Link className="block focus:outline-none" to={`/companies/${company.id}`}>

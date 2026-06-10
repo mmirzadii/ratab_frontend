@@ -1,4 +1,3 @@
-import { Button } from "../../../shared/components/Button";
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { Field } from "../../../shared/components/Field";
 import { FolderKanban } from "lucide-react";
@@ -7,12 +6,10 @@ import type { WizardFormState } from "../types";
 
 export function ProjectInfoSection({
   form,
-  onFieldChange,
-  onNext
+  onFieldChange
 }: {
   form: WizardFormState;
   onFieldChange: (field: keyof WizardFormState, value: string) => void;
-  onNext: () => void;
 }) {
   return (
     <GlassCard className="p-5 sm:p-6">
@@ -120,11 +117,6 @@ export function ProjectInfoSection({
         </Field>
       </div>
 
-      <div className="mt-5 flex justify-end">
-        <Button onClick={onNext} type="button">
-          بعدی: اطلاعات صورت‌بها
-        </Button>
-      </div>
     </GlassCard>
   );
 }

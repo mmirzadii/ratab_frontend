@@ -6,7 +6,8 @@ import {
   Loader2,
   Pencil,
   Save,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 
 import bNazaninFontUrl from "../../../assets/fonts/B-NAZANIN.TTF?url";
@@ -21,7 +22,7 @@ import { Button } from "../../../shared/components/Button";
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { InfoBox } from "../../../shared/components/InfoBox";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
-import { classNames, linkButtonClasses } from "../../../shared/utils/classNames";
+import { classNames } from "../../../shared/utils/classNames";
 import { cleanDisplayText, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { getApiErrorMessage } from "../../../shared/utils/apiError";
 import { inputClasses } from "../constants";
@@ -231,7 +232,7 @@ function buildOfficialFormHtml({
         border-bottom: 1px solid #374151;
         padding-bottom: 4px;
       }
-      .totals-table { max-width: 380px; margin-right: auto; }
+      .totals-table { max-width: 460px; min-width: 300px; margin: 24px auto 0; }
       .signatures {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -334,13 +335,15 @@ function buildOfficialFormHtml({
         : ""
     }
 
-    <table class="totals-table">
-      <tbody>
-        <tr><th>جمع بهای فهرست</th><td>${formatMoneyAmount(totals.pricebookAmount)}</td></tr>
-        <tr><th>جمع ضرایب</th><td>${formatMoneyAmount(totals.coefficientAmount)}</td></tr>
-        <tr class="subtotal"><th>جمع کل</th><td>${formatMoneyAmount(totals.totalAmount)}</td></tr>
-      </tbody>
-    </table>
+    <div style="display:flex;justify-content:center;margin-top:24px;">
+      <table class="totals-table">
+        <tbody>
+          <tr><th>جمع بهای فهرست</th><td>${formatMoneyAmount(totals.pricebookAmount)}</td></tr>
+          <tr><th>جمع ضرایب</th><td>${formatMoneyAmount(totals.coefficientAmount)}</td></tr>
+          <tr class="subtotal"><th>جمع کل</th><td>${formatMoneyAmount(totals.totalAmount)}</td></tr>
+        </tbody>
+      </table>
+    </div>
 
     <div class="signatures">
       <div class="signature">
@@ -569,6 +572,7 @@ export function CurrentDocumentPanel({
 
           <div className="flex flex-wrap items-center gap-3">
             <Button
+              data-tour="preview-btn"
               disabled={isActionBusy}
               onClick={handleTogglePreview}
               type="button"
@@ -627,7 +631,7 @@ export function CurrentDocumentPanel({
           <div className="overflow-hidden rounded-lg border border-white/10 light:border-slate-200">
             <div className="overflow-x-auto">
               <div className="min-w-[1120px]">
-                <div className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px] gap-3 bg-white/7 px-4 py-3 text-xs font-bold text-slate-300 light:bg-slate-50 light:text-slate-600">
+                <div className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 bg-white/7 px-4 py-3 text-xs font-bold text-slate-300 light:bg-slate-50 light:text-slate-600">
                   <span>ردیف</span>
                   <span>کد</span>
                   <span>شرح</span>
@@ -637,23 +641,27 @@ export function CurrentDocumentPanel({
                   <span>مبلغ پایه</span>
                   <span>مبلغ ضرایب</span>
                   <span>مبلغ کل</span>
+                  <span></span>
                 </div>
                 {lines.length === 0 ? (
                   <div className="px-4 py-5 text-center text-sm text-slate-400 light:text-slate-500">
                     هنوز خطی به صورت‌بها اضافه نشده است.
                   </div>
                 ) : null}
-                <div className="max-h-[36vh] overflow-y-auto [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]">
+                <div className="max-h-[36vh] overflow-y-auto [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]" data-tour="finalize-rows">
                   {lines.map((line: FinancialDocumentLine) => (
                     <div
-                      className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px] gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-200 light:border-slate-200 light:text-slate-700"
+                      className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-200 light:border-slate-200 light:text-slate-700"
                       key={line.id}
                     >
                       <span>{line.line_no}</span>
                       <span className="font-mono text-emerald-200 light:text-emerald-700">
                         {line.row_code_snapshot}
                       </span>
-                      <span>
+                      <span
+                        className="truncate"
+                        title={cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
+                      >
                         {cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
                       </span>
                       <span>
@@ -676,35 +684,38 @@ export function CurrentDocumentPanel({
                       <span className="font-bold text-slate-100 light:text-slate-900">
                         {formatMoneyAmount(line.total_amount_snapshot)}
                       </span>
-                      <div className="col-span-9 flex flex-wrap gap-2">
+                      <div className="flex items-center gap-1">
                         {editingLineId === line.id ? (
                           <>
                             <button
-                              className={linkButtonClasses}
+                              aria-label="ذخیره مقدار"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-45 light:text-emerald-700"
                               disabled={isActionBusy || isLocked}
                               onClick={() => void handleSaveLine(line)}
+                              title="ذخیره"
                               type="button"
                             >
-                              <Save className="h-4 w-4" />
-                              ذخیره مقدار
+                              <Save className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              className={linkButtonClasses}
+                              aria-label="انصراف"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-slate-300 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-45 light:border-slate-200 light:bg-white light:text-slate-600"
                               disabled={isActionBusy}
                               onClick={() => {
                                 setEditingLineId(null);
                                 setEditingQuantity("");
                               }}
+                              title="انصراف"
                               type="button"
                             >
-                              انصراف
+                              <X className="h-3.5 w-3.5" />
                             </button>
                           </>
                         ) : (
                           <>
                             <button
                               aria-label="ویرایش مقدار"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/8 text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-45 light:border-slate-200 light:bg-white light:text-slate-800"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-emerald-500/10 hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
                               disabled={isActionBusy || isLocked}
                               onClick={() => startEditingLine(line)}
                               title="ویرایش مقدار"
@@ -714,7 +725,7 @@ export function CurrentDocumentPanel({
                             </button>
                             <button
                               aria-label="حذف خط"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-300/20 bg-rose-500/10 text-rose-100 transition hover:border-rose-300/40 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-45 light:text-rose-700"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-45"
                               disabled={isActionBusy || isLocked}
                               onClick={() => void handleDeleteLine(line)}
                               title="حذف خط"

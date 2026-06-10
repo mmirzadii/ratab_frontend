@@ -76,7 +76,7 @@ export function PricebookBrowserSection({
           ))}
         </div>
 
-        <div className="mt-4 max-h-[48vh] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin] md:max-h-[58vh]">
+        <div className="mt-4 max-h-[48vh] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin] md:max-h-[58vh]" data-tour="chapter-list">
           {isLoadingChapters ? (
             <div className="flex items-center gap-2 text-sm text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -200,7 +200,7 @@ export function PricebookBrowserSection({
                 ) : null}
               </div>
             </div>
-            <div className="max-h-[50vh] divide-y divide-white/10 overflow-y-auto [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin] md:max-h-[62vh] light:divide-slate-200">
+            <div className="max-h-[50vh] min-w-0 overflow-x-hidden divide-y divide-white/10 overflow-y-auto [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin] md:max-h-[62vh] light:divide-slate-200">
               {itemsError ? (
                 <div className="p-6 text-center text-sm leading-7 text-rose-100 light:text-rose-700">
                   دریافت آیتم‌ها ناموفق بود.
@@ -211,25 +211,54 @@ export function PricebookBrowserSection({
                   آیتمی برای این انتخاب پیدا نشد.
                 </div>
               ) : null}
-              {items.map((item: PricebookItemList) => (
+              {items.map((item: PricebookItemList, index) => (
                 <button
-                  className="grid w-full gap-3 p-3 text-right transition hover:bg-white/7 light:hover:bg-slate-50 md:grid-cols-[120px_1fr_90px_120px]"
+                  className="w-full min-w-0 py-3.5 px-3 text-right transition hover:bg-white/7 light:hover:bg-slate-50"
+                  data-tour={index === 0 ? "pricebook-item" : undefined}
                   key={item.id}
                   onClick={() => onItemSelect(item.id)}
                   type="button"
                 >
-                  <span className="font-mono text-sm text-emerald-200 light:text-emerald-700">
-                    {item.item_key}
-                  </span>
-                  <span className="overflow-hidden text-sm font-bold text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] light:text-slate-900">
-                    {item.short_name_fa}
-                  </span>
-                  <span className="text-sm text-slate-300 light:text-slate-600">
-                    {item.unit}
-                  </span>
-                  <span className="text-sm text-slate-300 light:text-slate-600">
-                    {formatMoneyAmount(item.unit_price)}
-                  </span>
+                  {/* Mobile: two-side card */}
+                  <div className="flex items-center justify-between gap-2 md:hidden">
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="overflow-hidden text-sm font-bold text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] light:text-slate-900"
+                        title={item.short_name_fa}
+                      >
+                        {item.short_name_fa}
+                      </p>
+                      <p className="mt-1 font-mono text-xs text-emerald-200 light:text-emerald-700">
+                        {item.item_key}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-left">
+                      <p className="text-sm font-bold text-slate-300 light:text-slate-600">
+                        {formatMoneyAmount(item.unit_price)}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+                        {item.unit}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Desktop: four-column grid */}
+                  <div className="hidden gap-3 md:grid md:grid-cols-[120px_1fr_90px_120px]">
+                    <span className="font-mono text-sm text-emerald-200 light:text-emerald-700">
+                      {item.item_key}
+                    </span>
+                    <span
+                      className="overflow-hidden text-sm font-bold text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] light:text-slate-900"
+                      title={item.short_name_fa}
+                    >
+                      {item.short_name_fa}
+                    </span>
+                    <span className="text-sm text-slate-300 light:text-slate-600">
+                      {item.unit}
+                    </span>
+                    <span className="text-sm text-slate-300 light:text-slate-600">
+                      {formatMoneyAmount(item.unit_price)}
+                    </span>
+                  </div>
                 </button>
               ))}
             </div>

@@ -1,8 +1,10 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
+import { useAppDispatch } from "../app/hooks";
 import { useAppShell } from "../app/appShellContext";
+import { addToast } from "../features/ui/uiSlice";
 import { useRetrieveCompanyQuery } from "../features/companies/companyApi";
 import { useListProjectCoefficientSetsQuery } from "../features/coefficients/coefficientApi";
 import { type FinancialDocument } from "../features/financialDocuments/financialDocumentApi";
@@ -21,6 +23,7 @@ import {
 } from "../features/pricebooks/pricebookApi";
 import { type Project, useCreateCompanyProjectMutation } from "../features/projects/projectApi";
 
+import { BuilderSectionNav } from "../features/costReports/components/BuilderSectionNav";
 import { CurrentDocumentPanel } from "../features/costReports/components/CurrentDocumentPanel";
 import { DocumentInfoSection } from "../features/costReports/components/DocumentInfoSection";
 import { ItemDetailModal } from "../features/costReports/components/ItemDetailModal";
@@ -28,6 +31,7 @@ import { PricebookBrowserSection } from "../features/costReports/components/Pric
 import { ProjectCoefficientPanel } from "../features/costReports/components/ProjectCoefficientPanel";
 import { ProjectInfoSection } from "../features/costReports/components/ProjectInfoSection";
 
+import { Button } from "../shared/components/Button";
 import { EmptyState } from "../shared/components/EmptyState";
 import { getApiErrorMessage } from "../shared/utils/apiError";
 import { getListResults } from "../shared/utils/listResults";
@@ -88,7 +92,8 @@ export function CostReportWizardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [selectedCoefficientSetId, setSelectedCoefficientSetId] = useState<number | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const dispatch = useAppDispatch();
 
   const { data: company } = useRetrieveCompanyQuery(parsedCompanyId, {
     skip: !hasValidCompanyId
@@ -192,18 +197,10 @@ export function CostReportWizardPage() {
     finalize: false
   };
 
-  useEffect(() => {
-    if (!toastMessage) return;
-    const timeout = window.setTimeout(() => setToastMessage(null), 3500);
-    return () => window.clearTimeout(timeout);
-  }, [toastMessage]);
+  const [createProject, createProjectState] = useCreateCompanyProjectMutation();
+  const [createDocument, createDocumentState] = useCreateProjectFinancialDocumentMutation();
+  const isSubmitting = createProjectState.isLoading || createDocumentState.isLoading;
 
-  const canGoNext: boolean = (() => {
-    if (activeSection === "project") return form.project_name.trim().length > 0;
-    if (activeSection === "document") return Boolean(createdDocument);
-    if (activeSection === "finalize") return false;
-    return isBuilderUnlocked;
-  })();
   const isLastStep = activeSection === "finalize";
 
   const builderOrder: BuilderSection[] = [
@@ -214,9 +211,29 @@ export function CostReportWizardPage() {
     "finalize"
   ];
 
-  function getNextSection(current: BuilderSection): BuilderSection | null {
+  function getPrevSection(current: BuilderSection): BuilderSection | null {
     const idx = builderOrder.indexOf(current);
-    return idx >= 0 && idx < builderOrder.length - 1 ? builderOrder[idx + 1] : null;
+    return idx > 0 ? builderOrder[idx - 1] : null;
+  }
+
+  function handleWizardBack() {
+    const prev = getPrevSection(activeSection);
+    if (prev) {
+      handleBuilderSectionSelect(prev);
+    } else if (createdDocument) {
+      navigate(`/companies/${parsedCompanyId}`, {
+        state: {
+          pendingCostReportAttachment: {
+            document: createdDocument,
+            project: createdProject,
+            title: cleanDisplayText(createdDocument.title || createdDocument.report_title, "صورت‌بها در حال ویرایش"),
+            description: "در حال ویرایش"
+          }
+        }
+      });
+    } else {
+      navigate(`/companies/${parsedCompanyId}`);
+    }
   }
 
   const { setSecondaryNav, setSecondaryNavVariant, setCompanyCtx, setWizardCtx } = useAppShell();
@@ -252,14 +269,9 @@ export function CostReportWizardPage() {
       title: "افزودن صورت‌بها",
       companyName: cleanDisplayText(company?.name, "شرکت"),
       tokenBalanceLabel: "—",
-      canGoNext,
       isLastStep,
-      onNext: () => {
-        const next = getNextSection(activeSection);
-        if (next) handleBuilderSectionSelect(next);
-      },
-      onFinalize: handleFinalizeDraft,
-      onExit: () => navigate(`/companies/${parsedCompanyId}`)
+      onBack: handleWizardBack,
+      onFinalize: handleFinalizeDraft
     });
 
     return () => {
@@ -274,10 +286,9 @@ export function CostReportWizardPage() {
     activeSection,
     isBuilderUnlocked,
     createdDocument,
+    createdProject,
     selectedCoefficientSet,
-    canGoNext,
     isLastStep,
-    form.project_name,
     parsedCompanyId,
     setSecondaryNav,
     setSecondaryNavVariant,
@@ -285,9 +296,6 @@ export function CostReportWizardPage() {
     setWizardCtx
   ]);
 
-  const [createProject, createProjectState] = useCreateCompanyProjectMutation();
-  const [createDocument, createDocumentState] = useCreateProjectFinancialDocumentMutation();
-  const isSubmitting = createProjectState.isLoading || createDocumentState.isLoading;
   const deprecatedConfiguredPriceSetId = getDeprecatedConfiguredPriceSetId();
 
   function updateField(field: keyof WizardFormState, value: string) {
@@ -321,7 +329,7 @@ export function CostReportWizardPage() {
 
   function handleFinalizeDraft() {
     if (!createdDocument) {
-      setToastMessage("ابتدا یک ردیف به صورت‌بها اضافه کنید.");
+      dispatch(addToast({ message: "ابتدا یک ردیف به صورت‌بها اضافه کنید.", type: "info" }));
       return;
     }
 
@@ -471,7 +479,17 @@ export function CostReportWizardPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 pb-10 pt-4 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 pb-10 pt-3 sm:px-6 sm:pt-5 lg:px-8">
+      {/* Mobile-only step nav with prev/next buttons (desktop handled by SecondaryNav + ContextHeader) */}
+      <div className="md:hidden" dir="rtl">
+        <BuilderSectionNav
+          activeSection={activeSection}
+          completedSections={completedSections}
+          isUnlocked={isBuilderUnlocked}
+          onSelect={handleBuilderSectionSelect}
+        />
+      </div>
+
       <div className="min-w-0 space-y-5" dir="rtl">
         {step === "setup" ? (
           <form
@@ -486,11 +504,18 @@ export function CostReportWizardPage() {
             }}
           >
             {activeSection === "project" ? (
-              <ProjectInfoSection
-                form={form}
-                onFieldChange={updateField}
-                onNext={handleProjectInfoNext}
-              />
+              <>
+                <ProjectInfoSection
+                  form={form}
+                  onFieldChange={updateField}
+                />
+                <div className="flex justify-start">
+                  <Button disabled={!form.project_name.trim()} type="submit">
+                    ادامه: سند صورت‌بها
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
             ) : null}
 
             {activeSection === "document" ? (
@@ -503,7 +528,6 @@ export function CostReportWizardPage() {
                 isDevPriceSetConfirmed={isDevPriceSetConfirmed}
                 isLoadingEditions={isLoadingEditions}
                 isLoadingPricebooks={isLoadingPricebooks}
-                isSubmitting={isSubmitting}
                 onAdvancedDevOpenChange={setIsAdvancedDevOpen}
                 onDevPriceSetConfirmedChange={setIsDevPriceSetConfirmed}
                 onEditionChange={handleEditionChange}
@@ -515,6 +539,19 @@ export function CostReportWizardPage() {
                 selectedEdition={selectedEdition}
                 selectedPricebook={selectedPricebook}
               />
+            ) : null}
+
+            {activeSection === "document" ? (
+              <div className="flex justify-start">
+                <Button disabled={isSubmitting || !form.document_title.trim() || !selectedEdition} type="submit">
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowLeft className="h-4 w-4" />
+                  )}
+                  ثبت و ادامه به فهرست‌بها
+                </Button>
+              </div>
             ) : null}
           </form>
         ) : (
@@ -582,15 +619,11 @@ export function CostReportWizardPage() {
           onSelectedCoefficientSetIdChange={setSelectedCoefficientSetId}
           onClose={() => setSelectedItemId(null)}
           onDocumentUpdated={setCreatedDocument}
-          onToast={setToastMessage}
+          onToast={(msg, type = "info") =>
+            dispatch(addToast({ message: msg, type }))
+          }
           selectedCoefficientSetId={selectedCoefficientSetId}
         />
-      ) : null}
-
-      {toastMessage ? (
-        <div className="fixed left-4 top-4 z-[60] max-w-sm rounded-lg border border-emerald-300/25 bg-slate-950/92 px-4 py-3 text-sm font-bold text-emerald-100 shadow-2xl backdrop-blur-xl light:bg-white light:text-emerald-800">
-          {toastMessage}
-        </div>
       ) : null}
     </div>
   );

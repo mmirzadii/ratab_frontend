@@ -17,7 +17,7 @@ export function BuilderSectionNav({
   onSelect: (section: BuilderSection) => void;
 }) {
   return (
-    <GlassCard className="sticky top-20 h-fit p-3" dir="rtl">
+    <GlassCard className="p-3" dir="rtl">
       <div className="mb-3 hidden px-2 lg:block">
         <p className="text-xs font-bold text-slate-400 light:text-slate-500">مراحل ساخت صورت‌بها</p>
       </div>
@@ -67,6 +67,7 @@ export function BuilderSectionNav({
           );
         })}
       </nav>
+
     </GlassCard>
   );
 }

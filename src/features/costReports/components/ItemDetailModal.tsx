@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { Loader2, X, XCircle } from "lucide-react";
+import { Loader2, Pencil, Trash2, X, XCircle } from "lucide-react";
 
 import type { ProjectCoefficientSet } from "../../coefficients/coefficientApi";
 import type { FinancialDocument } from "../../financialDocuments/financialDocumentApi";
@@ -31,12 +31,14 @@ import { ChecklistNotesSection, ReadableNotesSection } from "./ItemNotesSections
 
 function AddedRowsView({
   document,
-  onClose
+  onClose,
+  onToast
 }: {
   document: FinancialDocument | null;
   onClose: () => void;
+  onToast: (message: string, type?: "success" | "error" | "info") => void;
 }) {
-  const lines = document?.lines ?? [];
+  const [localLines, setLocalLines] = useState(() => document?.lines ?? []);
 
   return (
     <div className="space-y-5">
@@ -48,28 +50,53 @@ function AddedRowsView({
       </div>
 
       <div className="space-y-2">
-        {lines.length === 0 ? (
+        {localLines.length === 0 ? (
           <p className="text-center text-sm text-slate-400 light:text-slate-500">
             هنوز ردیفی اضافه نشده است.
           </p>
         ) : null}
-        {lines.map((line) => (
+        {localLines.map((line) => (
           <div
-            className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50"
+            className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50"
             key={line.id}
           >
-            <p className="text-base font-bold text-slate-100 light:text-slate-900">
-              {cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-300 light:text-slate-600">
-              <span>
-                کد:{" "}
-                <span className="font-mono text-emerald-200 light:text-emerald-700">
-                  {line.row_code_snapshot}
+            <div className="min-w-0 flex-1">
+              <p
+                className="truncate text-base font-bold text-slate-100 light:text-slate-900"
+                title={cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
+              >
+                {cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-300 light:text-slate-600">
+                <span>
+                  کد:{" "}
+                  <span className="font-mono text-emerald-200 light:text-emerald-700">
+                    {line.row_code_snapshot}
+                  </span>
                 </span>
-              </span>
-              <span>مقدار: {line.quantity}</span>
-              <span>جمع: {formatMoneyAmount(line.total_amount_snapshot)}</span>
+                <span>مقدار: {line.quantity}</span>
+                <span>جمع: {formatMoneyAmount(line.total_amount_snapshot)}</span>
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-1">
+              <button
+                aria-label="ویرایش"
+                className="p-1.5 rounded-lg text-slate-400 transition hover:bg-emerald-500/10 hover:text-emerald-400"
+                onClick={() => onToast("ویرایش در نسخه بعدی")}
+                title="ویرایش"
+                type="button"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                aria-label="حذف"
+                className="p-1.5 rounded-lg text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-400"
+                onClick={() => setLocalLines((current) => current.filter((l) => l.id !== line.id))}
+                title="حذف از نمایش"
+                type="button"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
           </div>
         ))}
@@ -102,7 +129,7 @@ function ItemDetailContent({
   onSelectedCoefficientSetIdChange: (setId: number | null) => void;
   onDocumentUpdated: (document: FinancialDocument) => void;
   onClose: () => void;
-  onToast: (message: string) => void;
+  onToast: (message: string, type?: "success" | "error" | "info") => void;
   selectedCoefficientSetId: number | null;
 }) {
   const [quantity, setQuantity] = useState("1");
@@ -126,7 +153,7 @@ function ItemDetailContent({
   const isCalculationLocked = Boolean(calculation);
 
   if (showAddedRows) {
-    return <AddedRowsView document={document} onClose={onClose} />;
+    return <AddedRowsView document={document} onClose={onClose} onToast={onToast} />;
   }
 
   async function handleCalculate(event: FormEvent<HTMLFormElement>) {
@@ -224,7 +251,7 @@ function ItemDetailContent({
       }).unwrap();
       const updatedDocument = await recalculateFinancialDocument(document.id).unwrap();
       onDocumentUpdated(updatedDocument);
-      onToast("ردیف به صورت‌بها اضافه شد.");
+      onToast("ردیف به صورت‌بها اضافه شد.", "success");
       setShowAddedRows(true);
     } catch (error) {
       setLineError(getManualPriceValidationMessage(error));
@@ -372,7 +399,7 @@ export function ItemDetailModal({
   onSelectedCoefficientSetIdChange: (setId: number | null) => void;
   onDocumentUpdated: (document: FinancialDocument) => void;
   onClose: () => void;
-  onToast: (message: string) => void;
+  onToast: (message: string, type?: "success" | "error" | "info") => void;
   selectedCoefficientSetId: number | null;
 }) {
   const { data: item, error, isLoading } = useRetrievePricebookItemQuery(itemId);
@@ -401,7 +428,7 @@ export function ItemDetailModal({
       }}
     >
       <div
-        className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-lg border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white"
+        className="max-h-[85dvh] w-full max-w-4xl overflow-y-auto rounded-lg border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/10 bg-slate-950/95 p-5 light:border-slate-200 light:bg-white/95">

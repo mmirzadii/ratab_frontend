@@ -1,192 +1,338 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, X } from "lucide-react";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import {
-  dismissOnboarding,
-  nextTourStep,
-  previousTourStep,
-  setActiveTourStep
-} from "../../features/ui/uiSlice";
-import { classNames } from "../utils/classNames";
-import { Button } from "./Button";
-import { GlassCard } from "./GlassCard";
+import { useAppDispatch } from "../../app/hooks";
+import { dismissOnboarding } from "../../features/ui/uiSlice";
+
+const PADDING = 10;
+const CARD_WIDTH = 360;
+const CARD_HEIGHT_ESTIMATE = 180;
 
 type TourStep = {
+  target: string; // data-tour attribute value
   title: string;
   body: string;
-  focusClassName: string;
 };
 
-const defaultTourSteps: TourStep[] = [
-  {
-    title: "فضای کاری متریل",
-    body: "مسیر اصلی از شرکت‌ها شروع می‌شود. داده‌ها از سرویس واقعی خوانده می‌شوند و بخش‌های آینده با متن راهنما مشخص شده‌اند.",
-    focusClassName: "right-16 top-20 h-24 w-[min(38rem,calc(100vw-6rem))] sm:right-24"
-  },
-  {
-    title: "حالت روشن و تاریک",
-    body: "از دکمه پایین نوار راست می‌توانید ظاهر برنامه را تغییر دهید. انتخاب شما روی همین دستگاه ذخیره می‌شود.",
-    focusClassName: "bottom-4 right-2 h-16 w-16 sm:right-4 sm:h-20 sm:w-20"
-  },
-  {
-    title: "راهنما",
-    body: "توضیحات طولانی به صفحه راهنما منتقل شده‌اند تا محیط کار خلوت بماند.",
-    focusClassName: "right-2 top-28 h-14 w-14 sm:right-4 sm:h-16 sm:w-16"
-  }
-];
+type PageTour = {
+  key: string;
+  steps: TourStep[];
+};
 
-const companyListTourSteps: TourStep[] = [
-  {
-    title: "فهرست شرکت‌ها",
-    body: "اینجا شرکت‌های قابل دسترس شما نمایش داده می‌شوند. صفحه فشرده است تا انتخاب شرکت سریع انجام شود.",
-    focusClassName: "right-16 top-20 h-28 w-[min(42rem,calc(100vw-6rem))] sm:right-24"
-  },
-  {
-    title: "افزودن شرکت",
-    body: "دکمه افزودن شرکت مسیر ساخت شرکت و ورود مستقیم به داشبورد همان شرکت را باز می‌کند.",
-    focusClassName: "left-4 top-28 h-20 w-52 sm:left-8"
-  },
-  {
-    title: "راهنما",
-    body: "برای توضیح مسیرها و محدودیت‌های نسخه آزمایشی، از دکمه راهنما استفاده کنید.",
-    focusClassName: "right-2 top-28 h-14 w-14 sm:right-4 sm:h-16 sm:w-16"
-  }
-];
+const companyListTour: PageTour = {
+  key: "tour_seen_companies",
+  steps: [
+    {
+      target: "company-list",
+      title: "شرکت‌های شما",
+      body: "شرکت‌های قابل دسترس اینجا هستند؛ روی هر کدام کلیک کنید تا وارد شوید."
+    },
+    {
+      target: "add-company-btn",
+      title: "افزودن شرکت",
+      body: "با این دکمه می‌توانید شرکت جدید بسازید و مستقیم وارد داشبورد آن شوید."
+    }
+  ]
+};
 
-const companyDashboardTourSteps: TourStep[] = [
-  {
-    title: "پیام‌های شرکت",
-    body: "داشبورد شرکت مانند گفت‌وگو شروع می‌شود تا صورت‌بها مثل یک پیوست از همان‌جا ساخته و ارسال شود.",
-    focusClassName: "right-72 top-52 h-72 w-[min(52rem,calc(100vw-6rem))] sm:right-80"
-  },
-  {
-    title: "پیوست صورت‌بها",
-    body: "دکمه + کنار کادر پیام، مسیر ساخت صورت‌بها از فهرست‌بها را باز می‌کند. گزینه‌های آینده غیرفعال هستند.",
-    focusClassName: "bottom-24 right-72 h-20 w-20 sm:right-80"
-  },
-  {
-    title: "صورت‌بهاهای ذخیره‌شده",
-    body: "تب صورت‌بهاها اسناد ذخیره‌شده روی بک‌اند را نشان می‌دهد و برای باز کردن سندهای قبلی است.",
-    focusClassName: "right-72 top-56 h-24 w-[min(28rem,calc(100vw-6rem))] sm:right-80 lg:w-72 lg:h-96"
-  }
-];
+const companyDashboardTour: PageTour = {
+  key: "tour_seen_company_dashboard",
+  steps: [
+    {
+      target: "messages-area",
+      title: "پیام‌های شرکت",
+      body: "پیام‌های شرکت اینجاست؛ مثل یک گفت‌وگو پیش بروید و صورت‌بها را مثل پیوست ضمیمه کنید."
+    },
+    {
+      target: "add-attachment-btn",
+      title: "ضمیمه کردن صورت‌بها",
+      body: "از اینجا صورت‌بهای جدید بسازید و بعد از ثبت، آماده ارسال به عنوان پیوست برمی‌گردد."
+    }
+  ]
+};
 
-const costReportTourSteps: TourStep[] = [
-  {
-    title: "ساخت صورت‌بها",
-    body: "ابتدا پروژه و اطلاعات گزارش را وارد کنید. سال ۱۴۰۴ در صورت وجود به صورت پیش‌فرض انتخاب می‌شود.",
-    focusClassName: "right-72 top-24 h-80 w-[min(48rem,calc(100vw-6rem))] sm:right-80"
-  },
-  {
-    title: "مرور فهرست‌بها",
-    body: "بعد از ساخت سند، فهرست فصل‌ها و آیتم‌ها فعال می‌شود و نیازی به شناسه فنی در مسیر عادی نیست.",
-    focusClassName: "right-72 top-32 h-96 w-[min(52rem,calc(100vw-6rem))] sm:right-80"
-  },
-  {
-    title: "ارسال ردیف",
-    body: "در مودال آیتم، بعد از محاسبه می‌توانید ردیف را به صورت‌بهای جاری ارسال کنید.",
-    focusClassName: "left-4 top-28 h-96 w-[min(36rem,calc(100vw-5rem))] sm:left-8"
-  }
-];
+const wizardPricebookTour: PageTour = {
+  key: "tour_seen_wizard",
+  steps: [
+    {
+      target: "chapter-list",
+      title: "فصل‌های فهرست‌بها",
+      body: "فصل‌های فهرست‌بها را از اینجا انتخاب کنید تا آیتم‌های مرتبط نمایش داده شوند."
+    },
+    {
+      target: "pricebook-item",
+      title: "انتخاب آیتم",
+      body: "روی هر آیتم کلیک کنید تا جزئیات، محاسبه مقدار و افزودن به صورت‌بها باز شود."
+    }
+  ]
+};
 
-function getTourSteps(pathname: string) {
+const wizardFinalizeTour: PageTour = {
+  key: "tour_seen_finalize",
+  steps: [
+    {
+      target: "finalize-rows",
+      title: "ردیف‌های صورت‌بها",
+      body: "ردیف‌هایی که اضافه کردید اینجا فهرست شده‌اند؛ می‌توانید مقدار هر ردیف را ویرایش کنید."
+    },
+    {
+      target: "preview-btn",
+      title: "پیش‌نمایش صورت‌بها",
+      body: "با این دکمه پیش‌نمایش صورت وضعیت رسمی را ببینید یا خروجی PDF بگیرید."
+    }
+  ]
+};
+
+function getTour(pathname: string): PageTour | null {
   if (/^\/companies\/\d+\/cost-reports\/new/.test(pathname)) {
-    return costReportTourSteps;
+    // Try finalize first (its elements will be in DOM when that section is active)
+    return wizardFinalizeTour;
   }
-
   if (/^\/companies\/\d+/.test(pathname)) {
-    return companyDashboardTourSteps;
+    return companyDashboardTour;
   }
-
   if (pathname.startsWith("/companies")) {
-    return companyListTourSteps;
+    return companyListTour;
+  }
+  return null;
+}
+
+function getWizardTour(pathname: string): PageTour[] {
+  if (/^\/companies\/\d+\/cost-reports\/new/.test(pathname)) {
+    return [wizardPricebookTour, wizardFinalizeTour];
+  }
+  return [];
+}
+
+function isTourSeen(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markTourSeen(key: string): void {
+  try {
+    localStorage.setItem(key, "1");
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function getElementRect(target: string): DOMRect | null {
+  const el = document.querySelector(`[data-tour="${target}"]`);
+  return el ? el.getBoundingClientRect() : null;
+}
+
+type CardPosition = {
+  top: number;
+  left: number;
+  arrowSide: "top" | "bottom";
+};
+
+function computeCardPosition(rect: DOMRect): CardPosition {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const margin = 12;
+
+  // Vertical: prefer below, flip to above if too close to bottom
+  let top: number;
+  let arrowSide: "top" | "bottom";
+
+  if (rect.bottom + CARD_HEIGHT_ESTIMATE + margin > vh) {
+    top = Math.max(margin, rect.top - CARD_HEIGHT_ESTIMATE - margin);
+    arrowSide = "bottom";
+  } else {
+    top = rect.bottom + margin;
+    arrowSide = "top";
   }
 
-  return defaultTourSteps;
+  // Horizontal: align to element start, clamp to viewport
+  const rawLeft = rect.left;
+  const left = Math.max(margin, Math.min(rawLeft, vw - CARD_WIDTH - margin));
+
+  return { top, left, arrowSide };
 }
 
 export function GuidedTour() {
   const dispatch = useAppDispatch();
   const location = useLocation();
-  const { activeTourStep, hasDismissedOnboarding } = useAppSelector((state) => state.ui);
-  const tourSteps = getTourSteps(location.pathname);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [activeTour, setActiveTour] = useState<PageTour | null>(null);
+  const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
+  const [cardPos, setCardPos] = useState<CardPosition | null>(null);
+  // Determine and auto-start tour on route change
+  useEffect(() => {
+    setActiveTour(null);
+    setStepIndex(0);
+
+    const basicTour = getTour(location.pathname);
+    const wizardTours = getWizardTour(location.pathname);
+
+    // For wizard pages, find the first unseen tour whose first element exists in DOM
+    if (wizardTours.length > 0) {
+      const timeoutId = window.setTimeout(() => {
+        for (const tour of wizardTours) {
+          if (!isTourSeen(tour.key)) {
+            setActiveTour(tour);
+            return;
+          }
+        }
+      }, 600);
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    if (basicTour && !isTourSeen(basicTour.key)) {
+      const timeoutId = window.setTimeout(() => setActiveTour(basicTour), 600);
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, [location.pathname]);
+
+  // Update highlight rect for current step
+  const updateRect = useCallback(() => {
+    if (!activeTour) return;
+    const step = activeTour.steps[stepIndex];
+    if (!step) return;
+    const rect = getElementRect(step.target);
+    setHighlightRect(rect);
+    setCardPos(rect ? computeCardPosition(rect) : null);
+  }, [activeTour, stepIndex]);
 
   useEffect(() => {
-    if (activeTourStep > tourSteps.length - 1) {
-      dispatch(setActiveTourStep(0));
-    }
-  }, [activeTourStep, dispatch, tourSteps.length]);
+    updateRect();
+    window.addEventListener("resize", updateRect, { passive: true });
+    window.addEventListener("scroll", updateRect, { passive: true });
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect);
+    };
+  }, [updateRect]);
 
-  if (hasDismissedOnboarding) {
-    return null;
+  function dismiss() {
+    if (activeTour) markTourSeen(activeTour.key);
+    dispatch(dismissOnboarding());
+    setActiveTour(null);
   }
 
-  const step = tourSteps[activeTourStep] ?? tourSteps[0];
-  const isLastStep = activeTourStep === tourSteps.length - 1;
+  function goNext() {
+    if (!activeTour) return;
+    if (stepIndex < activeTour.steps.length - 1) {
+      setStepIndex((i) => i + 1);
+    } else {
+      dismiss();
+    }
+  }
+
+  function goPrev() {
+    if (stepIndex > 0) setStepIndex((i) => i - 1);
+  }
+
+  if (!activeTour) return null;
+
+  const step = activeTour.steps[stepIndex];
+  const isLastStep = stepIndex === activeTour.steps.length - 1;
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-0 z-[35] bg-slate-950/58 backdrop-blur-[1px] light:bg-slate-900/25" />
+      {/* Full-screen overlay — the box-shadow on the highlight creates the dimming */}
+      <div className="pointer-events-none fixed inset-0 z-[45] bg-slate-950/60" />
+
+      {/* Spotlight highlight around the target element */}
+      {highlightRect ? (
+        <div
+          className="pointer-events-none fixed z-[46] rounded-xl border-2 border-emerald-400/90"
+          style={{
+            top: highlightRect.top - PADDING,
+            left: highlightRect.left - PADDING,
+            width: highlightRect.width + PADDING * 2,
+            height: highlightRect.height + PADDING * 2,
+            boxShadow: "0 0 0 9999px rgba(2,6,23,0.0), 0 0 28px rgba(16,185,129,0.45)"
+          }}
+        />
+      ) : null}
+
+      {/* Tour card */}
       <div
-        className={classNames(
-          "pointer-events-none fixed z-40 rounded-2xl border-2 border-emerald-300/85 bg-transparent shadow-[0_0_0_9999px_rgba(2,6,23,0.34),0_0_40px_rgba(16,185,129,0.32)]",
-          step.focusClassName
-        )}
-      />
-      <GlassCard className="fixed bottom-4 left-4 z-50 w-[min(420px,calc(100vw-2rem))] p-4 sm:bottom-5 sm:left-5 sm:p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-emerald-300">راهنمای شروع</p>
-            <h2 className="text-lg font-black text-white light:text-slate-950">{step.title}</h2>
+        className="fixed z-[47] w-[min(360px,calc(100vw-2rem))] rounded-2xl border border-emerald-500/30 bg-slate-900/90 p-5 shadow-2xl backdrop-blur-xl"
+        style={
+          cardPos
+            ? { top: cardPos.top, left: cardPos.left }
+            : { bottom: "1.5rem", left: "1rem" }
+        }
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-xs font-bold text-emerald-400">
+              {stepIndex + 1} از {activeTour.steps.length}
+            </p>
+            <h3 className="text-base font-black text-white">{step.title}</h3>
           </div>
           <button
             aria-label="بستن راهنما"
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
-            onClick={() => dispatch(dismissOnboarding())}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/8 hover:text-white"
+            onClick={dismiss}
             type="button"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <p className="mt-3 text-sm leading-7 text-slate-300 light:text-slate-600">{step.body}</p>
+        {/* Body */}
+        <p className="mt-3 text-sm leading-7 text-slate-400">{step.body}</p>
 
+        {/* Navigation */}
         <div className="mt-5 flex items-center justify-between gap-3">
+          {/* Dots */}
           <div className="flex gap-1.5">
-            {tourSteps.map((item, index) => (
+            {activeTour.steps.map((_, index) => (
               <button
-                aria-label={item.title}
-                className={`h-2.5 rounded-full transition ${
-                  index === activeTourStep ? "w-7 bg-emerald-300" : "w-2.5 bg-slate-600 light:bg-slate-300"
+                aria-label={`مرحله ${index + 1}`}
+                className={`h-2 rounded-full transition-all ${
+                  index === stepIndex
+                    ? "w-6 bg-emerald-400"
+                    : "w-2 bg-white/20 hover:bg-white/35"
                 }`}
-                key={item.title}
-                onClick={() => dispatch(setActiveTourStep(index))}
+                key={index}
+                onClick={() => setStepIndex(index)}
                 type="button"
               />
             ))}
           </div>
 
+          {/* Prev / Next buttons */}
           <div className="flex items-center gap-2">
-            <Button
-              className="h-9 px-3"
-              disabled={activeTourStep === 0}
-              onClick={() => dispatch(previousTourStep())}
-              variant="ghost"
+            {stepIndex > 0 ? (
+              <button
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-slate-300 transition hover:bg-white/14 hover:text-white"
+                onClick={goPrev}
+                type="button"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            ) : null}
+            <button
+              className="flex h-9 items-center gap-2 rounded-xl bg-emerald-500 px-4 text-sm font-black text-slate-950 transition hover:bg-emerald-400"
+              onClick={goNext}
+              type="button"
             >
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button
-              className="h-9"
-              onClick={() => (isLastStep ? dispatch(dismissOnboarding()) : dispatch(nextTourStep()))}
-            >
-              {isLastStep ? <CheckCircle2 className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
-              {isLastStep ? "متوجه شدم" : "بعدی"}
-            </Button>
+              {isLastStep ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  متوجه شدم
+                </>
+              ) : (
+                <>
+                  بعدی
+                  <ArrowLeft className="h-4 w-4" />
+                </>
+              )}
+            </button>
           </div>
         </div>
-      </GlassCard>
+      </div>
     </>
   );
 }

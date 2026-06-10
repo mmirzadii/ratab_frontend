@@ -1,7 +1,6 @@
-import { CheckCircle2, FileText, Loader2, XCircle } from "lucide-react";
+import { FileText, XCircle } from "lucide-react";
 
 import type { Pricebook, PricebookEdition } from "../../pricebooks/pricebookApi";
-import { Button } from "../../../shared/components/Button";
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { Field } from "../../../shared/components/Field";
 import { classNames } from "../../../shared/utils/classNames";
@@ -17,7 +16,6 @@ export function DocumentInfoSection({
   isDevPriceSetConfirmed,
   isLoadingEditions,
   isLoadingPricebooks,
-  isSubmitting,
   onAdvancedDevOpenChange,
   onDevPriceSetConfirmedChange,
   onEditionChange,
@@ -37,7 +35,6 @@ export function DocumentInfoSection({
   isDevPriceSetConfirmed: boolean;
   isLoadingEditions: boolean;
   isLoadingPricebooks: boolean;
-  isSubmitting: boolean;
   onAdvancedDevOpenChange: (open: boolean) => void;
   onDevPriceSetConfirmedChange: (confirmed: boolean) => void;
   onEditionChange: (value: string) => void;
@@ -218,19 +215,9 @@ export function DocumentInfoSection({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button disabled={isSubmitting} type="submit">
-          {isSubmitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <CheckCircle2 className="h-4 w-4" />
-          )}
-          ادامه به مرور فهرست‌بها
-        </Button>
-        <p className="text-xs leading-6 text-slate-400 light:text-slate-500">
-          بعد از موفقیت، فصل‌های فهرست‌بها از سرویس خوانده می‌شوند.
-        </p>
-      </div>
+      <p className="text-xs leading-6 text-slate-400 light:text-slate-500">
+        بعد از موفقیت، فصل‌های فهرست‌بها از سرویس خوانده می‌شوند.
+      </p>
     </>
   );
 }

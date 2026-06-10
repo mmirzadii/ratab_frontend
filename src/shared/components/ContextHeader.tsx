@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { useAppShell } from "../../app/appShellContext";
@@ -13,9 +13,9 @@ export function ContextHeader() {
       <header className="sticky top-14 md:top-0 z-20 border-b border-white/8 bg-slate-950/28 backdrop-blur-xl light:border-slate-200 light:bg-white/70">
         <div className="flex items-center gap-3 px-3 py-3 sm:px-6 sm:py-4">
           <button
-            aria-label="خروج از ساخت صورت‌بها"
+            aria-label="بازگشت"
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500 light:hover:text-slate-900"
-            onClick={wizardCtx.onExit}
+            onClick={wizardCtx.onBack}
             type="button"
           >
             <ArrowRight className="h-4 w-4" />
@@ -32,21 +32,7 @@ export function ContextHeader() {
               <CheckCircle2 className="h-4 w-4" />
               نهایی کردن
             </button>
-          ) : (
-            <button
-              aria-label="مرحله بعد"
-              className={
-                wizardCtx.canGoNext
-                  ? "flex h-9 w-9 items-center justify-center rounded-lg border border-violet-300/30 bg-violet-400/15 text-violet-100 transition hover:bg-violet-400/25 light:text-violet-800"
-                  : "flex h-9 w-9 items-center justify-center rounded-lg border border-violet-300/30 bg-violet-400/15 text-violet-100 opacity-40 light:text-violet-800"
-              }
-              disabled={!wizardCtx.canGoNext}
-              onClick={wizardCtx.onNext}
-              type="button"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-          )}
+          ) : null}
         </div>
       </header>
     );

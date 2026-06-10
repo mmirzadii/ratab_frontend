@@ -20,11 +20,9 @@ export type WizardCtx = {
   title: string;
   companyName: string;
   tokenBalanceLabel: string;
-  canGoNext: boolean;
   isLastStep: boolean;
-  onNext: () => void;
+  onBack: () => void;
   onFinalize: () => void;
-  onExit: () => void;
 };
 
 type AppShellCtxValue = {

@@ -17,8 +17,9 @@ import {
 } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
-import { useAppSelector } from "../app/hooks";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { useAppShell, type SecondaryNavItem } from "../app/appShellContext";
+import { addToast } from "../features/ui/uiSlice";
 import { useRetrieveCompanyQuery } from "../features/companies/companyApi";
 import {
   type FinancialDocument,
@@ -107,7 +108,7 @@ function getProjectName(project: Project | null | undefined) {
 
 function getDocumentStatusLabel(status: FinancialDocument["status"]) {
   if (status === "draft") {
-    return "پیش‌نویس";
+    return "در حال ویرایش";
   }
 
   if (status === "calculated") {
@@ -270,7 +271,7 @@ export function CompanyDashboardPage() {
   const [savedCostReports, setSavedCostReports] = useState<SavedCostReport[]>([]);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const routeState = (location.state as DashboardRouteState | null) ?? null;
   const {
@@ -331,16 +332,6 @@ export function CompanyDashboardPage() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isAddMenuOpen]);
-
-  useEffect(() => {
-    if (!toastMessage) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => setToastMessage(null), 3200);
-
-    return () => window.clearTimeout(timeout);
-  }, [toastMessage]);
 
   useEffect(() => {
     if (activeSection !== "costReports") {
@@ -450,7 +441,7 @@ export function CompanyDashboardPage() {
     ]);
     setMessageText("");
     setPendingAttachment(null);
-    setToastMessage("پیام ارسال شد.");
+    dispatch(addToast({ message: "پیام ارسال شد.", type: "success" }));
   }
 
   function getAttachmentEditState(attachment: LocalAttachment) {
@@ -515,8 +506,8 @@ export function CompanyDashboardPage() {
   }
 
   return (
-    <div className="relative mx-auto flex w-full max-w-full flex-col gap-5 px-4 pb-20 pt-5 sm:px-6">
-      <GlassCard className="relative min-h-[560px] overflow-hidden p-0">
+    <div className="relative mx-auto flex w-full max-w-full flex-col gap-5 px-4 pb-10 pt-5 sm:px-6">
+      <GlassCard className="relative flex min-h-[400px] h-[calc(100dvh-180px)] sm:h-[calc(100dvh-130px)] flex-col overflow-hidden p-0">
           {activeSection === "costReports" ? (
             <SavedCostReportsPanel
               companyId={company.id}
@@ -541,21 +532,15 @@ export function CompanyDashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link className={linkButtonClasses} to={`/companies/${company.id}/cost-reports/new`}>
-                      <Paperclip className="h-4 w-4" />
-                      افزودن صورت‌بها
-                    </Link>
-                    <StatusBadge>پیام‌ها محلی هستند</StatusBadge>
-                  </div>
+                  <StatusBadge>پیام‌ها محلی هستند</StatusBadge>
                 </div>
                 <p className="mt-3 text-xs leading-6 text-amber-100 light:text-amber-800">
                   پیام‌ها در این نسخه فقط در همین نشست مرورگر نگهداری می‌شوند. صورت‌بهاها روی بک‌اند ذخیره می‌شوند و از تب صورت‌بهاها دوباره قابل باز شدن هستند.
                 </p>
               </div>
 
-              <div className="flex min-h-[492px] flex-col justify-between p-4 sm:p-5">
-                <div className="flex flex-1 flex-col gap-3 overflow-y-auto pb-5">
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4 pb-3 sm:p-5 sm:pb-3 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]" data-tour="messages-area">
                   {messages.length === 0 ? (
                     <div className="flex flex-1 items-center justify-center">
                       <div className="mx-auto max-w-md text-center">
@@ -610,8 +595,9 @@ export function CompanyDashboardPage() {
                   )}
                 </div>
 
+                <div className="shrink-0 border-t border-white/10 bg-slate-950/80 px-4 py-3 backdrop-blur-md light:border-slate-200 light:bg-white/90 sm:px-5" data-tour="message-input-area">
                 <form
-                  className="relative rounded-lg border border-white/10 bg-slate-950/35 p-3 light:border-slate-200 light:bg-white"
+                  className="relative"
                   onSubmit={handleSendMessage}
                 >
                   {pendingAttachment ? (
@@ -692,6 +678,7 @@ export function CompanyDashboardPage() {
                         "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 light:text-emerald-700",
                         !hasDismissedOnboarding && "ring-4 ring-emerald-200/35"
                       )}
+                      data-tour="add-attachment-btn"
                       onClick={() => setIsAddMenuOpen((current) => !current)}
                       type="button"
                     >
@@ -713,16 +700,12 @@ export function CompanyDashboardPage() {
                     </button>
                   </div>
                 </form>
+                </div>
               </div>
             </>
           )}
         </GlassCard>
 
-      {toastMessage ? (
-        <div className="fixed left-4 top-4 z-[60] max-w-sm rounded-lg border border-emerald-300/25 bg-slate-950/92 px-4 py-3 text-sm font-bold text-emerald-100 shadow-2xl backdrop-blur-xl light:bg-[#f5fbf8] light:text-emerald-800">
-          {toastMessage}
-        </div>
-      ) : null}
     </div>
   );
 }

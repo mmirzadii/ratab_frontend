@@ -2,10 +2,19 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export type ThemeMode = "dark" | "light";
 
+export type ToastType = "success" | "error" | "info";
+
+export type Toast = {
+  id: string;
+  message: string;
+  type: ToastType;
+};
+
 export type UiState = {
   theme: ThemeMode;
   hasDismissedOnboarding: boolean;
   activeTourStep: number;
+  toasts: Toast[];
 };
 
 function getInitialTheme(): ThemeMode {
@@ -32,7 +41,8 @@ function getInitialOnboardingDismissed(): boolean {
 const initialState: UiState = {
   theme: getInitialTheme(),
   hasDismissedOnboarding: getInitialOnboardingDismissed(),
-  activeTourStep: 0
+  activeTourStep: 0,
+  toasts: []
 };
 
 const uiSlice = createSlice({
@@ -66,14 +76,22 @@ const uiSlice = createSlice({
     resetOnboarding(state) {
       state.hasDismissedOnboarding = false;
       state.activeTourStep = 0;
+    },
+    addToast(state, action: PayloadAction<{ message: string; type: ToastType }>) {
+      state.toasts.push({ ...action.payload, id: crypto.randomUUID() });
+    },
+    removeToast(state, action: PayloadAction<string>) {
+      state.toasts = state.toasts.filter((t) => t.id !== action.payload);
     }
   }
 });
 
 export const {
+  addToast,
   dismissOnboarding,
   nextTourStep,
   previousTourStep,
+  removeToast,
   resetOnboarding,
   setActiveTourStep,
   setOnboardingDismissed,

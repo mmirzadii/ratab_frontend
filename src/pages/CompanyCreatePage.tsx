@@ -1,11 +1,13 @@
 import { type FormEvent, useState } from "react";
-import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+import { useAppDispatch } from "../app/hooks";
 import {
   type CompanyRequest,
   useCreateCompanyMutation
 } from "../features/companies/companyApi";
+import { addToast } from "../features/ui/uiSlice";
 import { Button } from "../shared/components/Button";
 import { GlassCard } from "../shared/components/GlassCard";
 import { getApiErrorMessage } from "../shared/utils/apiError";
@@ -58,6 +60,7 @@ function buildPayload(form: CompanyFormState): CompanyRequest {
 
 export function CompanyCreatePage() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [createCompany, createState] = useCreateCompanyMutation();
   const [form, setForm] = useState<CompanyFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
@@ -81,7 +84,7 @@ export function CompanyCreatePage() {
       const createdCompany = await createCompany(payload).unwrap();
       navigate(`/companies/${createdCompany.id}`);
     } catch (error) {
-      setFormError(getApiErrorMessage(error));
+      dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
     }
   }
 
@@ -89,14 +92,24 @@ export function CompanyCreatePage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pb-10 pt-5 sm:px-6 lg:px-8">
       <GlassCard className="p-4 sm:p-6">
         <form className="space-y-5" onSubmit={handleSubmit}>
-          <div>
-            <h1 className="text-2xl font-black text-white light:text-slate-950">افزودن شرکت</h1>
-            <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
-              فقط نام شرکت الزامی است. سایر اطلاعات را هر زمان لازم بود تکمیل کنید.
-            </p>
+          <div className="flex items-start gap-3">
+            <button
+              aria-label="بازگشت به لیست شرکت‌ها"
+              className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500 light:hover:text-slate-900"
+              onClick={() => navigate("/companies")}
+              type="button"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-black text-white light:text-slate-950">افزودن شرکت</h1>
+              <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
+                فقط نام شرکت الزامی است. سایر اطلاعات را هر زمان لازم بود تکمیل کنید.
+              </p>
+            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <label className="space-y-2">
               <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام شرکت</span>
               <input
