@@ -21,6 +21,8 @@ export type WizardCtx = {
   companyName: string;
   tokenBalanceLabel: string;
   isLastStep: boolean;
+  canGoNext: boolean;
+  onNext: (() => void) | null;
   onBack: () => void;
   onFinalize: () => void;
 };

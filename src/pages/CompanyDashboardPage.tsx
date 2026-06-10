@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import {
   Ban,
   Building2,
+  CheckCircle2,
   CirclePlus,
   Edit3,
   FileText,
@@ -20,7 +21,12 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { useAppShell, type SecondaryNavItem } from "../app/appShellContext";
 import { addToast } from "../features/ui/uiSlice";
-import { useRetrieveCompanyQuery } from "../features/companies/companyApi";
+import {
+  type Company,
+  type PatchedCompanyRequest,
+  useRetrieveCompanyQuery,
+  useUpdateCompanyMutation
+} from "../features/companies/companyApi";
 import {
   type FinancialDocument,
   useLazyListProjectFinancialDocumentsQuery
@@ -34,6 +40,7 @@ import { classNames, linkButtonClasses } from "../shared/utils/classNames";
 import { cleanDisplayText, formatMoneyAmount } from "../shared/utils/formatters";
 import { getApiErrorMessage } from "../shared/utils/apiError";
 import { getListResults } from "../shared/utils/listResults";
+import { normalizeNumberInput } from "../shared/utils/numberText";
 
 type LocalAttachment = {
   title: string;
@@ -49,7 +56,7 @@ type LocalMessage = {
   attachment: LocalAttachment | null;
 };
 
-type DashboardSection = "messages" | "costReports";
+type DashboardSection = "messages" | "costReports" | "company";
 
 type SavedCostReport = {
   document: FinancialDocument;
@@ -66,13 +73,13 @@ type DashboardRouteState = {
 };
 
 const companyNavItems = [
-  { id: "messages", label: "پیام‌های شرکت", icon: MessageCircle, section: "messages" },
-  { id: "company", label: "اطلاعات شرکت", icon: Building2 },
+  { id: "messages", label: "پیام‌های شرکت", icon: MessageCircle, section: "messages" as DashboardSection },
+  { id: "company", label: "اطلاعات شرکت", icon: Building2, section: "company" as DashboardSection },
   { id: "members", label: "اعضا", icon: Users },
-  { id: "costReports", label: "صورت‌بهاها", icon: FileText, section: "costReports" },
+  { id: "costReports", label: "صورت‌بهاها", icon: FileText, section: "costReports" as DashboardSection },
   { id: "coefficients", label: "ضرایب", icon: SlidersHorizontal },
   { id: "settings", label: "تنظیمات", icon: Settings }
-] as const;
+];
 
 
 function getSnapshotString(snapshot: unknown, keys: string[]) {
@@ -139,6 +146,122 @@ function buildAttachment(
   };
 }
 
+const panelInputClasses =
+  "h-12 w-full rounded-lg border border-white/10 bg-slate-950/45 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
+
+function CompanyInfoPanel({ company }: { company: Company }) {
+  const dispatch = useAppDispatch();
+  const [updateCompany, { isLoading: isSaving }] = useUpdateCompanyMutation();
+  const [form, setForm] = useState({
+    name: company.name,
+    legal_name: company.legal_name ?? "",
+    registration_number: company.registration_number ?? "",
+    national_id: company.national_id ?? "",
+    active_slug: company.active_slug ?? ""
+  });
+
+  function updateField(field: keyof typeof form, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const body: PatchedCompanyRequest = {};
+    const name = form.name.trim();
+    if (name) body.name = name;
+    const legalName = form.legal_name.trim();
+    if (legalName) body.legal_name = legalName;
+    const regNum = normalizeNumberInput(form.registration_number);
+    if (regNum) body.registration_number = regNum;
+    const natId = normalizeNumberInput(form.national_id);
+    if (natId) body.national_id = natId;
+    const slug = form.active_slug.trim();
+    body.active_slug = slug || null;
+
+    try {
+      await updateCompany({ companyId: company.id, body }).unwrap();
+      dispatch(addToast({ message: "اطلاعات شرکت ذخیره شد.", type: "success" }));
+    } catch (error) {
+      dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
+    }
+  }
+
+  return (
+    <div className="flex flex-1 min-h-0 flex-col overflow-y-auto p-4 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
+      <div className="flex items-center gap-3 border-b border-white/10 pb-4 light:border-slate-200">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200">
+          <Building2 className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-lg font-black text-white light:text-slate-950">اطلاعات شرکت</h2>
+          <p className="mt-1 text-xs text-slate-400 light:text-slate-500">مشخصات ثبت‌شده شرکت</p>
+        </div>
+      </div>
+
+      <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام شرکت</span>
+            <input
+              className={panelInputClasses}
+              onChange={(e) => updateField("name", e.target.value)}
+              placeholder="نام شرکت"
+              required
+              value={form.name}
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام حقوقی</span>
+            <input
+              className={panelInputClasses}
+              onChange={(e) => updateField("legal_name", e.target.value)}
+              placeholder="اختیاری"
+              value={form.legal_name}
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره ثبت</span>
+            <input
+              className={panelInputClasses}
+              inputMode="numeric"
+              onChange={(e) => updateField("registration_number", e.target.value)}
+              placeholder="اختیاری"
+              value={form.registration_number}
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه ملی</span>
+            <input
+              className={panelInputClasses}
+              inputMode="numeric"
+              onChange={(e) => updateField("national_id", e.target.value)}
+              placeholder="اختیاری"
+              value={form.national_id}
+            />
+          </label>
+          <label className="space-y-2 sm:col-span-2">
+            <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه کوتاه شرکت</span>
+            <input
+              className={classNames(panelInputClasses, "text-left")}
+              dir="ltr"
+              onChange={(e) => updateField("active_slug", e.target.value)}
+              placeholder="optional-company-slug"
+              value={form.active_slug}
+            />
+          </label>
+        </div>
+
+        <div className="pt-2">
+          <Button disabled={isSaving || !form.name.trim()} type="submit">
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            ذخیره تغییرات
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function SavedCostReportsPanel({
   companyId,
   error,
@@ -151,7 +274,7 @@ function SavedCostReportsPanel({
   reports: SavedCostReport[];
 }) {
   return (
-    <div className="flex min-h-[560px] flex-col gap-4 p-4 sm:p-5">
+    <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto p-4 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4 light:border-slate-200">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200">
@@ -506,8 +629,8 @@ export function CompanyDashboardPage() {
   }
 
   return (
-    <div className="relative mx-auto flex w-full max-w-full flex-col gap-5 px-4 pb-10 pt-5 sm:px-6">
-      <GlassCard className="relative flex min-h-[400px] h-[calc(100dvh-180px)] sm:h-[calc(100dvh-130px)] flex-col overflow-hidden p-0">
+    <div className="relative mx-auto flex w-full max-w-full flex-col px-4 pb-2 pt-5 sm:px-6">
+      <GlassCard className="relative flex min-h-[400px] h-[calc(100dvh-145px)] sm:h-[calc(100dvh-153px)] md:h-[calc(100dvh-97px)] flex-col overflow-hidden p-0">
           {activeSection === "costReports" ? (
             <SavedCostReportsPanel
               companyId={company.id}
@@ -515,6 +638,8 @@ export function CompanyDashboardPage() {
               reports={savedCostReports}
               error={documentsError}
             />
+          ) : activeSection === "company" ? (
+            <CompanyInfoPanel company={company} />
           ) : (
             <>
               <div className="border-b border-white/10 px-4 py-3 light:border-slate-200 sm:px-5 sm:py-4">

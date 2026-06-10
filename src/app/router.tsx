@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { RequireAuth } from "../features/auth/RequireAuth";
 import { HealthStatusPage } from "../features/health/HealthStatusPage";
+import { AccountSettingsPage } from "../pages/AccountSettingsPage";
 import { CompanyCreatePage } from "../pages/CompanyCreatePage";
 import { CompanyDashboardPage } from "../pages/CompanyDashboardPage";
 import { CompanyListPage } from "../pages/CompanyListPage";
@@ -61,6 +62,10 @@ export const router = createBrowserRouter([
       {
         path: "help",
         element: <HelpPage />
+      },
+      {
+        path: "settings",
+        element: <AccountSettingsPage />
       }
     ]
   }

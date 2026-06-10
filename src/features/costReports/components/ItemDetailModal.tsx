@@ -11,6 +11,7 @@ import {
   type PricebookItemDetail
 } from "../../pricebooks/pricebookApi";
 import {
+  type FinancialDocumentLineCreateRequest,
   useCreateFinancialDocumentLineMutation,
   useRecalculateFinancialDocumentMutation
 } from "../../financialDocuments/financialDocumentApi";
@@ -133,23 +134,20 @@ function ItemDetailContent({
   selectedCoefficientSetId: number | null;
 }) {
   const [quantity, setQuantity] = useState("1");
+  const [manualUnitPrice, setManualUnitPrice] = useState("");
   const [quantityError, setQuantityError] = useState<string | null>(null);
+  const [manualUnitPriceError, setManualUnitPriceError] = useState<string | null>(null);
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const [calculation, setCalculation] = useState<PricebookCalculateResponse | null>(null);
   const [lineError, setLineError] = useState<string | null>(null);
   const [lineSuccess, setLineSuccess] = useState<string | null>(null);
   const [confirmedFootnotes, setConfirmedFootnotes] = useState<Record<number, boolean>>({});
   const [showAddedRows, setShowAddedRows] = useState(false);
-  const [manualUnitPrice, setManualUnitPrice] = useState("");
-  const [manualUnitPriceError, setManualUnitPriceError] = useState<string | null>(null);
   const [calculatePricebookItem, calculateState] = useCalculatePricebookItemMutation();
   const [createFinancialDocumentLine, createLineState] = useCreateFinancialDocumentLineMutation();
   const [recalculateFinancialDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
   const requiresManualPrice = hasManualUnitPrice(item);
   const documentLocked = isFinancialDocumentLocked(document);
-  const manualRows = item.rows.filter(
-    (row) => row.requires_manual_unit_price || row.unit_price === null || row.unit_price === ""
-  );
   const isCalculationLocked = Boolean(calculation);
 
   if (showAddedRows) {
@@ -159,32 +157,26 @@ function ItemDetailContent({
   async function handleCalculate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setQuantityError(null);
+    setManualUnitPriceError(null);
     setCalculationError(null);
     setLineError(null);
     setLineSuccess(null);
     setCalculation(null);
-    setManualUnitPriceError(null);
-
-    if (requiresManualPrice) {
-      const normalizedManualPrice = normalizeQuantityValue(manualUnitPrice);
-      if (!normalizedManualPrice) {
-        setManualUnitPriceError("قیمت واحد پیشنهادی الزامی است.");
-        return;
-      }
-      if (!isPositiveDecimal(normalizedManualPrice)) {
-        setManualUnitPriceError("قیمت باید عدد مثبت معتبر باشد.");
-        return;
-      }
-      setCalculationError(
-        "قیمت واحد پیشنهادی دریافت شد. در نسخه v0.0 بک‌اند، ارسال قیمت دستی به سرور پشتیبانی نمی‌شود. این قابلیت در نسخه‌های بعدی پیاده‌سازی می‌شود."
-      );
-      return;
-    }
 
     const normalizedQuantity = normalizeQuantityValue(quantity);
     if (!isPositiveDecimal(normalizedQuantity)) {
       setQuantityError("مقدار باید یک عدد مثبت باشد.");
       return;
+    }
+
+    let normalizedManualPrice: string | undefined;
+    if (requiresManualPrice) {
+      const normalized = normalizeQuantityValue(manualUnitPrice);
+      if (!isPositiveDecimal(normalized)) {
+        setManualUnitPriceError("قیمت واحد باید یک عدد مثبت وارد شود.");
+        return;
+      }
+      normalizedManualPrice = normalized;
     }
 
     try {
@@ -194,6 +186,10 @@ function ItemDetailContent({
 
       if (selectedCoefficientSetId) {
         calculateBody.coefficient_set_id = selectedCoefficientSetId;
+      }
+
+      if (normalizedManualPrice !== undefined) {
+        calculateBody.manual_unit_price = normalizedManualPrice;
       }
 
       const result = await calculatePricebookItem({
@@ -224,13 +220,6 @@ function ItemDetailContent({
       return;
     }
 
-    if (requiresManualPrice || calculation.requires_manual_unit_price) {
-      setLineError(
-        "آیتم‌های ستاره‌دار در نسخه v0.0 به صورت‌بها اضافه نمی‌شوند. بک‌اند این نسخه فیلد قیمت دستی را نمی‌پذیرد."
-      );
-      return;
-    }
-
     if (!document) {
       setLineError("سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید.");
       return;
@@ -241,13 +230,22 @@ function ItemDetailContent({
       return;
     }
 
+    const lineBody: FinancialDocumentLineCreateRequest = {
+      pricebook_item_id: item.id,
+      quantity: calculation.quantity
+    };
+
+    if (requiresManualPrice) {
+      const normalized = normalizeQuantityValue(manualUnitPrice);
+      if (isPositiveDecimal(normalized)) {
+        lineBody.manual_unit_price = normalized;
+      }
+    }
+
     try {
       await createFinancialDocumentLine({
         documentId: document.id,
-        body: {
-          pricebook_item_id: item.id,
-          quantity: calculation.quantity
-        }
+        body: lineBody
       }).unwrap();
       const updatedDocument = await recalculateFinancialDocument(document.id).unwrap();
       onDocumentUpdated(updatedDocument);
@@ -258,17 +256,13 @@ function ItemDetailContent({
     }
   }
 
-  const addLineDisabledReason = requiresManualPrice
-    ? "آیتم‌های ستاره‌دار در نسخه v0.0 به صورت‌بها اضافه نمی‌شوند (بک‌اند فیلد قیمت دستی را در این نسخه نمی‌پذیرد)."
-    : !calculation
-      ? "بعد از محاسبه موفق می‌توانید آیتم را به صورت‌بها اضافه کنید."
-      : calculation.requires_manual_unit_price
-        ? "آیتم‌های ستاره‌دار در نسخه v0.0 به صورت‌بها اضافه نمی‌شوند (بک‌اند فیلد قیمت دستی را در این نسخه نمی‌پذیرد)."
-        : !document
-          ? "سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید."
-          : documentLocked
-            ? "این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد."
-            : null;
+  const addLineDisabledReason = !calculation
+    ? "بعد از محاسبه موفق می‌توانید آیتم را به صورت‌بها اضافه کنید."
+    : !document
+      ? "سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید."
+      : documentLocked
+        ? "این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد."
+        : null;
 
   return (
     <div className="space-y-5">
@@ -277,21 +271,20 @@ function ItemDetailContent({
         calculation={calculation}
         calculationError={calculationError}
         isCalculating={calculateState.isLoading}
-        manualRows={manualRows}
-        manualUnitPrice={manualUnitPrice}
-        manualUnitPriceError={manualUnitPriceError}
         onCalculate={handleCalculate}
-        onManualUnitPriceChange={setManualUnitPrice}
         quantity={quantity}
         quantityError={quantityError}
         requiresManualPrice={requiresManualPrice}
         isAddingLine={createLineState.isLoading || recalculateState.isLoading}
         lineError={lineError}
         lineSuccess={lineSuccess}
+        manualUnitPrice={manualUnitPrice}
+        manualUnitPriceError={manualUnitPriceError}
         onAddLine={handleAddLine}
         canAddLine={!addLineDisabledReason}
         isCalculationLocked={isCalculationLocked}
         onEditCalculation={handleEditCalculation}
+        setManualUnitPrice={setManualUnitPrice}
         setQuantity={setQuantity}
       />
 
@@ -304,12 +297,6 @@ function ItemDetailContent({
         />
       </div>
 
-      {requiresManualPrice ? (
-        <div className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100 light:text-amber-800">
-          این آیتم یا یکی از ردیف‌های آن قیمت رسمی ندارد. متریل هرگز قیمت خالی را صفر فرض نمی‌کند؛
-          محاسبه قیمت دستی در فاز بعدی با پیام روشن انجام می‌شود.
-        </div>
-      ) : null}
 
       <ChecklistNotesSection
         disabled={isCalculationLocked}

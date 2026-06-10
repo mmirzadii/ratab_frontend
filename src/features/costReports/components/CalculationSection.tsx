@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
-import { AlertTriangle, Calculator, Loader2, Pencil, Send } from "lucide-react";
+import { Calculator, Loader2, Pencil, Send } from "lucide-react";
 
-import type { PricebookCalculateResponse, PricebookItemDetail } from "../../pricebooks/pricebookApi";
+import type { PricebookCalculateResponse } from "../../pricebooks/pricebookApi";
 import { Button } from "../../../shared/components/Button";
 import { InfoBox } from "../../../shared/components/InfoBox";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
@@ -20,16 +20,15 @@ export function CalculationSection({
   isCalculating,
   lineError,
   lineSuccess,
-  manualRows,
   manualUnitPrice,
   manualUnitPriceError,
   onAddLine,
   onCalculate,
   onEditCalculation,
-  onManualUnitPriceChange,
   quantity,
   quantityError,
   requiresManualPrice,
+  setManualUnitPrice,
   setQuantity
 }: {
   addLineDisabledReason: string | null;
@@ -41,16 +40,15 @@ export function CalculationSection({
   isCalculating: boolean;
   lineError: string | null;
   lineSuccess: string | null;
-  manualRows: PricebookItemDetail["rows"];
   manualUnitPrice: string;
   manualUnitPriceError: string | null;
   onAddLine: () => void;
   onCalculate: (event: FormEvent<HTMLFormElement>) => void;
   onEditCalculation: () => void;
-  onManualUnitPriceChange: (value: string) => void;
   quantity: string;
   quantityError: string | null;
   requiresManualPrice: boolean;
+  setManualUnitPrice: (value: string) => void;
   setQuantity: (value: string) => void;
 }) {
   const calculationMessages = getCalculationMessages(calculation?.calculation_output);
@@ -73,48 +71,18 @@ export function CalculationSection({
       </div>
 
       {requiresManualPrice ? (
-        <div className="mt-4 space-y-3 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100 light:text-amber-800">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-1 h-4 w-4 shrink-0" />
-            <p>
-              این آیتم قیمت رسمی کامل ندارد. متریل قیمت خالی را صفر فرض نمی‌کند. قیمت
-              واحد پیشنهادی خود را وارد کنید. در نسخه v0.0 این قیمت به سرور ارسال نمی‌شود
-              و محاسبه ستاره‌دار در نسخه‌های بعدی فعال می‌شود.
-            </p>
-          </div>
-          {manualRows.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {manualRows.map((row) => (
-                <span
-                  className="rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 font-mono text-xs"
-                  key={row.id}
-                >
-                  {row.row_code}
-                </span>
-              ))}
-            </div>
-          ) : null}
-          <label className="block space-y-2">
-            <span className="text-xs font-bold">قیمت واحد پیشنهادی</span>
-            <input
-              className={inputClasses}
-              dir="ltr"
-              disabled={isCalculationLocked}
-              inputMode="decimal"
-              onChange={(event) => onManualUnitPriceChange(event.target.value)}
-              placeholder="مثلاً 150000"
-              value={manualUnitPrice}
-            />
-            {manualUnitPriceError ? (
-              <p className="text-xs font-bold text-rose-300 light:text-rose-700">
-                {manualUnitPriceError}
-              </p>
-            ) : null}
-          </label>
-        </div>
+        <p className="mt-3 text-sm leading-7 text-amber-100 light:text-amber-800">
+          این آیتم قیمت رسمی ندارد؛ قیمت واحد را خودتان وارد کنید.
+        </p>
       ) : null}
 
-      <form className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]" onSubmit={onCalculate}>
+      <form
+        className={classNames(
+          "mt-4 grid gap-3",
+          requiresManualPrice ? "md:grid-cols-[1fr_1fr_auto]" : "md:grid-cols-[1fr_auto]"
+        )}
+        onSubmit={onCalculate}
+      >
         <label className="space-y-2">
           <span className="text-sm font-bold text-slate-200 light:text-slate-700">مقدار</span>
           <input
@@ -127,6 +95,20 @@ export function CalculationSection({
             value={quantity}
           />
         </label>
+        {requiresManualPrice ? (
+          <label className="space-y-2">
+            <span className="text-sm font-bold text-slate-200 light:text-slate-700">قیمت واحد (ریال)</span>
+            <input
+              className={classNames(inputClasses, "text-left")}
+              dir="ltr"
+              disabled={isCalculationLocked}
+              inputMode="decimal"
+              onChange={(event) => setManualUnitPrice(event.target.value)}
+              placeholder="0"
+              value={manualUnitPrice}
+            />
+          </label>
+        ) : null}
         <Button
           className="self-end"
           disabled={isCalculating || isCalculationLocked}
@@ -140,6 +122,12 @@ export function CalculationSection({
       {quantityError ? (
         <p className="mt-3 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
           {quantityError}
+        </p>
+      ) : null}
+
+      {manualUnitPriceError ? (
+        <p className="mt-3 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+          {manualUnitPriceError}
         </p>
       ) : null}
 

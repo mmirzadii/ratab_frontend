@@ -193,7 +193,7 @@ export function getManualPriceValidationMessage(error: unknown): string {
       const detail = (data as { detail?: unknown }).detail;
       return typeof detail === "string"
         ? detail
-        : "این آیتم نیازمند قیمت دستی است و محاسبه قیمت دستی در این نسخه پشتیبانی نمی‌شود.";
+        : "این آیتم نیازمند قیمت دستی است؛ لطفاً قیمت واحد را در فرم محاسبه وارد کنید.";
     }
   }
 

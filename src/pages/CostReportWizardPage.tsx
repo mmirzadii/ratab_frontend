@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useAppDispatch } from "../app/hooks";
@@ -7,8 +7,11 @@ import { useAppShell } from "../app/appShellContext";
 import { addToast } from "../features/ui/uiSlice";
 import { useRetrieveCompanyQuery } from "../features/companies/companyApi";
 import { useListProjectCoefficientSetsQuery } from "../features/coefficients/coefficientApi";
-import { type FinancialDocument } from "../features/financialDocuments/financialDocumentApi";
-import { useCreateProjectFinancialDocumentMutation } from "../features/financialDocuments/financialDocumentApi";
+import {
+  type FinancialDocument,
+  useCreateProjectFinancialDocumentMutation,
+  useLockFinancialDocumentMutation
+} from "../features/financialDocuments/financialDocumentApi";
 import {
   type Pricebook,
   type PricebookChapter,
@@ -31,7 +34,6 @@ import { PricebookBrowserSection } from "../features/costReports/components/Pric
 import { ProjectCoefficientPanel } from "../features/costReports/components/ProjectCoefficientPanel";
 import { ProjectInfoSection } from "../features/costReports/components/ProjectInfoSection";
 
-import { Button } from "../shared/components/Button";
 import { EmptyState } from "../shared/components/EmptyState";
 import { getApiErrorMessage } from "../shared/utils/apiError";
 import { getListResults } from "../shared/utils/listResults";
@@ -199,6 +201,7 @@ export function CostReportWizardPage() {
 
   const [createProject, createProjectState] = useCreateCompanyProjectMutation();
   const [createDocument, createDocumentState] = useCreateProjectFinancialDocumentMutation();
+  const [lockDocument] = useLockFinancialDocumentMutation();
   const isSubmitting = createProjectState.isLoading || createDocumentState.isLoading;
 
   const isLastStep = activeSection === "finalize";
@@ -214,6 +217,11 @@ export function CostReportWizardPage() {
   function getPrevSection(current: BuilderSection): BuilderSection | null {
     const idx = builderOrder.indexOf(current);
     return idx > 0 ? builderOrder[idx - 1] : null;
+  }
+
+  function getNextSection(current: BuilderSection): BuilderSection | null {
+    const idx = builderOrder.indexOf(current);
+    return idx >= 0 && idx < builderOrder.length - 1 ? builderOrder[idx + 1] : null;
   }
 
   function handleWizardBack() {
@@ -235,6 +243,14 @@ export function CostReportWizardPage() {
       navigate(`/companies/${parsedCompanyId}`);
     }
   }
+
+  const canGoNext: boolean = (() => {
+    if (activeSection === "project") return form.project_name.trim().length > 0;
+    if (activeSection === "document")
+      return !isSubmitting && form.document_title.trim().length > 0 && Boolean(selectedEdition);
+    if (activeSection === "finalize") return false;
+    return isBuilderUnlocked;
+  })();
 
   const { setSecondaryNav, setSecondaryNavVariant, setCompanyCtx, setWizardCtx } = useAppShell();
 
@@ -270,6 +286,17 @@ export function CostReportWizardPage() {
       companyName: cleanDisplayText(company?.name, "شرکت"),
       tokenBalanceLabel: "—",
       isLastStep,
+      canGoNext,
+      onNext: isLastStep ? null : () => {
+        if (activeSection === "project") {
+          handleProjectInfoNext();
+        } else if (activeSection === "document") {
+          void doSubmit();
+        } else {
+          const next = getNextSection(activeSection);
+          if (next) handleBuilderSectionSelect(next);
+        }
+      },
       onBack: handleWizardBack,
       onFinalize: handleFinalizeDraft
     });
@@ -289,6 +316,7 @@ export function CostReportWizardPage() {
     createdProject,
     selectedCoefficientSet,
     isLastStep,
+    canGoNext,
     parsedCompanyId,
     setSecondaryNav,
     setSecondaryNavVariant,
@@ -327,13 +355,24 @@ export function CostReportWizardPage() {
     setStep("setup");
   }
 
-  function handleFinalizeDraft() {
+  async function handleFinalizeDraft() {
     if (!createdDocument) {
       dispatch(addToast({ message: "ابتدا یک ردیف به صورت‌بها اضافه کنید.", type: "info" }));
       return;
     }
 
-    navigate(`/companies/${parsedCompanyId}`);
+    try {
+      await lockDocument(createdDocument.id).unwrap();
+      dispatch(addToast({ message: "صورت‌بها با موفقیت نهایی شد.", type: "success" }));
+      navigate(`/companies/${parsedCompanyId}`);
+    } catch (error) {
+      dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await doSubmit();
   }
 
   function handlePricebookChange(value: string) {
@@ -355,8 +394,7 @@ export function CostReportWizardPage() {
     setSearchTerm("");
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function doSubmit() {
     setFormError(null);
 
     if (!form.project_name.trim()) {
@@ -457,7 +495,7 @@ export function CostReportWizardPage() {
       setStep("browser");
       setActiveSection("pricebook");
     } catch (error) {
-      setFormError(getApiErrorMessage(error));
+      dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
     }
   }
 
@@ -481,7 +519,7 @@ export function CostReportWizardPage() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 pb-10 pt-3 sm:px-6 sm:pt-5 lg:px-8">
       {/* Mobile-only step nav with prev/next buttons (desktop handled by SecondaryNav + ContextHeader) */}
-      <div className="md:hidden" dir="rtl">
+      <div className="lg:hidden" dir="rtl">
         <BuilderSectionNav
           activeSection={activeSection}
           completedSections={completedSections}
@@ -505,54 +543,40 @@ export function CostReportWizardPage() {
           >
             {activeSection === "project" ? (
               <>
+                <h2 className="text-lg font-black text-white light:text-slate-950">اطلاعات پروژه</h2>
                 <ProjectInfoSection
                   form={form}
                   onFieldChange={updateField}
                 />
-                <div className="flex justify-start">
-                  <Button disabled={!form.project_name.trim()} type="submit">
-                    ادامه: سند صورت‌بها
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
-                </div>
               </>
             ) : null}
 
             {activeSection === "document" ? (
-              <DocumentInfoSection
-                editions={editions}
-                editionsError={editionsError}
-                form={form}
-                formError={formError}
-                isAdvancedDevOpen={isAdvancedDevOpen}
-                isDevPriceSetConfirmed={isDevPriceSetConfirmed}
-                isLoadingEditions={isLoadingEditions}
-                isLoadingPricebooks={isLoadingPricebooks}
-                onAdvancedDevOpenChange={setIsAdvancedDevOpen}
-                onDevPriceSetConfirmedChange={setIsDevPriceSetConfirmed}
-                onEditionChange={handleEditionChange}
-                onFieldChange={updateField}
-                onPricebookChange={handlePricebookChange}
-                pricebooks={pricebooks}
-                pricebooksError={pricebooksError}
-                selectedActivePriceSet={selectedActivePriceSet}
-                selectedEdition={selectedEdition}
-                selectedPricebook={selectedPricebook}
-              />
+              <>
+                <h2 className="text-lg font-black text-white light:text-slate-950">اطلاعات صورت‌بها</h2>
+                <DocumentInfoSection
+                  editions={editions}
+                  editionsError={editionsError}
+                  form={form}
+                  formError={formError}
+                  isAdvancedDevOpen={isAdvancedDevOpen}
+                  isDevPriceSetConfirmed={isDevPriceSetConfirmed}
+                  isLoadingEditions={isLoadingEditions}
+                  isLoadingPricebooks={isLoadingPricebooks}
+                  onAdvancedDevOpenChange={setIsAdvancedDevOpen}
+                  onDevPriceSetConfirmedChange={setIsDevPriceSetConfirmed}
+                  onEditionChange={handleEditionChange}
+                  onFieldChange={updateField}
+                  onPricebookChange={handlePricebookChange}
+                  pricebooks={pricebooks}
+                  pricebooksError={pricebooksError}
+                  selectedActivePriceSet={selectedActivePriceSet}
+                  selectedEdition={selectedEdition}
+                  selectedPricebook={selectedPricebook}
+                />
+              </>
             ) : null}
-
-            {activeSection === "document" ? (
-              <div className="flex justify-start">
-                <Button disabled={isSubmitting || !form.document_title.trim() || !selectedEdition} type="submit">
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowLeft className="h-4 w-4" />
-                  )}
-                  ثبت و ادامه به فهرست‌بها
-                </Button>
-              </div>
-            ) : null}
+            <button aria-hidden="true" className="sr-only" tabIndex={-1} type="submit" />
           </form>
         ) : (
           <div className="space-y-5">

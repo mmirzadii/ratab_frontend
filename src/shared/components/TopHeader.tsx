@@ -47,7 +47,7 @@ export function TopHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 text-lg font-black text-slate-950 shadow-emerald-soft sm:h-11 sm:w-11 sm:text-xl">
-            م
+            M
           </div>
           <div className="min-w-0">
             <p className="truncate text-lg font-black leading-6 text-white light:text-slate-950">

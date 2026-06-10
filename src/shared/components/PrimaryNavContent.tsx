@@ -58,7 +58,7 @@ export function PrimaryNavContent() {
   return (
     <>
       <div className="mb-6 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 text-base font-black text-slate-950 shadow-emerald-soft sm:mb-8 sm:h-12 sm:w-12">
-        م
+        M
       </div>
 
       <nav className="flex flex-1 flex-col items-center gap-4" aria-label="ناوبری اصلی">
@@ -68,12 +68,10 @@ export function PrimaryNavContent() {
       </nav>
 
       <div className="mb-4 flex flex-col items-center gap-3">
-        <Tooltip label="تنظیمات حساب - به زودی">
-          <span>
-            <IconButton aria-label="تنظیمات حساب - به زودی" disabled>
-              <Settings className="h-5 w-5" />
-            </IconButton>
-          </span>
+        <Tooltip label="تنظیمات حساب">
+          <IconButton aria-label="تنظیمات حساب" onClick={() => navigate("/settings")}>
+            <Settings className="h-5 w-5" />
+          </IconButton>
         </Tooltip>
         <Tooltip label="خروج از حساب">
           <IconButton aria-label="خروج از حساب" onClick={handleLogout}>

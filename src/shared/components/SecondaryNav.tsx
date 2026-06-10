@@ -21,7 +21,7 @@ export function SecondaryNav() {
     : "text-slate-300 light:text-slate-600";
 
   return (
-    <aside className="hidden md:flex fixed right-16 sm:right-20 top-0 z-20 h-screen w-56 flex-col border-l border-white/10 bg-slate-950/55 backdrop-blur-xl light:border-slate-200 light:bg-white/78">
+    <aside className="hidden lg:flex fixed right-16 sm:right-20 top-0 z-20 h-screen w-56 flex-col border-l border-white/10 bg-slate-950/55 backdrop-blur-xl light:border-slate-200 light:bg-white/78">
       {companyCtx ? (
         <div className="border-b border-white/10 px-3 py-4 light:border-slate-200">
           <p className={classNames("truncate text-xs font-black", headerTextClasses)}>

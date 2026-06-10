@@ -3,6 +3,7 @@ import type { components } from "../../shared/api/generated/schema";
 
 export type Company = components["schemas"]["Company"];
 export type CompanyRequest = components["schemas"]["CompanyRequest"];
+export type PatchedCompanyRequest = components["schemas"]["PatchedCompanyRequest"];
 export type PaginatedCompanyList = components["schemas"]["PaginatedCompanyList"];
 
 export const companyApi = baseApi.injectEndpoints({
@@ -28,6 +29,17 @@ export const companyApi = baseApi.injectEndpoints({
     retrieveCompany: builder.query<Company, number>({
       query: (companyId) => `/api/companies/${companyId}/`,
       providesTags: (_result, _error, companyId) => [{ type: "Company", id: companyId }]
+    }),
+    updateCompany: builder.mutation<Company, { companyId: number; body: PatchedCompanyRequest }>({
+      query: ({ body, companyId }) => ({
+        url: `/api/companies/${companyId}/`,
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: (_result, _error, { companyId }) => [
+        { type: "Company", id: companyId },
+        { type: "Company", id: "LIST" }
+      ]
     })
   })
 });
@@ -35,5 +47,6 @@ export const companyApi = baseApi.injectEndpoints({
 export const {
   useCreateCompanyMutation,
   useListCompaniesQuery,
-  useRetrieveCompanyQuery
+  useRetrieveCompanyQuery,
+  useUpdateCompanyMutation
 } = companyApi;

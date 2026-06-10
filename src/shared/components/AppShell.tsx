@@ -40,8 +40,8 @@ export function AppShell() {
       {/* Single content area: top offset on mobile, right offset on desktop */}
       <div
         className={classNames(
-          "relative z-10 pt-14 md:pt-0",
-          secondaryNav ? "md:pr-[19rem]" : "md:pr-20"
+          "relative z-10 pt-14 lg:pt-0",
+          secondaryNav ? "lg:pr-[19rem]" : "lg:pr-20"
         )}
         onTouchEnd={handleTouchEnd}
         onTouchStart={handleTouchStart}

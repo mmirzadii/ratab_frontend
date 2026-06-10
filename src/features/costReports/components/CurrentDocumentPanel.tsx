@@ -536,11 +536,39 @@ export function CurrentDocumentPanel({
             خطوطی که از محاسبه آیتم‌ها به سند اضافه می‌شوند، اینجا نمایش داده می‌شوند.
           </p>
         </div>
-        <StatusBadge tone={document ? getDocumentStatusTone(document.status) : "amber"}>
-          {document
-            ? `${getDocumentStatusLabel(document.status)} - ${totals.lineCount} خط`
-            : "سند ساخته نشده"}
-        </StatusBadge>
+        {document ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              className="h-12 text-base font-bold"
+              data-tour="preview-btn"
+              disabled={isActionBusy}
+              onClick={handleTogglePreview}
+              type="button"
+              variant={previewHtml ? "secondary" : "primary"}
+            >
+              {previewHtml ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {previewHtml ? "بستن پیش‌نمایش" : "پیش‌نمایش صورت‌بها"}
+            </Button>
+            <Button
+              className="h-12 text-base font-bold"
+              disabled={isActionBusy}
+              onClick={handleBrowserPdfDownload}
+              type="button"
+            >
+              {isBrowserPdfPreparing ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Download className="h-5 w-5" />
+              )}
+              خروجی گرفتن
+            </Button>
+            <StatusBadge tone={getDocumentStatusTone(document.status)}>
+              {`${getDocumentStatusLabel(document.status)} - ${totals.lineCount} خط`}
+            </StatusBadge>
+          </div>
+        ) : (
+          <StatusBadge tone="amber">سند ساخته نشده</StatusBadge>
+        )}
       </div>
 
       {!document ? (
@@ -570,41 +598,11 @@ export function CurrentDocumentPanel({
             <InfoBox label="جمع کل" value={formatMoneyAmount(totals.totalAmount)} />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              data-tour="preview-btn"
-              disabled={isActionBusy}
-              onClick={handleTogglePreview}
-              type="button"
-              variant={previewHtml ? "secondary" : "primary"}
-            >
-              {previewHtml ? (
-                <EyeOff className="h-5 w-5" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )}
-              <span className="text-base">
-                {previewHtml ? "بستن پیش‌نمایش" : "پیش‌نمایش صورت‌بها"}
-              </span>
-            </Button>
-            <Button
-              disabled={isActionBusy}
-              onClick={handleBrowserPdfDownload}
-              type="button"
-            >
-              {isBrowserPdfPreparing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Download className="h-5 w-5" />
-              )}
-              <span className="text-base">خروجی گرفتن</span>
-            </Button>
-            {isLocked ? (
-              <p className="text-xs leading-6 text-violet-100 light:text-violet-800">
-                سند قفل شده است؛ ویرایش، حذف و افزودن خط غیرفعال شده‌اند.
-              </p>
-            ) : null}
-          </div>
+          {isLocked ? (
+            <p className="text-xs leading-6 text-violet-100 light:text-violet-800">
+              سند قفل شده است؛ ویرایش، حذف و افزودن خط غیرفعال شده‌اند.
+            </p>
+          ) : null}
 
           {actionSuccess ? (
             <p className="rounded-lg border border-emerald-300/25 bg-emerald-400/10 p-3 text-sm leading-7 text-emerald-100 light:text-emerald-800">

@@ -8,7 +8,7 @@ export function PrimaryTopBar({ onMenuClick }: Props) {
   const { companyCtx, wizardCtx } = useAppShell();
 
   return (
-    <header className="md:hidden fixed top-0 right-0 left-0 z-40 h-14 flex items-center justify-between gap-3 px-4 border-b border-white/8 bg-slate-950/55 backdrop-blur-xl light:border-slate-200 light:bg-white/90">
+    <header className="lg:hidden fixed top-0 right-0 left-0 z-40 h-14 flex items-center justify-between gap-3 px-4 border-b border-white/8 bg-slate-950/55 backdrop-blur-xl light:border-slate-200 light:bg-white/90">
       {/* RIGHT side — brand + context label */}
       <div className="flex items-center gap-2 min-w-0">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 text-base font-black text-slate-950 shadow-emerald-soft">

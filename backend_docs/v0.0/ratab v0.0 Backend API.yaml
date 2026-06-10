@@ -1719,6 +1719,11 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+        manual_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+          nullable: true
       required:
       - pricebook_item_id
       - quantity
@@ -2203,6 +2208,11 @@ components:
           pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
         coefficient_set_id:
           type: integer
+          nullable: true
+        manual_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
           nullable: true
       required:
       - quantity

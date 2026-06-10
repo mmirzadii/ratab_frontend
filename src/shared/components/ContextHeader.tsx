@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { useAppShell } from "../../app/appShellContext";
@@ -10,7 +10,7 @@ export function ContextHeader() {
 
   if (wizardCtx) {
     return (
-      <header className="sticky top-14 md:top-0 z-20 border-b border-white/8 bg-slate-950/28 backdrop-blur-xl light:border-slate-200 light:bg-white/70">
+      <header className="sticky top-14 lg:top-0 z-20 border-b border-white/8 bg-slate-950/28 backdrop-blur-xl light:border-slate-200 light:bg-white/70">
         <div className="flex items-center gap-3 px-3 py-3 sm:px-6 sm:py-4">
           <button
             aria-label="بازگشت"
@@ -25,12 +25,22 @@ export function ContextHeader() {
           </p>
           {wizardCtx.isLastStep ? (
             <button
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-violet-300/30 bg-violet-400/15 px-3 text-sm font-black text-violet-100 transition hover:bg-violet-400/25 light:text-violet-800"
+              className="flex h-12 items-center gap-1.5 rounded-lg border border-violet-300/30 bg-violet-400/15 px-4 text-base font-black text-violet-100 transition hover:bg-violet-400/25 light:text-violet-800"
               onClick={wizardCtx.onFinalize}
               type="button"
             >
               <CheckCircle2 className="h-4 w-4" />
               نهایی کردن
+            </button>
+          ) : wizardCtx.onNext !== null ? (
+            <button
+              className="flex h-12 items-center gap-1.5 rounded-lg border border-violet-300/30 bg-violet-400/15 px-4 text-base font-black text-violet-100 transition hover:bg-violet-400/25 disabled:cursor-not-allowed disabled:opacity-40 light:text-violet-800"
+              disabled={!wizardCtx.canGoNext}
+              onClick={wizardCtx.onNext}
+              type="button"
+            >
+              ادامه
+              <ArrowLeft className="h-4 w-4" />
             </button>
           ) : null}
         </div>
@@ -40,7 +50,7 @@ export function ContextHeader() {
 
   if (companyCtx) {
     return (
-      <header className="sticky top-14 md:top-0 z-20 border-b border-white/8 bg-slate-950/28 backdrop-blur-xl light:border-slate-200 light:bg-white/70">
+      <header className="sticky top-14 lg:top-0 z-20 border-b border-white/8 bg-slate-950/28 backdrop-blur-xl light:border-slate-200 light:bg-white/70">
         <div className="flex items-center gap-3 px-3 py-3 sm:px-6 sm:py-4">
           <Link
             aria-label="بازگشت به شرکت‌ها"
@@ -50,7 +60,7 @@ export function ContextHeader() {
             <ArrowRight className="h-4 w-4" />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-black leading-6 text-white light:text-slate-950">
+            <p className="truncate text-2xl sm:text-3xl font-black leading-6 text-white light:text-slate-950">
               {companyCtx.name}
             </p>
           </div>

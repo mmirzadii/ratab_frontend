@@ -675,6 +675,8 @@ export interface components {
             pricebook_item_id: number;
             /** Format: decimal */
             quantity: string;
+            /** Format: decimal */
+            manual_unit_price?: string | null;
         };
         /**
          * @description * `draft` - Draft
@@ -941,6 +943,8 @@ export interface components {
             /** Format: decimal */
             quantity: string;
             coefficient_set_id?: number | null;
+            /** Format: decimal */
+            manual_unit_price?: string | null;
         };
         PricebookCalculateResponse: {
             item_id: number;
