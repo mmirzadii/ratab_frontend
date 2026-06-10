@@ -15,7 +15,7 @@ const navItems = [
   { label: "راهنما", icon: CircleHelp, to: "/help" }
 ];
 
-export function RightSidebar() {
+export function PrimaryNavContent() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -26,7 +26,7 @@ export function RightSidebar() {
   }
 
   return (
-    <aside className="fixed right-0 top-0 z-30 flex h-screen w-16 flex-col items-center border-l border-white/10 bg-slate-950/55 px-2 py-4 shadow-2xl backdrop-blur-xl light:border-slate-200 light:bg-white/78 sm:w-20 sm:px-3 sm:py-5">
+    <>
       <Tooltip label="منوی اصلی">
         <IconButton
           aria-label="منوی اصلی"
@@ -86,6 +86,6 @@ export function RightSidebar() {
       <Tooltip label="حالت روشن و تاریک">
         <ThemeToggle />
       </Tooltip>
-    </aside>
+    </>
   );
 }

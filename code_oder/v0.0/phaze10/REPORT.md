@@ -88,6 +88,43 @@ Not applicable.
 
 fix(frontend-phase10): restructure cost report builder workflow
 
+## Refactor and Maintainability Notes (Phase 10 Continuation)
+
+A subsequent code-quality pass split `src/pages/CostReportWizardPage.tsx` from 3,595 lines into a thin orchestrator (~480 lines) by extracting all types, constants, utilities, and sub-components into the `src/features/costReports/` feature directory. No behavior changes were made.
+
+## Files Split (Refactor Pass)
+
+| New file | Extracted from |
+|---|---|
+| `src/features/costReports/types.ts` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/constants.ts` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/costReportUtils.ts` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/components/BuilderSectionNav.tsx` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/components/ItemNotesSections.tsx` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/components/CalculationSection.tsx` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/components/ItemDetailModal.tsx` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/components/CurrentDocumentPanel.tsx` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/components/ProjectCoefficientPanel.tsx` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/components/ProjectInfoSection.tsx` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/components/DocumentInfoSection.tsx` | `CostReportWizardPage.tsx` |
+| `src/features/costReports/components/PricebookBrowserSection.tsx` | `CostReportWizardPage.tsx` |
+| `src/shared/utils/apiError.ts` | `CostReportWizardPage.tsx` + `CompanyDashboardPage.tsx` |
+| `src/shared/utils/listResults.ts` | `CostReportWizardPage.tsx` + `CompanyDashboardPage.tsx` |
+| `src/shared/components/Field.tsx` | `CostReportWizardPage.tsx` |
+| `src/shared/components/InfoBox.tsx` | `CostReportWizardPage.tsx` |
+
+Updated files:
+- `src/shared/utils/classNames.ts` — added shared `linkButtonClasses` constant
+- `src/pages/CostReportWizardPage.tsx` — rewritten as thin orchestrator
+- `src/pages/CompanyDashboardPage.tsx` — replaced local duplicate utilities with shared imports
+
+## Behavior Preservation Notes
+
+- All event handlers, state shape, and RTK Query hook calls remain in `CostReportWizardPage.tsx`.
+- PDF builder functions (`buildPreviewSrcDoc`, `buildBrowserPdfPrintDoc`) remain inside `CurrentDocumentPanel.tsx` because they require the `B-NAZANIN.TTF?url` Vite asset import.
+- The `getApiErrorMessage` fallback message wording may differ slightly for network-error fallbacks in `CompanyDashboardPage.tsx`; the function signature accepts an optional second `fallback` parameter for callers that need a specific message.
+- Dead code removed: a `className="hidden"` div containing the old two-step stepper UI (had no observable behavior).
+
 ## Next Step
 
 After manual browser review, proceed only with the next approved frontend phase.

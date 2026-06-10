@@ -59,17 +59,17 @@ const companyDashboardTourSteps: TourStep[] = [
   {
     title: "پیام‌های شرکت",
     body: "داشبورد شرکت مانند گفت‌وگو شروع می‌شود تا صورت‌بها مثل یک پیوست از همان‌جا ساخته و ارسال شود.",
-    focusClassName: "right-16 top-52 h-72 w-[min(52rem,calc(100vw-6rem))] sm:right-24"
+    focusClassName: "right-72 top-52 h-72 w-[min(52rem,calc(100vw-6rem))] sm:right-80"
   },
   {
     title: "پیوست صورت‌بها",
     body: "دکمه + کنار کادر پیام، مسیر ساخت صورت‌بها از فهرست‌بها را باز می‌کند. گزینه‌های آینده غیرفعال هستند.",
-    focusClassName: "bottom-24 right-20 h-20 w-20 sm:right-28"
+    focusClassName: "bottom-24 right-72 h-20 w-20 sm:right-80"
   },
   {
     title: "صورت‌بهاهای ذخیره‌شده",
     body: "تب صورت‌بهاها اسناد ذخیره‌شده روی بک‌اند را نشان می‌دهد و برای باز کردن سندهای قبلی است.",
-    focusClassName: "right-16 top-56 h-24 w-[min(28rem,calc(100vw-6rem))] sm:right-24 lg:w-72 lg:h-96"
+    focusClassName: "right-72 top-56 h-24 w-[min(28rem,calc(100vw-6rem))] sm:right-80 lg:w-72 lg:h-96"
   }
 ];
 
@@ -77,12 +77,12 @@ const costReportTourSteps: TourStep[] = [
   {
     title: "ساخت صورت‌بها",
     body: "ابتدا پروژه و اطلاعات گزارش را وارد کنید. سال ۱۴۰۴ در صورت وجود به صورت پیش‌فرض انتخاب می‌شود.",
-    focusClassName: "right-16 top-24 h-80 w-[min(48rem,calc(100vw-6rem))] sm:right-24"
+    focusClassName: "right-72 top-24 h-80 w-[min(48rem,calc(100vw-6rem))] sm:right-80"
   },
   {
     title: "مرور فهرست‌بها",
     body: "بعد از ساخت سند، فهرست فصل‌ها و آیتم‌ها فعال می‌شود و نیازی به شناسه فنی در مسیر عادی نیست.",
-    focusClassName: "right-16 top-32 h-96 w-[min(52rem,calc(100vw-6rem))] sm:right-24"
+    focusClassName: "right-72 top-32 h-96 w-[min(52rem,calc(100vw-6rem))] sm:right-80"
   },
   {
     title: "ارسال ردیف",

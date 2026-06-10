@@ -43,8 +43,24 @@ Not applicable.
 - Open final review and confirm the line list, totals, preview/export actions, and browser PDF action are still available.
 - Open the coefficients section and confirm coefficient set selection remains available for item calculation.
 
+## Refactor Pass — Commands Run
+
+```
+npm run build
+```
+
+```
+npm run lint
+```
+
+## Refactor Pass — Results
+
+- `npm run build`: passed. All 1664 modules transformed; existing non-blocking 500 kB chunk-size warning unchanged.
+- `npm run lint`: passed after fixing six unused-import errors introduced during extraction (unused `Calculator`, `StatusBadge`, `classNames` in `ItemDetailModal.tsx`; unused `chapters` prop in `PricebookBrowserSection.tsx`; unused `SlidersHorizontal` in `ProjectCoefficientPanel.tsx`; unused `Loader2` in `CostReportWizardPage.tsx`).
+
 ## Notes
 
 - No backend files or endpoints were changed.
 - No frontend routes were added.
 - No production deployment or Docker files were changed.
+- No behavior changes in the refactor pass. All logic was moved, not rewritten.

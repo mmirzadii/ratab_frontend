@@ -18,6 +18,7 @@ import {
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useAppSelector } from "../app/hooks";
+import { useAppShell, type SecondaryNavItem } from "../app/appShellContext";
 import { useRetrieveCompanyQuery } from "../features/companies/companyApi";
 import {
   type FinancialDocument,
@@ -28,8 +29,10 @@ import { Button } from "../shared/components/Button";
 import { EmptyState } from "../shared/components/EmptyState";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
-import { classNames } from "../shared/utils/classNames";
+import { classNames, linkButtonClasses } from "../shared/utils/classNames";
 import { cleanDisplayText, formatMoneyAmount } from "../shared/utils/formatters";
+import { getApiErrorMessage } from "../shared/utils/apiError";
+import { getListResults } from "../shared/utils/listResults";
 
 type LocalAttachment = {
   title: string;
@@ -70,43 +73,6 @@ const companyNavItems = [
   { id: "settings", label: "تنظیمات", icon: Settings }
 ] as const;
 
-const linkButtonClasses =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-4 text-sm font-bold text-slate-100 transition hover:border-violet-300/35 hover:bg-violet-400/15 light:border-slate-200 light:bg-white light:text-slate-800";
-
-function getApiErrorMessage(error: unknown) {
-  if (typeof error === "object" && error && "data" in error) {
-    const data = (error as { data?: unknown }).data;
-
-    if (typeof data === "string") {
-      return data;
-    }
-
-    if (typeof data === "object" && data && "detail" in data) {
-      const detail = (data as { detail?: unknown }).detail;
-      if (typeof detail === "string") {
-        return detail;
-      }
-    }
-  }
-
-  return "دریافت اطلاعات شرکت ناموفق بود.";
-}
-
-function getListResults<T>(data: { results?: readonly T[] } | readonly T[] | T | undefined): T[] {
-  if (Array.isArray(data)) {
-    return [...data];
-  }
-
-  if (!data || typeof data !== "object") {
-    return [];
-  }
-
-  if ("results" in data) {
-    return [...((data as { results?: readonly T[] }).results ?? [])];
-  }
-
-  return [data as T];
-}
 
 function getSnapshotString(snapshot: unknown, keys: string[]) {
   if (!snapshot || typeof snapshot !== "object") {
@@ -313,6 +279,32 @@ export function CompanyDashboardPage() {
     isLoading: isLoadingProjects
   } = useListCompanyProjectsQuery(parsedCompanyId, { skip: !hasValidCompanyId });
   const [listProjectDocuments] = useLazyListProjectFinancialDocumentsQuery();
+  const { setSecondaryNav, setCompanyCtx } = useAppShell();
+
+  useEffect(() => {
+    if (!company) return;
+
+    const name = cleanDisplayText(company.name, "شرکت بدون نام");
+    setCompanyCtx({ id: company.id, name, isActive: company.is_active });
+
+    const navItems: SecondaryNavItem[] = companyNavItems.map((item) => {
+      const hasSection = "section" in item;
+      return {
+        id: item.id,
+        label: item.label,
+        icon: item.icon,
+        isActive: hasSection ? item.section === activeSection : false,
+        disabled: !hasSection,
+        onClick: hasSection ? () => setActiveSection(item.section as DashboardSection) : undefined
+      };
+    });
+    setSecondaryNav(navItems);
+
+    return () => {
+      setSecondaryNav(null);
+      setCompanyCtx(null);
+    };
+  }, [company, activeSection, setSecondaryNav, setCompanyCtx]);
 
   useEffect(() => {
     if (!isAddMenuOpen) {
@@ -522,75 +514,9 @@ export function CompanyDashboardPage() {
     );
   }
 
-  const companyName = cleanDisplayText(company.name, "شرکت بدون نام");
-
   return (
-    <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-20 pt-5 sm:px-6 lg:px-8">
-      <GlassCard className="relative overflow-hidden p-4 sm:p-6">
-        <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-l from-transparent via-emerald-300/70 to-transparent" />
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 space-y-3">
-            <StatusBadge tone={company.is_active ? "emerald" : "amber"}>
-              {company.is_active ? "شرکت فعال" : "شرکت غیرفعال"}
-            </StatusBadge>
-            <div>
-              <h1 className="truncate text-2xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
-                {companyName}
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-300 light:text-slate-600">
-                پیام‌های شرکت صفحه پیش‌فرض این فضاست. صورت‌بها را مثل یک پیوست از دکمه + کنار کادر پیام بسازید و بعد از ثبت، برای ارسال آماده کنید.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link className={linkButtonClasses} to="/help">
-              راهنما
-            </Link>
-            <Link className={linkButtonClasses} to="/companies">
-              بازگشت به شرکت‌ها
-            </Link>
-          </div>
-        </div>
-      </GlassCard>
-
-      <div className="grid gap-5 lg:grid-cols-[240px_1fr]">
-        <GlassCard className="p-3">
-          <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-            {companyNavItems.map((item) => {
-              const Icon = item.icon;
-              const section = "section" in item ? item.section : null;
-              const isActive = section === activeSection;
-              const isEnabled = Boolean(section);
-
-              return (
-                <button
-                  className={classNames(
-                    "flex h-11 min-w-max items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition lg:w-full",
-                    isActive
-                      ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-                      : isEnabled
-                        ? "border-transparent text-slate-400 hover:border-emerald-300/30 hover:bg-emerald-400/10 hover:text-emerald-100 light:text-slate-600 light:hover:text-emerald-800"
-                        : "cursor-not-allowed border-transparent text-slate-500 opacity-65 light:text-slate-400"
-                  )}
-                  disabled={!isEnabled}
-                  key={item.id}
-                  onClick={() => {
-                    if (section) {
-                      setActiveSection(section);
-                    }
-                  }}
-                  title={isEnabled ? item.label : "در نسخه‌های بعدی فعال می‌شود"}
-                  type="button"
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </GlassCard>
-
-        <GlassCard className="relative min-h-[560px] overflow-hidden p-0">
+    <div className="relative mx-auto flex w-full max-w-full flex-col gap-5 px-4 pb-20 pt-5 sm:px-6">
+      <GlassCard className="relative min-h-[560px] overflow-hidden p-0">
           {activeSection === "costReports" ? (
             <SavedCostReportsPanel
               companyId={company.id}
@@ -791,7 +717,6 @@ export function CompanyDashboardPage() {
             </>
           )}
         </GlassCard>
-      </div>
 
       {toastMessage ? (
         <div className="fixed left-4 top-4 z-[60] max-w-sm rounded-lg border border-emerald-300/25 bg-slate-950/92 px-4 py-3 text-sm font-bold text-emerald-100 shadow-2xl backdrop-blur-xl light:bg-[#f5fbf8] light:text-emerald-800">
