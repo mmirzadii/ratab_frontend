@@ -646,6 +646,8 @@ export interface components {
             /** Format: decimal */
             readonly quantity: string;
             /** Format: decimal */
+            readonly manual_unit_price: string | null;
+            /** Format: decimal */
             readonly unit_price_snapshot: string;
             /** Format: decimal */
             readonly base_amount_snapshot: string;
@@ -677,6 +679,7 @@ export interface components {
             quantity: string;
             /** Format: decimal */
             manual_unit_price?: string | null;
+            pricebook_row_id?: number | null;
         };
         /**
          * @description * `draft` - Draft
@@ -945,6 +948,7 @@ export interface components {
             coefficient_set_id?: number | null;
             /** Format: decimal */
             manual_unit_price?: string | null;
+            pricebook_row_id?: number | null;
         };
         PricebookCalculateResponse: {
             item_id: number;
@@ -959,13 +963,16 @@ export interface components {
             coefficient_amount: string;
             total_amount: string;
             applied_coefficients: components["schemas"]["AppliedCoefficient"][];
-            calculation_input: components["schemas"]["PricebookCalculationInputSnapshot"];
-            calculation_output: components["schemas"]["PricebookCalculationOutput"];
+            price_source: string;
+            manual_unit_price: string | null;
             requires_manual_unit_price: boolean;
+            calculation_input: components["schemas"]["PricebookCalculationInputSnapshotWithManual"];
+            calculation_output: components["schemas"]["PricebookCalculationOutput"];
         };
-        PricebookCalculationInputSnapshot: {
+        PricebookCalculationInputSnapshotWithManual: {
             quantity: string;
             coefficient_set_id: number | null;
+            manual_unit_price: string | null;
         };
         PricebookCalculationOutput: {
             base_amount: string;
@@ -973,6 +980,7 @@ export interface components {
             total_amount: string;
             applied_coefficients: components["schemas"]["AppliedCoefficient"][];
             formula: string;
+            price_source: string;
         };
         PricebookChapter: {
             readonly id: number;
@@ -1005,6 +1013,9 @@ export interface components {
             unit: string;
             rows: components["schemas"]["PricebookItemRowDetail"][];
             unit_price: string | null;
+            price_status: string;
+            requires_manual_unit_price: boolean;
+            requires_row_selection: boolean;
             requirements: components["schemas"]["PricebookItemNote"][];
             footnotes: components["schemas"]["PricebookItemNote"][];
             has_more_details: boolean;
@@ -1018,6 +1029,9 @@ export interface components {
             readonly chapter_id: number;
             readonly edition_id: number;
             readonly unit_price: string;
+            readonly price_status: string;
+            readonly requires_manual_unit_price: boolean;
+            readonly requires_row_selection: boolean;
             readonly has_more_details: boolean;
         };
         PricebookItemNote: {
@@ -1658,7 +1672,7 @@ export interface operations {
                     "application/json": components["schemas"]["FinancialDocumentLine"];
                 };
             };
-            /** @description Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true and must not be treated as zero prices. */
+            /** @description Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true. Multi-row items return requires_row_selection=true when pricebook_row_id is not provided. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1878,7 +1892,7 @@ export interface operations {
                     "application/json": components["schemas"]["PricebookCalculateResponse"];
                 };
             };
-            /** @description Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true and must not be treated as zero prices. */
+            /** @description Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true. Multi-row items return requires_row_selection=true when pricebook_row_id is not provided. */
             400: {
                 headers: {
                     [name: string]: unknown;

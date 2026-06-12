@@ -605,18 +605,18 @@ export function CurrentDocumentPanel({
           ) : null}
 
           {actionSuccess ? (
-            <p className="rounded-lg border border-emerald-300/25 bg-emerald-400/10 p-3 text-sm leading-7 text-emerald-100 light:text-emerald-800">
+            <p className="rounded-lg border border-success-300/25 bg-success-400/10 p-3 text-sm leading-7 text-success-100 light:text-success-800">
               {actionSuccess}
             </p>
           ) : null}
           {actionError ? (
-            <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+            <p className="rounded-lg border border-danger-300/25 bg-danger-500/10 p-3 text-sm leading-7 text-danger-100 light:text-danger-700">
               {actionError}
             </p>
           ) : null}
 
           {previewHtml ? (
-            <section className="overflow-hidden rounded-lg border border-emerald-300/20">
+            <section className="overflow-hidden rounded-lg border border-brand-300/20">
               <iframe
                 className="h-[75vh] w-full bg-white"
                 sandbox=""
@@ -646,14 +646,14 @@ export function CurrentDocumentPanel({
                     هنوز خطی به صورت‌بها اضافه نشده است.
                   </div>
                 ) : null}
-                <div className="max-h-[36vh] overflow-y-auto [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]" data-tour="finalize-rows">
+                <div className="max-h-[36vh] overflow-y-auto [scrollbar-color:rgba(37,99,235,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]" data-tour="finalize-rows">
                   {lines.map((line: FinancialDocumentLine) => (
                     <div
                       className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-200 light:border-slate-200 light:text-slate-700"
                       key={line.id}
                     >
                       <span>{line.line_no}</span>
-                      <span className="font-mono text-emerald-200 light:text-emerald-700">
+                      <span className="font-mono text-brand-300 light:text-brand-700">
                         {line.row_code_snapshot}
                       </span>
                       <span
@@ -723,7 +723,7 @@ export function CurrentDocumentPanel({
                             </button>
                             <button
                               aria-label="حذف خط"
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-45"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-danger-500/10 hover:text-danger-400 disabled:cursor-not-allowed disabled:opacity-45"
                               disabled={isActionBusy || isLocked}
                               onClick={() => void handleDeleteLine(line)}
                               title="حذف خط"

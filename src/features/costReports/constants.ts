@@ -31,20 +31,20 @@ export const builderSections: Array<{
     icon: FileText
   },
   {
-    id: "pricebook",
-    number: "۳",
-    shortLabel: "مرور فهرست‌بها",
-    title: "مرور فهرست‌بها",
-    description: "انتخاب آیتم و افزودن ردیف‌ها",
-    icon: BookOpen
-  },
-  {
     id: "coefficients",
-    number: "۴",
+    number: "۳",
     shortLabel: "ضرایب",
     title: "ضرایب",
     description: "مدیریت ضرایب پروژه",
     icon: SlidersHorizontal
+  },
+  {
+    id: "pricebook",
+    number: "۴",
+    shortLabel: "مرور فهرست‌بها",
+    title: "مرور فهرست‌بها",
+    description: "انتخاب آیتم و افزودن ردیف‌ها",
+    icon: BookOpen
   },
   {
     id: "finalize",

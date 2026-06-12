@@ -33,7 +33,7 @@ function NavItem({ label, icon: Icon, to }: (typeof navItems)[number]) {
         className={classNames(
           "flex h-11 w-11 items-center justify-center rounded-lg border transition sm:h-12 sm:w-12",
           isActive
-            ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-200"
+            ? "border-brand-300/30 bg-brand-400/15 text-brand-200 light:border-brand-300/40 light:bg-brand-50 light:text-brand-700"
             : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500 light:hover:text-slate-900"
         )}
         onClick={() => navigate(to)}
@@ -57,7 +57,7 @@ export function PrimaryNavContent() {
 
   return (
     <>
-      <div className="mb-6 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 text-base font-black text-slate-950 shadow-emerald-soft sm:mb-8 sm:h-12 sm:w-12">
+      <div className="mb-6 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-brand-600 to-brand-400 text-base font-black text-white shadow-brand-soft sm:mb-8 sm:h-12 sm:w-12">
         M
       </div>
 

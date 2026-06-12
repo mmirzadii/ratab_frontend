@@ -1,8 +1,10 @@
 import type { FormEvent } from "react";
 import { Calculator, Loader2, Pencil, Send } from "lucide-react";
 
+import type { ProjectCoefficientSet } from "../../coefficients/coefficientApi";
 import type { PricebookCalculateResponse } from "../../pricebooks/pricebookApi";
 import { Button } from "../../../shared/components/Button";
+import { HelpHint } from "../../../shared/components/HelpHint";
 import { InfoBox } from "../../../shared/components/InfoBox";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { classNames } from "../../../shared/utils/classNames";
@@ -15,6 +17,7 @@ export function CalculationSection({
   canAddLine,
   calculation,
   calculationError,
+  coefficientSets,
   isCalculationLocked,
   isAddingLine,
   isCalculating,
@@ -25,9 +28,12 @@ export function CalculationSection({
   onAddLine,
   onCalculate,
   onEditCalculation,
+  onSelectedCoefficientSetIdChange,
   quantity,
   quantityError,
   requiresManualPrice,
+  requiresRowSelection,
+  selectedCoefficientSetId,
   setManualUnitPrice,
   setQuantity
 }: {
@@ -35,6 +41,7 @@ export function CalculationSection({
   canAddLine: boolean;
   calculation: PricebookCalculateResponse | null;
   calculationError: string | null;
+  coefficientSets: ProjectCoefficientSet[];
   isCalculationLocked: boolean;
   isAddingLine: boolean;
   isCalculating: boolean;
@@ -45,13 +52,28 @@ export function CalculationSection({
   onAddLine: () => void;
   onCalculate: (event: FormEvent<HTMLFormElement>) => void;
   onEditCalculation: () => void;
+  onSelectedCoefficientSetIdChange: (setId: number | null) => void;
   quantity: string;
   quantityError: string | null;
   requiresManualPrice: boolean;
+  requiresRowSelection: boolean;
+  selectedCoefficientSetId: number | null;
   setManualUnitPrice: (value: string) => void;
   setQuantity: (value: string) => void;
 }) {
   const calculationMessages = getCalculationMessages(calculation?.calculation_output);
+  const badgeTone = requiresManualPrice ? "amber" : requiresRowSelection ? "amber" : "emerald";
+  const badgeLabel = requiresManualPrice
+    ? "نیازمند قیمت ستاره‌دار"
+    : requiresRowSelection
+      ? "انتخاب ردیف لازم است"
+      : "آماده محاسبه";
+
+  const colCount = 1 + (requiresManualPrice ? 1 : 0) + 1; // quantity + optional price + coefficient
+  const gridCols =
+    colCount === 3
+      ? "sm:grid-cols-[1fr_1fr_1fr_auto]"
+      : "sm:grid-cols-[1fr_1fr_auto]";
 
   return (
     <section className="rounded-lg border border-emerald-300/20 bg-emerald-400/10 p-4 light:bg-emerald-50">
@@ -60,14 +82,10 @@ export function CalculationSection({
           <h3 className="flex items-center gap-2 text-base font-black text-white light:text-slate-950">
             <Calculator className="h-4 w-4 text-emerald-200 light:text-emerald-700" />
             محاسبه آیتم
+            <HelpHint text="مقدار برای محاسبه رسمی ارسال می‌شود و مبالغ فقط از پاسخ محاسبه نمایش داده می‌شوند." />
           </h3>
-          <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
-            مقدار برای محاسبه رسمی ارسال می‌شود و مبالغ فقط از پاسخ محاسبه نمایش داده می‌شوند.
-          </p>
         </div>
-        <StatusBadge tone={requiresManualPrice ? "amber" : "emerald"}>
-          {requiresManualPrice ? "نیازمند قیمت ستاره‌دار" : "آماده محاسبه"}
-        </StatusBadge>
+        <StatusBadge tone={badgeTone}>{badgeLabel}</StatusBadge>
       </div>
 
       {requiresManualPrice ? (
@@ -77,10 +95,7 @@ export function CalculationSection({
       ) : null}
 
       <form
-        className={classNames(
-          "mt-4 grid gap-3",
-          requiresManualPrice ? "md:grid-cols-[1fr_1fr_auto]" : "md:grid-cols-[1fr_auto]"
-        )}
+        className={classNames("mt-4 grid gap-3", gridCols)}
         onSubmit={onCalculate}
       >
         <label className="space-y-2">
@@ -109,14 +124,51 @@ export function CalculationSection({
             />
           </label>
         ) : null}
-        <Button
-          className="self-end"
-          disabled={isCalculating || isCalculationLocked}
-          type="submit"
-        >
-          {isCalculating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calculator className="h-4 w-4" />}
-          محاسبه
-        </Button>
+        <label className="space-y-2">
+          <span className="flex items-center gap-1 text-sm font-bold text-slate-200 light:text-slate-700">
+            ضریب
+            {coefficientSets.length === 0 ? (
+              <HelpHint text="برای محاسبه با ضریب، ابتدا در بخش ضرایب پروژه مجموعه بسازید." />
+            ) : null}
+          </span>
+          <select
+            className={inputClasses}
+            disabled={isCalculationLocked}
+            onChange={(event) =>
+              onSelectedCoefficientSetIdChange(event.target.value ? Number(event.target.value) : null)
+            }
+            value={selectedCoefficientSetId ?? ""}
+          >
+            <option value="">بدون ضریب</option>
+            {coefficientSets.map((set) => (
+              <option key={set.id} value={set.id}>
+                {set.name}
+                {set.is_default ? " - پیش‌فرض" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        {isCalculationLocked ? (
+          <div className="flex self-end gap-2">
+            <Button onClick={onEditCalculation} type="button" variant="secondary">
+              <Pencil className="h-4 w-4" />
+              ویرایش
+            </Button>
+            <Button disabled={!canAddLine || isAddingLine} onClick={onAddLine} type="button">
+              {isAddingLine ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              افزودن
+            </Button>
+          </div>
+        ) : (
+          <Button
+            className="self-end"
+            disabled={isCalculating}
+            type="submit"
+          >
+            {isCalculating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calculator className="h-4 w-4" />}
+            محاسبه
+          </Button>
+        )}
       </form>
 
       {quantityError ? (
@@ -176,21 +228,11 @@ export function CalculationSection({
               </ul>
             </div>
           ) : null}
-          <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={onEditCalculation} type="button" variant="secondary">
-              <Pencil className="h-4 w-4" />
-              ویرایش
-            </Button>
-            <Button disabled={!canAddLine || isAddingLine} onClick={onAddLine} type="button">
-              {isAddingLine ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              افزودن به صورت‌بها
-            </Button>
-            {addLineDisabledReason ? (
-              <p className="text-xs leading-6 text-amber-100 light:text-amber-800">
-                {addLineDisabledReason}
-              </p>
-            ) : null}
-          </div>
+          {addLineDisabledReason && isCalculationLocked ? (
+            <p className="text-xs leading-6 text-amber-100 light:text-amber-800">
+              {addLineDisabledReason}
+            </p>
+          ) : null}
         </div>
       ) : null}
 

@@ -11,7 +11,7 @@ export function PrimaryTopBar({ onMenuClick }: Props) {
     <header className="lg:hidden fixed top-0 right-0 left-0 z-40 h-14 flex items-center justify-between gap-3 px-4 border-b border-white/8 bg-slate-950/55 backdrop-blur-xl light:border-slate-200 light:bg-white/90">
       {/* RIGHT side — brand + context label */}
       <div className="flex items-center gap-2 min-w-0">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 text-base font-black text-slate-950 shadow-emerald-soft">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-brand-600 to-brand-400 text-base font-black text-white shadow-brand-soft">
           M
         </div>
         {wizardCtx ? (
@@ -30,7 +30,7 @@ export function PrimaryTopBar({ onMenuClick }: Props) {
       {/* LEFT side — menu + optional company badge */}
       <div className="flex items-center gap-2 shrink-0">
         {companyCtx && !wizardCtx ? (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/12 text-sm font-black text-emerald-100 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand-300/25 bg-brand-400/12 text-sm font-black text-brand-100 light:border-brand-200 light:bg-brand-50 light:text-brand-800">
             {companyCtx.name.charAt(0)}
           </div>
         ) : null}

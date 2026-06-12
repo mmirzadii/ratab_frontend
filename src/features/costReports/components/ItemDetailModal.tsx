@@ -16,16 +16,16 @@ import {
   useRecalculateFinancialDocumentMutation
 } from "../../financialDocuments/financialDocumentApi";
 import { EmptyState } from "../../../shared/components/EmptyState";
-import { InfoBox } from "../../../shared/components/InfoBox";
 import { cleanDisplayText, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { getApiErrorMessage } from "../../../shared/utils/apiError";
-import { inputClasses } from "../constants";
+import { classNames } from "../../../shared/utils/classNames";
 import {
   getManualPriceValidationMessage,
   hasManualUnitPrice,
   isFinancialDocumentLocked,
   isPositiveDecimal,
-  normalizeQuantityValue
+  normalizeQuantityValue,
+  requiresRowSelection
 } from "../costReportUtils";
 import { CalculationSection } from "./CalculationSection";
 import { ChecklistNotesSection, ReadableNotesSection } from "./ItemNotesSections";
@@ -135,6 +135,7 @@ function ItemDetailContent({
 }) {
   const [quantity, setQuantity] = useState("1");
   const [manualUnitPrice, setManualUnitPrice] = useState("");
+  const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [quantityError, setQuantityError] = useState<string | null>(null);
   const [manualUnitPriceError, setManualUnitPriceError] = useState<string | null>(null);
   const [calculationError, setCalculationError] = useState<string | null>(null);
@@ -147,6 +148,7 @@ function ItemDetailContent({
   const [createFinancialDocumentLine, createLineState] = useCreateFinancialDocumentLineMutation();
   const [recalculateFinancialDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
   const requiresManualPrice = hasManualUnitPrice(item);
+  const needsRowSelection = requiresRowSelection(item);
   const documentLocked = isFinancialDocumentLocked(document);
   const isCalculationLocked = Boolean(calculation);
 
@@ -166,6 +168,11 @@ function ItemDetailContent({
     const normalizedQuantity = normalizeQuantityValue(quantity);
     if (!isPositiveDecimal(normalizedQuantity)) {
       setQuantityError("مقدار باید یک عدد مثبت باشد.");
+      return;
+    }
+
+    if (needsRowSelection && selectedRowId === null) {
+      setCalculationError("ابتدا یک ردیف از لیست زیر انتخاب کنید.");
       return;
     }
 
@@ -190,6 +197,10 @@ function ItemDetailContent({
 
       if (normalizedManualPrice !== undefined) {
         calculateBody.manual_unit_price = normalizedManualPrice;
+      }
+
+      if (selectedRowId !== null) {
+        calculateBody.pricebook_row_id = selectedRowId;
       }
 
       const result = await calculatePricebookItem({
@@ -242,6 +253,10 @@ function ItemDetailContent({
       }
     }
 
+    if (selectedRowId !== null) {
+      lineBody.pricebook_row_id = selectedRowId;
+    }
+
     try {
       await createFinancialDocumentLine({
         documentId: document.id,
@@ -252,29 +267,100 @@ function ItemDetailContent({
       onToast("ردیف به صورت‌بها اضافه شد.", "success");
       setShowAddedRows(true);
     } catch (error) {
-      setLineError(getManualPriceValidationMessage(error));
+      const msg = getManualPriceValidationMessage(error);
+      setLineError(msg);
+      if (
+        typeof error === "object" && error !== null && "data" in error &&
+        typeof (error as { data?: unknown }).data === "object"
+      ) {
+        const d = (error as { data: Record<string, unknown> }).data;
+        if (d["requires_row_selection"] === true || String(d["requires_row_selection"]) === "True") {
+          onToast("این آیتم چند ردیف دارد؛ ردیف موردنظر را انتخاب کنید.", "error");
+        }
+      }
     }
   }
 
-  const addLineDisabledReason = !calculation
-    ? "بعد از محاسبه موفق می‌توانید آیتم را به صورت‌بها اضافه کنید."
-    : !document
-      ? "سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید."
-      : documentLocked
-        ? "این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد."
-        : null;
+  const addLineDisabledReason = needsRowSelection && selectedRowId === null
+    ? "ابتدا یک ردیف از لیست زیر انتخاب کنید."
+    : !calculation
+      ? "بعد از محاسبه موفق می‌توانید آیتم را به صورت‌بها اضافه کنید."
+      : !document
+        ? "سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید."
+        : documentLocked
+          ? "این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد."
+          : null;
 
   return (
     <div className="space-y-5">
+      {needsRowSelection ? (
+        <section className="rounded-lg border border-amber-300/20 bg-amber-400/10 p-4 light:bg-amber-50">
+          <h3 className="text-base font-black text-white light:text-slate-950">انتخاب ردیف</h3>
+          <p className="mt-2 text-sm leading-7 text-amber-100 light:text-amber-800">
+            این آیتم چند ردیف دارد؛ ردیف موردنظر را انتخاب کنید.
+          </p>
+          <div className="mt-3 space-y-2">
+            {item.rows.map((row) => (
+              <label
+                key={row.id}
+                className={classNames(
+                  "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition",
+                  selectedRowId === row.id
+                    ? "border-emerald-400/50 bg-emerald-400/15 light:border-emerald-500 light:bg-emerald-50"
+                    : "border-white/10 bg-white/5 hover:bg-white/10 light:border-slate-200 light:bg-white light:hover:bg-slate-50"
+                )}
+              >
+                <input
+                  checked={selectedRowId === row.id}
+                  className="mt-0.5 shrink-0 accent-emerald-400"
+                  disabled={isCalculationLocked}
+                  name="pricebook_row"
+                  onChange={() => {
+                    setSelectedRowId(row.id);
+                    setCalculation(null);
+                    setCalculationError(null);
+                  }}
+                  type="radio"
+                  value={row.id}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-sm text-emerald-200 light:text-emerald-700">
+                      {row.row_code}
+                    </span>
+                    <span className="text-sm text-slate-200 light:text-slate-800">
+                      {row.title_fa || row.short_title_fa}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-400 light:text-slate-500">
+                    <span>واحد: {row.unit}</span>
+                    {row.unit_price ? (
+                      <span>قیمت: {formatMoneyAmount(row.unit_price)}</span>
+                    ) : (
+                      <span className="text-amber-300 light:text-amber-700">قیمت دستی</span>
+                    )}
+                    {row.min_value ? <span>از: {row.min_value}</span> : null}
+                    {row.max_value ? <span>تا: {row.max_value}</span> : null}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <CalculationSection
         addLineDisabledReason={addLineDisabledReason}
         calculation={calculation}
         calculationError={calculationError}
+        coefficientSets={coefficientSets}
         isCalculating={calculateState.isLoading}
         onCalculate={handleCalculate}
+        onSelectedCoefficientSetIdChange={onSelectedCoefficientSetIdChange}
         quantity={quantity}
         quantityError={quantityError}
         requiresManualPrice={requiresManualPrice}
+        requiresRowSelection={needsRowSelection}
         isAddingLine={createLineState.isLoading || recalculateState.isLoading}
         lineError={lineError}
         lineSuccess={lineSuccess}
@@ -284,19 +370,10 @@ function ItemDetailContent({
         canAddLine={!addLineDisabledReason}
         isCalculationLocked={isCalculationLocked}
         onEditCalculation={handleEditCalculation}
+        selectedCoefficientSetId={selectedCoefficientSetId}
         setManualUnitPrice={setManualUnitPrice}
         setQuantity={setQuantity}
       />
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <InfoBox label="واحد" value={item.unit} />
-        <InfoBox label="قیمت واحد" value={formatMoneyAmount(item.unit_price)} />
-        <InfoBox
-          label="وضعیت قیمت"
-          value={requiresManualPrice ? "نیازمند قیمت دستی" : "قیمت رسمی"}
-        />
-      </div>
-
 
       <ChecklistNotesSection
         disabled={isCalculationLocked}
@@ -307,63 +384,30 @@ function ItemDetailContent({
         selectedNotes={confirmedFootnotes}
       />
 
-      <section>
-        <h3 className="text-base font-black text-white light:text-slate-950">ردیف‌های فهرست‌بها</h3>
-        <div className="mt-3 overflow-hidden rounded-lg border border-white/10 light:border-slate-200">
-          <div className="grid grid-cols-[100px_1fr_90px_140px] bg-white/7 px-4 py-3 text-xs font-bold text-slate-300 light:bg-slate-50 light:text-slate-600">
-            <span>کد ردیف</span>
-            <span>شرح</span>
-            <span>واحد</span>
-            <span>قیمت</span>
+      {!needsRowSelection ? (
+        <section>
+          <h3 className="text-sm font-bold text-slate-300 light:text-slate-600">ردیف فهرست‌بها</h3>
+          <div className="mt-2 space-y-2">
+            {item.rows.map((row) => (
+              <div
+                className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/10 bg-white/7 px-3 py-2.5 text-sm light:border-slate-200 light:bg-slate-50"
+                key={row.id}
+              >
+                <span className="font-mono font-bold text-emerald-200 light:text-emerald-700">
+                  {row.row_code}
+                </span>
+                <span className="flex-1 text-slate-100 light:text-slate-800">
+                  {row.title_fa || row.short_title_fa}
+                </span>
+                <span className="text-slate-400 light:text-slate-500">{row.unit}</span>
+                <span className="font-bold text-slate-200 light:text-slate-700">
+                  {row.requires_manual_unit_price ? "قیمت دستی" : formatMoneyAmount(row.unit_price)}
+                </span>
+              </div>
+            ))}
           </div>
-          {item.rows.map((row) => (
-            <div
-              className="grid grid-cols-[100px_1fr_90px_140px] gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-200 light:border-slate-200 light:text-slate-700"
-              key={row.id}
-            >
-              <span className="font-mono text-emerald-200 light:text-emerald-700">
-                {row.row_code}
-              </span>
-              <span>{row.title_fa || row.short_title_fa}</span>
-              <span>{row.unit}</span>
-              <span>
-                {row.requires_manual_unit_price
-                  ? "قیمت دستی"
-                  : formatMoneyAmount(row.unit_price)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <label className="block space-y-2 rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50">
-        <span className="text-sm font-bold text-slate-200 light:text-slate-700">
-          مجموعه ضرایب برای محاسبه
-        </span>
-        <select
-          className={inputClasses}
-          disabled={isCalculationLocked}
-          onChange={(event) =>
-            onSelectedCoefficientSetIdChange(
-              event.target.value ? Number(event.target.value) : null
-            )
-          }
-          value={selectedCoefficientSetId ?? ""}
-        >
-          <option value="">بدون ضریب</option>
-          {coefficientSets.map((set) => (
-            <option key={set.id} value={set.id}>
-              {set.name}
-              {set.is_default ? " - پیش‌فرض" : ""}
-            </option>
-          ))}
-        </select>
-        {coefficientSets.length === 0 ? (
-          <span className="text-xs leading-6 text-slate-400 light:text-slate-500">
-            برای محاسبه با ضریب، ابتدا در بخش ضرایب پروژه مجموعه بسازید.
-          </span>
-        ) : null}
-      </label>
+        </section>
+      ) : null}
 
       <ReadableNotesSection notes={item.requirements} title="الزامات" />
     </div>

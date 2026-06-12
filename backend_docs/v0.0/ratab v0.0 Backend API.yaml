@@ -550,8 +550,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ManualPriceLineValidationError'
-          description: Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true
-            and must not be treated as zero prices.
+          description: Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true.
+            Multi-row items return requires_row_selection=true when pricebook_row_id
+            is not provided.
   /api/financial-documents/{id}/lock/:
     post:
       operationId: financial_documents_lock_create
@@ -787,8 +788,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ManualPriceValidationError'
-          description: Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true
-            and must not be treated as zero prices.
+          description: Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true.
+            Multi-row items return requires_row_selection=true when pricebook_row_id
+            is not provided.
   /api/pricebooks/:
     get:
       operationId: pricebooks_list
@@ -1617,6 +1619,12 @@ components:
           format: decimal
           pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
           readOnly: true
+        manual_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          readOnly: true
+          nullable: true
         unit_price_snapshot:
           type: string
           format: decimal
@@ -1670,6 +1678,7 @@ components:
       - line_coefficients
       - line_no
       - line_source
+      - manual_unit_price
       - pricebook_item_id
       - pricebook_row_id
       - quantity
@@ -1722,7 +1731,10 @@ components:
         manual_unit_price:
           type: string
           format: decimal
-          pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+          pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          nullable: true
+        pricebook_row_id:
+          type: integer
           nullable: true
       required:
       - pricebook_item_id
@@ -2162,6 +2174,8 @@ components:
           maxLength: 240
         base_year:
           type: integer
+          maximum: 2147483647
+          minimum: -2147483648
           nullable: true
         status:
           $ref: '#/components/schemas/ProjectStatusEnum'
@@ -2212,7 +2226,10 @@ components:
         manual_unit_price:
           type: string
           format: decimal
-          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          nullable: true
+        pricebook_row_id:
+          type: integer
           nullable: true
       required:
       - quantity
@@ -2245,12 +2262,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AppliedCoefficient'
-        calculation_input:
-          $ref: '#/components/schemas/PricebookCalculationInputSnapshot'
-        calculation_output:
-          $ref: '#/components/schemas/PricebookCalculationOutput'
+        price_source:
+          type: string
+        manual_unit_price:
+          type: string
+          nullable: true
         requires_manual_unit_price:
           type: boolean
+        calculation_input:
+          $ref: '#/components/schemas/PricebookCalculationInputSnapshotWithManual'
+        calculation_output:
+          $ref: '#/components/schemas/PricebookCalculationOutput'
       required:
       - applied_coefficients
       - base_amount
@@ -2260,6 +2282,8 @@ components:
       - currency_code
       - item_id
       - item_key
+      - manual_unit_price
+      - price_source
       - quantity
       - requires_manual_unit_price
       - row_code
@@ -2267,7 +2291,7 @@ components:
       - total_amount
       - unit
       - unit_price
-    PricebookCalculationInputSnapshot:
+    PricebookCalculationInputSnapshotWithManual:
       type: object
       properties:
         quantity:
@@ -2275,8 +2299,12 @@ components:
         coefficient_set_id:
           type: integer
           nullable: true
+        manual_unit_price:
+          type: string
+          nullable: true
       required:
       - coefficient_set_id
+      - manual_unit_price
       - quantity
     PricebookCalculationOutput:
       type: object
@@ -2293,11 +2321,14 @@ components:
             $ref: '#/components/schemas/AppliedCoefficient'
         formula:
           type: string
+        price_source:
+          type: string
       required:
       - applied_coefficients
       - base_amount
       - coefficient_amount
       - formula
+      - price_source
       - total_amount
     PricebookChapter:
       type: object
@@ -2403,6 +2434,12 @@ components:
         unit_price:
           type: string
           nullable: true
+        price_status:
+          type: string
+        requires_manual_unit_price:
+          type: boolean
+        requires_row_selection:
+          type: boolean
         requirements:
           type: array
           items:
@@ -2418,7 +2455,10 @@ components:
       - has_more_details
       - id
       - item_key
+      - price_status
       - requirements
+      - requires_manual_unit_price
+      - requires_row_selection
       - rows
       - short_name_fa
       - unit
@@ -2450,6 +2490,15 @@ components:
         unit_price:
           type: string
           readOnly: true
+        price_status:
+          type: string
+          readOnly: true
+        requires_manual_unit_price:
+          type: boolean
+          readOnly: true
+        requires_row_selection:
+          type: boolean
+          readOnly: true
         has_more_details:
           type: boolean
           readOnly: true
@@ -2460,6 +2509,9 @@ components:
       - has_more_details
       - id
       - item_key
+      - price_status
+      - requires_manual_unit_price
+      - requires_row_selection
       - short_name_fa
       - unit
       - unit_price
@@ -2559,6 +2611,8 @@ components:
           maxLength: 240
         base_year:
           type: integer
+          maximum: 2147483647
+          minimum: -2147483648
           nullable: true
         status:
           $ref: '#/components/schemas/ProjectStatusEnum'
@@ -2720,6 +2774,8 @@ components:
           maxLength: 240
         base_year:
           type: integer
+          maximum: 2147483647
+          minimum: -2147483648
           nullable: true
         status:
           $ref: '#/components/schemas/ProjectStatusEnum'

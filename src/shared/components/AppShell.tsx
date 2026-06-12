@@ -13,7 +13,7 @@ import { ToastContainer } from "./ToastContainer";
 
 export function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { secondaryNav } = useAppShell();
+  const { secondaryNav, wizardCtx } = useAppShell();
   const touchStartX = useRef(0);
 
   function handleTouchStart(e: React.TouchEvent) {
@@ -28,7 +28,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-ratab-night text-slate-100 transition-colors light:bg-slate-50 light:text-slate-950">
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_15%_15%,rgba(20,184,166,0.20),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(139,92,246,0.18),transparent_30%),linear-gradient(135deg,#05050a_0%,#0f172a_58%,#05050a_100%)] light:bg-none" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_15%_15%,rgba(37,99,235,0.15),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(139,92,246,0.15),transparent_30%),linear-gradient(135deg,#05050a_0%,#0f172a_58%,#05050a_100%)] light:bg-none" />
 
       {/* Desktop fixed sidebars — hidden on mobile */}
       <PrimaryNav />
@@ -40,7 +40,8 @@ export function AppShell() {
       {/* Single content area: top offset on mobile, right offset on desktop */}
       <div
         className={classNames(
-          "relative z-10 pt-14 lg:pt-0",
+          "relative z-10",
+          wizardCtx ? "pt-30 lg:pt-16" : "pt-14 lg:pt-0",
           secondaryNav ? "lg:pr-[19rem]" : "lg:pr-20"
         )}
         onTouchEnd={handleTouchEnd}

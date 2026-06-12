@@ -642,28 +642,6 @@ export function CompanyDashboardPage() {
             <CompanyInfoPanel company={company} />
           ) : (
             <>
-              <div className="border-b border-white/10 px-4 py-3 light:border-slate-200 sm:px-5 sm:py-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200">
-                      <MessageCircle className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-black text-white light:text-slate-950">
-                        پیام‌های شرکت
-                      </h2>
-                      <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
-                        گفت‌وگوی کاری و پیوست صورت‌بها
-                      </p>
-                    </div>
-                  </div>
-                  <StatusBadge>پیام‌ها محلی هستند</StatusBadge>
-                </div>
-                <p className="mt-3 text-xs leading-6 text-amber-100 light:text-amber-800">
-                  پیام‌ها در این نسخه فقط در همین نشست مرورگر نگهداری می‌شوند. صورت‌بهاها روی بک‌اند ذخیره می‌شوند و از تب صورت‌بهاها دوباره قابل باز شدن هستند.
-                </p>
-              </div>
-
               <div className="flex min-h-0 flex-1 flex-col">
                 <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4 pb-3 sm:p-5 sm:pb-3 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]" data-tour="messages-area">
                   {messages.length === 0 ? (

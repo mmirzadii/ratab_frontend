@@ -10,6 +10,8 @@ export function ReadableNotesSection({
   notes: PricebookItemDetail["requirements"];
   title: string;
 }) {
+  const [expandedNotes, setExpandedNotes] = useState<Record<number, boolean>>({});
+
   if (notes.length === 0) {
     return null;
   }
@@ -31,7 +33,27 @@ export function ReadableNotesSection({
                 </span>
               ) : null}
             </div>
-            <p className="mt-2">{note.body_fa}</p>
+            <p
+              className={classNames(
+                "mt-2",
+                !expandedNotes[note.id] &&
+                  "overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1]"
+              )}
+            >
+              {note.body_fa}
+            </p>
+            <button
+              className="mt-1 text-xs font-bold text-emerald-200 transition hover:text-emerald-100 light:text-emerald-700 light:hover:text-emerald-900"
+              onClick={() =>
+                setExpandedNotes((current) => ({
+                  ...current,
+                  [note.id]: !current[note.id]
+                }))
+              }
+              type="button"
+            >
+              {expandedNotes[note.id] ? "کمتر" : "بیشتر ..."}
+            </button>
           </article>
         ))}
       </div>
@@ -87,7 +109,7 @@ export function ChecklistNotesSection({
                   className={classNames(
                     "mt-1 block",
                     !expandedNotes[note.id] &&
-                      "overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                      "overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1]"
                   )}
                 >
                   {note.body_fa}

@@ -1,5 +1,5 @@
-import { type FormEvent, useState } from "react";
-import { CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { CheckCircle2, ChevronDown, Loader2, Plus, X } from "lucide-react";
 
 import {
   type ProjectCoefficientSet,
@@ -11,44 +11,38 @@ import {
   useListCoefficientValuesQuery,
   useUpdateCoefficientValueMutation
 } from "../../coefficients/coefficientApi";
-import type { PricebookChapter } from "../../pricebooks/pricebookApi";
 import { Button } from "../../../shared/components/Button";
 import { GlassCard } from "../../../shared/components/GlassCard";
+import { HelpHint } from "../../../shared/components/HelpHint";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { Field } from "../../../shared/components/Field";
 import { classNames, linkButtonClasses } from "../../../shared/utils/classNames";
 import { getApiErrorMessage } from "../../../shared/utils/apiError";
 import {
   coefficientKeyOptions,
-  coefficientScopeOptions,
   initialCoefficientValueForm,
   inputClasses
 } from "../constants";
-import type { CoefficientKey, CoefficientScope, CoefficientValueFormState } from "../types";
+import type { CoefficientKey, CoefficientValueFormState } from "../types";
 import {
   getCoefficientKeyLabel,
   getCoefficientScopeLabel,
   isPositiveDecimal,
-  normalizeQuantityValue,
-  parsePositiveInteger
+  normalizeQuantityValue
 } from "../costReportUtils";
 
 export function ProjectCoefficientPanel({
-  chapters,
   coefficientSets,
   isLoadingSets,
   onSelectedCoefficientSetIdChange,
   projectId,
-  selectedChapterId,
   selectedCoefficientSetId,
   setsError
 }: {
-  chapters: PricebookChapter[];
   coefficientSets: ProjectCoefficientSet[];
   isLoadingSets: boolean;
   onSelectedCoefficientSetIdChange: (setId: number | null) => void;
   projectId: number;
-  selectedChapterId: number | null;
   selectedCoefficientSetId: number | null;
   setsError: unknown;
 }) {
@@ -60,6 +54,8 @@ export function ProjectCoefficientPanel({
     initialCoefficientValueForm
   );
   const [valueError, setValueError] = useState<string | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
   const [createSet, createSetState] = useCreateProjectCoefficientSetMutation();
   const [createValue, createValueState] = useCreateCoefficientValueMutation();
   const [updateValue, updateValueState] = useUpdateCoefficientValueMutation();
@@ -103,15 +99,26 @@ export function ProjectCoefficientPanel({
     }));
   }
 
-  function updateCoefficientScope(scope: CoefficientScope) {
-    setValueForm((current) => ({
-      ...current,
-      scope,
-      chapter_id:
-        scope === "chapter" ? current.chapter_id || String(selectedChapterId ?? "") : "",
-      row_id: scope === "row" ? current.row_id : ""
-    }));
-  }
+  useEffect(() => {
+    if (!popoverOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setPopoverOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setPopoverOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [popoverOpen]);
 
   async function handleCreateValue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,38 +141,24 @@ export function ProjectCoefficientPanel({
       return;
     }
 
-    const chapterId =
-      valueForm.scope === "chapter" ? parsePositiveInteger(valueForm.chapter_id) : null;
-    const rowId =
-      valueForm.scope === "row" ? parsePositiveInteger(valueForm.row_id) : null;
-
-    if (valueForm.scope === "chapter" && !chapterId) {
-      setValueError("برای ضریب فصل، یک فصل را انتخاب کنید.");
-      return;
-    }
-
-    if (valueForm.scope === "row" && !rowId) {
-      setValueError("برای ضریب ردیف، شناسه ردیف معتبر لازم است.");
-      return;
-    }
-
     try {
       await createValue({
         setId: selectedSet.id,
         body: {
           coefficient_key: valueForm.coefficient_key,
-          scope: valueForm.scope as ScopeEnum,
-          chapter_id: chapterId,
-          row_id: rowId,
+          scope: "project" as ScopeEnum,
+          chapter_id: null,
+          row_id: null,
           label_fa: label,
           multiplier,
-          is_active: valueForm.is_active
+          is_active: true
         }
       }).unwrap();
       setValueForm({
         ...initialCoefficientValueForm,
         label_fa: getCoefficientKeyLabel(initialCoefficientValueForm.coefficient_key)
       });
+      setPopoverOpen(false);
     } catch (error) {
       setValueError(getApiErrorMessage(error));
     }
@@ -199,10 +192,10 @@ export function ProjectCoefficientPanel({
     <GlassCard className="p-0">
       <div className="flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
-          <h2 className="text-lg font-black text-white light:text-slate-950">ضرایب پروژه</h2>
-          <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
-            ضریب فعال برای محاسبه آیتم‌ها اینجا انتخاب می‌شود؛ مدیریت کامل در همین بخش باز می‌شود.
-          </p>
+          <h2 className="flex items-center gap-2 text-lg font-black text-white light:text-slate-950">
+            ضرایب پروژه
+            <HelpHint text="ضریب فعال برای محاسبه آیتم‌ها اینجا انتخاب می‌شود؛ مدیریت کامل در همین بخش باز می‌شود." />
+          </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge tone={selectedSet ? "emerald" : "amber"}>
@@ -358,135 +351,88 @@ export function ProjectCoefficientPanel({
               ) : null}
             </form>
 
-            <form
-              className="space-y-3 rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50"
-              onSubmit={handleCreateValue}
-            >
-              <p className="text-sm font-black text-white light:text-slate-950">
-                افزودن مقدار ضریب
-              </p>
-              <Field label="نوع ضریب">
-                <select
-                  className={inputClasses}
-                  onChange={(event) =>
-                    updateCoefficientKey(event.target.value as CoefficientKey)
-                  }
-                  value={valueForm.coefficient_key}
-                >
-                  {coefficientKeyOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="عنوان نمایشی">
-                <input
-                  className={inputClasses}
-                  onChange={(event) =>
-                    setValueForm((current) => ({
-                      ...current,
-                      label_fa: event.target.value
-                    }))
-                  }
-                  value={valueForm.label_fa}
-                />
-              </Field>
-              <Field label="ضریب">
-                <input
-                  className={classNames(inputClasses, "text-left")}
-                  dir="ltr"
-                  inputMode="decimal"
-                  onChange={(event) =>
-                    setValueForm((current) => ({
-                      ...current,
-                      multiplier: event.target.value
-                    }))
-                  }
-                  placeholder="1.1"
-                  value={valueForm.multiplier}
-                />
-              </Field>
-              <Field label="محدوده اثر">
-                <select
-                  className={inputClasses}
-                  onChange={(event) =>
-                    updateCoefficientScope(event.target.value as CoefficientScope)
-                  }
-                  value={valueForm.scope}
-                >
-                  {coefficientScopeOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              {valueForm.scope === "chapter" ? (
-                <Field label="فصل">
-                  <select
-                    className={inputClasses}
-                    onChange={(event) =>
-                      setValueForm((current) => ({
-                        ...current,
-                        chapter_id: event.target.value
-                      }))
-                    }
-                    value={valueForm.chapter_id}
-                  >
-                    <option value="">انتخاب فصل</option>
-                    {chapters.map((chapter) => (
-                      <option key={chapter.id} value={chapter.id}>
-                        {chapter.chapter_code} - {chapter.title_fa}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              ) : null}
-              {valueForm.scope === "row" ? (
-                <Field label="شناسه ردیف">
-                  <input
-                    className={classNames(inputClasses, "text-left")}
-                    dir="ltr"
-                    inputMode="numeric"
-                    onChange={(event) =>
-                      setValueForm((current) => ({
-                        ...current,
-                        row_id: event.target.value
-                      }))
-                    }
-                    placeholder="شناسه ردیف از جزئیات آیتم"
-                    value={valueForm.row_id}
-                  />
-                </Field>
-              ) : null}
-              <label className="flex items-center gap-2 text-sm font-bold text-slate-200 light:text-slate-700">
-                <input
-                  checked={valueForm.is_active}
-                  onChange={(event) =>
-                    setValueForm((current) => ({
-                      ...current,
-                      is_active: event.target.checked
-                    }))
-                  }
-                  type="checkbox"
-                />
-                فعال باشد
-              </label>
-              <Button disabled={!selectedSet || createValueState.isLoading} type="submit">
-                {createValueState.isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
+            <div className="relative" ref={popoverRef}>
+              <button
+                className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/7 px-3 py-2 text-sm font-bold text-slate-200 transition hover:border-white/20 hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50 light:border-slate-200 light:bg-white light:text-slate-700"
+                disabled={!selectedSet}
+                onClick={() => setPopoverOpen((v) => !v)}
+                type="button"
+              >
+                <Plus className="h-4 w-4" />
                 افزودن ضریب
-              </Button>
-              {valueError ? (
-                <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
-                  {valueError}
-                </p>
+              </button>
+              {popoverOpen ? (
+                <div className="absolute left-0 bottom-full z-30 mb-2 w-[min(18rem,calc(100vw-2rem))] rounded-lg border border-white/10 bg-slate-900 p-4 shadow-2xl light:border-slate-200 light:bg-white">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-black text-white light:text-slate-950">افزودن ضریب</p>
+                    <button
+                      className="rounded p-1 text-slate-400 transition hover:text-white light:hover:text-slate-900"
+                      onClick={() => setPopoverOpen(false)}
+                      type="button"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <form className="space-y-3" onSubmit={handleCreateValue}>
+                    <Field label="نوع ضریب">
+                      <select
+                        className={inputClasses}
+                        onChange={(event) =>
+                          updateCoefficientKey(event.target.value as CoefficientKey)
+                        }
+                        value={valueForm.coefficient_key}
+                      >
+                        {coefficientKeyOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="عنوان نمایشی">
+                      <input
+                        className={inputClasses}
+                        onChange={(event) =>
+                          setValueForm((current) => ({
+                            ...current,
+                            label_fa: event.target.value
+                          }))
+                        }
+                        value={valueForm.label_fa}
+                      />
+                    </Field>
+                    <Field label="ضریب">
+                      <input
+                        className={classNames(inputClasses, "text-left")}
+                        dir="ltr"
+                        inputMode="decimal"
+                        onChange={(event) =>
+                          setValueForm((current) => ({
+                            ...current,
+                            multiplier: event.target.value
+                          }))
+                        }
+                        placeholder="1.1"
+                        value={valueForm.multiplier}
+                      />
+                    </Field>
+                    <Button disabled={createValueState.isLoading} type="submit">
+                      {createValueState.isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                      ثبت ضریب
+                    </Button>
+                    {valueError ? (
+                      <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+                        {valueError}
+                      </p>
+                    ) : null}
+                  </form>
+                </div>
               ) : null}
-            </form>
+            </div>
           </div>
         </div>
       </div>

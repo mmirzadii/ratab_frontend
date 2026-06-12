@@ -10,11 +10,11 @@ export function SecondaryNav() {
 
   const activeClasses = isViolet
     ? "border-violet-300/30 bg-violet-400/15 text-violet-100 light:text-violet-800"
-    : "border-emerald-300/30 bg-emerald-400/15 text-emerald-100 light:text-emerald-800";
+    : "border-brand-300/30 bg-brand-400/15 text-brand-100 light:text-brand-800";
 
   const hoverClasses = isViolet
     ? "border-transparent text-slate-400 hover:border-violet-300/30 hover:bg-violet-400/10 hover:text-violet-100 light:text-slate-600 light:hover:text-violet-800"
-    : "border-transparent text-slate-400 hover:border-emerald-300/30 hover:bg-emerald-400/10 hover:text-emerald-100 light:text-slate-600 light:hover:text-emerald-800";
+    : "border-transparent text-slate-400 hover:border-brand-300/30 hover:bg-brand-400/10 hover:text-brand-100 light:text-slate-600 light:hover:text-brand-800";
 
   const headerTextClasses = isViolet
     ? "text-violet-200 light:text-violet-700"

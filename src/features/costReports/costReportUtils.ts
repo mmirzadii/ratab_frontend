@@ -168,32 +168,31 @@ export function getCoefficientScopeLabel(scope: string | undefined): string {
 }
 
 export function hasManualUnitPrice(item: PricebookItemDetail): boolean {
-  return (
-    item.unit_price === null ||
-    item.unit_price === "" ||
-    item.rows.some(
-      (row) =>
-        row.requires_manual_unit_price ||
-        row.unit_price === null ||
-        row.unit_price === ""
-    )
-  );
+  return item.requires_manual_unit_price === true;
+}
+
+export function requiresRowSelection(item: PricebookItemDetail): boolean {
+  return item.requires_row_selection === true;
 }
 
 export function getManualPriceValidationMessage(error: unknown): string {
   if (typeof error === "object" && error && "data" in error) {
     const data = (error as { data?: unknown }).data;
 
-    if (
-      typeof data === "object" &&
-      data &&
-      "requires_manual_unit_price" in data &&
-      (data as { requires_manual_unit_price?: unknown }).requires_manual_unit_price === true
-    ) {
-      const detail = (data as { detail?: unknown }).detail;
-      return typeof detail === "string"
-        ? detail
-        : "این آیتم نیازمند قیمت دستی است؛ لطفاً قیمت واحد را در فرم محاسبه وارد کنید.";
+    if (typeof data === "object" && data !== null) {
+      const d = data as Record<string, unknown>;
+
+      if (d["requires_row_selection"] === true || String(d["requires_row_selection"]) === "True") {
+        return typeof d["detail"] === "string"
+          ? d["detail"]
+          : "این آیتم چند ردیف دارد؛ ردیف موردنظر را انتخاب کنید.";
+      }
+
+      if (d["requires_manual_unit_price"] === true || String(d["requires_manual_unit_price"]) === "True") {
+        return typeof d["detail"] === "string"
+          ? d["detail"]
+          : "این آیتم نیازمند قیمت دستی است؛ لطفاً قیمت واحد را در فرم محاسبه وارد کنید.";
+      }
     }
   }
 

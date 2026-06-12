@@ -6,9 +6,9 @@ import { removeToast, type Toast } from "../../features/ui/uiSlice";
 import { classNames } from "../utils/classNames";
 
 const toastColorClasses: Record<Toast["type"], string> = {
-  success: "bg-emerald-500/15 border-emerald-500/40 text-emerald-200 light:bg-emerald-50 light:border-emerald-400 light:text-emerald-800",
-  error: "bg-rose-500/15 border-rose-500/40 text-rose-200 light:bg-rose-50 light:border-rose-400 light:text-rose-800",
-  info: "bg-slate-700/60 border-white/10 text-slate-200 light:bg-white light:border-slate-200 light:text-slate-700"
+  success: "bg-success-500/15 border-success-500/40 text-success-200 light:bg-success-50 light:border-success-400 light:text-success-800",
+  error:   "bg-danger-500/15 border-danger-500/40 text-danger-200 light:bg-danger-50 light:border-danger-400 light:text-danger-800",
+  info:    "bg-slate-700/60 border-white/10 text-slate-200 light:bg-white light:border-slate-200 light:text-slate-700"
 };
 
 function ToastItem({ toast }: { toast: Toast }) {

@@ -10,8 +10,8 @@ export function ContextHeader() {
 
   if (wizardCtx) {
     return (
-      <header className="sticky top-14 lg:top-0 z-20 border-b border-white/8 bg-slate-950/28 backdrop-blur-xl light:border-slate-200 light:bg-white/70">
-        <div className="flex items-center gap-3 px-3 py-3 sm:px-6 sm:py-4">
+      <header className="fixed top-14 lg:top-0 left-0 right-0 lg:right-[19rem] z-30 h-16 border-b border-white/8 bg-slate-950/55 backdrop-blur-xl light:border-slate-200 light:bg-white/90">
+        <div className="flex h-full items-center gap-3 px-3 sm:px-6">
           <button
             aria-label="بازگشت"
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500 light:hover:text-slate-900"
@@ -25,7 +25,7 @@ export function ContextHeader() {
           </p>
           {wizardCtx.isLastStep ? (
             <button
-              className="flex h-12 items-center gap-1.5 rounded-lg border border-violet-300/30 bg-violet-400/15 px-4 text-base font-black text-violet-100 transition hover:bg-violet-400/25 light:text-violet-800"
+              className="flex h-10 items-center gap-1.5 rounded-lg bg-success-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-success-500 light:bg-success-600 light:hover:bg-success-500"
               onClick={wizardCtx.onFinalize}
               type="button"
             >
@@ -34,7 +34,7 @@ export function ContextHeader() {
             </button>
           ) : wizardCtx.onNext !== null ? (
             <button
-              className="flex h-12 items-center gap-1.5 rounded-lg border border-violet-300/30 bg-violet-400/15 px-4 text-base font-black text-violet-100 transition hover:bg-violet-400/25 disabled:cursor-not-allowed disabled:opacity-40 light:text-violet-800"
+              className="flex h-10 items-center gap-1.5 rounded-lg bg-success-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-success-500 disabled:cursor-not-allowed disabled:opacity-50 light:bg-success-600 light:hover:bg-success-500"
               disabled={!wizardCtx.canGoNext}
               onClick={wizardCtx.onNext}
               type="button"

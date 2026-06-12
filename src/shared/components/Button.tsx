@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, PropsWithChildren } from "react";
 
 import { classNames } from "../utils/classNames";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "brand";
 
 type ButtonProps = PropsWithChildren<
   ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -12,7 +12,9 @@ type ButtonProps = PropsWithChildren<
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-gradient-to-l from-emerald-400 to-teal-300 text-slate-950 shadow-emerald-soft hover:from-emerald-300 hover:to-teal-200",
+    "bg-gradient-to-l from-success-400 to-teal-300 text-slate-950 shadow-emerald-soft hover:from-success-300 hover:to-teal-200",
+  brand:
+    "bg-brand-600 text-white shadow-brand-soft hover:bg-brand-500",
   secondary:
     "border border-white/10 bg-white/8 text-slate-100 hover:border-violet-300/35 hover:bg-violet-400/15 light:border-slate-200 light:bg-white light:text-slate-800",
   ghost:

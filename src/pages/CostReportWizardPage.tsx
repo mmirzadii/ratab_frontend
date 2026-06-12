@@ -209,8 +209,8 @@ export function CostReportWizardPage() {
   const builderOrder: BuilderSection[] = [
     "project",
     "document",
-    "pricebook",
     "coefficients",
+    "pricebook",
     "finalize"
   ];
 
@@ -543,7 +543,7 @@ export function CostReportWizardPage() {
           >
             {activeSection === "project" ? (
               <>
-                <h2 className="text-lg font-black text-white light:text-slate-950">اطلاعات پروژه</h2>
+
                 <ProjectInfoSection
                   form={form}
                   onFieldChange={updateField}
@@ -593,12 +593,10 @@ export function CostReportWizardPage() {
 
             {activeSection === "coefficients" && createdProject ? (
               <ProjectCoefficientPanel
-                chapters={chapters}
                 coefficientSets={coefficientSets}
                 isLoadingSets={isLoadingCoefficientSets}
                 onSelectedCoefficientSetIdChange={setSelectedCoefficientSetId}
                 projectId={createdProject.id}
-                selectedChapterId={selectedChapterId}
                 selectedCoefficientSetId={selectedCoefficientSetId}
                 setsError={coefficientSetsError}
               />
