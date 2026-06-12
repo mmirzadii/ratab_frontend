@@ -191,6 +191,7 @@ export function CalculationSection({
 
       {calculation ? (
         <div className="mt-4 space-y-4 rounded-lg border border-white/10 bg-slate-950/35 p-4 light:border-slate-200 light:bg-white">
+          <p className="text-xs font-black uppercase tracking-wide text-slate-400 light:text-slate-500">نتیجه محاسبه</p>
           <div className="grid gap-3 sm:grid-cols-4">
             <InfoBox label="کد ردیف" value={calculation.row_code} />
             <InfoBox label="بهای واحد" value={formatMoneyAmount(calculation.unit_price)} />
@@ -200,7 +201,12 @@ export function CalculationSection({
           <div className="grid gap-3 sm:grid-cols-3">
             <InfoBox label="مبلغ پایه" value={formatMoneyAmount(calculation.base_amount)} />
             <InfoBox label="مبلغ ضرایب" value={formatMoneyAmount(calculation.coefficient_amount)} />
-            <InfoBox label="مبلغ کل" value={formatMoneyAmount(calculation.total_amount)} />
+            <div className="rounded-lg border border-success-300/30 bg-success-400/10 p-3 light:border-success-300/40 light:bg-success-50">
+              <p className="text-xs font-bold text-slate-400 light:text-slate-500">مبلغ کل</p>
+              <p className="mt-1 text-base font-black text-success-300 light:text-success-700">
+                {formatMoneyAmount(calculation.total_amount)}
+              </p>
+            </div>
           </div>
           {calculation.applied_coefficients.length > 0 ? (
             <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50">

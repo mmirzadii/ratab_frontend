@@ -133,7 +133,7 @@ export function PricebookBrowserSection({
             {/* Mobile back button */}
             <button
               aria-label="بازگشت به فصل‌ها"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white lg:hidden light:text-slate-500 light:hover:text-slate-900"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 lg:hidden light:text-slate-500 light:hover:text-slate-900"
               onClick={() => setMobileView("chapters")}
               type="button"
             >

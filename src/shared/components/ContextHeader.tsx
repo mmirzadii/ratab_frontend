@@ -14,7 +14,7 @@ export function ContextHeader() {
         <div className="flex h-full items-center gap-3 px-3 sm:px-6">
           <button
             aria-label="بازگشت"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500 light:hover:text-slate-900"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 sm:h-9 sm:w-9 light:text-slate-500 light:hover:text-slate-900"
             onClick={wizardCtx.onBack}
             type="button"
           >
@@ -25,7 +25,7 @@ export function ContextHeader() {
           </p>
           {wizardCtx.isLastStep ? (
             <button
-              className="flex h-10 items-center gap-1.5 rounded-lg bg-success-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-success-500 light:bg-success-600 light:hover:bg-success-500"
+              className="flex h-10 items-center gap-1.5 rounded-lg bg-success-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-success-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 motion-safe:active:scale-[.98] light:bg-success-600 light:hover:bg-success-500"
               onClick={wizardCtx.onFinalize}
               type="button"
             >
@@ -34,7 +34,7 @@ export function ContextHeader() {
             </button>
           ) : wizardCtx.onNext !== null ? (
             <button
-              className="flex h-10 items-center gap-1.5 rounded-lg bg-success-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-success-500 disabled:cursor-not-allowed disabled:opacity-50 light:bg-success-600 light:hover:bg-success-500"
+              className="flex h-10 items-center gap-1.5 rounded-lg bg-success-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-success-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 motion-safe:active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 light:bg-success-600 light:hover:bg-success-500"
               disabled={!wizardCtx.canGoNext}
               onClick={wizardCtx.onNext}
               type="button"
@@ -54,7 +54,7 @@ export function ContextHeader() {
         <div className="flex items-center gap-3 px-3 py-3 sm:px-6 sm:py-4">
           <Link
             aria-label="بازگشت به شرکت‌ها"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500 light:hover:text-slate-900"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 sm:h-9 sm:w-9 light:text-slate-500 light:hover:text-slate-900"
             to="/companies"
           >
             <ArrowRight className="h-4 w-4" />

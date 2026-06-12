@@ -35,7 +35,7 @@ export function ReadableNotesSection({
             </div>
             <p
               className={classNames(
-                "mt-2",
+                "mt-2 motion-safe:transition-all motion-safe:duration-150",
                 !expandedNotes[note.id] &&
                   "overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1]"
               )}
@@ -43,7 +43,7 @@ export function ReadableNotesSection({
               {note.body_fa}
             </p>
             <button
-              className="mt-1 text-xs font-bold text-emerald-200 transition hover:text-emerald-100 light:text-emerald-700 light:hover:text-emerald-900"
+              className="mt-1 text-xs font-bold text-success-300 transition hover:text-success-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 light:text-success-600 light:hover:text-success-700"
               onClick={() =>
                 setExpandedNotes((current) => ({
                   ...current,
@@ -107,7 +107,7 @@ export function ChecklistNotesSection({
                 </span>
                 <span
                   className={classNames(
-                    "mt-1 block",
+                    "mt-1 block motion-safe:transition-all motion-safe:duration-150",
                     !expandedNotes[note.id] &&
                       "overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1]"
                   )}
@@ -117,7 +117,7 @@ export function ChecklistNotesSection({
               </span>
             </label>
             <button
-              className="mt-2 text-xs font-bold text-emerald-200 transition hover:text-emerald-100 light:text-emerald-700 light:hover:text-emerald-900"
+              className="mt-2 text-xs font-bold text-success-300 transition hover:text-success-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 light:text-success-600 light:hover:text-success-700"
               onClick={() =>
                 setExpandedNotes((current) => ({
                   ...current,

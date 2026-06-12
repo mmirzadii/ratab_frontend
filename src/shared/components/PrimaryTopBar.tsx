@@ -36,7 +36,7 @@ export function PrimaryTopBar({ onMenuClick }: Props) {
         ) : null}
         <button
           aria-label="منوی ناوبری"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-slate-300 transition hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-600 light:hover:text-slate-900"
+          className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent text-slate-300 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 light:text-slate-600 light:hover:text-slate-900"
           onClick={onMenuClick}
           type="button"
         >

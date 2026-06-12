@@ -36,7 +36,7 @@ export function SecondaryNav() {
           return (
             <button
               className={classNames(
-                "flex h-11 w-full items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition",
+                "flex h-11 w-full items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60",
                 item.isActive
                   ? activeClasses
                   : item.disabled

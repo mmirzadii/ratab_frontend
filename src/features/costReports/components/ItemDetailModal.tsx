@@ -292,7 +292,7 @@ function ItemDetailContent({
           : null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {needsRowSelection ? (
         <section className="rounded-lg border border-amber-300/20 bg-amber-400/10 p-4 light:bg-amber-50">
           <h3 className="text-base font-black text-white light:text-slate-950">انتخاب ردیف</h3>
@@ -386,7 +386,7 @@ function ItemDetailContent({
 
       {!needsRowSelection ? (
         <section>
-          <h3 className="text-sm font-bold text-slate-300 light:text-slate-600">ردیف فهرست‌بها</h3>
+          <h3 className="text-xs font-black uppercase tracking-wide text-slate-400 light:text-slate-500">ردیف فهرست‌بها</h3>
           <div className="mt-2 space-y-2">
             {item.rows.map((row) => (
               <div

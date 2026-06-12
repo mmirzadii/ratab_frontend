@@ -55,7 +55,7 @@ export function MobileDrawer({ open, onClose }: Props) {
             <div className="flex items-center justify-end border-b border-white/10 px-3 py-3 light:border-slate-200">
               <button
                 aria-label="بستن منو"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500 light:hover:text-slate-900"
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 light:text-slate-500 light:hover:text-slate-900"
                 onClick={onClose}
                 type="button"
               >
@@ -69,7 +69,7 @@ export function MobileDrawer({ open, onClose }: Props) {
                 return (
                   <button
                     className={classNames(
-                      "flex h-11 w-full items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition",
+                      "flex h-11 w-full items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60",
                       item.isActive
                         ? isViolet
                           ? "border-violet-300/30 bg-violet-400/15 text-violet-100 light:text-violet-800"
