@@ -12,7 +12,7 @@ import { HelpHint } from "../../../shared/components/HelpHint";
 import { InfoBox } from "../../../shared/components/InfoBox";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { classNames } from "../../../shared/utils/classNames";
-import { formatMoneyAmount } from "../../../shared/utils/formatters";
+import { formatDecimal, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { inputClasses } from "../constants";
 import { getCalculationMessages } from "../costReportUtils";
 
@@ -238,25 +238,60 @@ export function CalculationSection({
         </form>
       )}
 
-      {/* Range-based: matched row read-only display */}
+      {/* Range-based: matched row read-only display — switches to combined view after multi-row calculation */}
       {isRangeBased && matchedRangeRow ? (
-        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-emerald-300/25 bg-emerald-400/8 px-3 py-2.5 text-sm light:border-emerald-300/40 light:bg-emerald-50">
-          <span className="text-xs font-black uppercase tracking-wide text-slate-400 light:text-slate-500">
-            ردیف انتخاب‌شده
-          </span>
-          <span className="font-mono text-emerald-200 light:text-emerald-700">
-            {matchedRangeRow.row_code}
-          </span>
-          <span className="flex-1 text-slate-100 light:text-slate-900">
-            {matchedRangeRow.title_fa || matchedRangeRow.short_title_fa}
-          </span>
-          <span className="text-slate-400 light:text-slate-500">{matchedRangeRow.unit}</span>
-          {matchedRangeRow.unit_price ? (
-            <span className="font-bold text-slate-200 light:text-slate-700">
-              {formatMoneyAmount(matchedRangeRow.unit_price)}
+        calculation && (calculation.rows_breakdown?.length ?? 0) > 1 ? (
+          <div className="mt-3 rounded-lg border border-emerald-300/25 bg-emerald-400/8 px-3 py-2.5 text-sm light:border-emerald-300/40 light:bg-emerald-50">
+            <p className="mb-1.5 text-xs font-black uppercase tracking-wide text-slate-400 light:text-slate-500">
+              ردیف‌های انتخاب‌شده
+            </p>
+            <div className="space-y-1">
+              {(calculation.rows_breakdown ?? []).map((row) => (
+                <div
+                  className="flex flex-wrap items-center gap-x-3 gap-y-0.5"
+                  key={row.row_id}
+                >
+                  <span className="font-mono text-emerald-200 light:text-emerald-700">
+                    {row.row_code}
+                  </span>
+                  <span className="flex-1 text-slate-100 light:text-slate-900">
+                    {row.description_fa || row.title_fa}
+                  </span>
+                  <span className="text-slate-400 light:text-slate-500">
+                    {formatDecimal(row.quantity)} {row.unit}
+                  </span>
+                  <span className="font-bold text-slate-200 light:text-slate-700">
+                    {formatMoneyAmount(row.total)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-1.5 flex items-center gap-x-3 border-t border-white/10 pt-1.5 light:border-slate-200">
+              <span className="flex-1 text-xs font-bold text-slate-300 light:text-slate-600">جمع</span>
+              <span className="font-bold text-slate-200 light:text-slate-700">
+                {formatMoneyAmount(calculation.base_amount)}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-emerald-300/25 bg-emerald-400/8 px-3 py-2.5 text-sm light:border-emerald-300/40 light:bg-emerald-50">
+            <span className="text-xs font-black uppercase tracking-wide text-slate-400 light:text-slate-500">
+              ردیف انتخاب‌شده
             </span>
-          ) : null}
-        </div>
+            <span className="font-mono text-emerald-200 light:text-emerald-700">
+              {matchedRangeRow.row_code}
+            </span>
+            <span className="flex-1 text-slate-100 light:text-slate-900">
+              {matchedRangeRow.title_fa || matchedRangeRow.short_title_fa}
+            </span>
+            <span className="text-slate-400 light:text-slate-500">{matchedRangeRow.unit}</span>
+            {matchedRangeRow.unit_price ? (
+              <span className="font-bold text-slate-200 light:text-slate-700">
+                {formatMoneyAmount(matchedRangeRow.unit_price)}
+              </span>
+            ) : null}
+          </div>
+        )
       ) : null}
 
       {quantityError ? (
@@ -291,7 +326,7 @@ export function CalculationSection({
           <div className="grid gap-3 sm:grid-cols-4">
             <InfoBox label="کد ردیف" value={calculation.row_code} />
             <InfoBox label="بهای واحد" value={formatMoneyAmount(calculation.unit_price)} />
-            <InfoBox label="مقدار" value={`${calculation.quantity} ${calculation.unit}`} />
+            <InfoBox label="مقدار" value={`${formatDecimal(calculation.quantity)} ${calculation.unit}`} />
             <InfoBox
               label="قیمت دستی"
               value={calculation.requires_manual_unit_price ? "بله" : "خیر"}
@@ -321,9 +356,11 @@ export function CalculationSection({
                     <span className="font-mono text-emerald-200 light:text-emerald-700">
                       {row.row_code}
                     </span>
-                    <span className="flex-1 text-slate-300 light:text-slate-700">{row.title_fa}</span>
+                    <span className="flex-1 text-slate-300 light:text-slate-700">
+                      {row.description_fa || row.title_fa}
+                    </span>
                     <span className="text-slate-400 light:text-slate-500">
-                      {row.quantity} {row.unit}
+                      {formatDecimal(row.quantity)} {row.unit}
                     </span>
                     <span className="font-bold text-slate-200 light:text-slate-800">
                       {formatMoneyAmount(row.total)}

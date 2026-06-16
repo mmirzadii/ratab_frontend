@@ -23,6 +23,15 @@ export function formatMoneyAmount(value: number | string | null | undefined) {
   return `${sign}${groupedInteger}`;
 }
 
+export function formatDecimal(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  const str = typeof value === "number" ? String(value) : String(value).trim();
+  if (!str) return "—";
+  if (!str.includes(".")) return str;
+  const stripped = str.replace(/\.?0+$/, "");
+  return stripped || "0";
+}
+
 const mojibakeMarkers = ["Ã", "Â", "�", "Ø", "Ù", "Û", "Ú"];
 
 export function isMojibakeText(value: unknown) {

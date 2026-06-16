@@ -16,7 +16,7 @@ import {
   useRecalculateFinancialDocumentMutation
 } from "../../financialDocuments/financialDocumentApi";
 import { EmptyState } from "../../../shared/components/EmptyState";
-import { cleanDisplayText, formatMoneyAmount } from "../../../shared/utils/formatters";
+import { cleanDisplayText, formatDecimal, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { getApiErrorMessage } from "../../../shared/utils/apiError";
 import { classNames } from "../../../shared/utils/classNames";
 import {
@@ -78,7 +78,7 @@ function AddedRowsView({
                     {line.row_code_snapshot}
                   </span>
                 </span>
-                <span>مقدار: {line.quantity}</span>
+                <span>مقدار: {formatDecimal(line.quantity)}</span>
                 <span>جمع: {formatMoneyAmount(line.total_amount_snapshot)}</span>
               </div>
             </div>
@@ -552,6 +552,11 @@ function ItemDetailContent({
                           {row.title_fa || row.short_title_fa}
                         </span>
                       </div>
+                      {row.description_fa ? (
+                        <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">
+                          {row.description_fa}
+                        </p>
+                      ) : null}
                       <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-400 light:text-slate-500">
                         <span>واحد: {row.unit}</span>
                         {row.unit_price ? (
@@ -607,6 +612,11 @@ function ItemDetailContent({
                       {row.title_fa || row.short_title_fa}
                     </span>
                   </div>
+                  {row.description_fa ? (
+                    <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">
+                      {row.description_fa}
+                    </p>
+                  ) : null}
                   <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-400 light:text-slate-500">
                     <span>واحد: {row.unit}</span>
                     {row.unit_price ? (
@@ -614,8 +624,8 @@ function ItemDetailContent({
                     ) : (
                       <span className="text-amber-300 light:text-amber-700">قیمت دستی</span>
                     )}
-                    {row.min_value ? <span>از: {row.min_value}</span> : null}
-                    {row.max_value ? <span>تا: {row.max_value}</span> : null}
+                    {row.min_value ? <span>از: {formatDecimal(row.min_value)}</span> : null}
+                    {row.max_value ? <span>تا: {formatDecimal(row.max_value)}</span> : null}
                   </div>
                 </div>
               </label>
@@ -689,21 +699,28 @@ function ItemDetailContent({
           <div className="mt-2 space-y-2">
             {item.rows.map((row) => (
               <div
-                className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-white/10 bg-white/7 px-3 py-2.5 text-sm light:border-slate-200 light:bg-slate-50"
+                className="rounded-lg border border-white/10 bg-white/7 px-3 py-2.5 text-sm light:border-slate-200 light:bg-slate-50"
                 key={row.id}
               >
-                <span className="font-mono font-bold text-emerald-200 light:text-emerald-700">
-                  {row.row_code}
-                </span>
-                <span className="flex-1 text-slate-100 light:text-slate-800">
-                  {row.title_fa || row.short_title_fa}
-                </span>
-                <span className="text-slate-400 light:text-slate-500">{row.unit}</span>
-                <span className="font-bold text-slate-200 light:text-slate-700">
-                  {row.requires_manual_unit_price
-                    ? "قیمت دستی"
-                    : formatMoneyAmount(row.unit_price)}
-                </span>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <span className="font-mono font-bold text-emerald-200 light:text-emerald-700">
+                    {row.row_code}
+                  </span>
+                  <span className="flex-1 text-slate-100 light:text-slate-800">
+                    {row.title_fa || row.short_title_fa}
+                  </span>
+                  <span className="text-slate-400 light:text-slate-500">{row.unit}</span>
+                  <span className="font-bold text-slate-200 light:text-slate-700">
+                    {row.requires_manual_unit_price
+                      ? "قیمت دستی"
+                      : formatMoneyAmount(row.unit_price)}
+                  </span>
+                </div>
+                {row.description_fa ? (
+                  <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">
+                    {row.description_fa}
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>
@@ -750,7 +767,7 @@ export function ItemDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose();

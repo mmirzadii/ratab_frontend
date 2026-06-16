@@ -1088,6 +1088,7 @@ export interface components {
             row_code: string;
             title_fa: string;
             short_title_fa: string;
+            description_fa: string;
             unit: string;
             unit_price: string | null;
             currency_code: string | null;
@@ -1100,6 +1101,7 @@ export interface components {
             row_id: number;
             row_code: string;
             title_fa: string;
+            description_fa: string;
             unit: string;
             unit_price: string | null;
             currency_code: string;

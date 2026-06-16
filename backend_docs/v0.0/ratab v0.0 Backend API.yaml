@@ -1,4 +1,4 @@
-openapi: 3.0.3
+﻿openapi: 3.0.3
 info:
   title: ratab v0.0 Backend API
   version: '0.0'
@@ -2656,6 +2656,8 @@ components:
           type: string
         short_title_fa:
           type: string
+        description_fa:
+          type: string
         unit:
           type: string
         unit_price:
@@ -2676,6 +2678,7 @@ components:
           type: boolean
       required:
       - currency_code
+      - description_fa
       - id
       - max_value
       - min_value
@@ -2695,6 +2698,8 @@ components:
           type: string
         title_fa:
           type: string
+        description_fa:
+          type: string
         unit:
           type: string
         unit_price:
@@ -2708,6 +2713,7 @@ components:
           type: string
       required:
       - currency_code
+      - description_fa
       - quantity
       - row_code
       - row_id
