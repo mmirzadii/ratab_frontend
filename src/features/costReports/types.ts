@@ -3,6 +3,7 @@ import type { Project } from "../projects/projectApi";
 
 export type WizardStep = "setup" | "browser";
 export type BuilderSection = "project" | "document" | "pricebook" | "coefficients" | "finalize";
+export type PricebookItemType = "single" | "multi-input" | "range-based" | "itemized";
 
 export type CostReportBuilderState = {
   existingDocument?: FinancialDocument;

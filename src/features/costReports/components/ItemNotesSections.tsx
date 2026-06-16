@@ -69,8 +69,8 @@ export function ChecklistNotesSection({
 }: {
   disabled: boolean;
   notes: PricebookItemDetail["footnotes"];
-  onToggle: (noteId: number, checked: boolean) => void;
-  selectedNotes: Record<number, boolean>;
+  onToggle: (noteCode: string, checked: boolean) => void;
+  selectedNotes: Record<string, boolean>;
 }) {
   const [expandedNotes, setExpandedNotes] = useState<Record<number, boolean>>({});
 
@@ -95,10 +95,10 @@ export function ChecklistNotesSection({
           >
             <label className="flex items-start gap-3">
               <input
-                checked={Boolean(selectedNotes[note.id])}
+                checked={Boolean(selectedNotes[note.note_code])}
                 className="mt-2 h-4 w-4 accent-emerald-300"
                 disabled={disabled}
-                onChange={(event) => onToggle(note.id, event.target.checked)}
+                onChange={(event) => onToggle(note.note_code, event.target.checked)}
                 type="checkbox"
               />
               <span className="min-w-0 flex-1">

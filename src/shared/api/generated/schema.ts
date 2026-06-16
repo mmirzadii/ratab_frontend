@@ -680,6 +680,14 @@ export interface components {
             /** Format: decimal */
             manual_unit_price?: string | null;
             pricebook_row_id?: number | null;
+            /** @description Indexed input values for v2 items. Supersedes quantity when provided. */
+            values?: string[];
+            /** @description Row selection for itemized items. */
+            selected_row_id?: number | null;
+            /** @description Map of footnote_code to bool — applied checkboxes for this calculation. */
+            footnotes?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * @description * `draft` - Draft
@@ -944,11 +952,19 @@ export interface components {
         };
         PricebookCalculateInputRequest: {
             /** Format: decimal */
-            quantity: string;
+            quantity?: string;
+            /** @description Indexed list of input values (v2 items). Supersedes quantity when provided. */
+            values?: string[];
             coefficient_set_id?: number | null;
             /** Format: decimal */
             manual_unit_price?: string | null;
             pricebook_row_id?: number | null;
+            /** @description Row selection for itemized items. Alias of pricebook_row_id. */
+            selected_row_id?: number | null;
+            /** @description Map of footnote_code to bool — applied checkboxes for this calculation. */
+            footnotes?: {
+                [key: string]: unknown;
+            } | null;
         };
         PricebookCalculateResponse: {
             item_id: number;
@@ -957,7 +973,7 @@ export interface components {
             row_code: string;
             quantity: string;
             unit: string;
-            unit_price: string;
+            unit_price: string | null;
             currency_code: string;
             base_amount: string;
             coefficient_amount: string;
@@ -966,13 +982,20 @@ export interface components {
             price_source: string;
             manual_unit_price: string | null;
             requires_manual_unit_price: boolean;
+            calculate_message: string;
+            rows_breakdown: components["schemas"]["PricebookRowBreakdown"][];
             calculation_input: components["schemas"]["PricebookCalculationInputSnapshotWithManual"];
             calculation_output: components["schemas"]["PricebookCalculationOutput"];
         };
         PricebookCalculationInputSnapshotWithManual: {
             quantity: string;
+            values?: string[];
+            selected_row_id?: number | null;
             coefficient_set_id: number | null;
             manual_unit_price: string | null;
+            footnotes?: {
+                [key: string]: unknown;
+            } | null;
         };
         PricebookCalculationOutput: {
             base_amount: string;
@@ -1010,6 +1033,7 @@ export interface components {
             id: number;
             item_key: string;
             short_name_fa: string;
+            description_fa: string;
             unit: string;
             rows: components["schemas"]["PricebookItemRowDetail"][];
             unit_price: string | null;
@@ -1019,6 +1043,23 @@ export interface components {
             requirements: components["schemas"]["PricebookItemNote"][];
             footnotes: components["schemas"]["PricebookItemNote"][];
             has_more_details: boolean;
+            schema_version: number;
+            value_number: number;
+            calculation_mode: string;
+            inputs: components["schemas"]["PricebookItemInputSpec"][];
+            price_ranges: unknown;
+            is_itemized: boolean;
+            itemized_options: unknown;
+        };
+        PricebookItemInputSpec: {
+            key: string;
+            value_key: number;
+            label_fa: string;
+            unit: string;
+            data_type: string;
+            min_value: string | null;
+            max_value: string | null;
+            affects_row_selection: boolean;
         };
         PricebookItemList: {
             readonly id: number;
@@ -1040,6 +1081,7 @@ export interface components {
             title_fa: string;
             body_fa: string;
             affects_calculation: boolean;
+            default_value: unknown;
         };
         PricebookItemRowDetail: {
             id: number;
@@ -1053,6 +1095,16 @@ export interface components {
             max_value: string | null;
             selection_rule: string;
             requires_manual_unit_price: boolean;
+        };
+        PricebookRowBreakdown: {
+            row_id: number;
+            row_code: string;
+            title_fa: string;
+            unit: string;
+            unit_price: string | null;
+            currency_code: string;
+            quantity: string;
+            total: string;
         };
         Project: {
             readonly id: number;
@@ -1876,7 +1928,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["PricebookCalculateInputRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["PricebookCalculateInputRequest"];

@@ -7,6 +7,8 @@ export type PricebookChapter = components["schemas"]["PricebookChapter"];
 export type PricebookGroup = components["schemas"]["PricebookGroup"];
 export type PricebookItemList = components["schemas"]["PricebookItemList"];
 export type PricebookItemDetail = components["schemas"]["PricebookItemDetail"];
+export type PricebookItemInputSpec = components["schemas"]["PricebookItemInputSpec"];
+export type PricebookItemRowDetail = components["schemas"]["PricebookItemRowDetail"];
 export type PricebookCalculateInputRequest =
   components["schemas"]["PricebookCalculateInputRequest"];
 export type PricebookCalculateResponse = components["schemas"]["PricebookCalculateResponse"];

@@ -9,7 +9,7 @@ import {
   coefficientScopeOptions,
   initialForm
 } from "./constants";
-import type { CostReportBuilderState, DocumentTotals, WizardFormState } from "./types";
+import type { CostReportBuilderState, DocumentTotals, PricebookItemType, WizardFormState } from "./types";
 
 export function getInitialWizardForm(
   builderState: CostReportBuilderState | null
@@ -165,6 +165,83 @@ export function getCoefficientScopeLabel(scope: string | undefined): string {
     scope ??
     "کل پروژه"
   );
+}
+
+// ---- v2 schema shapes (price_ranges and itemized_options are `unknown` in generated types) ----
+
+export type PriceRangeEntry = {
+  min_value: string | null;
+  max_value: string | null;
+};
+
+export type PriceRangesShape = {
+  value_key: number;
+  ranges: Record<string, PriceRangeEntry>;
+};
+
+export type ItemizedOptionEntry = {
+  short_name_fa: string;
+  description_fa: string;
+};
+
+export type ItemizedOptionsShape = Record<string, ItemizedOptionEntry>;
+
+export function parsePriceRanges(raw: unknown): PriceRangesShape | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r["value_key"] !== "number") return null;
+  if (!r["ranges"] || typeof r["ranges"] !== "object" || Array.isArray(r["ranges"])) return null;
+  const rawRanges = r["ranges"] as Record<string, unknown>;
+  const ranges: Record<string, PriceRangeEntry> = {};
+  for (const [code, entry] of Object.entries(rawRanges)) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const e = entry as Record<string, unknown>;
+    ranges[code] = {
+      min_value: typeof e["min_value"] === "string" ? e["min_value"] : null,
+      max_value: typeof e["max_value"] === "string" ? e["max_value"] : null
+    };
+  }
+  return Object.keys(ranges).length > 0 ? { value_key: r["value_key"] as number, ranges } : null;
+}
+
+export function parseItemizedOptions(raw: unknown): ItemizedOptionsShape | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  const result: ItemizedOptionsShape = {};
+  for (const [code, entry] of Object.entries(r)) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const e = entry as Record<string, unknown>;
+    result[code] = {
+      short_name_fa: typeof e["short_name_fa"] === "string" ? e["short_name_fa"] : "",
+      description_fa: typeof e["description_fa"] === "string" ? e["description_fa"] : ""
+    };
+  }
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+export function findMatchedRangeRow(
+  priceRanges: PriceRangesShape,
+  drivingValue: string,
+  rows: PricebookItemDetail["rows"]
+): PricebookItemDetail["rows"][number] | null {
+  const numVal = Number(drivingValue);
+  if (!Number.isFinite(numVal) || numVal <= 0) return null;
+  for (const [rowCode, range] of Object.entries(priceRanges.ranges)) {
+    const min = range.min_value !== null ? Number(range.min_value) : -Infinity;
+    const max = range.max_value !== null ? Number(range.max_value) : Infinity;
+    if (numVal >= min && numVal <= max) {
+      return rows.find((r) => r.row_code === rowCode) ?? null;
+    }
+  }
+  return null;
+}
+
+export function classifyPricebookItem(item: PricebookItemDetail): PricebookItemType {
+  if ((item.schema_version ?? 1) <= 1) return "single";
+  if (item.is_itemized) return "itemized";
+  if (parsePriceRanges(item.price_ranges) !== null) return "range-based";
+  if (item.inputs && item.inputs.length > 0) return "multi-input";
+  return "single";
 }
 
 export function hasManualUnitPrice(item: PricebookItemDetail): boolean {

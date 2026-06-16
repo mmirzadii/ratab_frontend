@@ -772,7 +772,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/PricebookCalculateInputRequest'
-        required: true
       security:
       - tokenAuth: []
       - cookieAuth: []
@@ -1736,6 +1735,24 @@ components:
         pricebook_row_id:
           type: integer
           nullable: true
+        values:
+          type: array
+          items:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+          description: Indexed input values for v2 items. Supersedes quantity when
+            provided.
+        selected_row_id:
+          type: integer
+          nullable: true
+          description: Row selection for itemized items.
+        footnotes:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: Map of footnote_code to bool — applied checkboxes for this
+            calculation.
       required:
       - pricebook_item_id
       - quantity
@@ -2220,6 +2237,14 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        values:
+          type: array
+          items:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          description: Indexed list of input values (v2 items). Supersedes quantity
+            when provided.
         coefficient_set_id:
           type: integer
           nullable: true
@@ -2231,8 +2256,16 @@ components:
         pricebook_row_id:
           type: integer
           nullable: true
-      required:
-      - quantity
+        selected_row_id:
+          type: integer
+          nullable: true
+          description: Row selection for itemized items. Alias of pricebook_row_id.
+        footnotes:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: Map of footnote_code to bool — applied checkboxes for this
+            calculation.
     PricebookCalculateResponse:
       type: object
       properties:
@@ -2250,6 +2283,7 @@ components:
           type: string
         unit_price:
           type: string
+          nullable: true
         currency_code:
           type: string
         base_amount:
@@ -2269,6 +2303,12 @@ components:
           nullable: true
         requires_manual_unit_price:
           type: boolean
+        calculate_message:
+          type: string
+        rows_breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookRowBreakdown'
         calculation_input:
           $ref: '#/components/schemas/PricebookCalculationInputSnapshotWithManual'
         calculation_output:
@@ -2276,6 +2316,7 @@ components:
       required:
       - applied_coefficients
       - base_amount
+      - calculate_message
       - calculation_input
       - calculation_output
       - coefficient_amount
@@ -2288,6 +2329,7 @@ components:
       - requires_manual_unit_price
       - row_code
       - row_id
+      - rows_breakdown
       - total_amount
       - unit
       - unit_price
@@ -2296,11 +2338,22 @@ components:
       properties:
         quantity:
           type: string
+        values:
+          type: array
+          items:
+            type: string
+        selected_row_id:
+          type: integer
+          nullable: true
         coefficient_set_id:
           type: integer
           nullable: true
         manual_unit_price:
           type: string
+          nullable: true
+        footnotes:
+          type: object
+          additionalProperties: {}
           nullable: true
       required:
       - coefficient_set_id
@@ -2425,6 +2478,8 @@ components:
           type: string
         short_name_fa:
           type: string
+        description_fa:
+          type: string
         unit:
           type: string
         rows:
@@ -2450,19 +2505,73 @@ components:
             $ref: '#/components/schemas/PricebookItemNote'
         has_more_details:
           type: boolean
+        schema_version:
+          type: integer
+        value_number:
+          type: integer
+        calculation_mode:
+          type: string
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookItemInputSpec'
+        price_ranges:
+          nullable: true
+        is_itemized:
+          type: boolean
+        itemized_options:
+          nullable: true
       required:
+      - calculation_mode
+      - description_fa
       - footnotes
       - has_more_details
       - id
+      - inputs
+      - is_itemized
       - item_key
+      - itemized_options
+      - price_ranges
       - price_status
       - requirements
       - requires_manual_unit_price
       - requires_row_selection
       - rows
+      - schema_version
       - short_name_fa
       - unit
       - unit_price
+      - value_number
+    PricebookItemInputSpec:
+      type: object
+      properties:
+        key:
+          type: string
+        value_key:
+          type: integer
+        label_fa:
+          type: string
+        unit:
+          type: string
+        data_type:
+          type: string
+        min_value:
+          type: string
+          nullable: true
+        max_value:
+          type: string
+          nullable: true
+        affects_row_selection:
+          type: boolean
+      required:
+      - affects_row_selection
+      - data_type
+      - key
+      - label_fa
+      - max_value
+      - min_value
+      - unit
+      - value_key
     PricebookItemList:
       type: object
       properties:
@@ -2528,9 +2637,11 @@ components:
           type: string
         affects_calculation:
           type: boolean
+        default_value: {}
       required:
       - affects_calculation
       - body_fa
+      - default_value
       - id
       - note_code
       - title_fa
@@ -2573,6 +2684,35 @@ components:
       - selection_rule
       - short_title_fa
       - title_fa
+      - unit
+      - unit_price
+    PricebookRowBreakdown:
+      type: object
+      properties:
+        row_id:
+          type: integer
+        row_code:
+          type: string
+        title_fa:
+          type: string
+        unit:
+          type: string
+        unit_price:
+          type: string
+          nullable: true
+        currency_code:
+          type: string
+        quantity:
+          type: string
+        total:
+          type: string
+      required:
+      - currency_code
+      - quantity
+      - row_code
+      - row_id
+      - title_fa
+      - total
       - unit
       - unit_price
     Project:

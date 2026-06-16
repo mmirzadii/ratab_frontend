@@ -137,3 +137,177 @@ Updated files:
 ## Next Step
 
 After manual browser review, proceed only with the next approved frontend phase.
+
+---
+
+## Schema v2 Frontend Support Notes
+
+**Status: BLOCKED ON BACKEND.**
+
+`npm run generate:api` was executed and regenerated `src/shared/api/generated/schema.ts` from `backend_docs/v0.0/ratab v0.0 Backend API.yaml`. A search for every v2 vocabulary term returned **zero matches**. No feature code was written beyond this diagnostic. The frontend will be implemented in full once the backend YAML exposes the v2 contract.
+
+Item-type detection rule (to be implemented once unblocked):
+
+```
+classify(item):
+  if schema_version <= 1 or absent   → "single"   (full v1 path, unchanged)
+  elif is_itemized == true           → "itemized"
+  elif price_ranges present/non-empty → "range-based"
+  elif inputs present/non-empty      → "multi-input"
+  else                               → "single"
+```
+
+This function will live as a single pure export in `src/features/costReports/costReportUtils.ts` so all branches key off one place.
+
+## Multi-input Item Notes
+
+**Status: BLOCKED ON BACKEND** — `inputs[]`, `label_fa`, `unit`, `data_type`, `min_value`/`max_value` per-input, and the `values[]` field in `PricebookCalculateInputRequest` do not exist in the v0.0 contract.
+
+Planned approach (post-unblock):
+
+- Render one labeled numeric field per `inputs[i]` entry, ordered exactly as the contract returns them.
+- Label each field with `inputs[i].label_fa`; show `inputs[i].unit` as a suffix.
+- Validate each field with the existing `isPositiveDecimal` helper; additionally check `inputs[i].min_value` / `inputs[i].max_value` when non-null.
+- On محاسبه, send `values: inputs.map(i => normalizedValue[i.id])` in the calculate body, ordered to match `inputs[]`.
+- Reuse existing `inputClasses` styling; no new visual language.
+
+## Itemized Item Notes
+
+**Status: BLOCKED ON BACKEND** — `is_itemized`, `itemized_options` (or equivalent), and a per-option `selected_row_id` do not exist in the v0.0 contract.
+
+Planned approach (post-unblock):
+
+- When `is_itemized` is true, replace the manual row radio picker with a single-select list using the same visual language as the existing row picker (`border-white/10 bg-white/5 hover:bg-white/10` cards with `accent-emerald-400` radio).
+- Label each option from the contract's `label_fa` (or equivalent) field.
+- Block محاسبه until exactly one option is selected.
+- Pass the selected option's row reference in the calculate payload via the contract's defined field name.
+
+## Payload Compatibility Notes
+
+**v1 (today, unchanged, unchanged after this work):**
+
+```
+PricebookCalculateInputRequest = {
+  quantity: string,
+  coefficient_set_id?: number | null,
+  manual_unit_price?: string | null,
+  pricebook_row_id?: number | null
+}
+
+FinancialDocumentLineCreateRequest = {
+  pricebook_item_id: number,
+  quantity: string,
+  manual_unit_price?: string,
+  pricebook_row_id?: number
+}
+```
+
+**v2 additive fields (to be added once contract exists):**
+
+```
+PricebookCalculateInputRequest += {
+  values?: <type from contract>[],   // ordered to match inputs[]
+  selected_row_id?: number           // range-based or itemized resolution
+}
+
+FinancialDocumentLineCreateRequest += {
+  values?: <type from contract>[],
+  selected_row_id?: number
+}
+```
+
+v2 fields will only be appended when the item is classified as non-single. Every v1 item will produce a byte-for-byte identical payload to today.
+
+## Manual Price Compatibility Notes
+
+Manual / starred unit price is currently blocked at the backend (v0.0 `PricebookCalculateInputRequest` has no `manual_unit_price` field) and will remain blocked until the backend exposes it — regardless of v2 work. The existing frontend validation, UI display, and Persian error messages are preserved and will not be disturbed by v2 work. When the backend adds `manual_unit_price` to the contract (in a future API version), it must be enabled for every item type including multi-input and itemized.
+
+## Backend Dependency Notes
+
+**Exact missing fields after `npm run generate:api` (2025-06-14):**
+
+| Field / Schema | Status |
+|---|---|
+| `PricebookItemDetail.schema_version` | **MISSING** |
+| `PricebookItemDetail.inputs` (array) | **MISSING** |
+| `PricebookItemDetail.is_itemized` | **MISSING** |
+| `PricebookItemDetail.itemized_options` (or equivalent) | **MISSING** |
+| `PricebookItemDetail.price_ranges` (or equivalent) | **MISSING** |
+| `PricebookCalculateInputRequest.values` | **MISSING** |
+| `PricebookCalculateInputRequest.selected_row_id` | **MISSING** |
+| `FinancialDocumentLineCreateRequest.values` | **MISSING** |
+| `FinancialDocumentLineCreateRequest.selected_row_id` | **MISSING** |
+
+Source checked: `backend_docs/v0.0/ratab v0.0 Backend API.yaml` (the file `generate:api` reads). None of these terms appear anywhere in that YAML.
+
+The fields that ARE present and confirmed unchanged: `requires_row_selection`, `requires_manual_unit_price`, `rows[]`, `unit_price`, `price_status`, `pricebook_row_id`, `quantity`, `coefficient_set_id`.
+
+**Required action before frontend implementation can proceed:** Update `backend_docs/v0.0/ratab v0.0 Backend API.yaml` (or the active API version's YAML) to expose all v2 schema fields with their exact names, types, and optionality. Then re-run `npm run generate:api` and re-run this implementation prompt.
+
+## Behavior Preservation Notes
+
+No frontend code was modified in this pass. All v1 items render and calculate identically to the previous phase. `npm run lint` and `npm run build` were not re-run because no files changed; the most recent passing results are recorded in TEST_RESULTS.md (Phase 10 continuation / starred-price pass: both passed, 1670 modules).
+
+---
+
+## Schema v2 Frontend Support (2026-06-14)
+
+**Status: IMPLEMENTED.** The backend YAML was updated before this session; `npm run generate:api` confirmed all v2 fields present. `npm run build` and `npm run lint` both pass (1680 modules).
+
+### Contract Status
+
+All v2 fields now present in `src/shared/api/generated/schema.ts`:
+
+| Field | Schema location | Status |
+|---|---|---|
+| `schema_version` | `PricebookItemDetail` | ✓ present |
+| `value_number` | `PricebookItemDetail` | ✓ present |
+| `inputs` (`PricebookItemInputSpec[]`) | `PricebookItemDetail` | ✓ present |
+| `price_ranges` | `PricebookItemDetail` | ✓ present (typed `unknown`, runtime shape parsed) |
+| `is_itemized` | `PricebookItemDetail` | ✓ present |
+| `itemized_options` | `PricebookItemDetail` | ✓ present (typed `unknown`, runtime shape parsed) |
+| `values` | `PricebookCalculateInputRequest` | ✓ present |
+| `selected_row_id` | `PricebookCalculateInputRequest` | ✓ present |
+| `values` | `FinancialDocumentLineCreateRequest` | ✓ present |
+| `selected_row_id` | `FinancialDocumentLineCreateRequest` | ✓ present |
+| `manual_unit_price` | `PricebookCalculateInputRequest` | ✓ now present (was absent in earlier v0.0) |
+
+### Files Changed
+
+| File | Change |
+|---|---|
+| `src/features/pricebooks/pricebookApi.ts` | Added `PricebookItemInputSpec` and `PricebookItemRowDetail` type exports |
+| `src/features/costReports/types.ts` | Added `PricebookItemType = "single" \| "multi-input" \| "range-based" \| "itemized"` |
+| `src/features/costReports/costReportUtils.ts` | Added `parsePriceRanges`, `parseItemizedOptions`, `findMatchedRangeRow` helpers; added `PriceRangesShape`, `ItemizedOptionsShape`, `ItemizedOptionEntry` types; added `classifyPricebookItem` |
+| `src/features/costReports/components/CalculationSection.tsx` | Added multi-input form path; added `matchedRangeRow` read-only display; added `rangeMatchError` prop; disabled محاسبه when out of range |
+| `src/features/costReports/components/ItemDetailModal.tsx` | Added `classifyPricebookItem` + `useMemo` for matched range row; itemized picker uses `itemized_options` dict (distinct `short_name_fa`); v2 branches in `handleCalculate`/`handleAddLine` |
+
+### Item Type Behavior
+
+| Type | Classify condition | UI | Calculate payload | Line-create payload |
+|---|---|---|---|---|
+| `single` (v1) | `schema_version ≤ 1` | quantity field | `{quantity}` | `{quantity}` |
+| `single` with rows | v1 + `requires_row_selection` | quantity + row picker | `{quantity, pricebook_row_id}` | `{quantity, pricebook_row_id}` |
+| `multi-input` | v2 + `inputs.length > 0` | N labeled fields | `{values[]}` | `{quantity (from response), values[]}` |
+| `range-based` | v2 + `price_ranges` non-null | quantity/inputs + matched-row banner | `{quantity/values[], selected_row_id}` | `{quantity, values[]?, selected_row_id}` |
+| `itemized` | v2 + `is_itemized` | `itemized_options` radio list | `{quantity, selected_row_id}` | `{quantity, selected_row_id}` |
+
+### Backward Compatibility
+
+- V1 items (`schema_version ≤ 1` or field absent): produce byte-for-byte identical payloads to the previous phase.
+- `parsePriceRanges` / `parseItemizedOptions` return `null` for any non-conforming shape; classification falls back to `"single"`.
+- Null `unit_price` is never displayed as zero or sent as zero.
+
+### Manual Price Compatibility
+
+`manual_unit_price` is now confirmed present in the v0.0 contract for `PricebookCalculateInputRequest`. The existing frontend validation, input field, and Persian error messages work for every item type including multi-input and itemized. (Line-create field was also present.)
+
+### Open Questions
+
+None. All v2 fields are implemented. The `value_number` field in `PricebookItemDetail` is informational (count of inputs) and not directly used by the frontend beyond `inputs.length`.
+
+### Suggested Commit Message
+
+```
+feat(frontend-phase10): support schema v2 pricebook items
+```
