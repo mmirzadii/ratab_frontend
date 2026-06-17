@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ArrowRight, BookOpen, Layers3, Loader2, Search } from "lucide-react";
 
 import type { PricebookChapter, PricebookGroup, PricebookItemList } from "../../pricebooks/pricebookApi";
@@ -28,7 +28,8 @@ export function PricebookBrowserSection({
   searchTerm,
   selectedChapter,
   selectedChapterId,
-  selectedGroupId
+  selectedGroupId,
+  summarySlot
 }: {
   activeChapterFilter: string;
   chaptersError: unknown;
@@ -49,6 +50,7 @@ export function PricebookBrowserSection({
   selectedChapter: PricebookChapter | undefined;
   selectedChapterId: number | null;
   selectedGroupId: number | null;
+  summarySlot?: ReactNode;
 }) {
   const [mobileView, setMobileView] = useState<"chapters" | "items">("chapters");
 
@@ -282,7 +284,7 @@ export function PricebookBrowserSection({
         </GlassCard>
       ) : (
         <EmptyState
-          description="ابتدا از ستون سمت راست یک فصل فهرست‌بها را انتخاب کنید."
+          description="ابتدا از ستون سمت چپ یک فصل فهرست‌بها را انتخاب کنید."
           icon={<BookOpen className="h-7 w-7" />}
           title="مرور آیتم‌ها آماده است"
         />
@@ -291,13 +293,23 @@ export function PricebookBrowserSection({
   );
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
-      {/* Mobile: show one pane at a time */}
-      <div className={classNames(mobileView === "chapters" ? "block" : "hidden", "lg:block")}>
-        {chaptersPane}
-      </div>
-      <div className={classNames(mobileView === "items" ? "block" : "hidden", "lg:block")}>
-        {itemsPane}
+    <div>
+      {/* Mobile-only summary — always visible above the toggle area */}
+      {summarySlot ? <div className="mb-5 lg:hidden">{summarySlot}</div> : null}
+
+      {/* Main grid: items pane (right/1fr) and left column (summary+chapters, 360px) */}
+      <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
+        {/* First child → right column (1fr) in RTL */}
+        <div className={classNames(mobileView === "items" ? "block" : "hidden", "lg:block")}>
+          {itemsPane}
+        </div>
+        {/* Second child → left column (360px) in RTL */}
+        <div className={classNames(mobileView === "chapters" ? "block" : "hidden", "lg:block")}>
+          <div className="space-y-5">
+            {summarySlot ? <div className="hidden lg:block">{summarySlot}</div> : null}
+            {chaptersPane}
+          </div>
+        </div>
       </div>
     </div>
   );

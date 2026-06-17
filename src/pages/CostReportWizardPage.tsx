@@ -29,6 +29,7 @@ import { type Project, useCreateCompanyProjectMutation } from "../features/proje
 import { BuilderSectionNav } from "../features/costReports/components/BuilderSectionNav";
 import { CurrentDocumentPanel } from "../features/costReports/components/CurrentDocumentPanel";
 import { DocumentInfoSection } from "../features/costReports/components/DocumentInfoSection";
+import { DocumentSummaryBox } from "../features/costReports/components/DocumentSummaryBox";
 import { ItemDetailModal } from "../features/costReports/components/ItemDetailModal";
 import { PricebookBrowserSection } from "../features/costReports/components/PricebookBrowserSection";
 import { ProjectCoefficientPanel } from "../features/costReports/components/ProjectCoefficientPanel";
@@ -627,6 +628,18 @@ export function CostReportWizardPage() {
                 selectedChapter={selectedChapter}
                 selectedChapterId={selectedChapterId}
                 selectedGroupId={selectedGroupId}
+                summarySlot={createdDocument ? (
+                  <DocumentSummaryBox
+                    coefficientSets={coefficientSets}
+                    document={createdDocument}
+                    onDocumentUpdated={setCreatedDocument}
+                    onSelectedCoefficientSetIdChange={setSelectedCoefficientSetId}
+                    onToast={(msg, type = "info") =>
+                      dispatch(addToast({ message: msg, type }))
+                    }
+                    selectedCoefficientSetId={selectedCoefficientSetId}
+                  />
+                ) : null}
               />
             ) : null}
           </div>
