@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useAppShell } from "../../../app/appShellContext";
 import { Loader2, Pencil, Trash2, X, XCircle } from "lucide-react";
 
 import type { ProjectCoefficientSet } from "../../coefficients/coefficientApi";
@@ -461,7 +462,7 @@ function ItemDetailContent({
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {item.description_fa ? (
         <p className="text-sm leading-7 text-slate-300 light:text-slate-600">
           {item.description_fa}
@@ -752,6 +753,7 @@ export function ItemDetailModal({
   selectedCoefficientSetId: number | null;
 }) {
   const { data: item, error, isLoading } = useRetrievePricebookItemQuery(itemId);
+  const { secondaryNav } = useAppShell();
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -767,7 +769,10 @@ export function ItemDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4"
+      className={classNames(
+        "fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4",
+        secondaryNav ? "lg:right-[19rem]" : "lg:right-20"
+      )}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -778,13 +783,13 @@ export function ItemDetailModal({
         className="max-h-[85dvh] w-full max-w-4xl overflow-y-auto rounded-lg border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/10 bg-slate-950/95 p-5 light:border-slate-200 light:bg-white/95">
-          <h2 className="text-xl font-black text-white light:text-slate-950">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-white/10 bg-slate-950/95 p-4 light:border-slate-200 light:bg-white/95">
+          <h2 className="text-base font-black text-white light:text-slate-950">
             {item?.short_name_fa ?? "جزئیات آیتم"}
           </h2>
           <button
             aria-label="بستن"
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
+            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
             onClick={onClose}
             type="button"
           >
@@ -792,7 +797,7 @@ export function ItemDetailModal({
           </button>
         </div>
 
-        <div className="p-5">
+        <div className="p-4">
           {isLoading ? (
             <div className="flex min-h-48 items-center justify-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
               <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />

@@ -3,6 +3,7 @@ import { FileText, XCircle } from "lucide-react";
 import type { Pricebook, PricebookEdition } from "../../pricebooks/pricebookApi";
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { Field } from "../../../shared/components/Field";
+import { JalaliDateField } from "../../../shared/components/JalaliDateField";
 import { classNames } from "../../../shared/utils/classNames";
 import { inputClasses } from "../constants";
 import type { WizardFormState } from "../types";
@@ -89,26 +90,23 @@ export function DocumentInfoSection({
             />
           </Field>
           <Field label="تاریخ سند">
-            <input
-              className={inputClasses}
-              onChange={(event) => onFieldChange("document_date", event.target.value)}
-              type="date"
+            <JalaliDateField
+              inputClass={inputClasses}
+              onChange={(iso) => onFieldChange("document_date", iso)}
               value={form.document_date}
             />
           </Field>
           <Field label="شروع دوره">
-            <input
-              className={inputClasses}
-              onChange={(event) => onFieldChange("period_start_on", event.target.value)}
-              type="date"
+            <JalaliDateField
+              inputClass={inputClasses}
+              onChange={(iso) => onFieldChange("period_start_on", iso)}
               value={form.period_start_on}
             />
           </Field>
           <Field label="پایان دوره">
-            <input
-              className={inputClasses}
-              onChange={(event) => onFieldChange("period_end_on", event.target.value)}
-              type="date"
+            <JalaliDateField
+              inputClass={inputClasses}
+              onChange={(iso) => onFieldChange("period_end_on", iso)}
               value={form.period_end_on}
             />
           </Field>

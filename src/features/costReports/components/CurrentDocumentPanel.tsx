@@ -9,6 +9,11 @@ import {
   Trash2,
   X
 } from "lucide-react";
+import DateObject from "react-date-object";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
+import gregorian from "react-date-object/calendars/gregorian";
+import gregorian_en from "react-date-object/locales/gregorian_en";
 
 import bNazaninFontUrl from "../../../assets/fonts/B-NAZANIN.TTF?url";
 import type { FinancialDocument, FinancialDocumentLine } from "../../financialDocuments/financialDocumentApi";
@@ -45,6 +50,22 @@ function escapeHtml(value: number | string | null | undefined, fallback = ""): s
     .replace(/'/g, "&#039;");
 }
 
+function toJalali(isoDate: string | null | undefined): string {
+  if (!isoDate) return "—";
+  try {
+    return new DateObject({
+      date: isoDate,
+      format: "YYYY-MM-DD",
+      calendar: gregorian,
+      locale: gregorian_en
+    })
+      .convert(persian, persian_fa)
+      .format("YYYY/MM/DD");
+  } catch {
+    return isoDate;
+  }
+}
+
 function buildOfficialFormHtml({
   document,
   project,
@@ -63,7 +84,7 @@ function buildOfficialFormHtml({
   const contractorName = escapeHtml(project?.contractor_name ?? "—");
   const employerName = escapeHtml(project?.employer_name ?? "—");
   const consultantName = escapeHtml(project?.consultant_name ?? "—");
-  const documentDate = escapeHtml(document.document_date, "—");
+  const documentDate = escapeHtml(toJalali(document.document_date));
   const editionYear = escapeHtml(selectedEditionYear ? String(selectedEditionYear) : "—");
   const coefficientName = escapeHtml(selectedCoefficientSetName ?? "بدون ضریب");
   const lines = document.lines ?? [];

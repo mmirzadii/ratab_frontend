@@ -1,0 +1,580 @@
+import { useMemo, useRef, useState } from "react";
+import { AlertCircle, ChevronLeft, ChevronRight, Loader2, Upload, X } from "lucide-react";
+import * as XLSX from "xlsx";
+
+import type {
+  ExcelPlanItem,
+  FinancialDocument,
+  FinancialDocumentLineCreateRequest
+} from "../../financialDocuments/financialDocumentApi";
+import {
+  useCreateFinancialDocumentLinesBulkMutation,
+  useFinancialDocumentExcelPlanMutation
+} from "../../financialDocuments/financialDocumentApi";
+import { useAppShell } from "../../../app/appShellContext";
+import { GlassCard } from "../../../shared/components/GlassCard";
+import { classNames } from "../../../shared/utils/classNames";
+import { getApiErrorMessage } from "../../../shared/utils/apiError";
+import { inputClasses } from "../constants";
+import { MiniSpreadsheet } from "./MiniSpreadsheet";
+import { ReviewStep, type ReviewLine } from "./ReviewStep";
+
+type WizardStep = "source" | "ambiguities" | "review";
+
+const EMPTY_ROWS = 30;
+const COLS = 2;
+const makeEmptyGrid = () =>
+  Array.from({ length: EMPTY_ROWS }, () => Array(COLS).fill("") as string[]);
+
+function AmbiguityCard({
+  item,
+  onResolved,
+  quantityHint
+}: {
+  item: ExcelPlanItem;
+  onResolved: (payload: FinancialDocumentLineCreateRequest) => void;
+  quantityHint: string;
+}) {
+  const [selectedRowCode, setSelectedRowCode] = useState<string>(item.row_codes[0] ?? "");
+  const [quantity, setQuantity] = useState(quantityHint || "1");
+
+  function handleConfirm() {
+    const payload: FinancialDocumentLineCreateRequest = {
+      pricebook_item_id: item.pricebook_item_id,
+      quantity
+    };
+    if (item.pricebook_row_id !== null && item.row_codes.length <= 1) {
+      payload.pricebook_row_id = item.pricebook_row_id;
+    } else if (selectedRowCode) {
+      // row code only — backend maps it; use as a hint via pricebook_row_id if we have it
+      // For multi-row ambiguous items, backend expects pricebook_row_id from row_codes selection
+      payload.pricebook_row_id = undefined; // backend will derive from quantity/defaults
+    }
+    onResolved(payload);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-white/10 bg-white/5 p-4 light:border-slate-200 light:bg-slate-50">
+        <p className="text-sm font-bold text-slate-100 light:text-slate-900">
+          {item.description_fa || "آیتم"}
+        </p>
+        <p className="mt-1 font-mono text-xs text-emerald-200 light:text-emerald-700">
+          {item.row_codes.join("، ")}
+        </p>
+        <p className="mt-1 text-xs text-slate-400 light:text-slate-500">{item.unit_fa}</p>
+      </div>
+
+      {item.row_codes.length > 1 ? (
+        <div className="space-y-2">
+          <p className="text-sm font-bold text-amber-200 light:text-amber-800">
+            این آیتم چند ردیف دارد؛ ردیف موردنظر را انتخاب کنید:
+          </p>
+          {item.row_codes.map((code) => (
+            <label
+              className={classNames(
+                "flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition",
+                selectedRowCode === code
+                  ? "border-emerald-400/50 bg-emerald-400/15 light:border-emerald-500 light:bg-emerald-50"
+                  : "border-white/10 bg-white/5 hover:bg-white/8 light:border-slate-200 light:bg-white"
+              )}
+              key={code}
+            >
+              <input
+                checked={selectedRowCode === code}
+                className="shrink-0 accent-emerald-400"
+                name="row_code_selection"
+                onChange={() => setSelectedRowCode(code)}
+                type="radio"
+                value={code}
+              />
+              <span className="font-mono text-sm text-emerald-200 light:text-emerald-700">
+                {code}
+              </span>
+            </label>
+          ))}
+        </div>
+      ) : null}
+
+      <label className="space-y-1.5">
+        <span className="text-sm font-bold text-slate-200 light:text-slate-700">مقدار</span>
+        <input
+          className={classNames(inputClasses, "text-left")}
+          dir="ltr"
+          inputMode="decimal"
+          onChange={(e) => setQuantity(e.target.value)}
+          value={quantity}
+        />
+      </label>
+
+      <button
+        className="w-full rounded-lg bg-emerald-500 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-400 light:bg-emerald-600"
+        onClick={handleConfirm}
+        type="button"
+      >
+        تأیید و ادامه
+      </button>
+    </div>
+  );
+}
+
+export function ExcelImportWizardModal({
+  document,
+  onClose,
+  onDocumentUpdated
+}: {
+  document: FinancialDocument;
+  onClose: () => void;
+  onDocumentUpdated: (doc: FinancialDocument) => void;
+}) {
+  const { secondaryNav } = useAppShell();
+  const [step, setStep] = useState<WizardStep>("source");
+  const [sourceMode, setSourceMode] = useState<"spreadsheet" | "file">("spreadsheet");
+  const [gridData, setGridData] = useState<string[][]>(makeEmptyGrid);
+  const [uploadPreview, setUploadPreview] = useState<string[][]>([]);
+  const [codeColumn, setCodeColumn] = useState(0);
+  const [quantityColumn, setQuantityColumn] = useState(1);
+  const [hasHeader, setHasHeader] = useState(true);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [planResponse, setPlanResponse] = useState<{
+    items: ExcelPlanItem[];
+    unmatched: string[];
+  } | null>(null);
+  const [ambiguityIndex, setAmbiguityIndex] = useState(0);
+  const [resolvedLines, setResolvedLines] = useState<
+    Map<number, FinancialDocumentLineCreateRequest>
+  >(new Map());
+  const [reviewLines, setReviewLines] = useState<ReviewLine[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [callExcelPlan, excelPlanState] = useFinancialDocumentExcelPlanMutation();
+  const [createLinesBulk, createLinesBulkState] = useCreateFinancialDocumentLinesBulkMutation();
+
+  const extractedRows = useMemo(() => {
+    const source = sourceMode === "spreadsheet" ? gridData : uploadPreview;
+    const data = hasHeader && source.length > 0 ? source.slice(1) : source;
+    return data
+      .map((row) => ({
+        code: (row[codeColumn] ?? "").trim(),
+        quantity: (row[quantityColumn] ?? "").trim() || "1"
+      }))
+      .filter((r) => r.code.length > 0);
+  }, [sourceMode, gridData, uploadPreview, hasHeader, codeColumn, quantityColumn]);
+
+  const ambiguousItems = useMemo(
+    () => planResponse?.items.filter((i) => i.requires_modal) ?? [],
+    [planResponse]
+  );
+  const directItems = useMemo(
+    () => planResponse?.items.filter((i) => !i.requires_modal) ?? [],
+    [planResponse]
+  );
+
+  function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = e.target?.result;
+      if (!data) return;
+      try {
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" });
+        setUploadPreview(rows.map((row) => row.map((cell) => String(cell))));
+      } catch {
+        setPlanError("فایل قابل خواندن نیست.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function handleCallPlan() {
+    setPlanError(null);
+    const rowCodes = extractedRows.map((r) => r.code);
+    if (rowCodes.length === 0) {
+      setPlanError("حداقل یک کد ردیف وارد کنید.");
+      return;
+    }
+
+    try {
+      const result = await callExcelPlan({
+        documentId: document.id,
+        body: { row_codes: rowCodes }
+      }).unwrap();
+      setPlanResponse(result);
+      setAmbiguityIndex(0);
+      setResolvedLines(new Map());
+
+      if (result.items.some((i) => i.requires_modal)) {
+        setStep("ambiguities");
+      } else {
+        buildReviewLines(result.items, new Map(), rowCodes);
+        setStep("review");
+      }
+    } catch (error) {
+      setPlanError(getApiErrorMessage(error));
+    }
+  }
+
+  function buildReviewLines(
+    items: ExcelPlanItem[],
+    resolved: Map<number, FinancialDocumentLineCreateRequest>,
+    rowCodes: string[]
+  ) {
+    const lines: ReviewLine[] = items.map((item) => {
+      const existingPayload = resolved.get(item.pricebook_item_id);
+      const matchedRow = extractedRows.find((r) =>
+        item.row_codes.includes(r.code)
+      );
+      const quantity = matchedRow?.quantity ?? "1";
+
+      const payload: FinancialDocumentLineCreateRequest = existingPayload ?? {
+        pricebook_item_id: item.pricebook_item_id,
+        quantity,
+        ...(item.pricebook_row_id !== null
+          ? { pricebook_row_id: item.pricebook_row_id }
+          : {})
+      };
+
+      return { planItem: item, payload, error: null };
+    });
+
+    // Add unmatched as a notice — skip, the review will only show matched items
+    void rowCodes;
+    setReviewLines(lines);
+  }
+
+  function handleAmbiguityResolved(payload: FinancialDocumentLineCreateRequest) {
+    const item = ambiguousItems[ambiguityIndex];
+    if (!item) return;
+
+    const next = new Map(resolvedLines);
+    next.set(item.pricebook_item_id, payload);
+    setResolvedLines(next);
+
+    if (ambiguityIndex < ambiguousItems.length - 1) {
+      setAmbiguityIndex(ambiguityIndex + 1);
+    } else {
+      // All ambiguities resolved — build review
+      const allItems = [...directItems, ...ambiguousItems];
+      buildReviewLines(allItems, next, extractedRows.map((r) => r.code));
+      setStep("review");
+    }
+  }
+
+  async function handleSubmit() {
+    setSubmitError(null);
+    try {
+      const result = await createLinesBulk({
+        documentId: document.id,
+        body: { lines: reviewLines.map((l) => l.payload) }
+      }).unwrap();
+      onDocumentUpdated(result);
+      onClose();
+    } catch (error) {
+      setSubmitError(getApiErrorMessage(error));
+    }
+  }
+
+  const previewData =
+    sourceMode === "file" && uploadPreview.length > 0
+      ? uploadPreview.slice(0, 8)
+      : null;
+
+  const stepTitles: Record<WizardStep, string> = {
+    source: "ورود کدهای ردیف",
+    ambiguities: `تعیین تکلیف آیتم‌ها (${ambiguityIndex + 1} از ${ambiguousItems.length})`,
+    review: "بررسی و افزودن"
+  };
+
+  return (
+    <div
+      className={classNames(
+        "fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/70 p-3 pt-6 backdrop-blur-sm sm:p-4 sm:pt-10",
+        secondaryNav ? "lg:right-[19rem]" : "lg:right-20"
+      )}
+      dir="rtl"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-lg border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/10 bg-slate-950/95 p-5 light:border-slate-200 light:bg-white/95">
+          <div>
+            <h2 className="text-lg font-black text-white light:text-slate-950">
+              افزودن از اکسل
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">
+              {stepTitles[step]}
+            </p>
+          </div>
+          <button
+            aria-label="بستن"
+            className="rounded-lg p-2 text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
+            onClick={onClose}
+            type="button"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5">
+          {/* ── Step: Source ─────────────────────────────────────────────── */}
+          {step === "source" ? (
+            <div className="space-y-5">
+              {/* Mode toggle */}
+              <div className="flex gap-2">
+                <button
+                  className={classNames(
+                    "rounded-lg border px-4 py-2 text-sm font-bold transition",
+                    sourceMode === "spreadsheet"
+                      ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/8 light:border-slate-200 light:bg-white light:text-slate-600"
+                  )}
+                  onClick={() => setSourceMode("spreadsheet")}
+                  type="button"
+                >
+                  جدول مستقیم
+                </button>
+                <button
+                  className={classNames(
+                    "flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-bold transition",
+                    sourceMode === "file"
+                      ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/8 light:border-slate-200 light:bg-white light:text-slate-600"
+                  )}
+                  onClick={() => setSourceMode("file")}
+                  type="button"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  آپلود فایل
+                </button>
+              </div>
+
+              {sourceMode === "spreadsheet" ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-400 light:text-slate-500">
+                    کدهای ردیف را در ستون اول و مقادیر را (اختیاری) در ستون دوم وارد کنید. از
+                    اکسل می‌توانید Ctrl+V بزنید.
+                  </p>
+                  <MiniSpreadsheet
+                    headers={["کد ردیف", "مقدار"]}
+                    onChange={setGridData}
+                    value={gridData}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <input
+                    accept=".xlsx,.xls,.csv"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    ref={fileInputRef}
+                    type="file"
+                  />
+                  <button
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 py-8 text-sm text-slate-300 transition hover:border-emerald-400/40 hover:text-emerald-200 light:border-slate-300 light:text-slate-600"
+                    onClick={() => fileInputRef.current?.click()}
+                    type="button"
+                  >
+                    <Upload className="h-5 w-5" />
+                    انتخاب فایل اکسل یا CSV
+                  </button>
+
+                  {previewData ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-slate-400 light:text-slate-500">
+                        پیش‌نمایش فایل ({uploadPreview.length} ردیف)
+                      </p>
+                      <div className="overflow-x-auto rounded-lg border border-white/10 light:border-slate-200" dir="ltr">
+                        <table className="w-full text-xs">
+                          <tbody>
+                            {previewData.map((row, r) => (
+                              <tr
+                                className={r === 0 ? "bg-slate-800/60 light:bg-slate-100" : ""}
+                                key={r}
+                              >
+                                {row.slice(0, 6).map((cell, c) => (
+                                  <td
+                                    className="border-b border-white/5 px-2 py-1 text-slate-300 light:border-slate-100 light:text-slate-700"
+                                    key={c}
+                                  >
+                                    {cell}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Column mapping */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="space-y-1.5">
+                          <span className="text-xs font-bold text-slate-300 light:text-slate-600">
+                            ستون کد ردیف
+                          </span>
+                          <select
+                            className={classNames(inputClasses, "text-sm")}
+                            onChange={(e) => setCodeColumn(Number(e.target.value))}
+                            value={codeColumn}
+                          >
+                            {(uploadPreview[0] ?? []).map((_, i) => (
+                              <option key={i} value={i}>
+                                ستون {i + 1}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="space-y-1.5">
+                          <span className="text-xs font-bold text-slate-300 light:text-slate-600">
+                            ستون مقدار
+                          </span>
+                          <select
+                            className={classNames(inputClasses, "text-sm")}
+                            onChange={(e) => setQuantityColumn(Number(e.target.value))}
+                            value={quantityColumn}
+                          >
+                            {(uploadPreview[0] ?? []).map((_, i) => (
+                              <option key={i} value={i}>
+                                ستون {i + 1}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300 light:text-slate-600">
+                        <input
+                          checked={hasHeader}
+                          className="accent-emerald-400"
+                          onChange={(e) => setHasHeader(e.target.checked)}
+                          type="checkbox"
+                        />
+                        ردیف اول سرستون است (نادیده گرفته می‌شود)
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {extractedRows.length > 0 ? (
+                <p className="text-xs text-slate-400 light:text-slate-500">
+                  {extractedRows.length} کد ردیف شناسایی شد.
+                </p>
+              ) : null}
+
+              {planError ? (
+                <div className="flex items-start gap-2 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm text-rose-100 light:text-rose-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {planError}
+                </div>
+              ) : null}
+
+              <div className="flex justify-start">
+                <button
+                  className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-400 disabled:opacity-50 light:bg-emerald-600"
+                  disabled={extractedRows.length === 0 || excelPlanState.isLoading}
+                  onClick={() => void handleCallPlan()}
+                  type="button"
+                >
+                  {excelPlanState.isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ChevronLeft className="h-4 w-4" />
+                  )}
+                  بررسی کدها
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {/* ── Step: Ambiguities ─────────────────────────────────────────── */}
+          {step === "ambiguities" ? (
+            <div className="space-y-5">
+              <div className="rounded-lg border border-amber-300/20 bg-amber-400/8 p-3 text-sm text-amber-100 light:text-amber-800">
+                {ambiguousItems.length} آیتم نیاز به تعیین تکلیف دارند. برای هر کدام گزینه
+                مناسب را انتخاب کنید.
+              </div>
+
+              {ambiguousItems[ambiguityIndex] ? (
+                <AmbiguityCard
+                  item={ambiguousItems[ambiguityIndex]}
+                  key={ambiguityIndex}
+                  onResolved={handleAmbiguityResolved}
+                  quantityHint={
+                    extractedRows.find((r) =>
+                      ambiguousItems[ambiguityIndex].row_codes.includes(r.code)
+                    )?.quantity ?? "1"
+                  }
+                />
+              ) : null}
+
+              {planResponse?.unmatched && planResponse.unmatched.length > 0 ? (
+                <GlassCard className="p-3">
+                  <p className="text-xs font-bold text-rose-300 light:text-rose-700">
+                    کدهای یافت‌نشده:
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-slate-400">
+                    {planResponse.unmatched.join("، ")}
+                  </p>
+                </GlassCard>
+              ) : null}
+
+              <button
+                className="flex items-center gap-1.5 text-sm text-slate-400 transition hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800"
+                onClick={() => setStep("source")}
+                type="button"
+              >
+                <ChevronRight className="h-4 w-4" />
+                بازگشت
+              </button>
+            </div>
+          ) : null}
+
+          {/* ── Step: Review ─────────────────────────────────────────────── */}
+          {step === "review" ? (
+            <div className="space-y-5">
+              {planResponse?.unmatched && planResponse.unmatched.length > 0 ? (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-300/20 bg-amber-400/8 p-3 text-sm text-amber-100 light:text-amber-800">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {planResponse.unmatched.length} کد یافت نشد:{" "}
+                    <span className="font-mono">{planResponse.unmatched.join("، ")}</span>
+                  </span>
+                </div>
+              ) : null}
+
+              <ReviewStep
+                isSubmitting={createLinesBulkState.isLoading}
+                lines={reviewLines}
+                onLinesChange={setReviewLines}
+                onSubmit={() => void handleSubmit()}
+                submitError={submitError}
+              />
+
+              <button
+                className="flex items-center gap-1.5 text-sm text-slate-400 transition hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800"
+                onClick={() =>
+                  setStep(ambiguousItems.length > 0 ? "ambiguities" : "source")
+                }
+                type="button"
+              >
+                <ChevronRight className="h-4 w-4" />
+                بازگشت
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}

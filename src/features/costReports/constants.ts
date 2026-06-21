@@ -18,8 +18,8 @@ export const builderSections: Array<{
     id: "project",
     number: "۱",
     shortLabel: "پروژه",
-    title: "اطلاعات پروژه",
-    description: "مشخصات قرارداد و کارگاه",
+    title: "انتخاب پروژه",
+    description: "انتخاب پروژه از لیست پروژه‌های شرکت",
     icon: FolderKanban
   },
   {

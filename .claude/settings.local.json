@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"D:\\\\work\\\\ratab\\\\ratab_backend\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(git -C \"D:/work/ratab/ratab_frontend\" status)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(npm i *)"
+    ]
+  }
+}

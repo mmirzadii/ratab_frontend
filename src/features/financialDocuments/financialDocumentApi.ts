@@ -16,6 +16,27 @@ export type PaginatedFinancialDocumentList =
 export type FinancialDocumentExport = components["schemas"]["FinancialDocumentExport"];
 export type ExportNotReady = components["schemas"]["ExportNotReady"];
 
+export type ExcelPlanItemNote = {
+  id: number;
+  note_code: string;
+  title_fa: string;
+  body_fa: string;
+  affects_calculation: boolean;
+};
+export type ExcelPlanItem = {
+  pricebook_item_id: number;
+  pricebook_row_id: number | null;
+  row_codes: string[];
+  description_fa: string;
+  unit_fa: string;
+  requires_modal: boolean;
+  footnotes: ExcelPlanItemNote[];
+};
+export type ExcelPlanRequest = { row_codes: string[] };
+export type ExcelPlanResponse = { items: ExcelPlanItem[]; unmatched: string[] };
+export type BulkLineCreateRequest = { lines: FinancialDocumentLineCreateRequest[] };
+export type BulkLineCreateResponse = FinancialDocument;
+
 export const financialDocumentApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     listProjectFinancialDocuments: builder.query<PaginatedFinancialDocumentList, number>({
@@ -143,6 +164,29 @@ export const financialDocumentApi = baseApi.injectEndpoints({
         url: `/api/financial-document-exports/${exportId}/download/`,
         responseHandler: (response) => response.blob()
       })
+    }),
+    financialDocumentExcelPlan: builder.mutation<
+      ExcelPlanResponse,
+      { documentId: number; body: ExcelPlanRequest }
+    >({
+      query: ({ documentId, body }) => ({
+        url: `/api/financial-documents/${documentId}/excel-plan/`,
+        method: "POST",
+        body
+      })
+    }),
+    createFinancialDocumentLinesBulk: builder.mutation<
+      BulkLineCreateResponse,
+      { documentId: number; body: BulkLineCreateRequest }
+    >({
+      query: ({ documentId, body }) => ({
+        url: `/api/financial-documents/${documentId}/lines/bulk/`,
+        method: "POST",
+        body
+      }),
+      invalidatesTags: (_result, _error, { documentId }) => [
+        { type: "FinancialDocument", id: documentId }
+      ]
     })
   })
 });
@@ -151,8 +195,10 @@ export const {
   useCreateFinancialDocumentExportMutation,
   useCreateFinancialDocumentLineMutation,
   useCreateProjectFinancialDocumentMutation,
+  useCreateFinancialDocumentLinesBulkMutation,
   useDeleteFinancialDocumentLineMutation,
   useDownloadFinancialDocumentExportMutation,
+  useFinancialDocumentExcelPlanMutation,
   useLockFinancialDocumentMutation,
   useLazyListProjectFinancialDocumentsQuery,
   useListProjectFinancialDocumentsQuery,

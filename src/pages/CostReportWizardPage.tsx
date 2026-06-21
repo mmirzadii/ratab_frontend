@@ -24,20 +24,22 @@ import {
   useListPricebookItemsQuery,
   useListPricebooksQuery
 } from "../features/pricebooks/pricebookApi";
-import { type Project, useCreateCompanyProjectMutation } from "../features/projects/projectApi";
+import { type Project } from "../features/projects/projectApi";
 
 import { BuilderSectionNav } from "../features/costReports/components/BuilderSectionNav";
 import { CurrentDocumentPanel } from "../features/costReports/components/CurrentDocumentPanel";
 import { DocumentInfoSection } from "../features/costReports/components/DocumentInfoSection";
+import { DocumentLinesModal } from "../features/costReports/components/DocumentLinesModal";
+import { DocumentSummaryBox } from "../features/costReports/components/DocumentSummaryBox";
 import { ItemDetailModal } from "../features/costReports/components/ItemDetailModal";
 import { PricebookBrowserSection } from "../features/costReports/components/PricebookBrowserSection";
 import { ProjectCoefficientPanel } from "../features/costReports/components/ProjectCoefficientPanel";
-import { ProjectInfoSection } from "../features/costReports/components/ProjectInfoSection";
+import { ProjectSelectorSection } from "../features/costReports/components/ProjectSelectorSection";
 
 import { EmptyState } from "../shared/components/EmptyState";
 import { getApiErrorMessage } from "../shared/utils/apiError";
 import { getListResults } from "../shared/utils/listResults";
-import { linkButtonClasses } from "../shared/utils/classNames";
+import { classNames, linkButtonClasses } from "../shared/utils/classNames";
 import { cleanDisplayText } from "../shared/utils/formatters";
 
 import {
@@ -67,12 +69,19 @@ export function CostReportWizardPage() {
   const parsedCompanyId = Number(companyId);
   const hasValidCompanyId = Number.isInteger(parsedCompanyId) && parsedCompanyId > 0;
 
+  // If opened with an existing document, go straight to the browser.
+  // If opened with a preselected project (no doc yet), start at the document step.
+  // Otherwise start at project selector.
+  const initialSection: BuilderSection = builderState?.existingDocument
+    ? "pricebook"
+    : builderState?.existingProject
+    ? "document"
+    : "project";
+
   const [step, setStep] = useState<"setup" | "browser">(
     builderState?.existingDocument ? "browser" : "setup"
   );
-  const [activeSection, setActiveSection] = useState<BuilderSection>(
-    builderState?.existingDocument ? "pricebook" : "project"
-  );
+  const [activeSection, setActiveSection] = useState<BuilderSection>(initialSection);
   const [form, setForm] = useState<WizardFormState>(() =>
     getInitialWizardForm(builderState)
   );
@@ -94,6 +103,7 @@ export function CostReportWizardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [selectedCoefficientSetId, setSelectedCoefficientSetId] = useState<number | null>(null);
+  const [showLinesModal, setShowLinesModal] = useState(false);
 
   const dispatch = useAppDispatch();
 
@@ -179,11 +189,9 @@ export function CostReportWizardPage() {
       if (coefficientSets.length === 0) {
         return current === null ? current : null;
       }
-
       if (current && coefficientSets.some((set) => set.id === current)) {
         return current;
       }
-
       return (coefficientSets.find((set) => set.is_default) ?? coefficientSets[0]).id;
     });
   }, [coefficientSets]);
@@ -192,17 +200,16 @@ export function CostReportWizardPage() {
     coefficientSets.find((set) => set.id === selectedCoefficientSetId) ?? null;
   const isBuilderUnlocked = Boolean(createdDocument);
   const completedSections: Partial<Record<BuilderSection, boolean>> = {
-    project: Boolean(createdProject || form.project_name.trim()),
+    project: Boolean(createdProject),
     document: Boolean(createdDocument),
     pricebook: Boolean(createdDocument && (createdDocument.lines?.length ?? 0) > 0),
     coefficients: Boolean(selectedCoefficientSet),
     finalize: false
   };
 
-  const [createProject, createProjectState] = useCreateCompanyProjectMutation();
   const [createDocument, createDocumentState] = useCreateProjectFinancialDocumentMutation();
   const [lockDocument] = useLockFinancialDocumentMutation();
-  const isSubmitting = createProjectState.isLoading || createDocumentState.isLoading;
+  const isSubmitting = createDocumentState.isLoading;
 
   const isLastStep = activeSection === "finalize";
 
@@ -245,7 +252,7 @@ export function CostReportWizardPage() {
   }
 
   const canGoNext: boolean = (() => {
-    if (activeSection === "project") return form.project_name.trim().length > 0;
+    if (activeSection === "project") return Boolean(createdProject);
     if (activeSection === "document")
       return !isSubmitting && form.document_title.trim().length > 0 && Boolean(selectedEdition);
     if (activeSection === "finalize") return false;
@@ -289,7 +296,7 @@ export function CostReportWizardPage() {
       canGoNext,
       onNext: isLastStep ? null : () => {
         if (activeSection === "project") {
-          handleProjectInfoNext();
+          handleProjectSelectorNext();
         } else if (activeSection === "document") {
           void doSubmit();
         } else {
@@ -337,20 +344,17 @@ export function CostReportWizardPage() {
       setFormError(lockedBuilderSectionMessage);
       return;
     }
-
     setFormError(null);
     setStep(section === "project" || section === "document" ? "setup" : "browser");
     setActiveSection(section);
   }
 
-  function handleProjectInfoNext() {
+  function handleProjectSelectorNext() {
     setFormError(null);
-
-    if (!form.project_name.trim()) {
-      setFormError("نام پروژه را وارد کنید.");
+    if (!createdProject) {
+      setFormError("ابتدا یک پروژه انتخاب کنید.");
       return;
     }
-
     setActiveSection("document");
     setStep("setup");
   }
@@ -360,7 +364,6 @@ export function CostReportWizardPage() {
       dispatch(addToast({ message: "ابتدا یک ردیف به صورت‌بها اضافه کنید.", type: "info" }));
       return;
     }
-
     try {
       await lockDocument(createdDocument.id).unwrap();
       dispatch(addToast({ message: "صورت‌بها با موفقیت نهایی شد.", type: "success" }));
@@ -397,8 +400,8 @@ export function CostReportWizardPage() {
   async function doSubmit() {
     setFormError(null);
 
-    if (!form.project_name.trim()) {
-      setFormError("نام پروژه الزامی است.");
+    if (!createdProject) {
+      setFormError("ابتدا یک پروژه انتخاب کنید.");
       return;
     }
 
@@ -444,7 +447,6 @@ export function CostReportWizardPage() {
       ? (manualPriceSetId ?? deprecatedConfiguredPriceSetId)
       : null;
     const priceSetId = selectedActivePriceSet?.id ?? fallbackPriceSetId;
-    const baseYear = parsePositiveInteger(form.base_year) ?? 1404;
 
     if (!priceSetId) {
       setFormError("برای این سال هنوز مجموعه قیمت فعال ثبت نشده است.");
@@ -452,30 +454,10 @@ export function CostReportWizardPage() {
     }
 
     try {
-      const project =
-        createdProject ??
-        (await createProject({
-          companyId: parsedCompanyId,
-          body: {
-            project_code: omitEmpty(form.project_code),
-            name: form.project_name.trim(),
-            contract_number: omitEmpty(form.contract_number),
-            employer_name: omitEmpty(form.employer_name),
-            consultant_name: omitEmpty(form.consultant_name),
-            contractor_name: omitEmpty(form.contractor_name),
-            executive_agency_name: omitEmpty(form.executive_agency_name),
-            base_year: baseYear,
-            status: "draft",
-            starts_on: optionalDate(form.starts_on),
-            ends_on: optionalDate(form.ends_on),
-            description: omitEmpty(form.description)
-          }
-        }).unwrap());
-
       const document =
         createdDocument ??
         (await createDocument({
-          projectId: project.id,
+          projectId: createdProject.id,
           body: {
             document_type: "cost_report",
             document_number: omitEmpty(form.document_number),
@@ -489,7 +471,6 @@ export function CostReportWizardPage() {
           }
         }).unwrap());
 
-      setCreatedProject(project);
       setCreatedDocument(document);
       setDocumentSetupNotice(null);
       setStep("browser");
@@ -517,8 +498,11 @@ export function CostReportWizardPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 pb-10 pt-3 sm:px-6 sm:pt-5 lg:px-8">
-      {/* Mobile-only step nav with prev/next buttons (desktop handled by SecondaryNav + ContextHeader) */}
+    <div className={classNames(
+      "mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 pt-3 sm:px-6 sm:pt-5 lg:px-8",
+      activeSection !== "pricebook" && "pb-10"
+    )}>
+      {/* Mobile-only step nav (desktop handled by SecondaryNav + ContextHeader) */}
       <div className="lg:hidden" dir="rtl">
         <BuilderSectionNav
           activeSection={activeSection}
@@ -535,20 +519,19 @@ export function CostReportWizardPage() {
             onSubmit={(event) => {
               if (activeSection === "project") {
                 event.preventDefault();
-                handleProjectInfoNext();
+                handleProjectSelectorNext();
                 return;
               }
               void handleSubmit(event);
             }}
           >
             {activeSection === "project" ? (
-              <>
-
-                <ProjectInfoSection
-                  form={form}
-                  onFieldChange={updateField}
-                />
-              </>
+              <ProjectSelectorSection
+                companyId={parsedCompanyId}
+                isLocked={Boolean(builderState?.existingProject)}
+                onSelect={setCreatedProject}
+                selectedProject={createdProject}
+              />
             ) : null}
 
             {activeSection === "document" ? (
@@ -627,6 +610,14 @@ export function CostReportWizardPage() {
                 selectedChapter={selectedChapter}
                 selectedChapterId={selectedChapterId}
                 selectedGroupId={selectedGroupId}
+                summarySlot={
+                  createdDocument ? (
+                    <DocumentSummaryBox
+                      document={createdDocument}
+                      onOpenLines={() => setShowLinesModal(true)}
+                    />
+                  ) : null
+                }
               />
             ) : null}
           </div>
@@ -647,6 +638,15 @@ export function CostReportWizardPage() {
           selectedCoefficientSetId={selectedCoefficientSetId}
         />
       ) : null}
+
+      {showLinesModal && createdDocument ? (
+        <DocumentLinesModal
+          document={createdDocument}
+          onClose={() => setShowLinesModal(false)}
+          onDocumentUpdated={setCreatedDocument}
+        />
+      ) : null}
+
     </div>
   );
 }

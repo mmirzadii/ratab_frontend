@@ -1,5 +1,6 @@
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { Field } from "../../../shared/components/Field";
+import { JalaliDateField } from "../../../shared/components/JalaliDateField";
 import { FolderKanban } from "lucide-react";
 import { inputClasses, textareaClasses } from "../constants";
 import type { WizardFormState } from "../types";
@@ -92,18 +93,16 @@ export function ProjectInfoSection({
           />
         </Field>
         <Field label="تاریخ شروع">
-          <input
-            className={inputClasses}
-            onChange={(event) => onFieldChange("starts_on", event.target.value)}
-            type="date"
+          <JalaliDateField
+            inputClass={inputClasses}
+            onChange={(iso) => onFieldChange("starts_on", iso)}
             value={form.starts_on}
           />
         </Field>
         <Field label="تاریخ پایان">
-          <input
-            className={inputClasses}
-            onChange={(event) => onFieldChange("ends_on", event.target.value)}
-            type="date"
+          <JalaliDateField
+            inputClass={inputClasses}
+            onChange={(iso) => onFieldChange("ends_on", iso)}
             value={form.ends_on}
           />
         </Field>

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 
 import { useAppShell } from "../../app/appShellContext";
@@ -14,17 +14,6 @@ import { ToastContainer } from "./ToastContainer";
 export function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { secondaryNav, wizardCtx } = useAppShell();
-  const touchStartX = useRef(0);
-
-  function handleTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
-  }
-
-  function handleTouchEnd(e: React.TouchEvent) {
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    if (delta > 60) setDrawerOpen(true);
-    else if (delta < -60) setDrawerOpen(false);
-  }
 
   return (
     <div className="min-h-screen bg-ratab-night text-slate-100 transition-colors light:bg-slate-50 light:text-slate-950">
@@ -44,8 +33,6 @@ export function AppShell() {
           wizardCtx ? "pt-30 lg:pt-16" : "pt-14 lg:pt-0",
           secondaryNav ? "lg:pr-[19rem]" : "lg:pr-20"
         )}
-        onTouchEnd={handleTouchEnd}
-        onTouchStart={handleTouchStart}
       >
         <ContextHeader />
         <main>
