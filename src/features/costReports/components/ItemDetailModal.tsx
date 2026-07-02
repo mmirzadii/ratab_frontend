@@ -143,7 +143,7 @@ function ItemDetailContent({
   const parsedItemizedOptions = itemType === "itemized" ? parseItemizedOptions(item.itemized_options) : null;
 
   // ── State ─────────────────────────────────────────────────────────────────
-  const [quantity, setQuantity] = useState("1");
+  const [quantity, setQuantity] = useState("");
   const [manualUnitPrice, setManualUnitPrice] = useState("");
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [inputValues, setInputValues] = useState<Record<number, string>>({});
@@ -680,6 +680,7 @@ function ItemDetailContent({
         selectedCoefficientSetId={selectedCoefficientSetId}
         setManualUnitPrice={setManualUnitPrice}
         setQuantity={setQuantity}
+        unit={item.unit || undefined}
       />
 
       <ChecklistNotesSection

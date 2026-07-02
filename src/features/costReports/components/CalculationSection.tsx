@@ -46,7 +46,8 @@ export function CalculationSection({
   requiresRowSelection,
   selectedCoefficientSetId,
   setManualUnitPrice,
-  setQuantity
+  setQuantity,
+  unit
 }: {
   addLineDisabledReason: string | null;
   canAddLine: boolean;
@@ -78,6 +79,7 @@ export function CalculationSection({
   selectedCoefficientSetId: number | null;
   setManualUnitPrice: (value: string) => void;
   setQuantity: (value: string) => void;
+  unit?: string;
 }) {
   const calculationMessages = getCalculationMessages(calculation?.calculation_output);
   const isMultiInput = Boolean(inputs && inputs.length > 0);
@@ -186,7 +188,11 @@ export function CalculationSection({
                   onChange={(event) =>
                     onInputValueChange?.(input.value_key, event.target.value)
                   }
-                  placeholder={input.min_value ?? "0"}
+                  placeholder={
+                    input.min_value && Number(input.min_value) > 0
+                      ? input.min_value
+                      : input.unit || "عدد مثبت"
+                  }
                   value={inputValues?.[input.value_key] ?? ""}
                 />
                 {inputErrors?.[input.value_key] ? (
@@ -213,7 +219,7 @@ export function CalculationSection({
               disabled={isCalculationLocked}
               inputMode="decimal"
               onChange={(event) => setQuantity(event.target.value)}
-              placeholder="1"
+              placeholder={unit || "عدد مثبت"}
               value={quantity}
             />
           </label>
@@ -228,7 +234,7 @@ export function CalculationSection({
                 disabled={isCalculationLocked}
                 inputMode="decimal"
                 onChange={(event) => setManualUnitPrice(event.target.value)}
-                placeholder="0"
+                placeholder="ریال"
                 value={manualUnitPrice}
               />
             </label>
