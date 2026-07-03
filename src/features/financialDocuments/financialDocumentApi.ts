@@ -7,6 +7,24 @@ export type FinancialDocumentCreateRequest =
 export type FinancialDocumentLine = components["schemas"]["FinancialDocumentLine"];
 export type FinancialDocumentLineCreateRequest =
   components["schemas"]["FinancialDocumentLineCreateRequest"];
+export type PricebookFinancialDocumentLineCreatePayload =
+  FinancialDocumentLineCreateRequest & {
+    coefficient_set_id?: number | null;
+    custom_prices?: Record<string, string>;
+  };
+export type StandaloneStarredFinancialDocumentLineCreatePayload =
+  Omit<FinancialDocumentLineCreateRequest, "pricebook_item_id"> & {
+    coefficient_set_id?: number | null;
+    custom_prices?: Record<string, string>;
+    description_fa?: string;
+    line_source: "starred";
+    pricebook_item_id?: number;
+    title_fa: string;
+    unit: string;
+  };
+export type FinancialDocumentLineCreatePayload =
+  | PricebookFinancialDocumentLineCreatePayload
+  | StandaloneStarredFinancialDocumentLineCreatePayload;
 export type PatchedFinancialDocumentLineUpdateRequest =
   components["schemas"]["PatchedFinancialDocumentLineUpdateRequest"];
 export type PatchedFinancialDocumentUpdateRequest =
@@ -82,7 +100,7 @@ export const financialDocumentApi = baseApi.injectEndpoints({
     }),
     createFinancialDocumentLine: builder.mutation<
       FinancialDocumentLine,
-      { documentId: number; body: FinancialDocumentLineCreateRequest }
+      { documentId: number; body: FinancialDocumentLineCreatePayload }
     >({
       query: ({ body, documentId }) => ({
         url: `/api/financial-documents/${documentId}/lines/`,

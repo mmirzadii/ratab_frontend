@@ -1,4 +1,4 @@
-import { AlertTriangle, FileText, Hash, Layers3, Lock } from "lucide-react";
+import { AlertTriangle, FileText, Hash, Layers3, Lock, Star } from "lucide-react";
 
 import type { FinancialDocument } from "../../financialDocuments/financialDocumentApi";
 import { GlassCard } from "../../../shared/components/GlassCard";
@@ -7,13 +7,21 @@ import { isFinancialDocumentLocked } from "../costReportUtils";
 
 export function DocumentSummaryBox({
   document,
-  onOpenLines
+  onOpenLines,
+  onOpenStarredItem,
+  starredItemDisabledReason
 }: {
   document: FinancialDocument;
   onOpenLines: () => void;
+  onOpenStarredItem?: () => void;
+  starredItemDisabledReason?: string | null;
 }) {
   const lines = document.lines ?? [];
   const lineCount = lines.length;
+  const locked = isFinancialDocumentLocked(document);
+  const starredDisabledReason =
+    starredItemDisabledReason ??
+    (locked ? "صورت‌بها قفل شده و امکان افزودن آیتم ستاره‌دار ندارد." : null);
   const totalAmount = lines.reduce(
     (sum, line) => sum + Number(line.total_amount_snapshot ?? 0),
     0
@@ -38,16 +46,32 @@ export function DocumentSummaryBox({
       </div>
 
       {/* Action buttons */}
-      <div className="mt-2.5 flex gap-2">
+      <div className="mt-2.5 grid grid-cols-2 gap-2">
         <button
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/7 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-700"
+          className="flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/7 px-2 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-700"
           onClick={onOpenLines}
           type="button"
         >
           <FileText className="h-3.5 w-3.5" />
           ردیف‌ها
         </button>
+        <button
+          className="flex items-center justify-center gap-1.5 rounded-lg border border-amber-300/20 bg-amber-400/10 px-2 py-2 text-xs font-bold text-amber-100 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-55 light:border-amber-300/50 light:bg-amber-50 light:text-amber-800"
+          disabled={Boolean(starredDisabledReason) || !onOpenStarredItem}
+          onClick={onOpenStarredItem}
+          title={starredDisabledReason ?? "افزودن آیتم ستاره‌دار"}
+          type="button"
+        >
+          <Star className="h-3.5 w-3.5" />
+          آیتم ستاره‌دار
+        </button>
       </div>
+
+      {starredDisabledReason ? (
+        <p className="mt-2 text-xs leading-6 text-slate-400 light:text-slate-500">
+          {starredDisabledReason}
+        </p>
+      ) : null}
 
       {/* Alert: no lines yet */}
       {lineCount === 0 ? (
@@ -58,7 +82,7 @@ export function DocumentSummaryBox({
       ) : null}
 
       {/* Alert: document is locked */}
-      {isFinancialDocumentLocked(document) ? (
+      {locked ? (
         <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-violet-300/25 bg-violet-400/10 px-2.5 py-1.5 text-xs text-violet-200 light:border-violet-300/60 light:bg-violet-50 light:text-violet-800">
           <Lock className="h-3 w-3 shrink-0" />
           صورت‌بها قفل شده است

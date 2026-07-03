@@ -147,3 +147,19 @@ Suggested commit messages follow:
 ```text
 type(frontend-phaseN): summary
 ```
+
+## Active version documentation
+
+The active frontend version is stored in:
+
+```text
+code_oder/active_version.txt
+```
+
+For every update, first check the active version and update the matching project explanation file:
+
+```text
+code_oder/<active-version>/PROJECT_EXPLAIN.md
+```
+
+If the active version changes, update `code_oder/active_version.txt` and create/update the corresponding `PROJECT_EXPLAIN.md`. Keep the project explanation synchronized with code behavior, architecture, routes, APIs, state, commands, and known limitations after every frontend change.

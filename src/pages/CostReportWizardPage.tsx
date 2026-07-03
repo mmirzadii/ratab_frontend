@@ -33,6 +33,7 @@ import { DocumentLinesModal } from "../features/costReports/components/DocumentL
 import { DocumentSummaryBox } from "../features/costReports/components/DocumentSummaryBox";
 import { ItemDetailModal } from "../features/costReports/components/ItemDetailModal";
 import { PricebookBrowserSection } from "../features/costReports/components/PricebookBrowserSection";
+import { StarredItemModal } from "../features/costReports/components/StarredItemModal";
 import { ProjectCoefficientPanel } from "../features/costReports/components/ProjectCoefficientPanel";
 import { ProjectSelectorSection } from "../features/costReports/components/ProjectSelectorSection";
 
@@ -104,6 +105,7 @@ export function CostReportWizardPage() {
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [selectedCoefficientSetId, setSelectedCoefficientSetId] = useState<number | null>(null);
   const [showLinesModal, setShowLinesModal] = useState(false);
+  const [showStarredItemModal, setShowStarredItemModal] = useState(false);
 
   const dispatch = useAppDispatch();
 
@@ -192,9 +194,15 @@ export function CostReportWizardPage() {
       if (current && coefficientSets.some((set) => set.id === current)) {
         return current;
       }
+      if (
+        createdDocument?.coefficient_set_id &&
+        coefficientSets.some((set) => set.id === createdDocument.coefficient_set_id)
+      ) {
+        return createdDocument.coefficient_set_id;
+      }
       return (coefficientSets.find((set) => set.is_default) ?? coefficientSets[0]).id;
     });
-  }, [coefficientSets]);
+  }, [coefficientSets, createdDocument?.coefficient_set_id]);
 
   const selectedCoefficientSet =
     coefficientSets.find((set) => set.id === selectedCoefficientSetId) ?? null;
@@ -216,8 +224,8 @@ export function CostReportWizardPage() {
   const builderOrder: BuilderSection[] = [
     "project",
     "document",
-    "coefficients",
     "pricebook",
+    "coefficients",
     "finalize"
   ];
 
@@ -576,7 +584,9 @@ export function CostReportWizardPage() {
 
             {activeSection === "coefficients" && createdProject ? (
               <ProjectCoefficientPanel
+                chapters={chapters}
                 coefficientSets={coefficientSets}
+                currentDocument={createdDocument}
                 isLoadingSets={isLoadingCoefficientSets}
                 onSelectedCoefficientSetIdChange={setSelectedCoefficientSetId}
                 projectId={createdProject.id}
@@ -615,6 +625,7 @@ export function CostReportWizardPage() {
                     <DocumentSummaryBox
                       document={createdDocument}
                       onOpenLines={() => setShowLinesModal(true)}
+                      onOpenStarredItem={() => setShowStarredItemModal(true)}
                     />
                   ) : null
                 }
@@ -644,6 +655,17 @@ export function CostReportWizardPage() {
           document={createdDocument}
           onClose={() => setShowLinesModal(false)}
           onDocumentUpdated={setCreatedDocument}
+        />
+      ) : null}
+
+      {showStarredItemModal && createdDocument ? (
+        <StarredItemModal
+          document={createdDocument}
+          onClose={() => setShowStarredItemModal(false)}
+          onDocumentUpdated={setCreatedDocument}
+          onToast={(msg, type = "info") =>
+            dispatch(addToast({ message: msg, type }))
+          }
         />
       ) : null}
 

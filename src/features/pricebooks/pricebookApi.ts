@@ -11,7 +11,11 @@ export type PricebookItemInputSpec = components["schemas"]["PricebookItemInputSp
 export type PricebookItemRowDetail = components["schemas"]["PricebookItemRowDetail"];
 export type PricebookCalculateInputRequest =
   components["schemas"]["PricebookCalculateInputRequest"];
+export type PricebookCalculateInputPayload = PricebookCalculateInputRequest & {
+  custom_prices?: Record<string, string>;
+};
 export type PricebookCalculateResponse = components["schemas"]["PricebookCalculateResponse"];
+export type PricebookRowBreakdown = components["schemas"]["PricebookRowBreakdown"];
 export type ManualPriceValidationError = components["schemas"]["ManualPriceValidationError"];
 export type PaginatedPricebookList = components["schemas"]["PaginatedPricebookList"];
 export type PaginatedPricebookEditionList =
@@ -31,7 +35,7 @@ export type ListPricebookItemsArgs = {
 
 export type CalculatePricebookItemArgs = {
   itemId: number;
-  body: PricebookCalculateInputRequest;
+  body: PricebookCalculateInputPayload;
 };
 
 type ListResponse<T> = { results?: readonly T[] } | readonly T[] | T;

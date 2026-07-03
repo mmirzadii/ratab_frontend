@@ -1,5 +1,11 @@
 import type { FinancialDocument } from "../financialDocuments/financialDocumentApi";
-import type { PricebookChapter, PricebookEdition, PricebookItemDetail } from "../pricebooks/pricebookApi";
+import type {
+  PricebookCalculateResponse,
+  PricebookChapter,
+  PricebookEdition,
+  PricebookItemDetail,
+  PricebookItemInputSpec
+} from "../pricebooks/pricebookApi";
 import { getApiErrorMessage } from "../../shared/utils/apiError";
 import { normalizeNumberInput, normalizeRowCode } from "../../shared/utils/numberText";
 
@@ -219,6 +225,297 @@ export function parseItemizedOptions(raw: unknown): ItemizedOptionsShape | null 
   return Object.keys(result).length > 0 ? result : null;
 }
 
+export type SelectInputOptionSource = "schema-v3" | "itemized-options" | "rows" | "input-items";
+
+export type SelectInputOption = {
+  backendRowId: number | null;
+  helper?: string;
+  label: string;
+  source: SelectInputOptionSource;
+  value: string;
+};
+
+function getRecordString(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return null;
+}
+
+function getInputRecord(input: PricebookItemInputSpec): Record<string, unknown> {
+  return input as unknown as Record<string, unknown>;
+}
+
+function isInputSpecLike(value: unknown): value is PricebookItemInputSpec {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function getPropertiesJsonRecord(item: PricebookItemDetail): Record<string, unknown> | null {
+  const itemRecord = item as unknown as Record<string, unknown>;
+  const propertiesJson = itemRecord["properties_json"];
+
+  if (!propertiesJson || typeof propertiesJson !== "object" || Array.isArray(propertiesJson)) {
+    return null;
+  }
+
+  return propertiesJson as Record<string, unknown>;
+}
+
+function getPropertiesJsonInputs(item: PricebookItemDetail): PricebookItemInputSpec[] {
+  const propertiesJson = getPropertiesJsonRecord(item);
+  if (!propertiesJson) {
+    return [];
+  }
+
+  const inputs = propertiesJson["inputs"];
+  if (!Array.isArray(inputs)) {
+    return [];
+  }
+
+  return inputs.filter(isInputSpecLike);
+}
+
+export function getRangeFallbackRow(
+  item: PricebookItemDetail,
+  preferredRowCode?: string | null
+): PricebookItemDetail["rows"][number] | null {
+  if (item.rows.length === 0) {
+    return null;
+  }
+
+  const propertiesJson = getPropertiesJsonRecord(item);
+  const rawRowIds = propertiesJson?.["row_ids"];
+  const firstPropertiesRowCode =
+    Array.isArray(rawRowIds) && rawRowIds.length > 0
+      ? String(rawRowIds[0]).trim()
+      : null;
+  const fallbackRowCode = preferredRowCode?.trim() || firstPropertiesRowCode;
+
+  if (fallbackRowCode) {
+    const row = item.rows.find((candidate) => candidate.row_code === fallbackRowCode);
+    if (row) {
+      return row;
+    }
+  }
+
+  return [...item.rows].sort((first, second) =>
+    first.row_code.localeCompare(second.row_code)
+  )[0];
+}
+
+export function isSelectInput(input: PricebookItemInputSpec): boolean {
+  const record = getInputRecord(input);
+  const items = record["items"];
+
+  return (
+    record["name"] === "selected_row" ||
+    input.key === "selected_row" ||
+    record["type"] === "select" ||
+    input.data_type === "select" ||
+    Array.isArray(items)
+  );
+}
+
+export function getInputStateKey(input: PricebookItemInputSpec): string {
+  const record = getInputRecord(input);
+  const name =
+    getRecordString(record, "name") ??
+    getRecordString(record, "key") ??
+    input.key ??
+    input.label_fa ??
+    "input";
+  const kind = isSelectInput(input) ? "select" : "number";
+
+  return `${name}:${kind}:${input.value_key}`;
+}
+
+function getInputMergeKey(input: PricebookItemInputSpec): string {
+  const record = getInputRecord(input);
+  const name =
+    getRecordString(record, "name") ??
+    getRecordString(record, "key") ??
+    input.key ??
+    input.label_fa ??
+    String(input.value_key);
+  const kind =
+    getRecordString(record, "type") ??
+    getRecordString(record, "data_type") ??
+    input.data_type ??
+    "number";
+
+  return `${name}:${kind}`;
+}
+
+export function getCalculationInputs(item: PricebookItemDetail): PricebookItemInputSpec[] {
+  const propertiesInputs = getPropertiesJsonInputs(item);
+  if (propertiesInputs.length === 0) {
+    return item.inputs;
+  }
+
+  const propertiesKeys = new Set(propertiesInputs.map(getInputMergeKey));
+  const missingGeneratedInputs = item.inputs.filter(
+    (input) => !propertiesKeys.has(getInputMergeKey(input))
+  );
+
+  return [...propertiesInputs, ...missingGeneratedInputs];
+}
+
+export function getSelectedRowInput(
+  item: PricebookItemDetail
+): PricebookItemInputSpec | null {
+  return (
+    getPropertiesJsonInputs(item).find(isSelectInput) ??
+    item.inputs.find(isSelectInput) ??
+    null
+  );
+}
+
+export function getSelectOptionLabel(option: unknown): string {
+  if (option && typeof option === "object" && !Array.isArray(option)) {
+    const record = option as Record<string, unknown>;
+    const shortName = record["short_name_fa"];
+    if (typeof shortName === "string" && shortName) {
+      return shortName;
+    }
+
+    const fallback =
+      getRecordString(record, "label_fa") ??
+      getRecordString(record, "title_fa") ??
+      getRecordString(record, "description_fa") ??
+      getRecordString(record, "long_description_fa");
+    if (fallback) return fallback;
+  }
+
+  return "گزینه بدون عنوان";
+}
+
+export function resolveSelectedRowIdForBackend(
+  optionRowCode: string,
+  itemRows: PricebookItemDetail["rows"]
+): number | null {
+  const selectedRowCode = optionRowCode.trim();
+  if (!selectedRowCode) {
+    return null;
+  }
+
+  const byRowCode = itemRows.find((row) => row.row_code === selectedRowCode);
+  if (byRowCode) {
+    return byRowCode.id;
+  }
+
+  const byDirectId = itemRows.find((row) => String(row.id) === selectedRowCode);
+  return byDirectId?.id ?? null;
+}
+
+function getInputItems(input: PricebookItemInputSpec): unknown[] {
+  const items = getInputRecord(input)["items"];
+  return Array.isArray(items) ? items : [];
+}
+
+function getSelectInputOptionsFromItems(
+  input: PricebookItemInputSpec,
+  item: PricebookItemDetail | undefined,
+  source: SelectInputOptionSource
+): SelectInputOption[] {
+  const items = getInputItems(input);
+  if (items.length === 0) {
+    return [];
+  }
+
+  return items.flatMap((option): SelectInputOption[] => {
+    if (!option || typeof option !== "object" || Array.isArray(option)) {
+      return [];
+    }
+
+    const record = option as Record<string, unknown>;
+    const rowCode =
+      getRecordString(record, "row_id") ??
+      getRecordString(record, "row_code") ??
+      getRecordString(record, "value");
+
+    if (!rowCode) {
+      return [];
+    }
+
+    return [
+      {
+        backendRowId: item ? resolveSelectedRowIdForBackend(rowCode, item.rows) : null,
+        helper:
+          getRecordString(record, "long_description_fa") ??
+          getRecordString(record, "description_fa") ??
+          undefined,
+        label:
+          getRecordString(record, "short_name_fa") ??
+          getSelectOptionLabel(option),
+        source,
+        value: rowCode
+      }
+    ];
+  });
+}
+
+export function getSelectedRowOptions(item: PricebookItemDetail): SelectInputOption[] {
+  const selectedRowInput = getSelectedRowInput(item);
+  const schemaOptions = selectedRowInput
+    ? getSelectInputOptionsFromItems(selectedRowInput, item, "schema-v3")
+    : [];
+
+  if (schemaOptions.length > 0) {
+    return schemaOptions;
+  }
+
+  const itemizedOptions = parseItemizedOptions(item.itemized_options);
+  if (itemizedOptions) {
+    const options = Object.entries(itemizedOptions).flatMap(
+      ([rowCode, option]): SelectInputOption[] => {
+        const row = item.rows.find((candidate) => candidate.row_code === rowCode);
+        if (!row) {
+          return [];
+        }
+
+        return [
+          {
+            backendRowId: row.id,
+            helper: option.description_fa || undefined,
+            label:
+              option.short_name_fa ||
+              row.short_title_fa ||
+              row.title_fa ||
+              row.description_fa ||
+              row.row_code,
+            source: "itemized-options",
+            value: row.row_code
+          }
+        ];
+      }
+    );
+
+    if (options.length > 0) {
+      return options;
+    }
+  }
+
+  return item.rows.map((row) => ({
+    backendRowId: row.id,
+    helper: row.description_fa || undefined,
+    label: row.short_title_fa || row.title_fa || row.description_fa || row.row_code,
+    source: "rows",
+    value: row.row_code
+  }));
+}
+
+export function getSelectInputOptions(
+  input: PricebookItemInputSpec,
+  item?: PricebookItemDetail
+): SelectInputOption[] {
+  if (item && isSelectInput(input)) {
+    const directOptions = getSelectInputOptionsFromItems(input, item, "schema-v3");
+    return directOptions.length > 0 ? directOptions : getSelectedRowOptions(item);
+  }
+
+  return getSelectInputOptionsFromItems(input, item, "input-items");
+}
+
 export function findMatchedRangeRow(
   priceRanges: PriceRangesShape,
   drivingValue: string,
@@ -304,4 +601,169 @@ export function getCalculationMessages(value: unknown): string[] {
 
     return [];
   });
+}
+
+function normalizeForStableKey(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(normalizeForStableKey);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.keys(value as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((result, key) => {
+        result[key] = normalizeForStableKey((value as Record<string, unknown>)[key]);
+        return result;
+      }, {});
+  }
+
+  return value;
+}
+
+export function stablePayloadKey(value: unknown): string {
+  return JSON.stringify(normalizeForStableKey(value));
+}
+
+export function formatInputLabel(
+  label: string,
+  unit?: string | null,
+  isSelect = false
+): string {
+  const trimmedLabel = label.trim();
+  const trimmedUnit = unit?.trim();
+
+  if (isSelect || !trimmedUnit || trimmedLabel.includes(trimmedUnit)) {
+    return trimmedLabel;
+  }
+
+  return `${trimmedLabel} (${trimmedUnit})`;
+}
+
+function hasNonZeroNumericValue(value: string | number | null | undefined): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  const numeric = Number(String(value).replace(/,/g, ""));
+  return Number.isFinite(numeric) && numeric !== 0;
+}
+
+function getCustomPriceRowCodes(calculation: PricebookCalculateResponse): Set<string> {
+  const record = calculation as unknown as Record<string, unknown>;
+  const value = record["custom_price_row_codes"] ?? record["custom_price_rows"];
+
+  if (!Array.isArray(value)) {
+    return new Set();
+  }
+
+  return new Set(
+    value
+      .filter((rowCode): rowCode is string | number => {
+        return typeof rowCode === "string" || typeof rowCode === "number";
+      })
+      .map((rowCode) => String(rowCode))
+  );
+}
+
+function isCustomPriceSource(value: string | null | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized.includes("custom") ||
+    normalized.includes("manual") ||
+    normalized.includes("starred") ||
+    normalized.includes("دستی")
+  );
+}
+
+export type DisplayCalculationRow = {
+  rowId: number | null;
+  rowCode: string | null;
+  title: string;
+  unit: string | null;
+  unitPrice: string | null;
+  quantity: string;
+  total: string;
+  priceSource: string | null;
+  isCustomPrice: boolean;
+};
+
+export function getVisibleCalculationRows(
+  calculation: PricebookCalculateResponse,
+  itemRows: PricebookItemDetail["rows"] = [],
+  localCustomPriceRowCodes: readonly string[] = []
+): DisplayCalculationRow[] {
+  const rowsById = new Map(itemRows.map((row) => [row.id, row]));
+  const rowsByCode = new Map(itemRows.map((row) => [row.row_code, row]));
+  const customPriceRowCodes = new Set([
+    ...getCustomPriceRowCodes(calculation),
+    ...localCustomPriceRowCodes
+  ]);
+
+  const breakdownRows =
+    calculation.rows_breakdown?.map((row) => {
+      const itemRow = rowsById.get(row.row_id) ?? rowsByCode.get(row.row_code);
+      const priceSource = getRecordString(row as unknown as Record<string, unknown>, "price_source");
+
+      return {
+        rowId: row.row_id,
+        rowCode: row.row_code,
+        title:
+          row.description_fa ||
+          row.title_fa ||
+          itemRow?.description_fa ||
+          itemRow?.title_fa ||
+          itemRow?.short_title_fa ||
+          "ردیف انتخاب‌شده",
+        unit: row.unit,
+        unitPrice: row.unit_price,
+        quantity: row.quantity,
+        total: row.total,
+        priceSource,
+        isCustomPrice:
+          isCustomPriceSource(priceSource) ||
+          (row.row_code ? customPriceRowCodes.has(row.row_code) : false)
+      };
+    }) ?? [];
+
+  const activeBreakdownRows = breakdownRows.filter(
+    (row) => hasNonZeroNumericValue(row.quantity) || hasNonZeroNumericValue(row.total)
+  );
+
+  if (activeBreakdownRows.length > 0) {
+    return activeBreakdownRows;
+  }
+
+  if (breakdownRows.length > 0) {
+    return breakdownRows;
+  }
+
+  const fallbackRow =
+    rowsById.get(calculation.row_id ?? -1) ?? rowsByCode.get(calculation.row_code ?? "");
+  const calculationRecord = calculation as unknown as Record<string, unknown>;
+  const fallbackPriceSource = getRecordString(calculationRecord, "price_source");
+  const fallbackRowCode = calculation.row_code ?? fallbackRow?.row_code ?? null;
+
+  return [
+    {
+      rowId: calculation.row_id ?? fallbackRow?.id ?? null,
+      rowCode: fallbackRowCode,
+      title:
+        fallbackRow?.description_fa ||
+        fallbackRow?.title_fa ||
+        fallbackRow?.short_title_fa ||
+        "ردیف انتخاب‌شده",
+      unit: calculation.unit ?? fallbackRow?.unit ?? null,
+      unitPrice: calculation.unit_price ?? fallbackRow?.unit_price ?? null,
+      quantity: calculation.quantity,
+      total: calculation.total_amount,
+      priceSource: fallbackPriceSource,
+      isCustomPrice:
+        isCustomPriceSource(fallbackPriceSource) ||
+        (fallbackRowCode ? customPriceRowCodes.has(fallbackRowCode) : false)
+    }
+  ];
 }
