@@ -1209,11 +1209,7 @@ function ItemDetailContent({
           </p>
         ) : null}
 
-        {coefficientSets.length === 0 ? (
-          <p className="rounded-lg border border-white/10 bg-white/7 p-3 text-sm leading-7 text-slate-300 light:border-slate-200 light:bg-white light:text-slate-600">
-            برای محاسبه با ضریب، در مرحله ضرایب یک مجموعه ضریب بسازید. تا آن زمان گزینه بدون ضریب استفاده می‌شود.
-          </p>
-        ) : null}
+
 
         <CalculationSection
           calculation={calculation}
