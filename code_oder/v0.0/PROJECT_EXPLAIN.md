@@ -600,7 +600,7 @@ Important utilities:
 - empty/date/positive integer parsing
 - chapter filter matching
 - quantity normalization
-- positive decimal validation
+- numeric input validation for strict-positive main inputs and non-negative secondary inputs
 - coefficient labels
 - schema-v2 parsing for `price_ranges` and `itemized_options`
 - schema-v3 select input detection for `selected_row` inputs
@@ -610,6 +610,7 @@ Important utilities:
 - item classification
 - manual-price and row-selection flags
 - calculation message extraction
+- active calculation row extraction for compact details and item-row highlighting
 
 ### Project Selector Section
 
@@ -689,8 +690,10 @@ Calculation:
 - Debounces automatic calculation by 500ms after required local inputs become valid.
 - Does not expose a separate manual Calculate/Edit button in v0.0; the modal keeps inputs editable until the user clicks Add or closes the modal.
 - The active coefficient set selector is in the modal header beside the Add button, not inside the green calculation input box.
-- The selector shows `بدون ضریب`, the default/active set, and other coefficient sets; changing it updates wizard state and makes the calculation payload stale.
+- The selector is compact on mobile, shows `بدون ضریب`, the default/active set, and other coefficient sets; changing it updates wizard state and makes the calculation payload stale.
 - Shows local validation/incomplete status instead of calling the backend when required input is missing or invalid.
+- For backend-defined numeric inputs, `is_main_input=true` requires a strict positive value, while non-main inputs accept zero when `min_value` is `0` or absent and default to a non-negative minimum.
+- Non-main quantity inputs that explicitly depend on the main input, or share the main input unit, are blocked if they exceed the main value.
 - Sends backend calculation request with:
   - `quantity` or `values`
   - optional `coefficient_set_id`
@@ -698,7 +701,10 @@ Calculation:
   - optional `pricebook_row_id` or `selected_row_id`
   - optional `footnotes` map
 - optional sparse `custom_prices` map keyed by exact row-code strings
-- Shows backend calculation response.
+- Shows backend calculation response as a compact total by default.
+- Extra calculation metadata is hidden behind a `جزئیات` toggle.
+- The `ردیف‌ها` action in the calculation summary scrolls the modal body to the item rows section.
+- Rows used by backend calculation are highlighted in the existing `ردیف‌های فهرست‌بها` list with calculated quantity and row total.
 - For range-based items with valid inputs outside all `price_ranges`, the modal switches to a custom unit-price fallback instead of treating the missing range as a fatal calculation error.
 
 Adding line:
@@ -723,6 +729,7 @@ Manual price:
 Row-level custom prices:
 
 - Static item rows are visually separate from backend calculation output.
+- On mobile, static item rows render as dense list items with inline price/edit controls, one-line title/description, and compact active quantity/amount text.
 - Each item row can enter a compact inline unit-price edit mode from the pencil icon action.
 - Custom prices are held as `Record<string, string>` where the key is `item.rows[].row_code` exactly, preserving leading zeros.
 - Only positive decimals can be applied; invalid row prices are not sent to calculate or add-line.
@@ -748,7 +755,7 @@ Row selection:
 - Schema-v3 dropdown values store `input.items[].row_id` as strings so leading zeros are preserved.
 - If schema-v3 `input.items` is missing, options fall back to `itemized_options`, then to `item.rows`; the fallback should keep the modal usable and only show a subtle helper, not a blocking API warning.
 - Before calculate/add-line, the selected row code is resolved against `item.rows[].row_code` and sent to the backend as DB id `selected_row_id`.
-- `values` contains only non-select numeric inputs, sorted by `value_key`; selected-row inputs are excluded from `values`.
+- `values` contains only non-select numeric inputs, sorted by `value_key`; selected-row inputs are excluded from `values` and validated separately.
 - Items that require row selection block automatic calculation/add until a row/option is selected.
 - Range-based items still auto-match the backend row range from the entered driving value.
 
@@ -773,12 +780,12 @@ Responsibilities:
 - avoid appending units to select input labels
 - render manual price field if needed
 - render custom fallback unit price if an out-of-range range item needs it
-- render calculation status
+- render a tiny accessible calculation status dot: green for up-to-date success, yellow for pending/incomplete/stale/calculating, and red only after an explicit Add failure
 - render matched range row
-- render backend calculation totals with `جمع کل محاسبه`
-- render active row breakdown from `rows_breakdown`
-- render official/custom price source badges from `rows_breakdown[].price_source` or backend custom row-code metadata
-- render applied coefficients returned by the backend, including scope labels
+- render only compact `جمع کل` by default after calculation
+- render a collapsed `جزئیات` panel with row code, quantity, unit price, base amount, coefficient amount, total, compact row breakdown, and applied coefficients
+- render official/custom price source badges from `rows_breakdown[].price_source` or backend custom row-code metadata inside details
+- expose a `ردیف‌ها` callback button when the modal can scroll to item rows
 - render validation and line errors
 
 It does not call APIs directly.

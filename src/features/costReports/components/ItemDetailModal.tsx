@@ -25,6 +25,7 @@ import { inputClasses } from "../constants";
 import {
   classifyPricebookItem,
   findMatchedRangeRow,
+  getActiveCalculationRows,
   getCalculationInputs,
   getInputStateKey,
   getRangeFallbackRow,
@@ -33,6 +34,7 @@ import {
   getSelectedRowOptions,
   getManualPriceValidationMessage,
   hasManualUnitPrice,
+  isMainNumericInput,
   isSelectInput,
   isFinancialDocumentLocked,
   isPositiveDecimal,
@@ -40,9 +42,15 @@ import {
   parsePriceRanges,
   resolveSelectedRowIdForBackend,
   requiresRowSelection,
-  stablePayloadKey
+  shouldValidateInputAgainstMainValue,
+  stablePayloadKey,
+  validateNumericInput
 } from "../costReportUtils";
-import { CalculationSection, type CalculationRowSelectionOption } from "./CalculationSection";
+import {
+  CalculationSection,
+  type CalculationRowSelectionOption,
+  type CalculationStatusDotState
+} from "./CalculationSection";
 import { ChecklistNotesSection, ReadableNotesSection } from "./ItemNotesSections";
 
 function AddedRowsView({
@@ -173,7 +181,7 @@ type ModalHeaderProps = {
 
 function ModalHeader({ action, onClose, title }: ModalHeaderProps) {
   return (
-    <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/10 bg-slate-950/95 p-4 backdrop-blur light:border-slate-200 light:bg-white/95">
+    <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-slate-950/95 p-4 backdrop-blur light:border-slate-200 light:bg-white/95 sm:flex-nowrap">
       <button
         aria-label="بستن"
         className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
@@ -186,9 +194,29 @@ function ModalHeader({ action, onClose, title }: ModalHeaderProps) {
       <h2 className="min-w-0 flex-1 truncate text-right text-base font-black text-white light:text-slate-950">
         {title}
       </h2>
-      <div className="flex min-w-[12rem] flex-wrap items-end justify-end gap-2">{action}</div>
+      <div className="flex min-w-0 flex-wrap items-end justify-end gap-2 sm:min-w-[12rem]">{action}</div>
     </div>
   );
+}
+
+function getCompactRowDescription(title: string, description?: string | null): string | null {
+  const normalizedTitle = title.replace(/\s+/g, " ").trim();
+  const normalizedDescription = description?.replace(/\s+/g, " ").trim() ?? "";
+
+  if (!normalizedDescription || normalizedDescription === normalizedTitle) {
+    return null;
+  }
+
+  if (normalizedTitle && normalizedDescription.startsWith(normalizedTitle)) {
+    const shortened = normalizedDescription
+      .slice(normalizedTitle.length)
+      .replace(/^[\s،,:؛;.\-–—]+/, "")
+      .trim();
+
+    return shortened.length > 10 ? shortened : null;
+  }
+
+  return normalizedDescription;
 }
 
 function ItemDetailContent({
@@ -249,6 +277,7 @@ function ItemDetailContent({
   const latestCalculatedPayloadKeyRef = useRef<string | null>(null);
   const inFlightPayloadKeyRef = useRef<string | null>(null);
   const calculationRef = useRef<PricebookCalculateResponse | null>(null);
+  const rowsSectionRef = useRef<HTMLElement | null>(null);
 
   const requiresManualPrice = hasManualUnitPrice(item);
   const needsRowSelection = requiresRowSelection(item);
@@ -259,6 +288,20 @@ function ItemDetailContent({
     selectedRowInput === null &&
     itemType !== "range-based" &&
     !showItemizedPicker;
+  const numericCalculationInputs = useMemo(
+    () =>
+      calculationInputs
+        .filter((input) => !isSelectInput(input))
+        .sort((first, second) => first.value_key - second.value_key),
+    [calculationInputs]
+  );
+  const mainNumericInput = useMemo(
+    () => numericCalculationInputs.find(isMainNumericInput) ?? null,
+    [numericCalculationInputs]
+  );
+  const mainNumericValue = mainNumericInput
+    ? inputValues[getInputStateKey(mainNumericInput)] ?? ""
+    : null;
   const activeCustomPrices = useMemo(
     () =>
       Object.fromEntries(
@@ -267,6 +310,19 @@ function ItemDetailContent({
         )
       ),
     [customPrices]
+  );
+  const activeCustomPriceRowCodes = useMemo(
+    () => Object.keys(activeCustomPrices),
+    [activeCustomPrices]
+  );
+  const activeCalculationRowsByCode = useMemo(
+    () =>
+      new Map(
+        getActiveCalculationRows(calculation, item.rows, activeCustomPriceRowCodes)
+          .filter((row) => row.rowCode)
+          .map((row) => [row.rowCode as string, row])
+      ),
+    [activeCustomPriceRowCodes, calculation, item.rows]
   );
 
   useEffect(() => {
@@ -279,13 +335,23 @@ function ItemDetailContent({
     if (!priceRanges) return null;
 
     let drivingValue: string | null = null;
-    if (calculationInputs.length > 0) {
-      const drivingInput = calculationInputs
-        .filter((input) => !isSelectInput(input))
-        .find((input) => input.value_key === priceRanges.value_key);
+    if (numericCalculationInputs.length > 0) {
+      const drivingInput = numericCalculationInputs.find(
+        (input) => input.value_key === priceRanges.value_key
+      );
       if (drivingInput) {
-        const value = normalizeQuantityValue(inputValues[getInputStateKey(drivingInput)] ?? "");
-        if (isPositiveDecimal(value)) drivingValue = value;
+        const validation = validateNumericInput(
+          drivingInput,
+          inputValues[getInputStateKey(drivingInput)] ?? "",
+          {
+            mainValue: mainNumericValue,
+            requireNotGreaterThanMain: shouldValidateInputAgainstMainValue(
+              drivingInput,
+              mainNumericInput
+            )
+          }
+        );
+        if (validation.ok) drivingValue = validation.value;
       }
     } else {
       const value = normalizeQuantityValue(quantity);
@@ -294,57 +360,81 @@ function ItemDetailContent({
 
     if (drivingValue === null) return null;
     return findMatchedRangeRow(priceRanges, drivingValue, item.rows);
-  }, [calculationInputs, inputValues, item.price_ranges, item.rows, itemType, quantity]);
+  }, [
+    inputValues,
+    item.price_ranges,
+    item.rows,
+    itemType,
+    mainNumericInput,
+    mainNumericValue,
+    numericCalculationInputs,
+    quantity
+  ]);
 
   const hasDrivingValueForRange = useMemo(() => {
     if (itemType !== "range-based") return false;
     const priceRanges = parsePriceRanges(item.price_ranges);
     if (!priceRanges) return false;
 
-    if (calculationInputs.length > 0) {
-      const drivingInput = calculationInputs
-        .filter((input) => !isSelectInput(input))
-        .find((input) => input.value_key === priceRanges.value_key);
-      if (!drivingInput) return false;
-      return isPositiveDecimal(
-        normalizeQuantityValue(inputValues[getInputStateKey(drivingInput)] ?? "")
+    if (numericCalculationInputs.length > 0) {
+      const drivingInput = numericCalculationInputs.find(
+        (input) => input.value_key === priceRanges.value_key
       );
+      if (!drivingInput) return false;
+      const validation = validateNumericInput(
+        drivingInput,
+        inputValues[getInputStateKey(drivingInput)] ?? "",
+        {
+          mainValue: mainNumericValue,
+          requireNotGreaterThanMain: shouldValidateInputAgainstMainValue(
+            drivingInput,
+            mainNumericInput
+          )
+        }
+      );
+      return validation.ok;
     }
 
     return isPositiveDecimal(normalizeQuantityValue(quantity));
-  }, [calculationInputs, inputValues, item.price_ranges, itemType, quantity]);
+  }, [
+    inputValues,
+    item.price_ranges,
+    itemType,
+    mainNumericInput,
+    mainNumericValue,
+    numericCalculationInputs,
+    quantity
+  ]);
 
   const rangeNumericInputsAreValid = useMemo(() => {
     if (itemType !== "range-based") return false;
 
-    const numericInputs = calculationInputs
-      .filter((input) => !isSelectInput(input))
-      .sort((first, second) => first.value_key - second.value_key);
-
-    if (numericInputs.length === 0) {
+    if (numericCalculationInputs.length === 0) {
       return isPositiveDecimal(normalizeQuantityValue(quantity));
     }
 
-    return numericInputs.every((input) => {
-      const normalized = normalizeQuantityValue(inputValues[getInputStateKey(input)] ?? "");
-      if (!isPositiveDecimal(normalized)) return false;
-      if (
-        input.min_value !== null &&
-        input.min_value !== undefined &&
-        Number(normalized) < Number(input.min_value)
-      ) {
-        return false;
-      }
-      if (
-        input.max_value !== null &&
-        input.max_value !== undefined &&
-        Number(normalized) > Number(input.max_value)
-      ) {
-        return false;
-      }
-      return true;
+    return numericCalculationInputs.every((input) => {
+      const validation = validateNumericInput(
+        input,
+        inputValues[getInputStateKey(input)] ?? "",
+        {
+          mainValue: mainNumericValue,
+          requireNotGreaterThanMain: shouldValidateInputAgainstMainValue(
+            input,
+            mainNumericInput
+          )
+        }
+      );
+      return validation.ok;
     });
-  }, [calculationInputs, inputValues, itemType, quantity]);
+  }, [
+    inputValues,
+    itemType,
+    mainNumericInput,
+    mainNumericValue,
+    numericCalculationInputs,
+    quantity
+  ]);
 
   const rangeFallbackRow = useMemo(
     () =>
@@ -485,93 +575,58 @@ function ItemDetailContent({
         return hasError;
       }
 
+      function validateNumericInputsForPayload() {
+        const normalizedValuesByKey = new Map<string, string>();
+        let hasError = false;
+
+        for (const input of numericCalculationInputs) {
+          const inputKey = getInputStateKey(input);
+          const validation = validateNumericInput(input, inputValues[inputKey] ?? "", {
+            mainValue: mainNumericValue,
+            requireNotGreaterThanMain: shouldValidateInputAgainstMainValue(
+              input,
+              mainNumericInput
+            )
+          });
+
+          if (!validation.ok) {
+            nextInputErrors[inputKey] = validation.message;
+            hasError = true;
+            continue;
+          }
+
+          normalizedValuesByKey.set(inputKey, validation.value);
+        }
+
+        return {
+          hasError,
+          values: numericCalculationInputs.map(
+            (input) => normalizedValuesByKey.get(getInputStateKey(input)) ?? ""
+          )
+        };
+      }
+
       if (itemType === "multi-input" || (selectedRowInput !== null && itemType !== "range-based")) {
         const hasSelectedInputError = applySelectedRowInputs();
-        let hasError = false;
-        const numericInputs = [...calculationInputs]
-          .filter((candidate) => !isSelectInput(candidate))
-          .sort((first, second) => first.value_key - second.value_key);
-
-        for (const input of numericInputs) {
-          const inputKey = getInputStateKey(input);
-          const normalized = normalizeQuantityValue(inputValues[inputKey] ?? "");
-          if (!isPositiveDecimal(normalized)) {
-            nextInputErrors[inputKey] = `${input.label_fa} باید یک عدد مثبت باشد.`;
-            hasError = true;
-            continue;
-          }
-          if (
-            input.min_value !== null &&
-            input.min_value !== undefined &&
-            Number(normalized) < Number(input.min_value)
-          ) {
-            nextInputErrors[getInputStateKey(input)] = `حداقل مقدار ${input.label_fa}: ${input.min_value}`;
-            hasError = true;
-            continue;
-          }
-          if (
-            input.max_value !== null &&
-            input.max_value !== undefined &&
-            Number(normalized) > Number(input.max_value)
-          ) {
-            nextInputErrors[getInputStateKey(input)] = `حداکثر مقدار ${input.label_fa}: ${input.max_value}`;
-            hasError = true;
-          }
-        }
+        const { hasError, values } = validateNumericInputsForPayload();
         if (hasError || hasSelectedInputError) {
           return applyFailure("ورودی‌های لازم را کامل و معتبر وارد کنید.");
         }
 
-        const numericInputValues = numericInputs.map((input) =>
-          normalizeQuantityValue(inputValues[getInputStateKey(input)] ?? "")
-        );
-        if (numericInputValues.length > 0) {
-          calculateBody.values = numericInputValues;
+        if (values.length > 0) {
+          calculateBody.values = values;
         }
       } else if (itemType === "range-based") {
         if (calculationInputs.length > 0) {
           const hasSelectedInputError = applySelectedRowInputs();
-          let hasError = false;
-          const numericInputs = [...calculationInputs]
-            .filter((candidate) => !isSelectInput(candidate))
-            .sort((first, second) => first.value_key - second.value_key);
-
-          for (const input of numericInputs) {
-            const inputKey = getInputStateKey(input);
-            const normalized = normalizeQuantityValue(inputValues[inputKey] ?? "");
-            if (!isPositiveDecimal(normalized)) {
-              nextInputErrors[inputKey] = `${input.label_fa} باید یک عدد مثبت باشد.`;
-              hasError = true;
-              continue;
-            }
-            if (
-              input.min_value !== null &&
-              input.min_value !== undefined &&
-              Number(normalized) < Number(input.min_value)
-            ) {
-              nextInputErrors[inputKey] = `حداقل مقدار ${input.label_fa}: ${input.min_value}`;
-              hasError = true;
-              continue;
-            }
-            if (
-              input.max_value !== null &&
-              input.max_value !== undefined &&
-              Number(normalized) > Number(input.max_value)
-            ) {
-              nextInputErrors[inputKey] = `حداکثر مقدار ${input.label_fa}: ${input.max_value}`;
-              hasError = true;
-            }
-          }
+          const { hasError, values } = validateNumericInputsForPayload();
 
           if (hasError || hasSelectedInputError) {
             return applyFailure("ورودی‌های لازم را کامل و معتبر وارد کنید.");
           }
 
-          const numericInputValues = numericInputs.map((input) =>
-            normalizeQuantityValue(inputValues[getInputStateKey(input)] ?? "")
-          );
-          if (numericInputValues.length > 0) {
-            calculateBody.values = numericInputValues;
+          if (values.length > 0) {
+            calculateBody.values = values;
           }
         } else {
           const normalizedQuantity = normalizeQuantityValue(quantity);
@@ -664,8 +719,11 @@ function ItemDetailContent({
       inputValues,
       item,
       itemType,
+      mainNumericInput,
+      mainNumericValue,
       manualUnitPrice,
       matchedRangeRow,
+      numericCalculationInputs,
       quantity,
       rangeFallbackRow,
       requiresCustomFallbackPrice,
@@ -1054,29 +1112,29 @@ function ItemDetailContent({
       ? "این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد."
       : null;
 
-  const baseCalculationStatusLabel =
-    calculationStatus === "calculating"
-      ? isAddFlowCalculating
-        ? "در حال محاسبه نهایی پیش از افزودن..."
-        : "در حال محاسبه خودکار..."
-      : !currentPayload.ok
-        ? "در انتظار تکمیل ورودی‌های لازم."
-        : calculationStatus === "ready" && calculation
-          ? "محاسبه با آخرین ورودی‌ها به‌روز است."
-          : calculationStatus === "error"
-            ? "محاسبه ناموفق بود؛ ورودی‌ها را بررسی کنید."
-            : calculationStatus === "stale"
-              ? "ورودی‌ها تغییر کرده‌اند؛ محاسبه خودکار در صف است."
-              : "پس از تکمیل ورودی‌ها، محاسبه به صورت خودکار انجام می‌شود.";
+  const hasCommittedInputError = Boolean(
+    calculationError ||
+      lineError ||
+      quantityError ||
+      manualUnitPriceError ||
+      rowSelectionError ||
+      Object.values(inputErrors).some(Boolean) ||
+      Object.values(customPriceErrors).some(Boolean)
+  );
+  const hasExplicitAddFailure = hasSubmitAttempted && hasCommittedInputError;
+  const calculationStatusDot: CalculationStatusDotState = hasExplicitAddFailure
+    ? "red"
+    : calculationStatus === "ready" &&
+        calculation &&
+        currentPayload.ok &&
+        !isCalculating &&
+        !calculationError
+      ? "green"
+      : "yellow";
 
-  const calculationStatusLabel =
-    calculationStatus === "calculating" && requiresCustomFallbackPrice && !isAddFlowCalculating
-      ? "در حال محاسبه با قیمت سفارشی..."
-      : needsFallbackCustomPrice
-        ? "این مقدار خارج از بازه فهرست‌بهاست؛ بهای واحد سفارشی وارد کنید."
-        : calculationStatus === "ready" && calculation && requiresCustomFallbackPrice
-          ? "محاسبه با بهای واحد سفارشی انجام شد."
-          : baseCalculationStatusLabel;
+  const handleScrollToRows = useCallback(() => {
+    rowsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   const headerAction = (
     <div className="flex flex-wrap items-end justify-end gap-2">
@@ -1085,7 +1143,7 @@ function ItemDetailContent({
           ضرایب
         </span>
         <select
-          className={classNames(inputClasses, "h-10 w-36 px-2 text-xs sm:w-44")}
+          className={classNames(inputClasses, "h-9 w-28 max-w-[8rem] px-2 text-xs sm:h-10 sm:w-40 sm:max-w-[10rem]")}
           disabled={isAddingLine}
           onChange={(event) =>
             handleSelectedCoefficientSetIdChange(
@@ -1162,7 +1220,7 @@ function ItemDetailContent({
           calculationError={
             calculationStatus === "error" ? calculationError : hasSubmitAttempted ? calculationError : null
           }
-          calculationStatusLabel={calculationStatusLabel}
+          calculationStatusDot={calculationStatusDot}
           customFallbackPrice={
             requiresCustomFallbackPrice && rangeFallbackRow
               ? {
@@ -1181,7 +1239,7 @@ function ItemDetailContent({
                 }
               : undefined
           }
-          customPriceRowCodes={Object.keys(activeCustomPrices)}
+          customPriceRowCodes={activeCustomPriceRowCodes}
           inputErrors={
             hasSubmitAttempted && usesInputDrivenCalculation ? inputErrors : undefined
           }
@@ -1207,6 +1265,7 @@ function ItemDetailContent({
           onInputValueChange={
             usesInputDrivenCalculation ? handleInputValueChange : undefined
           }
+          onRowsClick={item.rows.length > 0 ? handleScrollToRows : undefined}
           quantity={quantity}
           quantityError={hasSubmitAttempted ? quantityError : null}
           rangeMatchError={hasSubmitAttempted && itemType === "range-based" ? rangeMatchError : undefined}
@@ -1231,9 +1290,9 @@ function ItemDetailContent({
         />
 
         {item.rows.length > 0 ? (
-          <section>
+          <section ref={rowsSectionRef}>
             <h3 className="text-xs font-black uppercase tracking-wide text-slate-400 light:text-slate-500">
-              ردیف فهرست‌بها
+              ردیف‌های فهرست‌بها
             </h3>
             <div className="mt-2 space-y-2">
               {item.rows.map((row) => {
@@ -1246,124 +1305,264 @@ function ItemDetailContent({
                 const officialPriceLabel = hasOfficialPrice
                   ? formatMoneyAmount(row.unit_price)
                   : "بدون قیمت رسمی";
+                const calculatedRow = activeCalculationRowsByCode.get(row.row_code) ?? null;
                 const isEditing = editingRowCode === row.row_code;
                 const priceControlsDisabled = documentLocked || isAddingLine;
+                const rowTitle = row.title_fa || row.short_title_fa || row.row_code;
+                const mobileDescription = getCompactRowDescription(
+                  rowTitle,
+                  row.description_fa
+                );
+                const displayPrice = hasCustomPrice
+                  ? formatMoneyAmount(customPrice)
+                  : officialPriceLabel;
 
                 return (
-                <div
-                  className="rounded-lg border border-white/10 bg-white/7 px-3 py-2 text-sm light:border-slate-200 light:bg-slate-50"
-                  key={row.id}
-                >
-                  <div className="grid gap-x-3 gap-y-2 md:grid-cols-[6rem_minmax(0,1fr)_5rem_minmax(13rem,auto)] md:items-center">
-                    <span className="font-mono font-bold text-emerald-200 light:text-emerald-700">
-                      {row.row_code}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate font-bold text-slate-100 light:text-slate-800">
-                        {row.title_fa || row.short_title_fa}
-                      </p>
-                      {row.description_fa ? (
-                        <p className="mt-0.5 truncate text-xs text-slate-400 light:text-slate-500">
-                          {row.description_fa}
-                        </p>
-                      ) : null}
-                      {(row.min_value || row.max_value) ? (
-                        <p className="mt-0.5 text-xs text-slate-500 light:text-slate-500">
-                          {row.min_value ? `از: ${formatDecimal(row.min_value)}` : null}
-                          {row.min_value && row.max_value ? " / " : null}
-                          {row.max_value ? `تا: ${formatDecimal(row.max_value)}` : null}
-                        </p>
-                      ) : null}
-                    </div>
-                    <span className="text-slate-400 light:text-slate-500">{row.unit}</span>
-                    <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:justify-end">
-                      {isEditing ? (
-                        <>
-                          <input
-                            aria-label="بهای واحد"
-                            className="h-8 w-32 rounded-md border border-white/10 bg-slate-950/45 px-2 text-left text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-white light:text-slate-950"
-                            dir="ltr"
-                            disabled={priceControlsDisabled}
-                            inputMode="decimal"
-                            onChange={(event) =>
-                              handleEditingRowPriceChange(row.row_code, event.target.value)
-                            }
-                            placeholder={hasOfficialPrice ? String(row.unit_price) : "بهای واحد"}
-                            value={editingRowPrice}
-                          />
-                          <button
-                            aria-label="ثبت بهای واحد"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-emerald-200 transition hover:bg-emerald-400/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 light:text-emerald-700 light:hover:bg-emerald-50"
-                            disabled={priceControlsDisabled}
-                            onClick={() => applyRowCustomPrice(row.row_code)}
-                            title="ثبت بهای واحد"
-                            type="button"
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                          <button
-                            aria-label="لغو ویرایش بهای واحد"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
-                            disabled={priceControlsDisabled}
-                            onClick={() => cancelRowPriceEdit(row.row_code)}
-                            title="لغو"
-                            type="button"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <span
-                            className={classNames(
-                              "rounded-full border px-2 py-0.5 text-xs font-bold",
-                              hasCustomPrice
-                                ? "border-amber-300/35 bg-amber-400/15 text-amber-100 light:text-amber-800"
-                                : "border-emerald-300/30 bg-emerald-400/10 text-emerald-100 light:text-emerald-800"
-                            )}
-                          >
-                            {hasCustomPrice ? "قیمت دستی" : "قیمت رسمی"}
+                  <div
+                    className={classNames(
+                      "relative overflow-hidden border-b px-2.5 py-2 text-sm transition last:border-b-0 md:rounded-lg md:border md:px-3 md:py-2",
+                      calculatedRow
+                        ? "border-b-emerald-300/25 bg-emerald-400/8 before:absolute before:inset-y-1 before:right-0 before:w-0.5 before:rounded-full before:bg-emerald-300 light:bg-emerald-50/80 md:border-emerald-300/35 md:bg-emerald-400/10 md:before:hidden light:md:border-emerald-300/60 light:md:bg-emerald-50"
+                        : "border-b-white/10 bg-transparent light:border-b-slate-200 md:border-white/10 md:bg-white/7 light:md:border-slate-200 light:md:bg-slate-50"
+                    )}
+                    key={row.id}
+                  >
+                    <div className="md:hidden">
+                      <div className="flex min-w-0 items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <span className="font-mono text-xs font-bold text-emerald-200 light:text-emerald-700">
+                            {row.row_code}
                           </span>
-                          <span className="font-bold text-slate-200 light:text-slate-800">
-                            {hasCustomPrice ? formatMoneyAmount(customPrice) : officialPriceLabel}
-                          </span>
-                          {hasCustomPrice ? (
-                            <span className="text-xs text-slate-400 light:text-slate-500">
-                              رسمی: {officialPriceLabel}
+                          {calculatedRow ? (
+                            <span className="rounded-full border border-emerald-300/30 bg-emerald-400/12 px-1.5 py-px text-[10px] font-bold text-emerald-100 light:text-emerald-800">
+                              انتخاب‌شده
                             </span>
                           ) : null}
-                          <button
-                            aria-label="ویرایش بهای واحد"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
-                            disabled={priceControlsDisabled}
-                            onClick={() => beginRowPriceEdit(row)}
-                            title="ویرایش بهای واحد"
-                            type="button"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                        {hasCustomPrice ? (
-                          <button
-                            aria-label="بازگشت به قیمت رسمی"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
-                            disabled={priceControlsDisabled}
-                            onClick={() => resetRowCustomPrice(row.row_code)}
-                            title="بازگشت به قیمت رسمی"
-                            type="button"
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                          </button>
-                        ) : null}
-                        </>
-                      )}
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1">
+                          {isEditing ? (
+                            <>
+                              <input
+                                aria-label="بهای واحد"
+                                className="h-7 w-24 max-w-[7rem] rounded-md border border-white/10 bg-slate-950/45 px-2 text-left text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-white light:text-slate-950"
+                                dir="ltr"
+                                disabled={priceControlsDisabled}
+                                inputMode="decimal"
+                                onChange={(event) =>
+                                  handleEditingRowPriceChange(row.row_code, event.target.value)
+                                }
+                                placeholder={hasOfficialPrice ? String(row.unit_price) : "بهای واحد"}
+                                value={editingRowPrice}
+                              />
+                              <button
+                                aria-label="ثبت بهای واحد"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-emerald-200 transition hover:bg-emerald-400/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 light:text-emerald-700 light:hover:bg-emerald-50"
+                                disabled={priceControlsDisabled}
+                                onClick={() => applyRowCustomPrice(row.row_code)}
+                                title="ثبت بهای واحد"
+                                type="button"
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                aria-label="لغو ویرایش بهای واحد"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                                disabled={priceControlsDisabled}
+                                onClick={() => cancelRowPriceEdit(row.row_code)}
+                                title="لغو"
+                                type="button"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <span
+                                className={classNames(
+                                  "text-[10px] font-bold",
+                                  hasCustomPrice
+                                    ? "text-amber-200 light:text-amber-700"
+                                    : "text-emerald-200 light:text-emerald-700"
+                                )}
+                              >
+                                {hasCustomPrice ? "دستی" : "رسمی"}
+                              </span>
+                              <span
+                                className="max-w-[7rem] truncate text-left text-xs font-bold text-slate-200 light:text-slate-800"
+                                dir="ltr"
+                                title={displayPrice}
+                              >
+                                {displayPrice}
+                              </span>
+                              <button
+                                aria-label="ویرایش بهای واحد"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                                disabled={priceControlsDisabled}
+                                onClick={() => beginRowPriceEdit(row)}
+                                title="ویرایش بهای واحد"
+                                type="button"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              {hasCustomPrice ? (
+                                <button
+                                  aria-label="بازگشت به قیمت رسمی"
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                                  disabled={priceControlsDisabled}
+                                  onClick={() => resetRowCustomPrice(row.row_code)}
+                                  title={`بازگشت به قیمت رسمی: ${officialPriceLabel}`}
+                                  type="button"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" />
+                                </button>
+                              ) : null}
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="mt-1 truncate text-sm font-bold leading-5 text-slate-100 light:text-slate-800">
+                        {rowTitle}
+                      </p>
+                      {mobileDescription ? (
+                        <p className="mt-0.5 truncate text-xs leading-4 text-slate-400 light:text-slate-500">
+                          {mobileDescription}
+                        </p>
+                      ) : null}
+                      {calculatedRow ? (
+                        <p className="mt-1 truncate text-xs font-medium leading-4 text-emerald-100 light:text-emerald-800">
+                          مقدار: {formatDecimal(calculatedRow.quantity)}{" "}
+                          {calculatedRow.unit ?? row.unit} · مبلغ:{" "}
+                          {formatMoneyAmount(calculatedRow.total)}
+                        </p>
+                      ) : null}
                     </div>
+
+                    <div className="hidden gap-x-3 gap-y-2 md:grid md:grid-cols-[6rem_minmax(0,1fr)_5rem_minmax(13rem,auto)] md:items-center">
+                      <span className="font-mono font-bold text-emerald-200 light:text-emerald-700">
+                        {row.row_code}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-bold text-slate-100 light:text-slate-800">
+                          {rowTitle}
+                        </p>
+                        {row.description_fa ? (
+                          <p className="mt-0.5 truncate text-xs text-slate-400 light:text-slate-500">
+                            {row.description_fa}
+                          </p>
+                        ) : null}
+                        {(row.min_value || row.max_value) ? (
+                          <p className="mt-0.5 text-xs text-slate-500 light:text-slate-500">
+                            {row.min_value ? `از: ${formatDecimal(row.min_value)}` : null}
+                            {row.min_value && row.max_value ? " / " : null}
+                            {row.max_value ? `تا: ${formatDecimal(row.max_value)}` : null}
+                          </p>
+                        ) : null}
+                        {calculatedRow ? (
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                            <span className="rounded-full border border-emerald-300/35 bg-emerald-400/15 px-2 py-0.5 font-bold text-emerald-100 light:text-emerald-800">
+                              در محاسبه
+                            </span>
+                            <span className="text-slate-300 light:text-slate-700">
+                              مقدار: {formatDecimal(calculatedRow.quantity)}{" "}
+                              {calculatedRow.unit ?? row.unit}
+                            </span>
+                            <span className="font-bold text-slate-200 light:text-slate-800">
+                              مبلغ: {formatMoneyAmount(calculatedRow.total)}
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <span className="text-slate-400 light:text-slate-500">{row.unit}</span>
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:justify-end">
+                        {isEditing ? (
+                          <>
+                            <input
+                              aria-label="بهای واحد"
+                              className="h-8 w-32 rounded-md border border-white/10 bg-slate-950/45 px-2 text-left text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-white light:text-slate-950"
+                              dir="ltr"
+                              disabled={priceControlsDisabled}
+                              inputMode="decimal"
+                              onChange={(event) =>
+                                handleEditingRowPriceChange(row.row_code, event.target.value)
+                              }
+                              placeholder={hasOfficialPrice ? String(row.unit_price) : "بهای واحد"}
+                              value={editingRowPrice}
+                            />
+                            <button
+                              aria-label="ثبت بهای واحد"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-emerald-200 transition hover:bg-emerald-400/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 light:text-emerald-700 light:hover:bg-emerald-50"
+                              disabled={priceControlsDisabled}
+                              onClick={() => applyRowCustomPrice(row.row_code)}
+                              title="ثبت بهای واحد"
+                              type="button"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                            <button
+                              aria-label="لغو ویرایش بهای واحد"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                              disabled={priceControlsDisabled}
+                              onClick={() => cancelRowPriceEdit(row.row_code)}
+                              title="لغو"
+                              type="button"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span
+                              className={classNames(
+                                "rounded-full border px-2 py-0.5 text-xs font-bold",
+                                hasCustomPrice
+                                  ? "border-amber-300/35 bg-amber-400/15 text-amber-100 light:text-amber-800"
+                                  : "border-emerald-300/30 bg-emerald-400/10 text-emerald-100 light:text-emerald-800"
+                              )}
+                            >
+                              {hasCustomPrice ? "قیمت دستی" : "قیمت رسمی"}
+                            </span>
+                            <span className="font-bold text-slate-200 light:text-slate-800">
+                              {displayPrice}
+                            </span>
+                            {hasCustomPrice ? (
+                              <span className="text-xs text-slate-400 light:text-slate-500">
+                                رسمی: {officialPriceLabel}
+                              </span>
+                            ) : null}
+                            <button
+                              aria-label="ویرایش بهای واحد"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                              disabled={priceControlsDisabled}
+                              onClick={() => beginRowPriceEdit(row)}
+                              title="ویرایش بهای واحد"
+                              type="button"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            {hasCustomPrice ? (
+                              <button
+                                aria-label="بازگشت به قیمت رسمی"
+                                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                                disabled={priceControlsDisabled}
+                                onClick={() => resetRowCustomPrice(row.row_code)}
+                                title="بازگشت به قیمت رسمی"
+                                type="button"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </button>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {customPriceErrors[row.row_code] ? (
+                      <p className="mt-1 text-xs text-rose-300 light:text-rose-700">
+                        {customPriceErrors[row.row_code]}
+                      </p>
+                    ) : null}
                   </div>
-                  {customPriceErrors[row.row_code] ? (
-                    <p className="mt-1 text-xs text-rose-300 light:text-rose-700">
-                      {customPriceErrors[row.row_code]}
-                    </p>
-                  ) : null}
-                </div>
                 );
               })}
             </div>

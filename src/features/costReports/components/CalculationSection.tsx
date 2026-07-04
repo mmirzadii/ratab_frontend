@@ -1,4 +1,4 @@
-import { Calculator, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 import type {
   PricebookCalculateResponse,
@@ -6,9 +6,6 @@ import type {
   PricebookItemInputSpec,
   PricebookItemRowDetail
 } from "../../pricebooks/pricebookApi";
-import { HelpHint } from "../../../shared/components/HelpHint";
-import { InfoBox } from "../../../shared/components/InfoBox";
-import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { classNames } from "../../../shared/utils/classNames";
 import { formatDecimal, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { inputClasses } from "../constants";
@@ -19,6 +16,7 @@ import {
   getInputStateKey,
   getSelectInputOptions,
   getVisibleCalculationRows,
+  isMainNumericInput,
   isSelectInput
 } from "../costReportUtils";
 
@@ -47,10 +45,12 @@ export type CalculationCustomFallbackPrice = {
   value: string;
 };
 
+export type CalculationStatusDotState = "green" | "yellow" | "red";
+
 export function CalculationSection({
   calculation,
   calculationError,
-  calculationStatusLabel,
+  calculationStatusDot,
   customFallbackPrice,
   customPriceRowCodes,
   inputErrors,
@@ -68,6 +68,7 @@ export function CalculationSection({
   matchedRangeRow,
   onAddLine,
   onInputValueChange,
+  onRowsClick,
   quantity,
   quantityError,
   rangeMatchError,
@@ -80,7 +81,7 @@ export function CalculationSection({
 }: {
   calculation: PricebookCalculateResponse | null;
   calculationError: string | null;
-  calculationStatusLabel: string;
+  calculationStatusDot: CalculationStatusDotState;
   customFallbackPrice?: CalculationCustomFallbackPrice;
   customPriceRowCodes?: string[];
   inputErrors?: Record<string, string | null>;
@@ -98,6 +99,7 @@ export function CalculationSection({
   matchedRangeRow?: PricebookItemRowDetail | null;
   onAddLine: () => void;
   onInputValueChange?: (key: string, value: string) => void;
+  onRowsClick?: () => void;
   quantity: string;
   quantityError: string | null;
   rangeMatchError?: string | null;
@@ -108,6 +110,7 @@ export function CalculationSection({
   setQuantity: (value: string) => void;
   unit?: string;
 }) {
+  const [showDetails, setShowDetails] = useState(false);
   const calculationMessages = getCalculationMessages(calculation?.calculation_output);
   const calculationRows = calculation
     ? getVisibleCalculationRows(calculation, itemRows, customPriceRowCodes)
@@ -115,16 +118,35 @@ export function CalculationSection({
   const isMultiInput = Boolean(inputs && inputs.length > 0);
   const inputsDisabled = isAddingLine;
 
-  const badgeTone = requiresManualPrice ? "amber" : requiresRowSelection ? "amber" : "emerald";
-  const badgeLabel = requiresManualPrice
-    ? "نیازمند قیمت ستاره‌دار"
-    : requiresRowSelection
-      ? "انتخاب ردیف لازم است"
-      : isMultiInput
-        ? "چند ورودی"
-        : isRangeBased
-          ? "مبتنی بر بازه"
-          : "محاسبه خودکار";
+  const dotTitle =
+    calculationStatusDot === "green"
+      ? "محاسبه به‌روز است"
+      : calculationStatusDot === "red"
+        ? "خطا در افزودن آیتم"
+        : "محاسبه در انتظار تکمیل یا به‌روزرسانی است";
+  const dotClasses = classNames(
+    "block h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-slate-950 light:ring-offset-white",
+    calculationStatusDot === "green"
+      ? "bg-emerald-300 ring-emerald-300/25"
+      : calculationStatusDot === "red"
+        ? "bg-rose-400 ring-rose-300/25"
+        : "bg-amber-300 ring-amber-300/25",
+    calculationStatusDot === "yellow" && isCalculating ? "animate-pulse" : ""
+  );
+  const calculationPriceLabel =
+    calculation?.requires_manual_unit_price || calculationRows.some((row) => row.isCustomPrice)
+      ? "دستی"
+      : "رسمی";
+  const hasInlineValidationError = Boolean(
+    quantityError ||
+      manualUnitPriceError ||
+      rowSelection?.error ||
+      customFallbackPrice?.error ||
+      rangeMatchError ||
+      Object.values(inputErrors ?? {}).some(Boolean)
+  );
+  const visibleCalculationError =
+    calculationError && !hasInlineValidationError ? calculationError : null;
 
   const gridCols = requiresManualPrice ? "sm:grid-cols-2" : "sm:grid-cols-1";
 
@@ -290,7 +312,7 @@ export function CalculationSection({
             placeholder={
               input.min_value && Number(input.min_value) > 0
                 ? input.min_value
-                : input.unit || "عدد مثبت"
+                : input.unit || (isMainNumericInput(input) ? "عدد مثبت" : "عدد صفر یا بیشتر")
             }
             value={inputValues?.[inputKey] ?? ""}
           />
@@ -322,18 +344,13 @@ export function CalculationSection({
 
   return (
     <section className="rounded-lg border border-emerald-300/20 bg-emerald-400/10 p-4 light:bg-emerald-50">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 className="flex items-center gap-2 text-base font-black text-white light:text-slate-950">
-          <Calculator className="h-4 w-4 text-emerald-200 light:text-emerald-700" />
-          محاسبه آیتم
-          <HelpHint text="ورودی‌ها با تأخیر کوتاه برای محاسبه رسمی به بک‌اند ارسال می‌شوند و مبالغ فقط از پاسخ بک‌اند نمایش داده می‌شوند." />
-        </h3>
-        <StatusBadge tone={badgeTone}>{badgeLabel}</StatusBadge>
-      </div>
-
-      <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-white/7 px-3 py-2 text-sm text-slate-300 light:border-slate-200 light:bg-white light:text-slate-600">
-        {isCalculating ? <Loader2 className="h-4 w-4 animate-spin text-emerald-300" /> : null}
-        <span>{calculationStatusLabel}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span
+          aria-label={dotTitle}
+          className={dotClasses}
+          role="status"
+          title={dotTitle}
+        />
       </div>
 
       {requiresManualPrice ? (
@@ -414,113 +431,152 @@ export function CalculationSection({
         </p>
       ) : null}
 
-      {calculationError ? (
+      {visibleCalculationError ? (
         <p className="mt-3 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
-          {calculationError}
+          {visibleCalculationError}
         </p>
       ) : null}
 
       {calculation ? (
-        <div className="mt-4 space-y-4 rounded-lg border border-white/10 bg-slate-950/35 p-4 light:border-slate-200 light:bg-white">
-          <p className="text-xs font-black uppercase tracking-wide text-slate-400 light:text-slate-500">
-            نتیجه محاسبه
-          </p>
-          <div className="grid gap-3 sm:grid-cols-4">
-            <InfoBox label="کد ردیف" value={calculation.row_code} />
-            <InfoBox label="بهای واحد" value={formatMoneyAmount(calculation.unit_price)} />
-            <InfoBox
-              label="مقدار"
-              value={`${formatDecimal(calculation.quantity)} ${calculation.unit}`}
-            />
-            <InfoBox
-              label="قیمت دستی"
-              value={calculation.requires_manual_unit_price ? "بله" : "خیر"}
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <InfoBox label="مبلغ پایه" value={formatMoneyAmount(calculation.base_amount)} />
-            <InfoBox label="مبلغ ضرایب" value={formatMoneyAmount(calculation.coefficient_amount)} />
-            <div className="rounded-lg border border-success-300/30 bg-success-400/10 p-3 light:border-success-300/40 light:bg-success-50">
+        <div className="mt-4 rounded-lg border border-white/10 bg-slate-950/30 p-3 light:border-slate-200 light:bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
               <p className="text-xs font-bold text-slate-400 light:text-slate-500">
-                جمع کل محاسبه
+                جمع کل
               </p>
-              <p className="mt-1 text-base font-black text-success-300 light:text-success-700">
+              <p className="mt-1 text-xl font-black text-success-300 light:text-success-700">
                 {formatMoneyAmount(calculation.total_amount)}
               </p>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {onRowsClick ? (
+                <button
+                  className="rounded-full border border-white/10 bg-white/7 px-3 py-1.5 text-xs font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-700 light:hover:bg-slate-50"
+                  onClick={onRowsClick}
+                  type="button"
+                >
+                  ردیف‌ها
+                </button>
+              ) : null}
+              <button
+                className="rounded-full border border-white/10 bg-white/7 px-3 py-1.5 text-xs font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-700 light:hover:bg-slate-50"
+                onClick={() => setShowDetails((current) => !current)}
+                type="button"
+              >
+                {showDetails ? "بستن جزئیات" : "جزئیات"}
+              </button>
+            </div>
           </div>
-          {calculationRows.length > 0 ? (
-            <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50">
-              <p className="mb-2 text-xs font-bold text-slate-400 light:text-slate-500">
-                تجزیه ردیف‌های محاسبه
-              </p>
-              <div className="hidden grid-cols-[7rem_1fr_7rem_8rem_5rem_8rem] gap-3 border-b border-white/10 pb-2 text-xs font-bold text-slate-400 light:border-slate-200 light:text-slate-500 md:grid">
-                <span>شماره ردیف</span>
-                <span>شرح ردیف</span>
-                <span>مقدار</span>
-                <span>بهای واحد</span>
-                <span>منبع</span>
-                <span>مبلغ ردیف</span>
-              </div>
-              <div className="mt-2 space-y-2">
-                {calculationRows.map((row, index) => (
-                  <div
-                    className="grid gap-2 rounded-lg border border-white/10 bg-slate-950/20 p-3 text-sm light:border-slate-200 light:bg-white md:grid-cols-[7rem_1fr_7rem_8rem_5rem_8rem] md:border-0 md:bg-transparent md:p-0"
-                    key={`${row.rowId ?? row.rowCode ?? "row"}-${index}`}
-                  >
-                    <span className="font-mono font-bold text-emerald-200 light:text-emerald-700">
-                      {row.rowCode ?? "-"}
-                    </span>
-                    <span className="text-slate-300 light:text-slate-700">{row.title}</span>
-                    <span className="text-slate-400 light:text-slate-500">
-                      {formatDecimal(row.quantity)} {row.unit ?? ""}
-                    </span>
-                    <span className="text-slate-300 light:text-slate-700">
-                      {formatMoneyAmount(row.unitPrice)}
-                    </span>
-                    {renderPriceSourceBadge(row)}
-                    <span className="font-bold text-slate-200 light:text-slate-800">
-                      {formatMoneyAmount(row.total)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          {calculation.calculate_message ? (
-            <p className="text-sm leading-7 text-slate-300 light:text-slate-600">
-              {calculation.calculate_message}
-            </p>
-          ) : null}
-          {(calculation.applied_coefficients?.length ?? 0) > 0 ? (
-            <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50">
-              <p className="text-xs font-bold text-slate-400 light:text-slate-500">
-                ضرایب اعمال‌شده
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(calculation.applied_coefficients ?? []).map((coefficient) => (
-                  <span
-                    className="rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1 text-xs font-bold text-violet-100 light:text-violet-800"
-                    key={`${coefficient.coefficient_key}-${coefficient.scope}-${coefficient.coefficient_value_id}`}
-                  >
-                    {coefficient.label_fa || coefficient.coefficient_key}:{" "}
-                    {coefficient.multiplier} | {getCoefficientScopeLabel(coefficient.scope)} | اثر{" "}
-                    {formatMoneyAmount(coefficient.effect_amount)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          {calculationMessages.length > 0 ? (
-            <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50">
-              <p className="text-xs font-bold text-slate-400 light:text-slate-500">
-                پیام‌های محاسبه
-              </p>
-              <ul className="mt-2 space-y-2 text-sm leading-7 text-slate-300 light:text-slate-700">
-                {calculationMessages.map((message) => (
-                  <li key={message}>{message}</li>
-                ))}
-              </ul>
+
+          {showDetails ? (
+            <div className="mt-3 space-y-3 border-t border-white/10 pt-3 light:border-slate-200">
+              <dl className="grid gap-x-4 gap-y-2 text-xs leading-6 text-slate-300 light:text-slate-700 sm:grid-cols-2">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-400 light:text-slate-500">کد ردیف اصلی</dt>
+                  <dd className="font-mono font-bold text-slate-100 light:text-slate-900">
+                    {calculation.row_code}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-400 light:text-slate-500">مقدار</dt>
+                  <dd className="font-bold">
+                    {formatDecimal(calculation.quantity)} {calculation.unit}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-400 light:text-slate-500">بهای واحد</dt>
+                  <dd className="font-bold">{formatMoneyAmount(calculation.unit_price)}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-400 light:text-slate-500">قیمت</dt>
+                  <dd className="font-bold">{calculationPriceLabel}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-400 light:text-slate-500">مبلغ پایه</dt>
+                  <dd className="font-bold">{formatMoneyAmount(calculation.base_amount)}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-400 light:text-slate-500">مبلغ ضرایب</dt>
+                  <dd className="font-bold">
+                    {formatMoneyAmount(calculation.coefficient_amount)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3 sm:col-span-2">
+                  <dt className="text-slate-400 light:text-slate-500">جمع کل</dt>
+                  <dd className="font-black text-success-300 light:text-success-700">
+                    {formatMoneyAmount(calculation.total_amount)}
+                  </dd>
+                </div>
+              </dl>
+
+              {calculationRows.length > 0 ? (
+                <div className="overflow-x-auto rounded-lg border border-white/10 light:border-slate-200">
+                  <table className="min-w-full text-right text-xs text-slate-300 light:text-slate-700">
+                    <thead className="bg-white/7 text-slate-400 light:bg-slate-50 light:text-slate-500">
+                      <tr>
+                        <th className="px-2 py-2">ردیف</th>
+                        <th className="px-2 py-2">مقدار</th>
+                        <th className="px-2 py-2">بهای واحد</th>
+                        <th className="px-2 py-2">مبلغ</th>
+                        <th className="px-2 py-2">قیمت</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {calculationRows.map((row, index) => (
+                        <tr
+                          className="border-t border-white/10 light:border-slate-200"
+                          key={`${row.rowId ?? row.rowCode ?? "row"}-${index}`}
+                        >
+                          <td className="px-2 py-2 font-mono font-bold text-emerald-200 light:text-emerald-700">
+                            {row.rowCode ?? "-"}
+                          </td>
+                          <td className="px-2 py-2">
+                            {formatDecimal(row.quantity)} {row.unit ?? ""}
+                          </td>
+                          <td className="px-2 py-2">{formatMoneyAmount(row.unitPrice)}</td>
+                          <td className="px-2 py-2 font-bold">{formatMoneyAmount(row.total)}</td>
+                          <td className="px-2 py-2">{renderPriceSourceBadge(row)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+
+              {(calculation.applied_coefficients?.length ?? 0) > 0 ? (
+                <div className="space-y-1 rounded-lg border border-white/10 bg-white/7 p-2 text-xs light:border-slate-200 light:bg-slate-50">
+                  <p className="font-bold text-slate-400 light:text-slate-500">
+                    ضرایب اعمال‌شده
+                  </p>
+                  {(calculation.applied_coefficients ?? []).map((coefficient) => (
+                    <div
+                      className="flex flex-wrap items-center gap-x-3 gap-y-1"
+                      key={`${coefficient.coefficient_key}-${coefficient.scope}-${coefficient.coefficient_value_id}`}
+                    >
+                      <span className="font-bold text-violet-100 light:text-violet-800">
+                        {coefficient.label_fa || coefficient.coefficient_key}
+                      </span>
+                      <span>{coefficient.multiplier}</span>
+                      <span className="text-slate-400 light:text-slate-500">
+                        {getCoefficientScopeLabel(coefficient.scope)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {calculation.calculate_message ? (
+                <p className="text-xs leading-6 text-slate-300 light:text-slate-600">
+                  {calculation.calculate_message}
+                </p>
+              ) : null}
+              {calculationMessages.length > 0 ? (
+                <ul className="space-y-1 text-xs leading-6 text-slate-300 light:text-slate-700">
+                  {calculationMessages.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
           ) : null}
         </div>

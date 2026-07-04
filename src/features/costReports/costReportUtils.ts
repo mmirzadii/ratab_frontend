@@ -161,6 +161,14 @@ export function isPositiveDecimal(value: string): boolean {
   return /^\d+(\.\d+)?$/.test(value) && !/^0+(\.0+)?$/.test(value);
 }
 
+export function isStrictPositiveDecimal(value: string): boolean {
+  return isPositiveDecimal(value);
+}
+
+export function isNonNegativeDecimal(value: string): boolean {
+  return /^\d+(\.\d+)?$/.test(value);
+}
+
 export function getCoefficientKeyLabel(key: string): string {
   return coefficientKeyOptions.find((item) => item.id === key)?.label ?? key;
 }
@@ -244,6 +252,129 @@ function getRecordString(record: Record<string, unknown>, key: string): string |
 
 function getInputRecord(input: PricebookItemInputSpec): Record<string, unknown> {
   return input as unknown as Record<string, unknown>;
+}
+
+function getRecordBoolean(record: Record<string, unknown>, key: string): boolean | null {
+  const value = record[key];
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1 ? true : value === 0 ? false : null;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "1") return true;
+    if (normalized === "false" || normalized === "0") return false;
+  }
+  return null;
+}
+
+function getFiniteNumber(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numeric = Number(String(value).replace(/,/g, ""));
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+export function isMainNumericInput(input: PricebookItemInputSpec): boolean {
+  return getRecordBoolean(getInputRecord(input), "is_main_input") === true;
+}
+
+export function shouldValidateInputAgainstMainValue(
+  input: PricebookItemInputSpec,
+  mainInput: PricebookItemInputSpec | null | undefined
+): boolean {
+  if (!mainInput || isMainNumericInput(input)) {
+    return false;
+  }
+
+  const record = getInputRecord(input);
+  const explicit =
+    getRecordBoolean(record, "must_not_exceed_main") ??
+    getRecordBoolean(record, "cannot_exceed_main") ??
+    getRecordBoolean(record, "max_is_main_input");
+  if (explicit !== null) {
+    return explicit;
+  }
+
+  const maxValueSource =
+    getRecordString(record, "max_value_source") ??
+    getRecordString(record, "max_source") ??
+    getRecordString(record, "depends_on");
+  if (maxValueSource) {
+    return ["main", "main_input", "primary", "quantity"].includes(
+      maxValueSource.trim().toLowerCase()
+    );
+  }
+
+  const inputUnit = input.unit?.trim();
+  const mainUnit = mainInput.unit?.trim();
+  return Boolean(inputUnit && mainUnit && inputUnit === mainUnit);
+}
+
+export type NumericInputValidationOptions = {
+  mainValue?: string | null;
+  requireNotGreaterThanMain?: boolean;
+};
+
+export type NumericInputValidationResult =
+  | { ok: true; value: string }
+  | { message: string; ok: false; value: string };
+
+export function validateNumericInput(
+  input: PricebookItemInputSpec,
+  value: string,
+  options: NumericInputValidationOptions = {}
+): NumericInputValidationResult {
+  const normalized = normalizeQuantityValue(value);
+  const isMainInput = isMainNumericInput(input);
+
+  if (isMainInput) {
+    if (!isStrictPositiveDecimal(normalized)) {
+      return {
+        message: `${input.label_fa} باید یک عدد مثبت باشد.`,
+        ok: false,
+        value: normalized
+      };
+    }
+  } else if (!isNonNegativeDecimal(normalized)) {
+    return {
+      message: `${input.label_fa} باید یک عدد صفر یا بیشتر باشد.`,
+      ok: false,
+      value: normalized
+    };
+  }
+
+  const numericValue = Number(normalized);
+  const minValue = getFiniteNumber(input.min_value ?? (isMainInput ? null : "0"));
+  if (minValue !== null && numericValue < minValue) {
+    return {
+      message: `حداقل مقدار ${input.label_fa}: ${minValue}`,
+      ok: false,
+      value: normalized
+    };
+  }
+
+  const maxValue = getFiniteNumber(input.max_value);
+  if (maxValue !== null && numericValue > maxValue) {
+    return {
+      message: `حداکثر مقدار ${input.label_fa}: ${maxValue}`,
+      ok: false,
+      value: normalized
+    };
+  }
+
+  if (options.requireNotGreaterThanMain && !isMainInput && options.mainValue) {
+    const normalizedMainValue = normalizeQuantityValue(options.mainValue);
+    if (isStrictPositiveDecimal(normalizedMainValue) && numericValue > Number(normalizedMainValue)) {
+      return {
+        message: "این مقدار نمی‌تواند بیشتر از مقدار اصلی باشد.",
+        ok: false,
+        value: normalized
+      };
+    }
+  }
+
+  return { ok: true, value: normalized };
 }
 
 function isInputSpecLike(value: unknown): value is PricebookItemInputSpec {
@@ -766,4 +897,42 @@ export function getVisibleCalculationRows(
         (fallbackRowCode ? customPriceRowCodes.has(fallbackRowCode) : false)
     }
   ];
+}
+
+export function getActiveCalculationRows(
+  calculation: PricebookCalculateResponse | null,
+  itemRows: PricebookItemDetail["rows"] = [],
+  localCustomPriceRowCodes: readonly string[] = []
+): DisplayCalculationRow[] {
+  if (!calculation) {
+    return [];
+  }
+
+  const visibleRows = getVisibleCalculationRows(
+    calculation,
+    itemRows,
+    localCustomPriceRowCodes
+  );
+  const activeRows = visibleRows.filter(
+    (row) => hasNonZeroNumericValue(row.quantity) || hasNonZeroNumericValue(row.total)
+  );
+
+  if (activeRows.length > 0) {
+    return activeRows;
+  }
+
+  return (calculation.rows_breakdown?.length ?? 0) > 0 ? [] : visibleRows;
+}
+
+export function getCalculationRowForItemRow(
+  row: PricebookItemDetail["rows"][number],
+  calculation: PricebookCalculateResponse | null,
+  itemRows: PricebookItemDetail["rows"] = [],
+  localCustomPriceRowCodes: readonly string[] = []
+): DisplayCalculationRow | null {
+  return (
+    getActiveCalculationRows(calculation, itemRows, localCustomPriceRowCodes).find(
+      (calculationRow) => calculationRow.rowCode === row.row_code
+    ) ?? null
+  );
 }
