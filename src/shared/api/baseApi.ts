@@ -136,6 +136,7 @@ export const baseApi = createApi({
     "CompanyGroup",
     "CompanyMember",
     "FinancialDocument",
+    "GroupMessage",
     "Health",
     "Pricebook",
     "Project"

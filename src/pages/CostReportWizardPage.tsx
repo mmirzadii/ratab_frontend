@@ -275,12 +275,7 @@ export function CostReportWizardPage() {
     } else if (createdDocument) {
       navigate(`/companies/${parsedCompanyId}`, {
         state: {
-          pendingCostReportAttachment: {
-            document: createdDocument,
-            project: createdProject,
-            title: cleanDisplayText(createdDocument.title || createdDocument.report_title, "صورت‌بها در حال ویرایش"),
-            description: "در حال ویرایش"
-          }
+          focusSection: "costReports"
         }
       });
     } else {

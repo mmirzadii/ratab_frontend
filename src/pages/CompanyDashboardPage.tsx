@@ -1,7 +1,6 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import {
   ArrowRight,
-  Ban,
   Building2,
   CheckCircle2,
   CirclePlus,
@@ -12,9 +11,6 @@ import {
   type LucideIcon,
   MessageCircle,
   Network,
-  Paperclip,
-  Plus,
-  Send,
   Settings,
   SlidersHorizontal,
   Users,
@@ -34,6 +30,7 @@ import {
 } from "../features/companies/companyApi";
 import { GroupsSection } from "../features/companies/GroupsSection";
 import { MembersSection } from "../features/companies/MembersSection";
+import { MessagesSection } from "../features/companies/MessagesSection";
 import {
   canUpdateCompany,
   findCurrentMembership,
@@ -60,34 +57,16 @@ import { getApiErrorMessage } from "../shared/utils/apiError";
 import { getListResults } from "../shared/utils/listResults";
 import { normalizeNumberInput } from "../shared/utils/numberText";
 
-type LocalAttachment = {
-  kind: "document" | "project";
-  title: string;
-  description: string;
-  to: string;
-  document?: FinancialDocument;
-  project?: Project | null;
-};
-
-type LocalMessage = {
-  id: number;
-  text: string;
-  attachment: LocalAttachment | null;
-};
-
 type DashboardSection = "messages" | "costReports" | "company" | "members" | "groups";
 
 type DashboardRouteState = {
-  pendingCostReportAttachment?: {
-    document: FinancialDocument;
-    project?: Project | null;
-    title: string;
-    description: string;
-  };
+  focusSection?: DashboardSection;
+  /** @deprecated Phase 4 removed local message attachments; kept only to clear old navigations. */
+  pendingCostReportAttachment?: unknown;
 };
 
 const companyNavItems = [
-  { id: "messages", label: "پیام‌های شرکت", icon: MessageCircle, section: "messages" as DashboardSection },
+  { id: "messages", label: "پیام‌ها", icon: MessageCircle, section: "messages" as DashboardSection },
   { id: "company", label: "اطلاعات شرکت", icon: Building2, section: "company" as DashboardSection },
   { id: "members", label: "اعضا", icon: Users, section: "members" as DashboardSection },
   { id: "groups", label: "گروه‌ها", icon: Network, section: "groups" as DashboardSection },
@@ -178,37 +157,6 @@ function getDocumentStatusLabel(status: FinancialDocument["status"]) {
   if (status === "calculated") return "محاسبه‌شده";
   if (status === "locked") return "قفل‌شده";
   return cleanDisplayText(status, "نامشخص");
-}
-
-function buildAttachment(
-  document: FinancialDocument,
-  project: Project | null | undefined,
-  companyId: number
-): LocalAttachment {
-  const lineCount = getDocumentLineCount(document);
-  const totalAmount = formatMoneyAmount(getDocumentTotalAmount(document));
-
-  return {
-    kind: "document",
-    title: getDocumentTitle(document),
-    description: `${lineCount} ردیف - جمع کل ${totalAmount}`,
-    document,
-    project,
-    to: `/companies/${companyId}/cost-reports/new`
-  };
-}
-
-function buildProjectAttachment(project: Project, companyId: number): LocalAttachment {
-  const parts: string[] = [];
-  if (project.contract_number) parts.push(`قرارداد: ${project.contract_number}`);
-  if (project.employer_name) parts.push(`کارفرما: ${project.employer_name}`);
-  return {
-    kind: "project",
-    title: cleanDisplayText(project.name, "پروژه بدون نام"),
-    description: parts.length > 0 ? parts.join(" · ") : "پروژه",
-    project,
-    to: `/companies/${companyId}/cost-reports/new`
-  };
 }
 
 const panelInputClasses =
@@ -770,13 +718,7 @@ export function CompanyDashboardPage() {
   const [activeSection, setActiveSection] = useState<DashboardSection>("messages");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
-  const [isMsgProjectModalOpen, setIsMsgProjectModalOpen] = useState(false);
-  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [pendingAttachment, setPendingAttachment] = useState<LocalAttachment | null>(null);
-  const [messages, setMessages] = useState<LocalMessage[]>([]);
   const dispatch = useAppDispatch();
-  const addMenuRef = useRef<HTMLDivElement | null>(null);
   const routeState = (location.state as DashboardRouteState | null) ?? null;
   const {
     data: projects = [],
@@ -818,75 +760,28 @@ export function CompanyDashboardPage() {
   }, [company, activeSection, setSecondaryNav, setCompanyCtx]);
 
   useEffect(() => {
-    if (!isAddMenuOpen) {
+    if (!company || !routeState) {
       return;
     }
 
-    function handlePointerDown(event: PointerEvent) {
-      if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) {
-        setIsAddMenuOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsAddMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isAddMenuOpen]);
-
-  useEffect(() => {
-    if (!company || !routeState?.pendingCostReportAttachment) {
+    if (routeState.focusSection) {
+      setActiveSection(routeState.focusSection);
+      navigate(location.pathname, { replace: true, state: null });
       return;
     }
 
-    const attachment = routeState.pendingCostReportAttachment;
-    setPendingAttachment({
-      ...buildAttachment(attachment.document, attachment.project, company.id),
-      description: cleanDisplayText(attachment.description, buildAttachment(attachment.document, attachment.project, company.id).description),
-      title: cleanDisplayText(attachment.title, buildAttachment(attachment.document, attachment.project, company.id).title)
-    });
-    setActiveSection("messages");
-    navigate(location.pathname, { replace: true, state: null });
-  }, [company, location.pathname, navigate, routeState]);
-
-  function handleSendMessage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const text = messageText.trim();
-
-    if (!text && !pendingAttachment) {
-      return;
+    if (routeState.pendingCostReportAttachment) {
+      setActiveSection("costReports");
+      dispatch(
+        addToast({
+          message:
+            "صورت‌بها ذخیره شد. پیوست پیام در این فاز فعال نیست؛ از بخش پروژه‌ها می‌توانید سند را باز کنید.",
+          type: "info"
+        })
+      );
+      navigate(location.pathname, { replace: true, state: null });
     }
-
-    setMessages((current) => [
-      ...current,
-      {
-        id: Date.now(),
-        text,
-        attachment: pendingAttachment
-      }
-    ]);
-    setMessageText("");
-    setPendingAttachment(null);
-    dispatch(addToast({ message: "پیام ارسال شد.", type: "success" }));
-  }
-
-  function getAttachmentEditState(attachment: LocalAttachment) {
-    return attachment.document
-      ? {
-          existingDocument: attachment.document,
-          existingProject: attachment.project ?? undefined
-        }
-      : undefined;
-  }
+  }, [company, dispatch, location.pathname, navigate, routeState]);
 
   if (!hasValidCompanyId) {
     return (
@@ -972,228 +867,10 @@ export function CompanyDashboardPage() {
         ) : activeSection === "groups" ? (
           <GroupsSection companyId={company.id} />
         ) : (
-          <>
-            <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-5 sm:pb-3 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]" data-tour="messages-area">
-                {messages.length === 0 ? (
-                  <div className="flex flex-1 items-center justify-center">
-                    <div className="mx-auto max-w-md text-center">
-                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200 sm:h-16 sm:w-16">
-                        <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8" />
-                      </div>
-                      <h3 className="mt-3 text-base font-black text-white sm:mt-5 sm:text-xl light:text-slate-950">
-                        هنوز پیامی برای این شرکت وجود ندارد
-                      </h3>
-                      <p className="mt-3 hidden text-sm leading-7 text-slate-300 sm:block light:text-slate-600">
-                        یک پیام کوتاه بنویسید یا صورت‌بها را مثل یک پیوست از دکمه + اضافه کنید.
-                      </p>
-                      <Link className={classNames(linkButtonClasses, "mt-4")} to={`/companies/${company.id}/cost-reports/new`}>
-                        <Paperclip className="h-4 w-4" />
-                        <span className="sm:hidden">افزودن صورت‌بها</span>
-                        <span className="hidden sm:inline">افزودن صورت‌بها از فهرست‌بها</span>
-                      </Link>
-                    </div>
-                  </div>
-                ) : (
-                  messages.map((message) => (
-                    <div
-                      className="mr-auto max-w-[min(34rem,100%)] rounded-2xl rounded-bl-sm border border-emerald-300/20 bg-emerald-400/12 p-3 text-sm leading-7 text-slate-100 sm:p-4 light:bg-emerald-50 light:text-slate-800"
-                      key={message.id}
-                    >
-                      {message.text ? <p>{message.text}</p> : null}
-                      {message.attachment ? (
-                        message.attachment.kind === "project" ? (
-                          <div className="mt-3 flex items-start gap-3 rounded-lg border border-violet-300/20 bg-violet-400/10 p-3 light:border-violet-200 light:bg-violet-50">
-                            <FolderKanban className="mt-0.5 h-5 w-5 shrink-0 text-violet-200 light:text-violet-700" />
-                            <div className="min-w-0 flex-1">
-                              <span className="block font-black text-white light:text-slate-950">
-                                {message.attachment.title}
-                              </span>
-                              {message.attachment.description !== "پروژه" ? (
-                                <span className="mt-1 block text-xs text-slate-400 light:text-slate-500">
-                                  {message.attachment.description}
-                                </span>
-                              ) : null}
-                              <Link
-                                className="mt-3 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-violet-300/25 bg-violet-400/15 px-3 text-xs font-bold text-violet-100 transition hover:bg-violet-400/25 light:border-violet-200 light:text-violet-800"
-                                state={{ existingProject: message.attachment.project }}
-                                to={message.attachment.to}
-                              >
-                                <CirclePlus className="h-3.5 w-3.5" />
-                                افزودن صورت‌بها
-                              </Link>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="mt-3 flex items-start gap-3 rounded-lg border border-white/10 bg-slate-950/35 p-3 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-white">
-                            <FileText className="mt-1 h-5 w-5 shrink-0 text-emerald-200 light:text-emerald-700" />
-                            <div className="min-w-0 flex-1">
-                              <Link
-                                className="block font-black transition hover:text-emerald-200 light:hover:text-emerald-700"
-                                state={getAttachmentEditState(message.attachment)}
-                                to={message.attachment.to}
-                              >
-                                {message.attachment.title}
-                              </Link>
-                              <span className="mt-1 block text-xs text-slate-400 light:text-slate-500">
-                                {message.attachment.description}
-                              </span>
-                              <Link
-                                className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/8 px-3 text-xs font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-slate-50 light:text-slate-800"
-                                state={getAttachmentEditState(message.attachment)}
-                                to={message.attachment.to}
-                              >
-                                ویرایش
-                              </Link>
-                            </div>
-                          </div>
-                        )
-                      ) : null}
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="shrink-0 border-t border-white/10 bg-slate-950/80 p-3 backdrop-blur-md sm:px-5 light:border-slate-200 light:bg-white/90" data-tour="message-input-area">
-                <form
-                  className="relative"
-                  onSubmit={handleSendMessage}
-                >
-                  {pendingAttachment ? (
-                    <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-emerald-300/20 bg-emerald-400/10 p-2.5 text-sm text-emerald-100 sm:mb-3 sm:flex-wrap sm:gap-3 sm:p-3 light:text-emerald-800">
-                      <div className="flex min-w-0 items-center gap-2">
-                        {pendingAttachment.kind === "project" ? (
-                          <FolderKanban className="h-4 w-4" />
-                        ) : (
-                          <FileText className="h-4 w-4" />
-                        )}
-                        {pendingAttachment.kind === "document" ? (
-                          <Link
-                            className="truncate font-bold transition hover:text-white light:hover:text-emerald-950"
-                            state={getAttachmentEditState(pendingAttachment)}
-                            to={pendingAttachment.to}
-                          >
-                            {pendingAttachment.title}
-                          </Link>
-                        ) : (
-                          <span className="truncate font-bold">{pendingAttachment.title}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {pendingAttachment.kind === "document" ? (
-                          <Link
-                            className="hidden text-xs font-bold text-emerald-100 transition hover:text-white sm:inline light:text-emerald-800 light:hover:text-emerald-950"
-                            state={getAttachmentEditState(pendingAttachment)}
-                            to={pendingAttachment.to}
-                          >
-                            ویرایش
-                          </Link>
-                        ) : null}
-                        <button
-                          aria-label="حذف پیوست"
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/8 hover:text-white sm:h-auto sm:w-auto sm:bg-transparent light:text-slate-600 light:hover:text-slate-950"
-                          onClick={() => setPendingAttachment(null)}
-                          type="button"
-                        >
-                          <X className="h-4 w-4 sm:hidden" />
-                          <span className="hidden text-xs font-bold sm:inline">حذف پیوست</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="flex items-end gap-2" ref={addMenuRef}>
-                    {isAddMenuOpen ? (
-                      <div className="absolute bottom-[3.5rem] right-0 z-20 w-full rounded-lg border border-white/10 bg-slate-950/95 p-2 shadow-2xl backdrop-blur-xl sm:bottom-[72px] sm:right-3 sm:w-[min(22rem,calc(100vw-5rem))] light:border-slate-200 light:bg-white/95">
-                        <Link
-                          className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-emerald-400/10 light:hover:bg-emerald-50"
-                          onClick={() => setIsAddMenuOpen(false)}
-                          to={`/companies/${company.id}/cost-reports/new`}
-                        >
-                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-400/15 text-emerald-200 light:text-emerald-700">
-                            <Paperclip className="h-4 w-4" />
-                          </span>
-                          <span>
-                            <span className="block text-sm font-black text-white light:text-slate-950">
-                              افزودن صورت‌بها از فهرست‌بها
-                            </span>
-                            <span className="mt-1 hidden text-xs leading-6 text-slate-400 sm:block light:text-slate-500">
-                              وارد سازنده می‌شوید و بعد از ثبت، صورت‌بها مثل پیوست آماده ارسال برمی‌گردد.
-                            </span>
-                          </span>
-                        </Link>
-                        <button
-                          className="mt-1 flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-violet-400/10 light:hover:bg-violet-50"
-                          onClick={() => {
-                            setIsAddMenuOpen(false);
-                            setIsMsgProjectModalOpen(true);
-                          }}
-                          type="button"
-                        >
-                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200 light:text-violet-700">
-                            <FolderKanban className="h-4 w-4" />
-                          </span>
-                          <span>
-                            <span className="block text-sm font-black text-white light:text-slate-950">
-                              افزودن پروژه
-                            </span>
-                            <span className="mt-1 hidden text-xs leading-6 text-slate-400 sm:block light:text-slate-500">
-                              یک پروژه جدید بسازید و به پیام پیوست کنید.
-                            </span>
-                          </span>
-                        </button>
-                        <button
-                          className="mt-1 hidden w-full cursor-not-allowed items-start gap-3 rounded-lg px-3 py-3 text-right opacity-60 sm:flex"
-                          disabled
-                          type="button"
-                        >
-                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-400/15 text-slate-400 light:text-slate-500">
-                            <Ban className="h-4 w-4" />
-                          </span>
-                          <span>
-                            <span className="block text-sm font-black text-white light:text-slate-950">
-                              ارسال فایل آماده
-                            </span>
-                            <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
-                              به‌زودی فعال می‌شود.
-                            </span>
-                          </span>
-                        </button>
-                      </div>
-                    ) : null}
-
-                    <button
-                      aria-expanded={isAddMenuOpen}
-                      aria-label="افزودن پیوست"
-                      className={classNames(
-                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 light:text-emerald-700",
-                        !hasDismissedOnboarding && "ring-4 ring-emerald-200/35"
-                      )}
-                      data-tour="add-attachment-btn"
-                      onClick={() => setIsAddMenuOpen((current) => !current)}
-                      type="button"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                    <textarea
-                      className="min-h-11 max-h-24 flex-1 resize-none overflow-y-auto rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 sm:px-4 sm:py-3 light:border-slate-200 light:bg-slate-50 light:text-slate-950"
-                      onChange={(event) => setMessageText(event.target.value)}
-                      placeholder="پیام خود را بنویسید..."
-                      rows={1}
-                      value={messageText}
-                    />
-                    <button
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-45 light:border-slate-200 light:bg-white light:text-slate-800"
-                      disabled={!messageText.trim() && !pendingAttachment}
-                      type="submit"
-                    >
-                      <Send className="h-4 w-4" />
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </>
+          <MessagesSection
+            companyId={company.id}
+            highlightAddAction={!hasDismissedOnboarding}
+          />
         )}
       </GlassCard>
 
@@ -1205,17 +882,6 @@ export function CompanyDashboardPage() {
             setIsAddProjectOpen(false);
             setActiveSection("costReports");
             setSelectedProject(newProject);
-          }}
-        />
-      ) : null}
-
-      {isMsgProjectModalOpen ? (
-        <AddProjectModal
-          companyId={company.id}
-          onClose={() => setIsMsgProjectModalOpen(false)}
-          onSuccess={(newProject) => {
-            setIsMsgProjectModalOpen(false);
-            setPendingAttachment(buildProjectAttachment(newProject, company.id));
           }}
         />
       ) : null}
