@@ -2,6 +2,8 @@
 
 This directory contains the frontend upgrade plan from v0.0 to v1.0.
 
+**Status: Phases 1–8 completed (2026-07-28).** Awaiting final review.
+
 Rules:
 
 - Run phases in order.
@@ -15,19 +17,22 @@ Phase order:
 
 1. v1 baseline and backend contract sync — **completed 2026-07-28**
 2. session authentication, signup, login, and CSRF — **completed 2026-07-28**
-3. company members, roles, and groups
-4. persistent group messaging
-5. private files and attachments
-6. wallet and 5-token line-charge UX
-7. subscriptions, quota, and disabled payment UX
-8. final integration, regression, cleanup, and handoff
+3. company members, roles, and groups — **completed 2026-07-28**
+4. persistent group messaging — **completed 2026-07-28**
+5. private files and attachments — **completed 2026-07-28**
+6. wallet and 5-token line-charge UX — **completed 2026-07-28**
+7. subscriptions, quota, and disabled payment UX — **completed 2026-07-28**
+8. final integration, regression, cleanup, and handoff — **completed 2026-07-28**
 
-## Current baseline (after Phase 2)
+## Current baseline (after Phase 8)
 
 - Frontend active version: `code_oder/active_version.txt` = `v1.0`
+- Package version: `package.json` = `1.0.0`
 - Backend contract: `backend_docs/current/BACKEND_VERSION` = `v1.0`
 - OpenAPI generation: `backend_docs/current/OPENAPI.yaml` → `src/shared/api/generated/schema.ts`
 - Browser auth: session cookies + CSRF (signup/login/logout/restore)
-- Still pending: members/groups, messaging, files, wallet, subscriptions
+- Workspace: members, groups, persisted messages, private files/attachments
+- Billing UX: wallet, 5-token official line charge + idempotency, subscription/quota, disabled payment
+- Handoff: root `README.md`, `PROJECT_EXPLAIN.md`, `phaze8/` reports
 
-See `PROJECT_EXPLAIN.md`, `phaze1/REPORT.md`, and `phaze2/REPORT.md` for details.
+See `PROJECT_EXPLAIN.md` and each `phazeN/REPORT.md` for details.

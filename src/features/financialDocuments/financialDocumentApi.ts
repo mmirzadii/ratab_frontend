@@ -198,6 +198,8 @@ export const financialDocumentApi = baseApi.injectEndpoints({
         responseHandler: (response) => response.blob()
       })
     }),
+    // Isolated / unwired (Phase 8): absent from Backend v1 OpenAPI; used only by
+    // ExcelImportWizardModal which is not mounted in any route.
     financialDocumentExcelPlan: builder.mutation<
       ExcelPlanResponse,
       { documentId: number; body: ExcelPlanRequest }
@@ -208,6 +210,8 @@ export const financialDocumentApi = baseApi.injectEndpoints({
         body
       })
     }),
+    // Isolated / unwired (Phase 8): absent from Backend v1 OpenAPI; used only by
+    // ExcelImportWizardModal which is not mounted in any route.
     createFinancialDocumentLinesBulk: builder.mutation<
       BulkLineCreateResponse,
       { documentId: number; body: BulkLineCreateRequest }

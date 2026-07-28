@@ -1,3 +1,9 @@
+/**
+ * ISOLATED / UNWIRED (Phase 8): Excel plan + bulk line create.
+ * These paths are absent from `backend_docs/current/OPENAPI.yaml` and this modal
+ * is not mounted in any route. Kept for potential future contract re-introduction;
+ * do not treat as part of the active Frontend v1 product surface.
+ */
 import { useMemo, useRef, useState } from "react";
 import { AlertCircle, ChevronLeft, ChevronRight, Loader2, Upload, X } from "lucide-react";
 import * as XLSX from "xlsx";

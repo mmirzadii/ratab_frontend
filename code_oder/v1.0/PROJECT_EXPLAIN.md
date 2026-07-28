@@ -1,15 +1,15 @@
-# Ratab Frontend Project Explain — v1.0
+# Ratab Frontend Project Explain — v1.0 (Final)
 
 Last updated: 2026-07-28  
-Active version file: `code_oder/active_version.txt`  
-Current active frontend version: `v1.0`  
-Backend contract version: `backend_docs/current/BACKEND_VERSION` = `v1.0`
+Active version file: `code_oder/active_version.txt` = `v1.0`  
+Backend contract: `backend_docs/current/BACKEND_VERSION` = `v1.0`  
+Package version: `package.json` = `1.0.0`
 
 Documentation root note: the repository uses `code_oder` as the folder name. Do not rename it unless the project owner explicitly requests a migration.
 
 ## Purpose
 
-This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Phase 3 integrated company members, roles, and groups. Phase 4 replaced local messages with persisted group messaging. Phase 5 added private-file upload and message attachments. Phase 6 added wallet visibility and the 5-token official pricebook-line charge UX with idempotent retries. Phase 7 added subscription/quota visibility and disabled-payment UX. Phase 8 is final contract re-sync and cleanup.
+Onboarding and handoff document for Frontend v1.0 after Phases 1–8. Phases 1–7 delivered contract sync, session auth, company workspace, messaging, files/attachments, wallet/5-token UX, and subscription/quota/disabled-payment UX. Phase 8 finalized regression, cleanup, and documentation without adding a new product feature.
 
 Before changing code, read in this order:
 
@@ -19,93 +19,33 @@ Before changing code, read in this order:
 4. `code_oder/COMMON_FRONTEND_CODEX_RULES.md`
 5. `code_oder/v1.0/COMMON_FRONTEND_CODEX_RULES.md`
 6. Every file under `backend_docs/current/`
-7. The current phase instruction under `code_oder/v1.0/phazeN/`
-8. Related source files
+7. Related source files
+8. Phase reports under `code_oder/v1.0/phazeN/` when investigating history
 
 `backend_docs/current/BACKEND_VERSION` (backend contract) and `code_oder/active_version.txt` (frontend phase version) are separate identifiers.
 
-Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PROJECT_EXPLAIN.md`. Prefer this v1.0 file for upgrade status, contract ownership, and obsolete assumptions.
+## Phase completion map
 
-## Phase 1 status (completed)
+| Phase | Status | Focus |
+| --- | --- | --- |
+| 1 | ✅ | Backend contract baseline + OpenAPI type generation |
+| 2 | ✅ | Session signup/login/logout/restore + CSRF |
+| 3 | ✅ | Company members, roles, groups |
+| 4 | ✅ | Persisted group messaging |
+| 5 | ✅ | Private files + message attachments |
+| 6 | ✅ | Wallet + 5-token official line-create + idempotency |
+| 7 | ✅ | Subscription, message quota, disabled payment UX |
+| 8 | ✅ | Final integration, cleanup, regression, handoff |
 
-- Backend contract package present and validated as Backend `v1.0`.
-- `npm run generate:api` reads `backend_docs/current/OPENAPI.yaml` → `src/shared/api/generated/schema.ts`.
-- Schema regenerated successfully (OpenAPI 3.0.3, title `ratab v1.0 Backend API`, 58 paths, 108 schemas).
-- Minimal TypeScript null-safety adjustments only where regenerated types became stricter.
+## Product snapshot
 
-## Phase 2 status (completed)
+Persian-first RTL construction cost-reporting app.
 
-- Browser auth uses session cookies + CSRF (`credentials: "include"`, `X-CSRFToken`).
-- Signup: `/signup` phone → verify → password → session.
-- Login: `/login` phone + password → session.
-- Session restore on boot via `SessionBootstrap` (`GET /api/auth/csrf/` then `GET /api/auth/me/`).
-- Logout calls `POST /api/auth/logout/` then clears Redux auth + RTK Query cache.
-- Cross-origin local setup: masked CSRF token comes from `/api/auth/csrf/` JSON (not `document.cookie`); backend must list the Vite origin in `CSRF_TRUSTED_ORIGINS` (e.g. `http://localhost:1000`).
-- HTML Django CSRF error pages are never shown raw in the UI.
-- Removed normal Token/`dev-login`/`sessionStorage` auth path.
-- Members/groups UI landed in Phase 3; group messaging landed in Phase 4; private files/attachments landed in Phase 5; wallet + 5-token UX landed in Phase 6; subscription/quota + disabled-payment UX landed in Phase 7.
-
-## Phase 3 status (completed)
-
-- Company dashboard sections: Members and Groups (enabled in secondary + mobile nav).
-- RTK Query: `companyMembersApi`, `companyGroupsApi`; tag types `CompanyMember`, `CompanyGroup`.
-- Permission helpers follow `PERMISSIONS.md` (owner/admin/employee, last-owner protection, group creator rules).
-- Company info edit disabled for employees; member management controls role-gated in UX only.
-- Backend remains security authority; 403/409 still handled via API error toasts.
-- Attachments, files, wallet, subscriptions, payments not implemented in Phase 3 (see Phase 5 for files/attachments).
-- Phase 2 session + CSRF behavior preserved.
-
-## Phase 4 status (completed)
-
-- Dashboard Messages section uses backend group messages (`GET|POST /api/company-groups/{group_id}/messages/`).
-- Group picker required; messaging requires group membership (backend-enforced).
-- History: latest page bootstrap, earlier-page load, send, reload persistence, empty/loading/forbidden/retry.
-- `429 MESSAGE_QUOTA_EXCEEDED` disables send and shows `resets_at` (full quota status UI completed in Phase 7).
-- Local-only message state and fake local attachments removed.
-- Attachment create/open completed in Phase 5.
-- Phase 1–3 session, members, roles, groups, projects preserved.
-
-## Phase 5 status (completed)
-
-- Private company file upload via `POST /api/companies/{id}/files/` (multipart; ready/duplicate handling).
-- Message attachments: `file` and `financial_document` only, referenced by `resource_id` on send.
-- Authorized open/download through `/api/message-attachments/{id}/open|download/` with session cookies; no public URLs.
-- Compose UI: upload file, pick existing financial document, or seed pending document from cost-report wizard return.
-- Unavailable attachments (`is_available=false`), 403/404/400/503 surfaced safely.
-- No standalone file-manager list UI (contract has upload, not list).
-- Wallet / subscription / payment UX not implemented in Phase 5 (wallet landed in Phase 6).
-
-## Phase 6 status (completed)
-
-- Wallet balance + newest-first transaction ledger on `/settings` (`GET /api/token-wallet/`, `GET /api/token-wallet/transactions/`); read-only, no client-side accounting.
-- Official pricebook-backed line create sends a client `idempotency_key`; the key is reused for retries of the identical payload and regenerated on payload change, success, or `IDEMPOTENCY_KEY_REUSED` (409).
-- Idempotent replay (HTTP 200 + `Idempotent-Replayed: true`) surfaces as "already created, no second charge".
-- Fixed 5-token cost shown in the item-detail modal before add (UI copy only; cost never sent to backend). No-charge flows (starred lines, calculate, edit, delete, recalculate, preview, export) show no cost UI.
-- 402 `INSUFFICIENT_TOKEN_BALANCE` shows `required_tokens` vs `available_tokens` (single + Excel bulk create paths).
-- Wallet cache (`Wallet` tags) invalidated after successful line creates so balance/ledger refetch from the backend.
-- Subscriptions, quota UX, and payment UI not implemented in Phase 6 (landed in Phase 7); payments remain disabled backend-wide.
-
-## Phase 7 status (completed)
-
-- Settings (`/settings`): subscription status (`GET /api/subscription/`), backend plan list (`GET /api/subscription-plans/`), and daily message quota (`GET /api/message-quota/`).
-- Null daily limit shown as unlimited/unconfigured; no invented free-tier number (owner decision / `FREE_PLAN_DAILY_MESSAGE_LIMIT`).
-- Messages compose shows usage + reset; successful sends refresh quota; `429 MESSAGE_QUOTA_EXCEEDED` disables send with `used_today` / `daily_limit` / `resets_at`.
-- Disabled-payment banner + probe of `POST /api/payments/orders/` handles `503 PAYMENTS_DISABLED` in Persian; no bank redirect, card form, fake success, or client-chosen token/price amounts.
-- Plan/package seeding remains an unresolved backend/owner decision; empty lists are shown honestly.
-- Phase 1–6 behavior preserved.
-
-## Product snapshot (current running app)
-
-The product remains a Persian-first, RTL construction cost-reporting frontend.
-
-Current user journey:
-
-1. Public landing page.
-2. Signup (`/signup`) or login (`/login`) with session cookies.
-3. Protected company list / create.
-4. Company dashboard with **persisted group messages + attachments**, company info, **members**, **groups**, projects, cost reports.
-5. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Official pricebook line adds show the fixed 5-token cost and use idempotency keys.
-6. Account settings (`/settings`) shows the **token wallet**, **subscription/quota** status, and the disabled-payment boundary.
+1. Public landing → signup (`/signup`) or login (`/login`) with session cookies.
+2. Protected company list / create.
+3. Company dashboard: persisted group messages + attachments, company info, members, groups, projects.
+4. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Official pricebook line adds show the fixed 5-token cost and use idempotency keys.
+5. Account settings (`/settings`): wallet, subscription/quota, disabled-payment boundary.
 
 Brand note: principles say `ratab / رتب`; many UI strings still say `Metril / متریل`. Do not introduce a third brand.
 
@@ -114,16 +54,14 @@ Brand note: principles say `ratab / رتب`; many UI strings still say `Metril /
 - React 19, TypeScript 5.7, Vite 6, React Router 7
 - Redux Toolkit + RTK Query
 - Tailwind CSS 3, lucide-react, Vazirmatn
-- `react-multi-date-picker`, `three`/`gsap` (login visuals), `xlsx` (unwired Excel import)
+- `react-multi-date-picker`, `three`/`gsap` (login visuals), `xlsx` (isolated/unwired Excel import only)
 - `openapi-typescript` for generated schema types
-
-Package scripts:
 
 | Script | Behavior |
 | --- | --- |
-| `npm run generate:api` | `node scripts/generate-api.mjs` → current OpenAPI → `schema.ts` |
+| `npm run generate:api` | current OpenAPI → `schema.ts` |
 | `npm run validate:docs` | documentation structure validator |
-| `npm run dev` | generate:api + Vite |
+| `npm run dev` | generate:api + Vite (`:1000`) |
 | `npm run build` | generate:api + `tsc -b` + Vite build |
 | `npm run lint` | generate:api + ESLint |
 | `npm run preview` | serve `dist/` |
@@ -132,182 +70,122 @@ There is **no** `test` script in `package.json`.
 
 ## Backend contract (active)
 
-Source package: `backend_docs/current/` (copied from backend `codexphaze/frontend_docs/`).
+Source: `backend_docs/current/`
 
 | File | Role |
 | --- | --- |
 | `BACKEND_VERSION` | `v1.0` |
 | `OPENAPI.yaml` | Machine-readable contract |
 | `FRONTEND_HANDOFF.md` | Behavioral guide |
-| `AUTH_AND_CSRF.md` | Session + CSRF auth |
+| `AUTH_AND_CSRF.md` | Session + CSRF |
 | `PERMISSIONS.md` | Role matrix |
 | `ERROR_CODES.md` | Stable errors |
 | `API_USAGE_EXAMPLES.md` | Examples |
-| `INTEGRATION_CHECKLIST.md` | Implementation checklist |
+| `INTEGRATION_CHECKLIST.md` | Checklist |
 | `KNOWN_LIMITATIONS.md` | Real limitations |
 | `DB_SCHEMA_REFERENCE.dbml` | Informational only |
 
-Do not depend on Django models, migrations, tables, admin, or backend internals.
+Do not depend on Django models, migrations, tables, admin, or backend internals. Never hand-edit `schema.ts`.
 
 ## Runtime environment
 
-- `VITE_API_BASE_URL` — API base URL (trimmed trailing slash in `baseApi.ts`).
-- `VITE_DEFAULT_PRICE_SET_ID` — deprecated explicit document-step override only.
+See root `README.md` and `.env.example`.
 
-Auth (Phase 2 / Backend v1 browser contract):
+- `VITE_API_BASE_URL` — API base (no trailing slash); baked into Docker builds
+- `VITE_DEFAULT_PRICE_SET_ID` — deprecated explicit override only
+- Auth: session cookie + CSRF; `credentials: "include"`; mutating requests send `X-CSRFToken`
+- Boot clears obsolete `ratab.devAuth.token` from `sessionStorage` if present
+- Do **not** store passwords, session IDs, or auth tokens in web storage
 
-- Session cookie (`sessionid`, HttpOnly) + CSRF cookie (`csrftoken`)
-- All API calls use `credentials: "include"`
-- Mutating requests send `X-CSRFToken`
-- Auth Redux state: `status` (`unknown` | `authenticated` | `anonymous`) + `user`
-- Do **not** store passwords, session IDs, or auth tokens in `localStorage` / `sessionStorage`
-- Legacy `ratab.devAuth.token` is cleared on boot if present
+## Routes
 
-UI persistence unchanged: theme / onboarding / guided-tour flags in `localStorage`.
+Public: `/`, `/login`, `/signup`, `/status`  
+Protected: `/companies`, `/companies/new`, `/companies/:companyId`, `/companies/:companyId/cost-reports/new`, `/help`, `/settings`  
+`/dashboard` → `/companies`
 
-## Repository map
+## Redux / API
 
-- `src/app/` — router, store, providers, shell context
-- `src/pages/` — route pages
-- `src/features/` — domain modules + RTK Query APIs
-- `src/shared/api/` — `baseApi.ts`, generated `schema.ts`
-- `backend_docs/current/` — active backend contract
-- `backend_docs/history/` — historical contracts
-- `docs/` — frontend product references and reports
-- `code_oder/v1.0/` — v1 phase instructions and reports
+Store: `auth`, `ui`, `ratabApi` (`baseApi` + CSRF-aware `baseQueryWithCsrf`).
 
-## Routes (current)
+Feature APIs: `authApi`, `companyApi`, `companyMembersApi`, `companyGroupsApi`, `companyMessagesApi`, `companyFilesApi`, `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`, `walletApi`, `subscriptionApi`.
 
-Public:
+Tag types: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `FinancialDocument`, `GroupMessage`, `Health`, `MessageQuota`, `Pricebook`, `PrivateFile`, `Project`, `Subscription`, `Wallet`.
 
-- `/` — `RootPage` / landing
-- `/login` — phone + password login
-- `/signup` — phone → verify → password signup
-- `/status` — health
+## Consumed Backend v1 endpoints (summary)
 
-Protected (`RequireAuth` + `AppShell`):
+- Auth: csrf, signup/*, login, logout, me
+- Companies / members / groups / messages / files / message-attachments
+- Projects, pricebooks, coefficients, financial documents (CRUD/lines/recalculate/lock/preview/export)
+- Wallet: `/api/token-wallet/`, `/transactions/`; line creates send `idempotency_key` for official pricebook-backed lines
+- Subscription: `/api/subscription/`, `/api/subscription-plans/`, `/api/message-quota/`, payments probe `/api/payments/orders/`
 
-- `/companies`, `/companies/new`, `/companies/:companyId`
-- `/companies/:companyId/cost-reports/new`
-- `/help`, `/settings`
-- `/dashboard` → redirect `/companies`
+### Isolated / not part of active product surface
 
-## Redux / API architecture
-
-Store: `auth`, `ui`, `ratabApi` (`baseApi`).
-
-`baseApi` uses `credentials: "include"` and CSRF headers via `baseQueryWithCsrf`.
-
-Feature APIs injecting into `baseApi`:
-
-- `authApi` — csrf, signup start/verify/complete, login, logout, `auth/me`
-- `companyApi`, `companyMembersApi`, `companyGroupsApi`, `companyMessagesApi`, `companyFilesApi`
-- `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`, `walletApi`, `subscriptionApi`
-
-Tag types today: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `FinancialDocument`, `GroupMessage`, `Health`, `MessageQuota`, `Pricebook`, `PrivateFile`, `Project`, `Subscription`, `Wallet`.
-
-## Frontend API usage vs Backend v1.0 OpenAPI
-
-All currently wired pricebook / company / project / coefficient / financial-document / health paths used by the live UI still exist under the v1 OpenAPI (v1 is a cumulative superset for those domains).
-
-Auth endpoints now consumed by the frontend: `/api/auth/csrf/`, signup/*, login, logout, me.
-
-Company workspace endpoints now consumed by the frontend (Phase 3):
-
-- `/api/companies/{id}/members/`
-- `/api/company-members/{id}/`, `/role/`, `/deactivate/`
-- `/api/companies/{id}/groups/`
-- `/api/company-groups/{id}/`, `/deactivate/`, `/members/`
-- `/api/company-group-memberships/{id}/`, `/deactivate/`
-- `/api/company-groups/{group_id}/messages/` (list + create text/attachment messages)
-- `POST /api/companies/{company_id}/files/` (private upload)
-- `GET /api/message-attachments/{id}/`, `/open/`, `/download/`
-
-Wallet endpoints now consumed by the frontend (Phase 6):
-
-- `GET /api/token-wallet/` (balance; read-only)
-- `GET /api/token-wallet/transactions/` (newest-first ledger; contract documents no pagination query params, so only the first page is rendered)
-- `idempotency_key` field on `POST /api/financial-documents/{id}/lines/` for official pricebook-backed creates
-
-Subscription / quota / payments endpoints now consumed by the frontend (Phase 7):
-
-- `GET /api/subscription/`
-- `GET /api/subscription-plans/`
-- `GET /api/message-quota/`
-- `POST /api/payments/orders/` (disabled-payment probe only; expects `PAYMENTS_DISABLED`)
-
-Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
-
-| Frontend path | Notes |
+| Path | Notes |
 | --- | --- |
-| `POST /api/financial-documents/{id}/excel-plan/` | Used only by unwired Excel import modal |
-| `POST /api/financial-documents/{id}/lines/bulk/` | Used only by unwired Excel import modal |
+| `POST .../excel-plan/` | Absent from current OpenAPI; Excel modal unwired |
+| `POST .../lines/bulk/` | Absent from current OpenAPI; Excel modal unwired |
 
-Backend v1.0 domains **not yet fully consumed** / remaining cleanup (Phase 8):
+`dev-login` remains in OpenAPI for backend compatibility history but is **not** used by the frontend.
 
-- Standalone storage-file open/download helpers exist in code for authorized paths; messaging UI prefers message-attachment endpoints. There is still no company file **list** API.
+## Phase 8 cleanup performed
 
-## Obsolete assumptions after Phase 2
+- Health status page labels updated to `backend_docs/current/OPENAPI.yaml` (removed stale v0.0 schema path).
+- Excel plan/bulk kept **isolated** (commented, unwired) rather than deleted without automated tests.
+- Legacy v0 token storage module already absent; boot still clears `ratab.devAuth.token` if found.
+- Root `README.md` added for integration/run/Docker/security handoff.
+- `package.json` version set to `1.0.0`.
 
-Resolved in Phase 2:
+## Obsolete assumptions (resolved)
 
-1. Token + `sessionStorage` primary browser auth → replaced by session + CSRF.
-2. `dev-login` as normal login UX → removed from frontend usage.
-3. Client-only logout → backend logout + local clear.
-4. Missing CSRF/credentials on API client → implemented.
+1. Token + `sessionStorage` primary browser auth → session + CSRF
+2. `dev-login` as normal login UX → unused
+3. Client-only logout → backend logout + local clear
+4. Local-only company messages → persisted group messages
+5. Members/groups placeholders → real workspace UI
+6. No private files/attachments → Phase 5 contract
+7. No wallet / 5-token / idempotency → Phase 6
+8. No subscription / quota / disabled-payment UX → Phase 7
+9. Health page schema path drift → Phase 8
+10. Excel OpenAPI-absent paths → Phase 8 isolated/unwired (not deleted)
 
-Still outstanding for later phases:
+## Behavior that must remain stable
 
-5. ~~**Company messages are local React state** — Phase 4.~~ ✅ completed in Phase 4 (group-persisted messages).
-6. ~~**Members / roles / groups UI are placeholders** — Phase 3.~~ ✅ completed in Phase 3.
-7. ~~**No private file upload/open** — Phase 5.~~ ✅ completed in Phase 5 (`file` + `financial_document` attachments).
-8. ~~**No wallet / 5-token charge UX / idempotency_key on charged line creates** — Phase 6.~~ ✅ completed in Phase 6.
-9. ~~**No subscription / message-quota / disabled-payment UX** — Phase 7.~~ ✅ completed in Phase 7.
-10. **Excel plan/bulk endpoints** absent from OpenAPI — Phase 8 cleanup.
-11. **HealthStatusPage still labels an old schema path** — display-only drift.
-
-## Behavior that must remain stable across early v1 phases
-
-Unless a later phase’s contract work explicitly changes it:
-
-- Pricebook browse, row codes as strings, calculate preview
-- Coefficient sets/values and backend-authoritative calculation
-- Financial document create/edit/recalculate/lock
-- Browser print/preview path currently used in finalize
+- Pricebook browse; row codes as strings; calculate preview
+- Coefficient sets/values; backend-authoritative totals
+- Financial document create/edit/recalculate/lock; browser print/preview
 - RTL, responsive shell, dark/light theme
-- Backend totals remain authoritative (no client financial truth)
-- Session cookie auth + CSRF after Phase 2
+- Session cookie auth + CSRF
+- Exact 5-token official line charge (backend authority); idempotent retries
+- Quota/payment disable enforced by backend; UI is presentation only
 
-## Remaining v1 phase integration map
+## Known limitations
 
-| Phase | Integration focus |
-| --- | --- |
-| 2 | ✅ Session signup/login/logout/restore + CSRF |
-| 3 | ✅ Company members, roles, groups; keep company/project flows |
-| 4 | ✅ Persisted group messaging replacing local messages |
-| 5 | ✅ Private files + message attachments |
-| 6 | ✅ Wallet visibility + 5-token official line-create UX + idempotent retries |
-| 7 | ✅ Subscription + message quota + disabled payment UX |
-| 8 | Final contract re-sync, remove obsolete compatibility, regression, handoff |
-
-## Known limitations (current)
-
-- Cross-origin cookie/CORS configuration must match the frontend origin for real login/signup.
-- Accounts without passwords need admin password setup (backend limitation).
-- Group messaging supports text + `file` / `financial_document` attachments; no standalone company file list API.
-- Members/roles/groups UI is present.
-- Excel import unwired and calls removed OpenAPI paths.
-- Backend PDF export may still be blocked (409) per contract limitations.
-- Online payments disabled (`PAYMENTS_DISABLED`); token top-up and subscription activation are admin-managed; settings shows this boundary explicitly.
-- Subscription plans / token packages may be unseeded on the backend; the UI shows empty lists instead of inventing codes.
-- Wallet ledger shows only the newest page (transactions endpoint documents no pagination query params).
+- Cross-origin cookie/CORS must match the frontend origin for login/signup.
+- Accounts without passwords need admin password setup (backend).
+- No standalone company file **list** API.
+- Online payments disabled (`PAYMENTS_DISABLED`); admin activates tokens/subscriptions.
+- Subscription plans / token packages may be unseeded; UI shows empty lists honestly.
+- `FREE_PLAN_DAILY_MESSAGE_LIMIT` may be unset → unlimited messaging (usage still recorded).
+- Wallet ledger shows newest page only (no documented pagination query params).
+- Backend PDF export may return conflict while blocked.
+- Excel import isolated/unwired (absent from OpenAPI).
 - Branding inconsistency (`ratab` vs `Metril`).
-- No automated frontend test suite script yet.
-## Safe change rules for later phases
+- No automated frontend test suite; live E2E against a real backend is a deployment gate (see `phaze8/TEST_RESULTS.md`).
+
+## Integration and rollback
+
+**Integrate:** point `VITE_API_BASE_URL` at Backend v1; configure CORS/CSRF trusted origins; regenerate types after any contract update (`npm run generate:api`); deploy static `dist/` or Docker image.
+
+**Rollback:** redeploy previous frontend artifact / image; frontend has no DB migrations. Do not mix a v1 frontend with a v0-only API host. If backend contract rolls back, restore matching `backend_docs/current/` snapshot and regenerate types.
+
+**Controlled deployment gate:** static build/lint/Docker validation passed in Phase 8; live auth/messaging/wallet/quota QA against a real backend remains a human checklist before broad production.
+
+## Safe change rules
 
 1. Read `backend_docs/current/OPENAPI.yaml` and handoff before coding.
 2. Regenerate with `npm run generate:api`; never hand-edit `schema.ts`.
 3. Keep API access inside RTK Query/`baseApi`.
 4. Do not invent endpoints, fields, errors, or permissions.
-5. Do not commit/push or start the next phase automatically.
+5. Do not commit/push automatically.
 6. Update this file when behavior, routes, APIs, or limitations change.

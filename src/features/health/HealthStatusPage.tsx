@@ -26,15 +26,15 @@ export function HealthStatusPage() {
               <div className="min-w-0 space-y-2 sm:space-y-3">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-200">
                   <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.85)]" />
-                  محیط توسعه متریل
+                  Frontend v1.0
                 </div>
                 <div className="space-y-2">
                   <h1 className="text-xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
                     وضعیت اتصال فرانت‌اند به بک‌اند
                   </h1>
                   <p className="hidden max-w-2xl text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
-                    این صفحه فقط پایه فنی فاز ۱ را بررسی می‌کند: مسیر‌دهی React، استور Redux،
-                    RTK Query، تایپ‌های OpenAPI و فراخوانی سلامت بک‌اند از تنظیمات محیط.
+                    این صفحه اتصال پایه را بررسی می‌کند: مسیر‌دهی React، استور Redux،
+                    RTK Query، تایپ‌های OpenAPI فعلی و فراخوانی سلامت بک‌اند از تنظیمات محیط.
                   </p>
                 </div>
               </div>
@@ -120,14 +120,14 @@ export function HealthStatusPage() {
 
       <GlassCard className="p-0">
         <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-3 light:border-slate-200 sm:px-5 sm:py-4">
-          <h2 className="text-base font-black text-white light:text-slate-950">قرارداد API فاز ۱</h2>
+          <h2 className="text-base font-black text-white light:text-slate-950">قرارداد API فعلی</h2>
           <FileCode2 className="h-5 w-5 text-emerald-300" />
         </div>
         <div className="grid min-w-0 gap-2 p-3 sm:gap-3 sm:p-5 md:grid-cols-2">
           <div className="min-w-0 rounded-lg border border-white/8 bg-white/5 p-3 light:border-slate-200 light:bg-white sm:p-4">
             <p className="text-sm font-bold text-slate-100 light:text-slate-900">فایل schema استفاده‌شده</p>
             <p className="mt-2 break-all text-left text-xs text-slate-300 light:text-slate-600" dir="ltr">
-              backend_docs/v0.0/openapi_v0_0.yaml
+              backend_docs/current/OPENAPI.yaml
             </p>
           </div>
           <div className="min-w-0 rounded-lg border border-white/8 bg-white/5 p-3 light:border-slate-200 light:bg-white sm:p-4">
