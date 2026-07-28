@@ -275,7 +275,15 @@ export function CostReportWizardPage() {
     } else if (createdDocument) {
       navigate(`/companies/${parsedCompanyId}`, {
         state: {
-          focusSection: "costReports"
+          focusSection: "messages",
+          pendingFinancialDocumentAttachment: {
+            documentId: createdDocument.id,
+            title: cleanDisplayText(
+              createdDocument.title || createdDocument.report_title,
+              "صورت‌بها در حال ویرایش"
+            ),
+            documentNumber: createdDocument.document_number ?? null
+          }
         }
       });
     } else {

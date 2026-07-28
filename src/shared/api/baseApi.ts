@@ -139,6 +139,7 @@ export const baseApi = createApi({
     "GroupMessage",
     "Health",
     "Pricebook",
+    "PrivateFile",
     "Project"
   ],
   endpoints: () => ({})

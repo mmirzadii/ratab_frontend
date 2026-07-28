@@ -30,7 +30,7 @@ import {
 } from "../features/companies/companyApi";
 import { GroupsSection } from "../features/companies/GroupsSection";
 import { MembersSection } from "../features/companies/MembersSection";
-import { MessagesSection } from "../features/companies/MessagesSection";
+import { MessagesSection, type SeedFinancialDocumentAttachment } from "../features/companies/MessagesSection";
 import {
   canUpdateCompany,
   findCurrentMembership,
@@ -61,8 +61,11 @@ type DashboardSection = "messages" | "costReports" | "company" | "members" | "gr
 
 type DashboardRouteState = {
   focusSection?: DashboardSection;
-  /** @deprecated Phase 4 removed local message attachments; kept only to clear old navigations. */
-  pendingCostReportAttachment?: unknown;
+  pendingFinancialDocumentAttachment?: {
+    documentId: number;
+    title: string;
+    documentNumber?: string | null;
+  };
 };
 
 const companyNavItems = [
@@ -718,6 +721,8 @@ export function CompanyDashboardPage() {
   const [activeSection, setActiveSection] = useState<DashboardSection>("messages");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [seedFinancialDocumentAttachment, setSeedFinancialDocumentAttachment] =
+    useState<SeedFinancialDocumentAttachment | null>(null);
   const dispatch = useAppDispatch();
   const routeState = (location.state as DashboardRouteState | null) ?? null;
   const {
@@ -764,21 +769,21 @@ export function CompanyDashboardPage() {
       return;
     }
 
-    if (routeState.focusSection) {
-      setActiveSection(routeState.focusSection);
+    if (routeState.pendingFinancialDocumentAttachment) {
+      const pending = routeState.pendingFinancialDocumentAttachment;
+      setActiveSection("messages");
+      setSeedFinancialDocumentAttachment({
+        resourceId: pending.documentId,
+        label: cleanDisplayText(pending.title, "صورت‌بها"),
+        documentNumber: pending.documentNumber ?? null
+      });
+      dispatch(addToast({ message: "صورت‌بها آماده پیوست به پیام است.", type: "info" }));
       navigate(location.pathname, { replace: true, state: null });
       return;
     }
 
-    if (routeState.pendingCostReportAttachment) {
-      setActiveSection("costReports");
-      dispatch(
-        addToast({
-          message:
-            "صورت‌بها ذخیره شد. پیوست پیام در این فاز فعال نیست؛ از بخش پروژه‌ها می‌توانید سند را باز کنید.",
-          type: "info"
-        })
-      );
+    if (routeState.focusSection) {
+      setActiveSection(routeState.focusSection);
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [company, dispatch, location.pathname, navigate, routeState]);
@@ -870,6 +875,8 @@ export function CompanyDashboardPage() {
           <MessagesSection
             companyId={company.id}
             highlightAddAction={!hasDismissedOnboarding}
+            onSeedFinancialDocumentConsumed={() => setSeedFinancialDocumentAttachment(null)}
+            seedFinancialDocumentAttachment={seedFinancialDocumentAttachment}
           />
         )}
       </GlassCard>

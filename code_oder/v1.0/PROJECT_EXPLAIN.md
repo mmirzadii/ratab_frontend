@@ -9,7 +9,7 @@ Documentation root note: the repository uses `code_oder` as the folder name. Do 
 
 ## Purpose
 
-This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Phase 3 integrated company members, roles, and groups. Phase 4 replaced local messages with persisted group messaging. Later phases still add files/attachments, wallet, and subscriptions.
+This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Phase 3 integrated company members, roles, and groups. Phase 4 replaced local messages with persisted group messaging. Phase 5 added private-file upload and message attachments. Later phases still add wallet and subscriptions.
 
 Before changing code, read in this order:
 
@@ -43,7 +43,7 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - Cross-origin local setup: masked CSRF token comes from `/api/auth/csrf/` JSON (not `document.cookie`); backend must list the Vite origin in `CSRF_TRUSTED_ORIGINS` (e.g. `http://localhost:1000`).
 - HTML Django CSRF error pages are never shown raw in the UI.
 - Removed normal Token/`dev-login`/`sessionStorage` auth path.
-- Members/groups UI landed in Phase 3; group messaging landed in Phase 4; files/wallet/subscription UI still not implemented.
+- Members/groups UI landed in Phase 3; group messaging landed in Phase 4; private files/attachments landed in Phase 5; wallet/subscription UI still not implemented.
 
 ## Phase 3 status (completed)
 
@@ -52,7 +52,7 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - Permission helpers follow `PERMISSIONS.md` (owner/admin/employee, last-owner protection, group creator rules).
 - Company info edit disabled for employees; member management controls role-gated in UX only.
 - Backend remains security authority; 403/409 still handled via API error toasts.
-- Persistent messaging landed in Phase 4; attachments, files, wallet, subscriptions, payments not implemented.
+- Attachments, files, wallet, subscriptions, payments not implemented in Phase 3 (see Phase 5 for files/attachments).
 - Phase 2 session + CSRF behavior preserved.
 
 ## Phase 4 status (completed)
@@ -62,8 +62,18 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - History: latest page bootstrap, earlier-page load, send, reload persistence, empty/loading/forbidden/retry.
 - `429 MESSAGE_QUOTA_EXCEEDED` disables send and shows `resets_at` (full quota UI is Phase 7).
 - Local-only message state and fake local attachments removed.
-- Attachment create/open left for Phase 5 (read-only placeholder if attachments already exist on a message).
+- Attachment create/open completed in Phase 5.
 - Phase 1–3 session, members, roles, groups, projects preserved.
+
+## Phase 5 status (completed)
+
+- Private company file upload via `POST /api/companies/{id}/files/` (multipart; ready/duplicate handling).
+- Message attachments: `file` and `financial_document` only, referenced by `resource_id` on send.
+- Authorized open/download through `/api/message-attachments/{id}/open|download/` with session cookies; no public URLs.
+- Compose UI: upload file, pick existing financial document, or seed pending document from cost-report wizard return.
+- Unavailable attachments (`is_available=false`), 403/404/400/503 surfaced safely.
+- No standalone file-manager list UI (contract has upload, not list).
+- Wallet / subscription / payment UX not implemented.
 
 ## Product snapshot (current running app)
 
@@ -74,7 +84,7 @@ Current user journey:
 1. Public landing page.
 2. Signup (`/signup`) or login (`/login`) with session cookies.
 3. Protected company list / create.
-4. Company dashboard with **persisted group messages**, company info, **members**, **groups**, projects, cost reports.
+4. Company dashboard with **persisted group messages + attachments**, company info, **members**, **groups**, projects, cost reports.
 5. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print.
 
 Brand note: principles say `ratab / رتب`; many UI strings still say `Metril / متریل`. Do not introduce a third brand.
@@ -171,10 +181,10 @@ Store: `auth`, `ui`, `ratabApi` (`baseApi`).
 Feature APIs injecting into `baseApi`:
 
 - `authApi` — csrf, signup start/verify/complete, login, logout, `auth/me`
-- `companyApi`, `companyMembersApi`, `companyGroupsApi`, `companyMessagesApi`
+- `companyApi`, `companyMembersApi`, `companyGroupsApi`, `companyMessagesApi`, `companyFilesApi`
 - `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`
 
-Tag types today: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `FinancialDocument`, `GroupMessage`, `Health`, `Pricebook`, `Project`.
+Tag types today: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `FinancialDocument`, `GroupMessage`, `Health`, `Pricebook`, `PrivateFile`, `Project`.
 
 ## Frontend API usage vs Backend v1.0 OpenAPI
 
@@ -189,7 +199,9 @@ Company workspace endpoints now consumed by the frontend (Phase 3):
 - `/api/companies/{id}/groups/`
 - `/api/company-groups/{id}/`, `/deactivate/`, `/members/`
 - `/api/company-group-memberships/{id}/`, `/deactivate/`
-- `/api/company-groups/{group_id}/messages/` (list + create text messages)
+- `/api/company-groups/{group_id}/messages/` (list + create text/attachment messages)
+- `POST /api/companies/{company_id}/files/` (private upload)
+- `GET /api/message-attachments/{id}/`, `/open/`, `/download/`
 
 Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 
@@ -200,10 +212,10 @@ Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 
 Backend v1.0 domains **not yet consumed** (later phases):
 
-- Message attachments open/download; company files / storage-files
 - Wallet: `/api/token-wallet/`, transactions
 - Subscription/quota/payments: subscription-plans, subscription, message-quota status, payments/orders
   (send-time `MESSAGE_QUOTA_EXCEEDED` handling exists; full quota UX is Phase 7)
+- Standalone storage-file open/download helpers exist in code for authorized paths; messaging UI prefers message-attachment endpoints. There is still no company file **list** API.
 
 ## Obsolete assumptions after Phase 2
 
@@ -216,9 +228,9 @@ Resolved in Phase 2:
 
 Still outstanding for later phases:
 
-5. ~~**Company messages are local React state** — Phase 4.~~ ✅ completed in Phase 4 (group-persisted text messages).
+5. ~~**Company messages are local React state** — Phase 4.~~ ✅ completed in Phase 4 (group-persisted messages).
 6. ~~**Members / roles / groups UI are placeholders** — Phase 3.~~ ✅ completed in Phase 3.
-7. **No private file upload/open** — Phase 5.
+7. ~~**No private file upload/open** — Phase 5.~~ ✅ completed in Phase 5 (`file` + `financial_document` attachments).
 8. **No wallet / 5-token charge UX / idempotency_key on charged line creates** — Phase 6.
 9. **No subscription / message-quota / disabled-payment UX** — Phase 7.
 10. **Excel plan/bulk endpoints** absent from OpenAPI — Phase 8 cleanup.
@@ -243,7 +255,7 @@ Unless a later phase’s contract work explicitly changes it:
 | 2 | ✅ Session signup/login/logout/restore + CSRF |
 | 3 | ✅ Company members, roles, groups; keep company/project flows |
 | 4 | ✅ Persisted group messaging replacing local messages |
-| 5 | Private files + message attachments |
+| 5 | ✅ Private files + message attachments |
 | 6 | Wallet visibility + 5-token official line-create UX + idempotent retries |
 | 7 | Subscription + message quota + disabled payment UX |
 | 8 | Final contract re-sync, remove obsolete compatibility, regression, handoff |
@@ -252,7 +264,7 @@ Unless a later phase’s contract work explicitly changes it:
 
 - Cross-origin cookie/CORS configuration must match the frontend origin for real login/signup.
 - Accounts without passwords need admin password setup (backend limitation).
-- Group messaging is text-persisted; file/financial-document attachments not openable yet (Phase 5).
+- Group messaging supports text + `file` / `financial_document` attachments; no standalone company file list API.
 - Members/roles/groups UI is present.
 - Excel import unwired and calls removed OpenAPI paths.
 - Backend PDF export may still be blocked (409) per contract limitations.
