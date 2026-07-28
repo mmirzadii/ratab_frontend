@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Loader2, UserPlus, Users, XCircle } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -42,7 +42,7 @@ export function MembersSection({ companyId }: { companyId: number }) {
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
   const { data, error, isLoading, refetch } = useListCompanyMembersQuery(companyId);
-  const members = useMemo(() => getListResults(data), [data]);
+  const members = getListResults(data);
   const myMembership = findCurrentMembership(members, authUser?.id);
   const actorRole = myMembership?.is_active ? myMembership.role : null;
   const canManage = canManageMembers(actorRole);

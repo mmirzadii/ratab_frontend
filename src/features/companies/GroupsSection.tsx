@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Loader2, Network, Plus, Users, XCircle } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -41,8 +41,8 @@ export function GroupsSection({ companyId }: { companyId: number }) {
   } = useListCompanyGroupsQuery(companyId);
   const { data: membersData } = useListCompanyMembersQuery(companyId);
 
-  const groups = useMemo(() => getListResults(groupsData), [groupsData]);
-  const companyMembers = useMemo(() => getListResults(membersData), [membersData]);
+  const groups = getListResults(groupsData);
+  const companyMembers = getListResults(membersData);
   const myMembership = findCurrentMembership(companyMembers, authUser?.id);
   const actorRole = myMembership?.is_active ? myMembership.role : null;
   const actorMemberId = myMembership?.is_active ? myMembership.id : null;
@@ -73,7 +73,7 @@ export function GroupsSection({ companyId }: { companyId: number }) {
   } = useListCompanyGroupMembersQuery(effectiveGroupId ?? 0, {
     skip: effectiveGroupId == null
   });
-  const memberships = useMemo(() => getListResults(membershipsData), [membershipsData]);
+  const memberships = getListResults(membershipsData);
 
   const [createGroup, { isLoading: isCreating }] = useCreateCompanyGroupMutation();
   const [updateGroup, { isLoading: isUpdating }] = useUpdateCompanyGroupMutation();

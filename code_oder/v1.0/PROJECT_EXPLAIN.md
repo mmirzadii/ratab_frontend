@@ -9,7 +9,7 @@ Documentation root note: the repository uses `code_oder` as the folder name. Do 
 
 ## Purpose
 
-This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Later phases still replace members, messaging, files, wallet, and subscriptions.
+This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Phase 3 integrated company members, roles, and groups. Later phases still replace messaging, files, wallet, and subscriptions.
 
 Before changing code, read in this order:
 
@@ -43,7 +43,17 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - Cross-origin local setup: masked CSRF token comes from `/api/auth/csrf/` JSON (not `document.cookie`); backend must list the Vite origin in `CSRF_TRUSTED_ORIGINS` (e.g. `http://localhost:1000`).
 - HTML Django CSRF error pages are never shown raw in the UI.
 - Removed normal Token/`dev-login`/`sessionStorage` auth path.
-- Members/groups/messaging/files/wallet/subscription UI still not implemented.
+- Members/groups UI landed in Phase 3; messaging/files/wallet/subscription UI still not implemented.
+
+## Phase 3 status (completed)
+
+- Company dashboard sections: Members and Groups (enabled in secondary + mobile nav).
+- RTK Query: `companyMembersApi`, `companyGroupsApi`; tag types `CompanyMember`, `CompanyGroup`.
+- Permission helpers follow `PERMISSIONS.md` (owner/admin/employee, last-owner protection, group creator rules).
+- Company info edit disabled for employees; member management controls role-gated in UX only.
+- Backend remains security authority; 403/409 still handled via API error toasts.
+- Persistent messaging, attachments, files, wallet, subscriptions, payments not implemented.
+- Phase 2 session + CSRF behavior preserved.
 
 ## Product snapshot (current running app)
 
@@ -54,7 +64,7 @@ Current user journey:
 1. Public landing page.
 2. Signup (`/signup`) or login (`/login`) with session cookies.
 3. Protected company list / create.
-4. Company dashboard with **local-only** messages, company info, projects, cost reports.
+4. Company dashboard with **local-only** messages, company info, **members**, **groups**, projects, cost reports.
 5. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print.
 
 Brand note: principles say `ratab / رتب`; many UI strings still say `Metril / متریل`. Do not introduce a third brand.
@@ -151,15 +161,24 @@ Store: `auth`, `ui`, `ratabApi` (`baseApi`).
 Feature APIs injecting into `baseApi`:
 
 - `authApi` — csrf, signup start/verify/complete, login, logout, `auth/me`
-- `companyApi`, `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`
+- `companyApi`, `companyMembersApi`, `companyGroupsApi`
+- `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`
 
-Tag types today: `Auth`, `Coefficient`, `Company`, `FinancialDocument`, `Health`, `Pricebook`, `Project`.
+Tag types today: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `FinancialDocument`, `Health`, `Pricebook`, `Project`.
 
 ## Frontend API usage vs Backend v1.0 OpenAPI
 
 All currently wired pricebook / company / project / coefficient / financial-document / health paths used by the live UI still exist under the v1 OpenAPI (v1 is a cumulative superset for those domains).
 
 Auth endpoints now consumed by the frontend: `/api/auth/csrf/`, signup/*, login, logout, me.
+
+Company workspace endpoints now consumed by the frontend (Phase 3):
+
+- `/api/companies/{id}/members/`
+- `/api/company-members/{id}/`, `/role/`, `/deactivate/`
+- `/api/companies/{id}/groups/`
+- `/api/company-groups/{id}/`, `/deactivate/`, `/members/`
+- `/api/company-group-memberships/{id}/`, `/deactivate/`
 
 Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 
@@ -170,9 +189,8 @@ Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 
 Backend v1.0 domains **not yet consumed** (later phases):
 
-- Members/roles: `/api/company-members/…`, role/deactivate
-- Groups/messaging: `/api/companies/{id}/groups/`, `/api/company-groups/…`, messages
-- Files/attachments: company files, storage-files, message-attachments
+- Groups messaging: `/api/company-groups/…/messages/`, message-attachments
+- Files/attachments: company files, storage-files
 - Wallet: `/api/token-wallet/`, transactions
 - Subscription/quota/payments: subscription-plans, subscription, message-quota, payments/orders
 
@@ -188,7 +206,7 @@ Resolved in Phase 2:
 Still outstanding for later phases:
 
 5. **Company messages are local React state** — Phase 4.
-6. **Members / roles / groups UI are placeholders** — Phase 3.
+6. ~~**Members / roles / groups UI are placeholders** — Phase 3.~~ ✅ completed in Phase 3.
 7. **No private file upload/open** — Phase 5.
 8. **No wallet / 5-token charge UX / idempotency_key on charged line creates** — Phase 6.
 9. **No subscription / message-quota / disabled-payment UX** — Phase 7.
@@ -212,7 +230,7 @@ Unless a later phase’s contract work explicitly changes it:
 | Phase | Integration focus |
 | --- | --- |
 | 2 | ✅ Session signup/login/logout/restore + CSRF |
-| 3 | Company members, roles, groups; keep company/project flows |
+| 3 | ✅ Company members, roles, groups; keep company/project flows |
 | 4 | Persisted group messaging replacing local messages |
 | 5 | Private files + message attachments |
 | 6 | Wallet visibility + 5-token official line-create UX + idempotent retries |
@@ -224,6 +242,7 @@ Unless a later phase’s contract work explicitly changes it:
 - Cross-origin cookie/CORS configuration must match the frontend origin for real login/signup.
 - Accounts without passwords need admin password setup (backend limitation).
 - Messages local-only.
+- Members/roles/groups UI is present; messaging still local.
 - Excel import unwired and calls removed OpenAPI paths.
 - Backend PDF export may still be blocked (409) per contract limitations.
 - Online payments disabled (`PAYMENTS_DISABLED`).

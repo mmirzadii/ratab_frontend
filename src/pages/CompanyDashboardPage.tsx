@@ -138,8 +138,7 @@ function MobileDashboardTabs({
             type="button"
           >
             <Icon className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{item.label}</span>
-            <span className="sm:hidden">{item.label.slice(0, 4)}</span>
+            <span className="truncate">{item.label}</span>
           </button>
         );
       })}
