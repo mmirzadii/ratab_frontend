@@ -34,8 +34,9 @@ export const companyMessagesApi = baseApi.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: (_result, _error, { groupId }) => [
-        { type: "GroupMessage", id: `GROUP-${groupId}` }
+      invalidatesTags: (result, _error, { groupId }) => [
+        { type: "GroupMessage", id: `GROUP-${groupId}` },
+        ...(result ? ([{ type: "MessageQuota" as const, id: "STATUS" }] as const) : [])
       ]
     })
   })
@@ -59,17 +60,24 @@ export function isMessageQuotaExceeded(error: unknown): error is {
   return (data as { code?: unknown }).code === "MESSAGE_QUOTA_EXCEEDED";
 }
 
-export function formatQuotaResetHint(resetsAt: string | undefined): string {
+export function formatQuotaResetHint(
+  resetsAt: string | undefined,
+  details?: { usedToday?: string; dailyLimit?: string }
+): string {
+  const usage =
+    details?.usedToday != null && details?.dailyLimit != null
+      ? ` (استفاده‌شده امروز: ${details.usedToday} از ${details.dailyLimit})`
+      : "";
   if (!resetsAt) {
-    return "سقف روزانه پیام پر شده است. بعداً دوباره تلاش کنید.";
+    return `سقف روزانه پیام پر شده است${usage}. بعداً دوباره تلاش کنید.`;
   }
   try {
     const formatted = new Intl.DateTimeFormat("fa-IR", {
       dateStyle: "medium",
       timeStyle: "short"
     }).format(new Date(resetsAt));
-    return `سقف روزانه پیام پر شده است. زمان بازنشانی: ${formatted}`;
+    return `سقف روزانه پیام پر شده است${usage}. زمان بازنشانی: ${formatted}`;
   } catch {
-    return `سقف روزانه پیام پر شده است. زمان بازنشانی: ${resetsAt}`;
+    return `سقف روزانه پیام پر شده است${usage}. زمان بازنشانی: ${resetsAt}`;
   }
 }

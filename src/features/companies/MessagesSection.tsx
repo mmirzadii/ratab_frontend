@@ -37,6 +37,11 @@ import {
 } from "./companyMessagesApi";
 import { findCurrentMembership } from "./companyPermissions";
 import { MessageAttachmentCard } from "./MessageAttachmentCard";
+import {
+  formatQuotaResetsAt,
+  formatQuotaUsageLabel,
+  useGetMessageQuotaQuery
+} from "../subscription/subscriptionApi";
 
 export type SeedFinancialDocumentAttachment = {
   resourceId: number;
@@ -130,6 +135,7 @@ export function MessagesSection({
   const [fetchMessages] = useLazyListGroupMessagesQuery();
   const [createMessage, { isLoading: isSending }] = useCreateGroupMessageMutation();
   const [uploadFile, { isLoading: isUploading }] = useUploadCompanyFileMutation();
+  const { data: messageQuota, refetch: refetchMessageQuota } = useGetMessageQuotaQuery();
 
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [oldestLoadedPage, setOldestLoadedPage] = useState<number | null>(null);
@@ -153,6 +159,20 @@ export function MessagesSection({
     !isSending &&
     !isUploading &&
     (Boolean(messageText.trim()) || pendingAttachments.length > 0);
+
+  useEffect(() => {
+    if (!quotaBlockedHint || !messageQuota) {
+      return;
+    }
+    // Soft UX unlock after backend quota refreshes past the block; backend remains the authority on send.
+    if (messageQuota.daily_limit == null) {
+      setQuotaBlockedHint(null);
+      return;
+    }
+    if (messageQuota.remaining != null && messageQuota.remaining > 0) {
+      setQuotaBlockedHint(null);
+    }
+  }, [messageQuota, quotaBlockedHint]);
 
   useEffect(() => {
     if (!seedFinancialDocumentAttachment) {
@@ -424,8 +444,12 @@ export function MessagesSection({
       dispatch(addToast({ message: "پیام ارسال شد.", type: "success" }));
     } catch (error) {
       if (isMessageQuotaExceeded(error)) {
-        const hint = formatQuotaResetHint(error.data.resets_at);
+        const hint = formatQuotaResetHint(error.data.resets_at, {
+          usedToday: error.data.used_today,
+          dailyLimit: error.data.daily_limit
+        });
         setQuotaBlockedHint(hint);
+        void refetchMessageQuota();
         dispatch(addToast({ message: hint, type: "error" }));
         return;
       }
@@ -590,6 +614,18 @@ export function MessagesSection({
         {quotaBlockedHint ? (
           <p className="mb-2 rounded-lg border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-100 light:border-amber-200 light:bg-amber-50 light:text-amber-800">
             {quotaBlockedHint}
+          </p>
+        ) : messageQuota ? (
+          <p className="mb-2 text-[11px] font-bold text-slate-400 light:text-slate-500">
+            {formatQuotaUsageLabel(messageQuota)}
+            {formatQuotaResetsAt(messageQuota.resets_at)
+              ? ` — بازنشانی: ${formatQuotaResetsAt(messageQuota.resets_at)}`
+              : ""}
+            {messageQuota.daily_limit != null &&
+            messageQuota.remaining != null &&
+            messageQuota.remaining <= 0
+              ? " — سقف امروز پر است؛ ارسال ممکن است توسط سرور رد شود."
+              : ""}
           </p>
         ) : null}
 

@@ -9,7 +9,7 @@ Documentation root note: the repository uses `code_oder` as the folder name. Do 
 
 ## Purpose
 
-This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Phase 3 integrated company members, roles, and groups. Phase 4 replaced local messages with persisted group messaging. Phase 5 added private-file upload and message attachments. Phase 6 added wallet visibility and the 5-token official pricebook-line charge UX with idempotent retries. Later phases still add subscriptions/quota UX.
+This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Phase 3 integrated company members, roles, and groups. Phase 4 replaced local messages with persisted group messaging. Phase 5 added private-file upload and message attachments. Phase 6 added wallet visibility and the 5-token official pricebook-line charge UX with idempotent retries. Phase 7 added subscription/quota visibility and disabled-payment UX. Phase 8 is final contract re-sync and cleanup.
 
 Before changing code, read in this order:
 
@@ -43,7 +43,7 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - Cross-origin local setup: masked CSRF token comes from `/api/auth/csrf/` JSON (not `document.cookie`); backend must list the Vite origin in `CSRF_TRUSTED_ORIGINS` (e.g. `http://localhost:1000`).
 - HTML Django CSRF error pages are never shown raw in the UI.
 - Removed normal Token/`dev-login`/`sessionStorage` auth path.
-- Members/groups UI landed in Phase 3; group messaging landed in Phase 4; private files/attachments landed in Phase 5; wallet + 5-token UX landed in Phase 6; subscription/quota UI still not implemented.
+- Members/groups UI landed in Phase 3; group messaging landed in Phase 4; private files/attachments landed in Phase 5; wallet + 5-token UX landed in Phase 6; subscription/quota + disabled-payment UX landed in Phase 7.
 
 ## Phase 3 status (completed)
 
@@ -60,7 +60,7 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - Dashboard Messages section uses backend group messages (`GET|POST /api/company-groups/{group_id}/messages/`).
 - Group picker required; messaging requires group membership (backend-enforced).
 - History: latest page bootstrap, earlier-page load, send, reload persistence, empty/loading/forbidden/retry.
-- `429 MESSAGE_QUOTA_EXCEEDED` disables send and shows `resets_at` (full quota UI is Phase 7).
+- `429 MESSAGE_QUOTA_EXCEEDED` disables send and shows `resets_at` (full quota status UI completed in Phase 7).
 - Local-only message state and fake local attachments removed.
 - Attachment create/open completed in Phase 5.
 - Phase 1–3 session, members, roles, groups, projects preserved.
@@ -83,7 +83,16 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - Fixed 5-token cost shown in the item-detail modal before add (UI copy only; cost never sent to backend). No-charge flows (starred lines, calculate, edit, delete, recalculate, preview, export) show no cost UI.
 - 402 `INSUFFICIENT_TOKEN_BALANCE` shows `required_tokens` vs `available_tokens` (single + Excel bulk create paths).
 - Wallet cache (`Wallet` tags) invalidated after successful line creates so balance/ledger refetch from the backend.
-- Subscriptions, quota UX, and payment UI not implemented (Phase 7); payments remain disabled backend-wide.
+- Subscriptions, quota UX, and payment UI not implemented in Phase 6 (landed in Phase 7); payments remain disabled backend-wide.
+
+## Phase 7 status (completed)
+
+- Settings (`/settings`): subscription status (`GET /api/subscription/`), backend plan list (`GET /api/subscription-plans/`), and daily message quota (`GET /api/message-quota/`).
+- Null daily limit shown as unlimited/unconfigured; no invented free-tier number (owner decision / `FREE_PLAN_DAILY_MESSAGE_LIMIT`).
+- Messages compose shows usage + reset; successful sends refresh quota; `429 MESSAGE_QUOTA_EXCEEDED` disables send with `used_today` / `daily_limit` / `resets_at`.
+- Disabled-payment banner + probe of `POST /api/payments/orders/` handles `503 PAYMENTS_DISABLED` in Persian; no bank redirect, card form, fake success, or client-chosen token/price amounts.
+- Plan/package seeding remains an unresolved backend/owner decision; empty lists are shown honestly.
+- Phase 1–6 behavior preserved.
 
 ## Product snapshot (current running app)
 
@@ -96,7 +105,7 @@ Current user journey:
 3. Protected company list / create.
 4. Company dashboard with **persisted group messages + attachments**, company info, **members**, **groups**, projects, cost reports.
 5. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Official pricebook line adds show the fixed 5-token cost and use idempotency keys.
-6. Account settings (`/settings`) additionally shows the **token wallet** balance and recent ledger.
+6. Account settings (`/settings`) shows the **token wallet**, **subscription/quota** status, and the disabled-payment boundary.
 
 Brand note: principles say `ratab / رتب`; many UI strings still say `Metril / متریل`. Do not introduce a third brand.
 
@@ -193,9 +202,9 @@ Feature APIs injecting into `baseApi`:
 
 - `authApi` — csrf, signup start/verify/complete, login, logout, `auth/me`
 - `companyApi`, `companyMembersApi`, `companyGroupsApi`, `companyMessagesApi`, `companyFilesApi`
-- `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`, `walletApi`
+- `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`, `walletApi`, `subscriptionApi`
 
-Tag types today: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `FinancialDocument`, `GroupMessage`, `Health`, `Pricebook`, `PrivateFile`, `Project`, `Wallet`.
+Tag types today: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `FinancialDocument`, `GroupMessage`, `Health`, `MessageQuota`, `Pricebook`, `PrivateFile`, `Project`, `Subscription`, `Wallet`.
 
 ## Frontend API usage vs Backend v1.0 OpenAPI
 
@@ -220,6 +229,13 @@ Wallet endpoints now consumed by the frontend (Phase 6):
 - `GET /api/token-wallet/transactions/` (newest-first ledger; contract documents no pagination query params, so only the first page is rendered)
 - `idempotency_key` field on `POST /api/financial-documents/{id}/lines/` for official pricebook-backed creates
 
+Subscription / quota / payments endpoints now consumed by the frontend (Phase 7):
+
+- `GET /api/subscription/`
+- `GET /api/subscription-plans/`
+- `GET /api/message-quota/`
+- `POST /api/payments/orders/` (disabled-payment probe only; expects `PAYMENTS_DISABLED`)
+
 Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 
 | Frontend path | Notes |
@@ -227,10 +243,8 @@ Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 | `POST /api/financial-documents/{id}/excel-plan/` | Used only by unwired Excel import modal |
 | `POST /api/financial-documents/{id}/lines/bulk/` | Used only by unwired Excel import modal |
 
-Backend v1.0 domains **not yet consumed** (later phases):
+Backend v1.0 domains **not yet fully consumed** / remaining cleanup (Phase 8):
 
-- Subscription/quota/payments: subscription-plans, subscription, message-quota status, payments/orders
-  (send-time `MESSAGE_QUOTA_EXCEEDED` handling exists; full quota UX is Phase 7)
 - Standalone storage-file open/download helpers exist in code for authorized paths; messaging UI prefers message-attachment endpoints. There is still no company file **list** API.
 
 ## Obsolete assumptions after Phase 2
@@ -248,7 +262,7 @@ Still outstanding for later phases:
 6. ~~**Members / roles / groups UI are placeholders** — Phase 3.~~ ✅ completed in Phase 3.
 7. ~~**No private file upload/open** — Phase 5.~~ ✅ completed in Phase 5 (`file` + `financial_document` attachments).
 8. ~~**No wallet / 5-token charge UX / idempotency_key on charged line creates** — Phase 6.~~ ✅ completed in Phase 6.
-9. **No subscription / message-quota / disabled-payment UX** — Phase 7.
+9. ~~**No subscription / message-quota / disabled-payment UX** — Phase 7.~~ ✅ completed in Phase 7.
 10. **Excel plan/bulk endpoints** absent from OpenAPI — Phase 8 cleanup.
 11. **HealthStatusPage still labels an old schema path** — display-only drift.
 
@@ -273,7 +287,7 @@ Unless a later phase’s contract work explicitly changes it:
 | 4 | ✅ Persisted group messaging replacing local messages |
 | 5 | ✅ Private files + message attachments |
 | 6 | ✅ Wallet visibility + 5-token official line-create UX + idempotent retries |
-| 7 | Subscription + message quota + disabled payment UX |
+| 7 | ✅ Subscription + message quota + disabled payment UX |
 | 8 | Final contract re-sync, remove obsolete compatibility, regression, handoff |
 
 ## Known limitations (current)
@@ -284,7 +298,8 @@ Unless a later phase’s contract work explicitly changes it:
 - Members/roles/groups UI is present.
 - Excel import unwired and calls removed OpenAPI paths.
 - Backend PDF export may still be blocked (409) per contract limitations.
-- Online payments disabled (`PAYMENTS_DISABLED`); token top-up is admin-managed, so the wallet UI has no purchase flow.
+- Online payments disabled (`PAYMENTS_DISABLED`); token top-up and subscription activation are admin-managed; settings shows this boundary explicitly.
+- Subscription plans / token packages may be unseeded on the backend; the UI shows empty lists instead of inventing codes.
 - Wallet ledger shows only the newest page (transactions endpoint documents no pagination query params).
 - Branding inconsistency (`ratab` vs `Metril`).
 - No automated frontend test suite script yet.

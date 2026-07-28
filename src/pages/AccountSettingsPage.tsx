@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { useGetCurrentUserQuery } from "../features/auth/authApi";
 import { performLogout } from "../features/auth/logout";
+import { SubscriptionSection } from "../features/subscription/SubscriptionSection";
 import { WalletSection } from "../features/wallet/WalletSection";
 import { Button } from "../shared/components/Button";
 import { GlassCard } from "../shared/components/GlassCard";
@@ -84,6 +85,8 @@ export function AccountSettingsPage() {
           </div>
         )}
       </GlassCard>
+
+      <SubscriptionSection />
 
       <WalletSection />
     </div>
