@@ -16,6 +16,13 @@ import {
   useCreateFinancialDocumentLineMutation,
   useRecalculateFinancialDocumentMutation
 } from "../../financialDocuments/financialDocumentApi";
+import {
+  OFFICIAL_LINE_TOKEN_COST,
+  createLineIdempotencyKey,
+  formatInsufficientBalanceMessage,
+  isIdempotencyKeyReused,
+  isInsufficientTokenBalance
+} from "../../wallet/walletApi";
 import { Button } from "../../../shared/components/Button";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { cleanDisplayText, formatDecimal, formatMoneyAmount } from "../../../shared/utils/formatters";
@@ -367,6 +374,8 @@ function ItemDetailContent({
   const rowPriceInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const lastGuidedMissingSetRef = useRef("");
   const missingStarredRowCodesRef = useRef<string[]>([]);
+  // Retry key per payload: reusing it lets the backend replay instead of double-charging.
+  const idempotencyRef = useRef<{ payloadKey: string; key: string } | null>(null);
 
   const revealMissingStarredPrices = useCallback((rowCodes: string[], forceGuide = false) => {
     const uniqueCodes = [...new Set(rowCodes)];
@@ -1139,7 +1148,12 @@ function ItemDetailContent({
       return;
     }
 
+    if (idempotencyRef.current?.payloadKey !== payload.key) {
+      idempotencyRef.current = { payloadKey: payload.key, key: createLineIdempotencyKey() };
+    }
+
     const lineBody: FinancialDocumentLineCreatePayload = {
+      idempotency_key: idempotencyRef.current.key,
       pricebook_item_id: item.id,
       quantity: effectiveCalculation.quantity
     };
@@ -1174,6 +1188,7 @@ function ItemDetailContent({
         body: lineBody,
         documentId: document.id
       }).unwrap();
+      idempotencyRef.current = null;
       const updatedDocument = await recalculateFinancialDocument(document.id).unwrap();
       onDocumentUpdated(updatedDocument);
       const addedLine =
@@ -1182,13 +1197,24 @@ function ItemDetailContent({
       setAddedRowsLines([addedLine]);
       setHasSubmitAttempted(false);
       onToast(
-        addedDisplayRows.length > 1
-          ? "ردیف‌ها به صورت‌بها اضافه شدند."
-          : "ردیف به صورت‌بها اضافه شد.",
+        createdLine.idempotent_replayed
+          ? "این ردیف قبلاً ثبت شده بود؛ توکن دوباره کسر نشد."
+          : addedDisplayRows.length > 1
+            ? "ردیف‌ها به صورت‌بها اضافه شدند."
+            : "ردیف به صورت‌بها اضافه شد.",
         "success"
       );
       setShowAddedRows(true);
     } catch (error) {
+      if (isInsufficientTokenBalance(error)) {
+        setLineError(formatInsufficientBalanceMessage(error.data));
+        return;
+      }
+      if (isIdempotencyKeyReused(error)) {
+        idempotencyRef.current = null;
+        setLineError("کلید تکرار ثبت قبلاً برای درخواست دیگری استفاده شده است. دوباره تلاش کنید.");
+        return;
+      }
       const missingStarredPrices = getBackendMissingStarredPrices(error);
       if (missingStarredPrices) {
         const knownCodes = new Set(item.rows.map((row) => row.row_code));
@@ -1434,9 +1460,11 @@ function ItemDetailContent({
           <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-sm leading-7 text-amber-100 light:text-amber-800">
             {addLineDisabledReason}
           </p>
-        ) : null}
-
-
+        ) : (
+          <p className="rounded-lg border border-violet-300/20 bg-violet-400/10 p-3 text-xs leading-6 text-violet-100 light:border-violet-300 light:bg-violet-50 light:text-violet-900">
+            افزودن این ردیف رسمی فهرست‌بها {formatDecimal(String(OFFICIAL_LINE_TOKEN_COST))} توکن از کیف توکن شما کسر می‌کند. محاسبه، ویرایش، حذف و پیش‌نمایش رایگان است.
+          </p>
+        )}
 
         <CalculationSection
           calculation={calculation}

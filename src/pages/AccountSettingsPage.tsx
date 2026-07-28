@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { useGetCurrentUserQuery } from "../features/auth/authApi";
 import { performLogout } from "../features/auth/logout";
+import { WalletSection } from "../features/wallet/WalletSection";
 import { Button } from "../shared/components/Button";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
@@ -23,7 +24,7 @@ export function AccountSettingsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-3 pb-6 pt-3 sm:px-6 sm:pb-10 sm:pt-6 lg:px-8">
+    <div className="mx-auto w-full max-w-2xl space-y-4 px-3 pb-6 pt-3 sm:space-y-5 sm:px-6 sm:pb-10 sm:pt-6 lg:px-8">
       <GlassCard className="overflow-hidden p-0">
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 light:border-slate-200 sm:px-5 sm:py-4">
           <div className="flex items-center gap-3">
@@ -83,6 +84,8 @@ export function AccountSettingsPage() {
           </div>
         )}
       </GlassCard>
+
+      <WalletSection />
     </div>
   );
 }

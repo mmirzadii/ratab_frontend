@@ -11,6 +11,10 @@ import {
   useCreateFinancialDocumentLinesBulkMutation,
   useFinancialDocumentExcelPlanMutation
 } from "../../financialDocuments/financialDocumentApi";
+import {
+  formatInsufficientBalanceMessage,
+  isInsufficientTokenBalance
+} from "../../wallet/walletApi";
 import { useAppShell } from "../../../app/appShellContext";
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { classNames } from "../../../shared/utils/classNames";
@@ -275,6 +279,10 @@ export function ExcelImportWizardModal({
       onDocumentUpdated(result);
       onClose();
     } catch (error) {
+      if (isInsufficientTokenBalance(error)) {
+        setSubmitError(formatInsufficientBalanceMessage(error.data));
+        return;
+      }
       setSubmitError(getApiErrorMessage(error));
     }
   }

@@ -9,7 +9,7 @@ Documentation root note: the repository uses `code_oder` as the folder name. Do 
 
 ## Purpose
 
-This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Phase 3 integrated company members, roles, and groups. Phase 4 replaced local messages with persisted group messaging. Phase 5 added private-file upload and message attachments. Later phases still add wallet and subscriptions.
+This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Phase 3 integrated company members, roles, and groups. Phase 4 replaced local messages with persisted group messaging. Phase 5 added private-file upload and message attachments. Phase 6 added wallet visibility and the 5-token official pricebook-line charge UX with idempotent retries. Later phases still add subscriptions/quota UX.
 
 Before changing code, read in this order:
 
@@ -43,7 +43,7 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - Cross-origin local setup: masked CSRF token comes from `/api/auth/csrf/` JSON (not `document.cookie`); backend must list the Vite origin in `CSRF_TRUSTED_ORIGINS` (e.g. `http://localhost:1000`).
 - HTML Django CSRF error pages are never shown raw in the UI.
 - Removed normal Token/`dev-login`/`sessionStorage` auth path.
-- Members/groups UI landed in Phase 3; group messaging landed in Phase 4; private files/attachments landed in Phase 5; wallet/subscription UI still not implemented.
+- Members/groups UI landed in Phase 3; group messaging landed in Phase 4; private files/attachments landed in Phase 5; wallet + 5-token UX landed in Phase 6; subscription/quota UI still not implemented.
 
 ## Phase 3 status (completed)
 
@@ -73,7 +73,17 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - Compose UI: upload file, pick existing financial document, or seed pending document from cost-report wizard return.
 - Unavailable attachments (`is_available=false`), 403/404/400/503 surfaced safely.
 - No standalone file-manager list UI (contract has upload, not list).
-- Wallet / subscription / payment UX not implemented.
+- Wallet / subscription / payment UX not implemented in Phase 5 (wallet landed in Phase 6).
+
+## Phase 6 status (completed)
+
+- Wallet balance + newest-first transaction ledger on `/settings` (`GET /api/token-wallet/`, `GET /api/token-wallet/transactions/`); read-only, no client-side accounting.
+- Official pricebook-backed line create sends a client `idempotency_key`; the key is reused for retries of the identical payload and regenerated on payload change, success, or `IDEMPOTENCY_KEY_REUSED` (409).
+- Idempotent replay (HTTP 200 + `Idempotent-Replayed: true`) surfaces as "already created, no second charge".
+- Fixed 5-token cost shown in the item-detail modal before add (UI copy only; cost never sent to backend). No-charge flows (starred lines, calculate, edit, delete, recalculate, preview, export) show no cost UI.
+- 402 `INSUFFICIENT_TOKEN_BALANCE` shows `required_tokens` vs `available_tokens` (single + Excel bulk create paths).
+- Wallet cache (`Wallet` tags) invalidated after successful line creates so balance/ledger refetch from the backend.
+- Subscriptions, quota UX, and payment UI not implemented (Phase 7); payments remain disabled backend-wide.
 
 ## Product snapshot (current running app)
 
@@ -85,7 +95,8 @@ Current user journey:
 2. Signup (`/signup`) or login (`/login`) with session cookies.
 3. Protected company list / create.
 4. Company dashboard with **persisted group messages + attachments**, company info, **members**, **groups**, projects, cost reports.
-5. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print.
+5. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Official pricebook line adds show the fixed 5-token cost and use idempotency keys.
+6. Account settings (`/settings`) additionally shows the **token wallet** balance and recent ledger.
 
 Brand note: principles say `ratab / رتب`; many UI strings still say `Metril / متریل`. Do not introduce a third brand.
 
@@ -182,9 +193,9 @@ Feature APIs injecting into `baseApi`:
 
 - `authApi` — csrf, signup start/verify/complete, login, logout, `auth/me`
 - `companyApi`, `companyMembersApi`, `companyGroupsApi`, `companyMessagesApi`, `companyFilesApi`
-- `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`
+- `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`, `walletApi`
 
-Tag types today: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `FinancialDocument`, `GroupMessage`, `Health`, `Pricebook`, `PrivateFile`, `Project`.
+Tag types today: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `FinancialDocument`, `GroupMessage`, `Health`, `Pricebook`, `PrivateFile`, `Project`, `Wallet`.
 
 ## Frontend API usage vs Backend v1.0 OpenAPI
 
@@ -203,6 +214,12 @@ Company workspace endpoints now consumed by the frontend (Phase 3):
 - `POST /api/companies/{company_id}/files/` (private upload)
 - `GET /api/message-attachments/{id}/`, `/open/`, `/download/`
 
+Wallet endpoints now consumed by the frontend (Phase 6):
+
+- `GET /api/token-wallet/` (balance; read-only)
+- `GET /api/token-wallet/transactions/` (newest-first ledger; contract documents no pagination query params, so only the first page is rendered)
+- `idempotency_key` field on `POST /api/financial-documents/{id}/lines/` for official pricebook-backed creates
+
 Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 
 | Frontend path | Notes |
@@ -212,7 +229,6 @@ Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 
 Backend v1.0 domains **not yet consumed** (later phases):
 
-- Wallet: `/api/token-wallet/`, transactions
 - Subscription/quota/payments: subscription-plans, subscription, message-quota status, payments/orders
   (send-time `MESSAGE_QUOTA_EXCEEDED` handling exists; full quota UX is Phase 7)
 - Standalone storage-file open/download helpers exist in code for authorized paths; messaging UI prefers message-attachment endpoints. There is still no company file **list** API.
@@ -231,7 +247,7 @@ Still outstanding for later phases:
 5. ~~**Company messages are local React state** — Phase 4.~~ ✅ completed in Phase 4 (group-persisted messages).
 6. ~~**Members / roles / groups UI are placeholders** — Phase 3.~~ ✅ completed in Phase 3.
 7. ~~**No private file upload/open** — Phase 5.~~ ✅ completed in Phase 5 (`file` + `financial_document` attachments).
-8. **No wallet / 5-token charge UX / idempotency_key on charged line creates** — Phase 6.
+8. ~~**No wallet / 5-token charge UX / idempotency_key on charged line creates** — Phase 6.~~ ✅ completed in Phase 6.
 9. **No subscription / message-quota / disabled-payment UX** — Phase 7.
 10. **Excel plan/bulk endpoints** absent from OpenAPI — Phase 8 cleanup.
 11. **HealthStatusPage still labels an old schema path** — display-only drift.
@@ -256,7 +272,7 @@ Unless a later phase’s contract work explicitly changes it:
 | 3 | ✅ Company members, roles, groups; keep company/project flows |
 | 4 | ✅ Persisted group messaging replacing local messages |
 | 5 | ✅ Private files + message attachments |
-| 6 | Wallet visibility + 5-token official line-create UX + idempotent retries |
+| 6 | ✅ Wallet visibility + 5-token official line-create UX + idempotent retries |
 | 7 | Subscription + message quota + disabled payment UX |
 | 8 | Final contract re-sync, remove obsolete compatibility, regression, handoff |
 
@@ -268,7 +284,8 @@ Unless a later phase’s contract work explicitly changes it:
 - Members/roles/groups UI is present.
 - Excel import unwired and calls removed OpenAPI paths.
 - Backend PDF export may still be blocked (409) per contract limitations.
-- Online payments disabled (`PAYMENTS_DISABLED`).
+- Online payments disabled (`PAYMENTS_DISABLED`); token top-up is admin-managed, so the wallet UI has no purchase flow.
+- Wallet ledger shows only the newest page (transactions endpoint documents no pagination query params).
 - Branding inconsistency (`ratab` vs `Metril`).
 - No automated frontend test suite script yet.
 ## Safe change rules for later phases

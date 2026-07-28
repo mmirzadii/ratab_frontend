@@ -3,7 +3,8 @@ import {
   fetchBaseQuery,
   type BaseQueryFn,
   type FetchArgs,
-  type FetchBaseQueryError
+  type FetchBaseQueryError,
+  type FetchBaseQueryMeta
 } from "@reduxjs/toolkit/query/react";
 
 import {
@@ -71,7 +72,13 @@ function requestPath(url: string): string {
   return url.split("?")[0] ?? url;
 }
 
-export const baseQueryWithCsrf: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
+export const baseQueryWithCsrf: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError,
+  object,
+  FetchBaseQueryMeta
+> = async (
   args,
   api,
   extraOptions
@@ -140,7 +147,8 @@ export const baseApi = createApi({
     "Health",
     "Pricebook",
     "PrivateFile",
-    "Project"
+    "Project",
+    "Wallet"
   ],
   endpoints: () => ({})
 });

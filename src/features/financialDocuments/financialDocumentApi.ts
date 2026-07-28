@@ -26,6 +26,10 @@ export type StandaloneStarredFinancialDocumentLineCreatePayload =
 export type FinancialDocumentLineCreatePayload =
   | PricebookFinancialDocumentLineCreatePayload
   | StandaloneStarredFinancialDocumentLineCreatePayload;
+export type CreatedFinancialDocumentLine = FinancialDocumentLine & {
+  /** True when the backend replayed an already-created line (HTTP 200 + Idempotent-Replayed header); no second charge occurred. */
+  idempotent_replayed?: boolean;
+};
 export type PatchedFinancialDocumentLineUpdateRequest =
   components["schemas"]["PatchedFinancialDocumentLineUpdateRequest"];
 export type PatchedFinancialDocumentUpdateRequest =
@@ -100,7 +104,7 @@ export const financialDocumentApi = baseApi.injectEndpoints({
       ]
     }),
     createFinancialDocumentLine: builder.mutation<
-      FinancialDocumentLine,
+      CreatedFinancialDocumentLine,
       { documentId: number; body: FinancialDocumentLineCreatePayload }
     >({
       query: ({ body, documentId }) => ({
@@ -108,8 +112,18 @@ export const financialDocumentApi = baseApi.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: (_result, _error, { documentId }) => [
-        { type: "FinancialDocument", id: documentId }
+      transformResponse: (line: FinancialDocumentLine, meta) => {
+        const replayHeader = meta?.response?.headers.get("Idempotent-Replayed");
+        return replayHeader === "true" ? { ...line, idempotent_replayed: true } : line;
+      },
+      invalidatesTags: (result, _error, { documentId }) => [
+        { type: "FinancialDocument", id: documentId },
+        ...(result
+          ? ([
+              { type: "Wallet", id: "BALANCE" },
+              { type: "Wallet", id: "TRANSACTIONS" }
+            ] as const)
+          : [])
       ]
     }),
     updateFinancialDocumentLine: builder.mutation<
@@ -203,8 +217,14 @@ export const financialDocumentApi = baseApi.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: (_result, _error, { documentId }) => [
-        { type: "FinancialDocument", id: documentId }
+      invalidatesTags: (result, _error, { documentId }) => [
+        { type: "FinancialDocument", id: documentId },
+        ...(result
+          ? ([
+              { type: "Wallet", id: "BALANCE" },
+              { type: "Wallet", id: "TRANSACTIONS" }
+            ] as const)
+          : [])
       ]
     })
   })
