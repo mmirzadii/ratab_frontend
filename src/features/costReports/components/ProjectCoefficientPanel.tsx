@@ -78,7 +78,7 @@ function getInitialEditForm(value: ProjectCoefficientValue): CoefficientValueFor
     scope,
     chapter_id: scope === "chapter" && value.chapter_id ? String(value.chapter_id) : "",
     row_id: scope === "row" && value.row_id ? String(value.row_id) : "",
-    label_fa: value.label_fa || getCoefficientKeyLabel(value.coefficient_key),
+    label_fa: value.label_fa || getCoefficientKeyLabel(value.coefficient_key ?? value.key),
     multiplier: value.multiplier ?? "1",
     is_active: value.is_active !== false
   };
@@ -277,21 +277,23 @@ export function ProjectCoefficientPanel({
       return;
     }
 
+    const body = validation.body;
+
     try {
       const existingValue = values.find((value) => {
         if (
-          value.coefficient_key !== validation.body?.coefficient_key ||
-          getValueScope(value) !== validation.body.scope
+          value.coefficient_key !== body.coefficient_key ||
+          getValueScope(value) !== body.scope
         ) {
           return false;
         }
 
-        if (validation.body.scope === "chapter") {
-          return value.chapter_id === validation.body.chapter_id;
+        if (body.scope === "chapter") {
+          return value.chapter_id === body.chapter_id;
         }
 
-        if (validation.body.scope === "row") {
-          return value.row_id === validation.body.row_id;
+        if (body.scope === "row") {
+          return value.row_id === body.row_id;
         }
 
         return true;
@@ -301,12 +303,12 @@ export function ProjectCoefficientPanel({
         await updateValue({
           setId: selectedSet.id,
           valueId: existingValue.id,
-          body: validation.body
+          body
         }).unwrap();
       } else {
         await createValue({
           setId: selectedSet.id,
-          body: validation.body
+          body
         }).unwrap();
       }
       setValueForm({
@@ -664,7 +666,7 @@ export function ProjectCoefficientPanel({
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="font-black text-white light:text-slate-950">
-                                {value.label_fa || getCoefficientKeyLabel(value.coefficient_key)}
+                                {value.label_fa || getCoefficientKeyLabel(value.coefficient_key ?? value.key)}
                               </p>
                               <p className="mt-1 truncate text-xs text-slate-400 light:text-slate-500">
                                 {getCoefficientScopeLabel(value.scope)} · {getValueTargetLabel(value)}

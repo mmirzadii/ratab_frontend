@@ -421,7 +421,7 @@ function ItemDetailContent({
     () =>
       calculationInputs
         .filter((input) => !isSelectInput(input))
-        .sort((first, second) => first.value_key - second.value_key),
+        .sort((first, second) => (first.value_key ?? 0) - (second.value_key ?? 0)),
     [calculationInputs]
   );
   const mainNumericInput = useMemo(

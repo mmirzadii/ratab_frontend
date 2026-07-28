@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/auth/csrf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Set the readable CSRF cookie and return its masked token for browser authentication requests. This endpoint does not create a session. */
+        get: operations["auth_csrf_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/dev-login/": {
         parameters: {
             query?: never;
@@ -21,6 +38,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/login/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Authenticate with normalized phone number and password, rotate the session, and set the persistent HttpOnly session cookie. Login errors do not reveal which credential failed. Browser clients must first call GET /api/auth/csrf/ with credentials enabled, then send the csrf_token value in X-CSRFToken and retain the session cookie. */
+        post: operations["auth_login_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Invalidate the current server-side session and expire its cookie. Browser clients must first call GET /api/auth/csrf/ with credentials enabled, then send the csrf_token value in X-CSRFToken and retain the session cookie. */
+        post: operations["auth_logout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/me/": {
         parameters: {
             query?: never;
@@ -28,9 +79,61 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Return the current token- or session-authenticated user. */
         get: operations["auth_me_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/signup/complete/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Consume a one-time signup ticket, hash the chosen password, create the account, rotate the session, and authenticate the browser. Browser clients must first call GET /api/auth/csrf/ with credentials enabled, then send the csrf_token value in X-CSRFToken and retain the session cookie. */
+        post: operations["auth_signup_complete_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/signup/start/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Start the local signup flow without sending or storing an SMS code. Browser clients must first call GET /api/auth/csrf/ with credentials enabled, then send the csrf_token value in X-CSRFToken and retain the session cookie. */
+        post: operations["auth_signup_start_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/signup/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Verify a live local challenge with any non-empty numeric code and issue a short-lived one-time signup ticket. The code is never stored. Browser clients must first call GET /api/auth/csrf/ with credentials enabled, then send the csrf_token value in X-CSRFToken and retain the session cookie. */
+        post: operations["auth_signup_verify_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -85,6 +188,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companies/{company_id}/files/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Upload a private company file. A duplicate returns HTTP 200 with the existing metadata; a newly stored file returns HTTP 201. */
+        post: operations["companies_files_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companies/{id}/": {
         parameters: {
             query?: never;
@@ -101,6 +221,22 @@ export interface paths {
         patch: operations["companies_partial_update"];
         trace?: never;
     };
+    "/api/companies/{id}/groups/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["companies_groups_list"];
+        put?: never;
+        post: operations["companies_groups_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companies/{id}/members/": {
         parameters: {
             query?: never;
@@ -110,7 +246,7 @@ export interface paths {
         };
         get: operations["companies_members_list"];
         put?: never;
-        post?: never;
+        post: operations["companies_members_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -131,6 +267,168 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/companies/{id}/slug-history/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["companies_slug_history_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-group-memberships/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["company_group_memberships_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-group-memberships/{id}/deactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["company_group_memberships_deactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-groups/{group_id}/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List persistent group messages in stable created_at/id order. Active membership in the group is required. */
+        get: operations["company_groups_messages_retrieve"];
+        put?: never;
+        /** @description Create a text-only, attachment-only, or combined persistent message. Attachments are references to existing private files or financial documents. The configured daily message quota is checked atomically before the message is created; exceeding it returns the stable MESSAGE_QUOTA_EXCEEDED response. */
+        post: operations["company_groups_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-groups/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["company_groups_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["company_groups_partial_update"];
+        trace?: never;
+    };
+    "/api/company-groups/{id}/deactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["company_groups_deactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-groups/{id}/members/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["company_groups_members_list"];
+        put?: never;
+        post: operations["company_groups_members_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-members/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["company_members_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-members/{id}/deactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["company_members_deactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-members/{id}/role/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["company_members_role_partial_update"];
         trace?: never;
     };
     "/api/financial-document-exports/{id}/download/": {
@@ -274,6 +572,124 @@ export interface paths {
         get: operations["health_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health/live/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Public liveness endpoint with no dependency checks. */
+        get: operations["health_live_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health/ready/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Public readiness endpoint for API dependencies. Returns 503 if database, Redis, or private storage is unavailable. */
+        get: operations["health_ready_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/message-attachments/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["message_attachments_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/message-attachments/{id}/download/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Download an authorized private-file message attachment. */
+        get: operations["message_attachments_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/message-attachments/{id}/open/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Open an authorized file inline or return an authorized financial document through its message/group context. */
+        get: operations["message_attachments_open_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/message-quota/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Return the authenticated user's daily message usage, effective limit, and reset time. A null limit means no daily limit is configured for this account. */
+        get: operations["message_quota_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/orders/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Start a token-package payment. Online payment is disabled in v1.0, so this endpoint returns the stable PAYMENTS_DISABLED response. When a verified provider exists, the backend selects the package amount and payable price; a client can never send a token amount, price, provider result, or order status. */
+        post: operations["payments_orders_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -440,6 +856,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/storage-files/{id}/download/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Download authorized private file content as an attachment. */
+        get: operations["storage_files_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/storage-files/{id}/open/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Open authorized private file content inline. */
+        get: operations["storage_files_open_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subscription/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Return the authenticated user's current subscription. Subscriptions are activated by an administrator while online payment is disabled. */
+        get: operations["subscription_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subscription-plans/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List active backend-owned subscription plans. Plan limits, durations, and prices are defined by the backend only. */
+        get: operations["subscription_plans_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/token-wallet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Return the authenticated user's token wallet. The API is read-only; clients cannot set balances or create grants. */
+        get: operations["token_wallet_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/token-wallet/transactions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the authenticated user's append-only token ledger in stable newest-first order. */
+        get: operations["token_wallet_transactions_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -464,13 +982,27 @@ export interface components {
         AppliedCoefficient: {
             coefficient_value_id: number;
             coefficient_key: string;
+            key?: string;
             label_fa: string;
+            title_fa?: string;
             scope: string;
             multiplier: string;
+            value?: string;
+            factor?: string;
+            target_id?: number | null;
+            priority_source?: string;
+            row_id?: number;
+            row_code?: string;
             amount_before: string;
             amount_after: string;
             effect_amount: string;
         };
+        /**
+         * @description * `file` - File
+         *     * `financial_document` - Financial document
+         * @enum {string}
+         */
+        AttachmentTypeEnum: "file" | "financial_document";
         Company: {
             readonly id: number;
             name: string;
@@ -485,6 +1017,43 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
+        CompanyGroup: {
+            readonly id: number;
+            readonly company_id: number;
+            name: string;
+            description?: string;
+            readonly created_by_member_id: number;
+            readonly is_default: boolean;
+            readonly is_active: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        CompanyGroupMemberAddRequest: {
+            member_id: number;
+        };
+        CompanyGroupMembership: {
+            readonly id: number;
+            readonly group_id: number;
+            readonly member_id: number;
+            readonly user_id: number;
+            readonly phone_number: string;
+            readonly display_name: string;
+            readonly role: string;
+            readonly added_by_member_id: number;
+            readonly is_active: boolean;
+            /** Format: date-time */
+            readonly joined_at: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        CompanyGroupRequest: {
+            name: string;
+            description?: string;
+        };
         CompanyMember: {
             readonly id: number;
             readonly company_id: number;
@@ -495,6 +1064,7 @@ export interface components {
             readonly display_name: string;
             readonly title: string;
             readonly is_active: boolean;
+            readonly invited_by_member_id: number | null;
             /** Format: date-time */
             readonly joined_at: string | null;
             /** Format: date-time */
@@ -502,12 +1072,32 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
+        CompanyMemberAddRequest: {
+            phone_number: string;
+            role: components["schemas"]["RoleEnum"];
+            display_name?: string;
+            title?: string;
+        };
         CompanyRequest: {
             name: string;
             legal_name?: string;
             registration_number?: string;
             national_id?: string;
             active_slug?: string | null;
+        };
+        CompanySlugHistory: {
+            readonly id: number;
+            readonly company_id: number;
+            readonly slug: string;
+            readonly is_active: boolean;
+            readonly changed_by_member_id: number;
+            /** Format: date-time */
+            readonly activated_at: string;
+            /** Format: date-time */
+            readonly deactivated_at: string | null;
+        };
+        CsrfTokenResponse: {
+            readonly csrf_token: string;
         };
         DevLoginRequest: {
             phone_number: string;
@@ -657,6 +1247,7 @@ export interface components {
             readonly total_amount_snapshot: string;
             readonly calculation_input_json: unknown;
             readonly calculation_output_json: unknown;
+            readonly calculated_rows: string;
             readonly line_coefficients: components["schemas"]["FinancialDocumentLineCoefficient"][];
             /** Format: date-time */
             readonly created_at: string;
@@ -666,19 +1257,37 @@ export interface components {
         FinancialDocumentLineCoefficient: {
             readonly id: number;
             readonly coefficient_key: string;
+            readonly key: string;
             readonly label_fa: string;
+            readonly title_fa: string;
             /** Format: decimal */
             readonly multiplier: string;
+            readonly value: string;
+            readonly factor: string;
             /** Format: decimal */
             readonly applied_amount: string;
             readonly source_coefficient_value_id: number;
         };
         FinancialDocumentLineCreateRequest: {
-            pricebook_item_id: number;
+            /** @description Optional retry key for exact-once creation and charging of an official pricebook-backed line. */
+            idempotency_key?: string;
+            pricebook_item_id?: number | null;
+            /** @description Optional line-level coefficient set. Omit to use the document default; null disables coefficients. */
+            coefficient_set_id?: number | null;
+            line_source?: components["schemas"]["LineSourceEnum"];
             /** Format: decimal */
             quantity: string;
             /** Format: decimal */
             manual_unit_price?: string | null;
+            /** @description Optional per-row custom unit prices keyed by six-digit row_code. */
+            custom_prices?: {
+                [key: string]: string;
+            };
+            title_fa?: string;
+            description?: string;
+            description_snapshot?: string;
+            unit?: string;
+            unit_snapshot?: string;
             pricebook_row_id?: number | null;
             /** @description Indexed input values for v2 items. Supersedes quantity when provided. */
             values?: string[];
@@ -701,6 +1310,20 @@ export interface components {
          * @enum {string}
          */
         FinancialDocumentStatusEnum: "draft" | "calculated" | "locked" | "sent" | "under_review" | "approved" | "rejected" | "archived";
+        GroupMessage: {
+            readonly id: number;
+            readonly group_id: number;
+            readonly sender_member_id: number;
+            readonly sender_display_name: string;
+            readonly text: string;
+            readonly attachments: components["schemas"]["MessageAttachment"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        GroupMessageCreateRequest: {
+            text?: string;
+            attachments?: components["schemas"]["MessageAttachmentCreateRequest"][];
+        };
         HealthResponse: {
             status: string;
             service: string;
@@ -718,11 +1341,15 @@ export interface components {
         LineSourceEnum: "pricebook" | "starred" | "invoice" | "paikar_material" | "custom" | "adjustment" | "carried_forward";
         ManualPriceLineValidationError: {
             detail: string;
-            requires_manual_unit_price: boolean;
+            requires_manual_unit_price?: boolean;
+            requires_row_selection?: boolean;
+            calculation_configuration_error?: boolean;
         };
         ManualPriceValidationError: {
             detail: string;
-            requires_manual_unit_price: boolean;
+            requires_manual_unit_price?: boolean;
+            requires_row_selection?: boolean;
+            calculation_configuration_error?: boolean;
         };
         /**
          * @description * `internal` - Internal
@@ -730,6 +1357,77 @@ export interface components {
          * @enum {string}
          */
         MemberTypeEnum: "internal" | "client";
+        MessageAttachment: {
+            readonly id: number;
+            readonly message_id: number;
+            readonly group_id: number;
+            readonly attachment_type: components["schemas"]["AttachmentTypeEnum"];
+            readonly resource_id: number | null;
+            readonly is_available: boolean;
+            readonly original_filename: string | null;
+            readonly content_type: string | null;
+            readonly byte_size: number | null;
+            readonly document_title: string | null;
+            readonly document_number: string | null;
+            readonly document_status: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        MessageAttachmentCreateRequest: {
+            attachment_type: components["schemas"]["AttachmentTypeEnum"];
+            resource_id: number;
+        };
+        MessageQuotaExceeded: {
+            readonly code: string;
+            readonly detail: string;
+            readonly used_today: string;
+            readonly daily_limit: string;
+            /** Format: date */
+            readonly quota_date: string;
+            /** Format: date-time */
+            readonly resets_at: string;
+        };
+        MessageQuotaStatus: {
+            /** Format: date */
+            readonly quota_date: string;
+            readonly used_today: number;
+            readonly daily_limit: number | null;
+            readonly remaining: number | null;
+            /** Format: date-time */
+            readonly resets_at: string;
+            readonly plan_code: string | null;
+            readonly subscription_status: string;
+        };
+        PaginatedCompanyGroupList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["CompanyGroup"][];
+        };
+        PaginatedCompanyGroupMembershipList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["CompanyGroupMembership"][];
+        };
         PaginatedCompanyList: {
             /** @example 123 */
             count: number;
@@ -760,6 +1458,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["CompanyMember"][];
         };
+        PaginatedCompanySlugHistoryList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["CompanySlugHistory"][];
+        };
         PaginatedFinancialDocumentList: {
             /** @example 123 */
             count: number;
@@ -774,6 +1487,14 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["FinancialDocument"][];
+        };
+        PaginatedGroupMessage: {
+            readonly count: number;
+            /** Format: uri */
+            readonly next: string | null;
+            /** Format: uri */
+            readonly previous: string | null;
+            readonly results: components["schemas"]["GroupMessage"][];
         };
         PaginatedPricebookChapterList: {
             /** @example 123 */
@@ -895,6 +1616,25 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Project"][];
         };
+        PaginatedTokenWalletTransaction: {
+            readonly count: number;
+            /** Format: uri */
+            readonly next: string | null;
+            /** Format: uri */
+            readonly previous: string | null;
+            readonly results: components["schemas"]["TokenWalletTransaction"][];
+        };
+        PasswordLoginRequest: {
+            phone_number: string;
+            password: string;
+        };
+        PatchedCompanyGroupRequest: {
+            name?: string;
+            description?: string;
+        };
+        PatchedCompanyMemberRoleRequest: {
+            role?: components["schemas"]["RoleEnum"];
+        };
         PatchedCompanyRequest: {
             name?: string;
             legal_name?: string;
@@ -943,6 +1683,41 @@ export interface components {
             ends_on?: string | null;
             description?: string;
         };
+        PaymentOrder: {
+            readonly id: number;
+            readonly status: components["schemas"]["PaymentOrderStatusEnum"];
+            readonly package_code_snapshot: string;
+            /** Format: decimal */
+            readonly token_amount_snapshot: string;
+            /** Format: decimal */
+            readonly price_amount_snapshot: string;
+            readonly currency_snapshot: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description Only a package code and an optional retry key may be sent.
+         *
+         *     Token amount, payable price, currency, provider result, and order status
+         *     are never accepted from a client.
+         */
+        PaymentOrderCreateRequest: {
+            package_code: string;
+            idempotency_key?: string;
+        };
+        /**
+         * @description * `created` - Created
+         *     * `pending_provider` - Pending provider
+         *     * `fulfilled` - Fulfilled
+         *     * `failed` - Failed
+         *     * `cancelled` - Cancelled
+         * @enum {string}
+         */
+        PaymentOrderStatusEnum: "created" | "pending_provider" | "fulfilled" | "failed" | "cancelled";
+        PaymentsDisabled: {
+            readonly code: string;
+            readonly detail: string;
+        };
         Pricebook: {
             readonly id: number;
             readonly code: string;
@@ -958,6 +1733,10 @@ export interface components {
             coefficient_set_id?: number | null;
             /** Format: decimal */
             manual_unit_price?: string | null;
+            /** @description Optional per-row custom unit prices keyed by six-digit row_code. */
+            custom_prices?: {
+                [key: string]: string;
+            };
             pricebook_row_id?: number | null;
             /** @description Row selection for itemized items. Alias of pricebook_row_id. */
             selected_row_id?: number | null;
@@ -981,6 +1760,7 @@ export interface components {
             applied_coefficients: components["schemas"]["AppliedCoefficient"][];
             price_source: string;
             manual_unit_price: string | null;
+            custom_price_row_codes?: string[];
             requires_manual_unit_price: boolean;
             calculate_message: string;
             rows_breakdown: components["schemas"]["PricebookRowBreakdown"][];
@@ -991,8 +1771,13 @@ export interface components {
             quantity: string;
             values?: string[];
             selected_row_id?: number | null;
+            selected_row_code?: string | null;
             coefficient_set_id: number | null;
             manual_unit_price: string | null;
+            custom_prices?: {
+                [key: string]: string;
+            };
+            custom_price_row_codes?: string[];
             footnotes?: {
                 [key: string]: unknown;
             } | null;
@@ -1004,6 +1789,9 @@ export interface components {
             applied_coefficients: components["schemas"]["AppliedCoefficient"][];
             formula: string;
             price_source: string;
+            selected_row_code?: string | null;
+            custom_price_row_codes?: string[];
+            rows_breakdown?: components["schemas"]["PricebookRowBreakdown"][];
         };
         PricebookChapter: {
             readonly id: number;
@@ -1053,13 +1841,17 @@ export interface components {
         };
         PricebookItemInputSpec: {
             key: string;
-            value_key: number;
+            name?: string;
+            value_key?: number | null;
             label_fa: string;
             unit: string;
             data_type: string;
+            type?: string;
             min_value: string | null;
             max_value: string | null;
             affects_row_selection: boolean;
+            is_main_input?: boolean;
+            items?: components["schemas"]["PricebookSelectInputItem"][];
         };
         PricebookItemList: {
             readonly id: number;
@@ -1107,6 +1899,38 @@ export interface components {
             currency_code: string;
             quantity: string;
             total: string;
+            price_source?: string;
+            coefficient_multiplier?: string;
+            coefficient_amount?: string;
+            total_after_coefficients?: string;
+            applied_coefficients?: {
+                [key: string]: unknown;
+            }[];
+        };
+        PricebookSelectInputItem: {
+            short_name_fa: string;
+            long_description_fa: string;
+            row_id: string;
+        };
+        PrivateFileUploadRequest: {
+            /** Format: binary */
+            file: string;
+            checksum_sha256?: string;
+        };
+        PrivateFileUploadResponse: {
+            readonly id: number;
+            readonly company_id: number;
+            readonly uploaded_by_member_id: number;
+            readonly original_filename: string;
+            readonly content_type: string;
+            readonly byte_size: number | null;
+            readonly sha256: string;
+            readonly upload_status: components["schemas"]["UploadStatusEnum"];
+            /** Format: date-time */
+            readonly completed_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly duplicate: boolean;
         };
         Project: {
             readonly id: number;
@@ -1147,23 +1971,29 @@ export interface components {
         ProjectCoefficientValue: {
             readonly id: number;
             readonly coefficient_set_id: number;
-            coefficient_key: string;
+            coefficient_key?: string;
+            readonly key: string;
             scope?: components["schemas"]["ScopeEnum"];
             chapter_id?: number | null;
             row_id?: number | null;
-            label_fa: string;
+            label_fa?: string;
+            readonly title_fa: string;
+            readonly name: string;
+            readonly name_fa: string;
             /** Format: decimal */
             multiplier?: string;
+            readonly value: string;
+            readonly factor: string;
             is_active?: boolean;
             /** Format: date-time */
             readonly created_at: string;
         };
         ProjectCoefficientValueRequest: {
-            coefficient_key: string;
+            coefficient_key?: string;
             scope?: components["schemas"]["ScopeEnum"];
             chapter_id?: number | null;
             row_id?: number | null;
-            label_fa: string;
+            label_fa?: string;
             /** Format: decimal */
             multiplier?: string;
             is_active?: boolean;
@@ -1192,15 +2022,23 @@ export interface components {
          * @enum {string}
          */
         ProjectStatusEnum: "draft" | "active" | "archived" | "closed";
+        ReadinessChecks: {
+            database: string;
+            redis: string;
+            storage: string;
+        };
+        ReadinessResponse: {
+            status: string;
+            service: string;
+            checks: components["schemas"]["ReadinessChecks"];
+        };
         /**
          * @description * `owner` - Owner
          *     * `admin` - Admin
          *     * `employee` - Employee
-         *     * `consultant` - Consultant
-         *     * `client` - Client
          * @enum {string}
          */
-        RoleEnum: "owner" | "admin" | "employee" | "consultant" | "client";
+        RoleEnum: "owner" | "admin" | "employee";
         /**
          * @description * `project` - Project
          *     * `document` - Document
@@ -1211,6 +2049,103 @@ export interface components {
          * @enum {string}
          */
         ScopeEnum: "project" | "document" | "chapter" | "row" | "line" | "custom";
+        SessionAuthResponse: {
+            readonly authenticated: boolean;
+            readonly user: components["schemas"]["AppUser"];
+        };
+        SignupCompleteRequest: {
+            signup_ticket: string;
+            display_name?: string;
+            password: string;
+            password_confirmation: string;
+        };
+        SignupStartRequest: {
+            phone_number: string;
+        };
+        SignupStartResponse: {
+            /** Format: uuid */
+            readonly challenge_id: string;
+            readonly phone_number: string;
+            readonly expires_in_seconds: number;
+        };
+        SignupVerifyRequest: {
+            phone_number: string;
+            /** Format: uuid */
+            challenge_id: string;
+            verification_code: string;
+        };
+        SignupVerifyResponse: {
+            readonly signup_ticket: string;
+            readonly expires_in_seconds: number;
+        };
+        SubscriptionPlan: {
+            readonly code: string;
+            readonly title_fa: string;
+            readonly description_fa: string;
+            readonly daily_message_limit: number | null;
+            readonly duration_days: number;
+            /** Format: decimal */
+            readonly price_amount: string;
+            readonly currency: string;
+        };
+        TokenBillingError: {
+            code: string;
+            detail: string;
+            /** Format: decimal */
+            required_tokens?: string;
+            /** Format: decimal */
+            available_tokens?: string;
+        };
+        TokenWallet: {
+            /** Format: decimal */
+            readonly balance: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        TokenWalletTransaction: {
+            readonly id: number;
+            readonly transaction_type: components["schemas"]["TransactionTypeEnum"];
+            /** Format: decimal */
+            readonly amount: string;
+            /** Format: decimal */
+            readonly balance_after: string;
+            readonly reason: string;
+            readonly usage_id: number | null;
+            readonly company_id: number | null;
+            readonly document_id: number | null;
+            readonly line_id: number | null;
+            readonly row_code: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `initial_grant` - Initial grant
+         *     * `manual_grant` - Manual grant
+         *     * `pricebook_line_usage` - Pricebook line usage
+         *     * `token_package_purchase` - Token package purchase
+         * @enum {string}
+         */
+        TransactionTypeEnum: "initial_grant" | "manual_grant" | "pricebook_line_usage" | "token_package_purchase";
+        /**
+         * @description * `pending` - Pending
+         *     * `ready` - Ready
+         *     * `failed` - Failed
+         * @enum {string}
+         */
+        UploadStatusEnum: "pending" | "ready" | "failed";
+        UserSubscriptionStatus: {
+            readonly has_active_subscription: boolean;
+            readonly plan_code: string | null;
+            readonly plan_title_fa: string | null;
+            readonly status: string;
+            /** Format: date-time */
+            readonly starts_at: string | null;
+            /** Format: date-time */
+            readonly ends_at: string | null;
+            readonly effective_daily_message_limit: number | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -1220,6 +2155,25 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    auth_csrf_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CsrfTokenResponse"];
+                };
+            };
+        };
+    };
     auth_dev_login_create: {
         parameters: {
             query?: never;
@@ -1252,6 +2206,77 @@ export interface operations {
             };
         };
     };
+    auth_login_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordLoginRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordLoginRequest"];
+                "multipart/form-data": components["schemas"]["PasswordLoginRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAuthResponse"];
+                };
+            };
+            /** @description Invalid request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Login rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_logout_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     auth_me_retrieve: {
         parameters: {
             query?: never;
@@ -1268,6 +2293,165 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AppUser"];
                 };
+            };
+        };
+    };
+    auth_signup_complete_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignupCompleteRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SignupCompleteRequest"];
+                "multipart/form-data": components["schemas"]["SignupCompleteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAuthResponse"];
+                };
+            };
+            /** @description Invalid ticket or password validation failure. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Signup completion rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Local signup verification is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_signup_start_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignupStartRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SignupStartRequest"];
+                "multipart/form-data": components["schemas"]["SignupStartRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignupStartResponse"];
+                };
+            };
+            /** @description Invalid or already registered phone number. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Signup start rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Local signup verification is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_signup_verify_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignupVerifyRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SignupVerifyRequest"];
+                "multipart/form-data": components["schemas"]["SignupVerifyRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignupVerifyResponse"];
+                };
+            };
+            /** @description Invalid, expired, or used signup challenge. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF validation failed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Signup verification rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Local signup verification is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1306,7 +2490,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ProjectCoefficientValueRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["ProjectCoefficientValueRequest"];
@@ -1420,6 +2604,40 @@ export interface operations {
             };
         };
     };
+    companies_files_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["PrivateFileUploadRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PrivateFileUploadRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateFileUploadResponse"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateFileUploadResponse"];
+                };
+            };
+        };
+    };
     companies_retrieve: {
         parameters: {
             query?: never;
@@ -1470,6 +2688,59 @@ export interface operations {
             };
         };
     };
+    companies_groups_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanyGroupList"];
+                };
+            };
+        };
+    };
+    companies_groups_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyGroupRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CompanyGroupRequest"];
+                "multipart/form-data": components["schemas"]["CompanyGroupRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyGroup"];
+                };
+            };
+        };
+    };
     companies_members_list: {
         parameters: {
             query?: {
@@ -1491,6 +2762,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedCompanyMemberList"];
+                };
+            };
+        };
+    };
+    companies_members_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyMemberAddRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CompanyMemberAddRequest"];
+                "multipart/form-data": components["schemas"]["CompanyMemberAddRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyMember"];
                 };
             };
         };
@@ -1544,6 +2843,326 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Project"];
+                };
+            };
+        };
+    };
+    companies_slug_history_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanySlugHistoryList"];
+                };
+            };
+        };
+    };
+    company_group_memberships_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group membership را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group membership removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    company_group_memberships_deactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group membership را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyGroupMembership"];
+                };
+            };
+        };
+    };
+    company_groups_messages_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedGroupMessage"];
+                };
+            };
+        };
+    };
+    company_groups_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GroupMessageCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GroupMessageCreateRequest"];
+                "multipart/form-data": components["schemas"]["GroupMessageCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMessage"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageQuotaExceeded"];
+                };
+            };
+        };
+    };
+    company_groups_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyGroup"];
+                };
+            };
+        };
+    };
+    company_groups_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCompanyGroupRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCompanyGroupRequest"];
+                "multipart/form-data": components["schemas"]["PatchedCompanyGroupRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyGroup"];
+                };
+            };
+        };
+    };
+    company_groups_deactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyGroup"];
+                };
+            };
+        };
+    };
+    company_groups_members_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanyGroupMembershipList"];
+                };
+            };
+        };
+    };
+    company_groups_members_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyGroupMemberAddRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CompanyGroupMemberAddRequest"];
+                "multipart/form-data": components["schemas"]["CompanyGroupMemberAddRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyGroupMembership"];
+                };
+            };
+        };
+    };
+    company_members_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company member را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Company member removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    company_members_deactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company member را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyMember"];
+                };
+            };
+        };
+    };
+    company_members_role_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company member را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCompanyMemberRoleRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCompanyMemberRoleRequest"];
+                "multipart/form-data": components["schemas"]["PatchedCompanyMemberRoleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyMember"];
                 };
             };
         };
@@ -1718,6 +3337,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Idempotent replay of an already-created line. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialDocumentLine"];
+                };
+            };
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -1733,6 +3361,22 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ManualPriceLineValidationError"];
+                };
+            };
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenBillingError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenBillingError"];
                 };
             };
         };
@@ -1818,6 +3462,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    health_live_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    health_ready_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessResponse"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessResponse"];
+                };
+            };
+        };
+    };
+    message_attachments_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageAttachment"];
+                };
+            };
+        };
+    };
+    message_attachments_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Financial-document references are opened as data, not downloaded. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Attached file is unavailable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    message_attachments_open_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                    "application/json": components["schemas"]["FinancialDocument"];
+                };
+            };
+            /** @description Attachment target is unavailable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    message_quota_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageQuotaStatus"];
+                };
+            };
+        };
+    };
+    payments_orders_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentOrderCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaymentOrderCreateRequest"];
+                "multipart/form-data": components["schemas"]["PaymentOrderCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOrder"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentsDisabled"];
                 };
             };
         };
@@ -2156,6 +3983,154 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinancialDocument"];
+                };
+            };
+        };
+    };
+    storage_files_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این storage file را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description File metadata or stored content is missing. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Configured private storage is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    storage_files_open_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این storage file را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            /** @description File metadata or stored content is missing. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Configured private storage is unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    subscription_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSubscriptionStatus"];
+                };
+            };
+        };
+    };
+    subscription_plans_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionPlan"][];
+                };
+            };
+        };
+    };
+    token_wallet_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenWallet"];
+                };
+            };
+        };
+    };
+    token_wallet_transactions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTokenWalletTransaction"];
                 };
             };
         };
