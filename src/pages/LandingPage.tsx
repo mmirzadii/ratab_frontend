@@ -57,9 +57,10 @@ const previewRows = [
 ];
 
 export function LandingPage() {
-  const token = useAppSelector((state) => state.auth.token);
-  const appCtaPath = token ? "/companies" : "/login";
-  const appCtaLabel = token ? "ورود به فضای کار" : "ورود به نسخه آزمایشی";
+  const status = useAppSelector((state) => state.auth.status);
+  const isAuthenticated = status === "authenticated";
+  const appCtaPath = isAuthenticated ? "/companies" : "/login";
+  const appCtaLabel = isAuthenticated ? "ورود به فضای کار" : "ورود / ثبت‌نام";
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-ratab-night text-slate-100 light:bg-slate-100 light:text-slate-950">

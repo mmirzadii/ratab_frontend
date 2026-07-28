@@ -14,7 +14,7 @@ Rules:
 Phase order:
 
 1. v1 baseline and backend contract sync — **completed 2026-07-28**
-2. session authentication, signup, login, and CSRF
+2. session authentication, signup, login, and CSRF — **completed 2026-07-28**
 3. company members, roles, and groups
 4. persistent group messaging
 5. private files and attachments
@@ -22,11 +22,12 @@ Phase order:
 7. subscriptions, quota, and disabled payment UX
 8. final integration, regression, cleanup, and handoff
 
-## Current baseline (after Phase 1)
+## Current baseline (after Phase 2)
 
 - Frontend active version: `code_oder/active_version.txt` = `v1.0`
 - Backend contract: `backend_docs/current/BACKEND_VERSION` = `v1.0`
 - OpenAPI generation: `backend_docs/current/OPENAPI.yaml` → `src/shared/api/generated/schema.ts`
-- Running product behavior is still the preserved v0 UI/API usage until Phases 2–7 replace specific areas
+- Browser auth: session cookies + CSRF (signup/login/logout/restore)
+- Still pending: members/groups, messaging, files, wallet, subscriptions
 
-See `PROJECT_EXPLAIN.md` and `phaze1/REPORT.md` for details.
+See `PROJECT_EXPLAIN.md`, `phaze1/REPORT.md`, and `phaze2/REPORT.md` for details.

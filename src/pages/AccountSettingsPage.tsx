@@ -3,13 +3,12 @@ import { useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { useGetCurrentUserQuery } from "../features/auth/authApi";
-import { logout } from "../features/auth/authSlice";
+import { performLogout } from "../features/auth/logout";
 import { Button } from "../shared/components/Button";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
 import { ThemeToggle } from "../shared/components/ThemeToggle";
 import { Tooltip } from "../shared/components/Tooltip";
-import { baseApi } from "../shared/api/baseApi";
 
 export function AccountSettingsPage() {
   const dispatch = useAppDispatch();
@@ -18,9 +17,8 @@ export function AccountSettingsPage() {
   const { data: freshUser } = useGetCurrentUserQuery();
   const displayUser = freshUser ?? user;
 
-  function handleLogout() {
-    dispatch(logout());
-    dispatch(baseApi.util.resetApiState());
+  async function handleLogout() {
+    await performLogout(dispatch);
     navigate("/login", { replace: true });
   }
 

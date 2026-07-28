@@ -20,7 +20,7 @@ import { containsLocalizedDigits, normalizeRowCode } from "../shared/utils/numbe
 const previewCards = [
   {
     title: "ورود توسعه",
-    description: "نشست فعلی با dev-login بک‌اند ساخته شده و با /api/auth/me/ بررسی می‌شود.",
+    description: "نشست فعلی با کوکی امن سرور ساخته می‌شود و با /api/auth/me/ بررسی می‌شود.",
     icon: Building2,
     tone: "emerald"
   },
@@ -155,7 +155,7 @@ export function DashboardPreviewPage() {
           </div>
           <p className="mt-5 text-sm leading-7 text-slate-300 light:text-slate-600">
             رمز عبور، OTP، شرکت‌ها، پروژه‌ها و محاسبات مالی در این فاز شبیه‌سازی نشده‌اند. رفتار
-            فعلی دقیقا بر اساس dev-login و auth/me بک‌اند توسعه است.
+            فعلی دقیقا بر اساس نشست کوکی‌دار و auth/me بک‌اند توسعه است.
           </p>
         </GlassCard>
       </section>

@@ -9,7 +9,7 @@ Documentation root note: the repository uses `code_oder` as the folder name. Do 
 
 ## Purpose
 
-This file is the onboarding document for Frontend v1.0 work. Phase 1 established the baseline: the Backend v1.0 contract is synced under `backend_docs/current/`, OpenAPI types are regenerated from that contract, and the existing v0.0 product behavior remains in the running app until later phases replace specific areas.
+This file is the onboarding document for Frontend v1.0 work. Phase 1 established the Backend v1.0 contract baseline and regenerated OpenAPI types. Phase 2 migrated browser authentication to session cookies + CSRF. Later phases still replace members, messaging, files, wallet, and subscriptions.
 
 Before changing code, read in this order:
 
@@ -32,17 +32,27 @@ Deep historical detail for unchanged v0 flows still lives in `code_oder/v0.0/PRO
 - `npm run generate:api` reads `backend_docs/current/OPENAPI.yaml` → `src/shared/api/generated/schema.ts`.
 - Schema regenerated successfully (OpenAPI 3.0.3, title `ratab v1.0 Backend API`, 58 paths, 108 schemas).
 - Minimal TypeScript null-safety adjustments only where regenerated types became stricter.
-- No signup/login/CSRF migration, members/groups, messaging, files, wallet, or subscription UI implemented in Phase 1.
-- Working v0 browser behavior preserved (dev-token login, local messages, existing cost-report flows).
+
+## Phase 2 status (completed)
+
+- Browser auth uses session cookies + CSRF (`credentials: "include"`, `X-CSRFToken`).
+- Signup: `/signup` phone → verify → password → session.
+- Login: `/login` phone + password → session.
+- Session restore on boot via `SessionBootstrap` (`GET /api/auth/csrf/` then `GET /api/auth/me/`).
+- Logout calls `POST /api/auth/logout/` then clears Redux auth + RTK Query cache.
+- Cross-origin local setup: masked CSRF token comes from `/api/auth/csrf/` JSON (not `document.cookie`); backend must list the Vite origin in `CSRF_TRUSTED_ORIGINS` (e.g. `http://localhost:1000`).
+- HTML Django CSRF error pages are never shown raw in the UI.
+- Removed normal Token/`dev-login`/`sessionStorage` auth path.
+- Members/groups/messaging/files/wallet/subscription UI still not implemented.
 
 ## Product snapshot (current running app)
 
 The product remains a Persian-first, RTL construction cost-reporting frontend.
 
-Current user journey (still v0-shaped in the UI):
+Current user journey:
 
 1. Public landing page.
-2. Dev phone login via `POST /api/auth/dev-login/` + `Authorization: Token …` in `sessionStorage`.
+2. Signup (`/signup`) or login (`/login`) with session cookies.
 3. Protected company list / create.
 4. Company dashboard with **local-only** messages, company info, projects, cost reports.
 5. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print.
@@ -94,10 +104,14 @@ Do not depend on Django models, migrations, tables, admin, or backend internals.
 - `VITE_API_BASE_URL` — API base URL (trimmed trailing slash in `baseApi.ts`).
 - `VITE_DEFAULT_PRICE_SET_ID` — deprecated explicit document-step override only.
 
-Current auth storage (v0, obsolete for normal v1 browser flow — replace in Phase 2):
+Auth (Phase 2 / Backend v1 browser contract):
 
-- Key: `ratab.devAuth.token` in `sessionStorage`
-- Header: `Authorization: Token <token>`
+- Session cookie (`sessionid`, HttpOnly) + CSRF cookie (`csrftoken`)
+- All API calls use `credentials: "include"`
+- Mutating requests send `X-CSRFToken`
+- Auth Redux state: `status` (`unknown` | `authenticated` | `anonymous`) + `user`
+- Do **not** store passwords, session IDs, or auth tokens in `localStorage` / `sessionStorage`
+- Legacy `ratab.devAuth.token` is cleared on boot if present
 
 UI persistence unchanged: theme / onboarding / guided-tour flags in `localStorage`.
 
@@ -117,7 +131,8 @@ UI persistence unchanged: theme / onboarding / guided-tour flags in `localStorag
 Public:
 
 - `/` — `RootPage` / landing
-- `/login` — `LoginPage` (dev-login)
+- `/login` — phone + password login
+- `/signup` — phone → verify → password signup
 - `/status` — health
 
 Protected (`RequireAuth` + `AppShell`):
@@ -131,9 +146,11 @@ Protected (`RequireAuth` + `AppShell`):
 
 Store: `auth`, `ui`, `ratabApi` (`baseApi`).
 
+`baseApi` uses `credentials: "include"` and CSRF headers via `baseQueryWithCsrf`.
+
 Feature APIs injecting into `baseApi`:
 
-- `authApi` — `dev-login`, `auth/me`
+- `authApi` — csrf, signup start/verify/complete, login, logout, `auth/me`
 - `companyApi`, `projectApi`, `pricebookApi`, `coefficientApi`, `financialDocumentApi`, `healthApi`
 
 Tag types today: `Auth`, `Coefficient`, `Company`, `FinancialDocument`, `Health`, `Pricebook`, `Project`.
@@ -142,6 +159,8 @@ Tag types today: `Auth`, `Coefficient`, `Company`, `FinancialDocument`, `Health`
 
 All currently wired pricebook / company / project / coefficient / financial-document / health paths used by the live UI still exist under the v1 OpenAPI (v1 is a cumulative superset for those domains).
 
+Auth endpoints now consumed by the frontend: `/api/auth/csrf/`, signup/*, login, logout, me.
+
 Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 
 | Frontend path | Notes |
@@ -149,30 +168,32 @@ Endpoints present in frontend code but **absent from Backend v1.0 OpenAPI**:
 | `POST /api/financial-documents/{id}/excel-plan/` | Used only by unwired Excel import modal |
 | `POST /api/financial-documents/{id}/lines/bulk/` | Used only by unwired Excel import modal |
 
-New Backend v1.0 domains **not yet consumed by the frontend** (later phases):
+Backend v1.0 domains **not yet consumed** (later phases):
 
-- Session auth: `/api/auth/csrf/`, signup/*, login, logout
 - Members/roles: `/api/company-members/…`, role/deactivate
 - Groups/messaging: `/api/companies/{id}/groups/`, `/api/company-groups/…`, messages
 - Files/attachments: company files, storage-files, message-attachments
 - Wallet: `/api/token-wallet/`, transactions
 - Subscription/quota/payments: subscription-plans, subscription, message-quota, payments/orders
 
-## Obsolete v0 assumptions (do not implement replacements in Phase 1)
+## Obsolete assumptions after Phase 2
 
-Recorded for later phases:
+Resolved in Phase 2:
 
-1. **Primary browser auth is Token + `sessionStorage`** — v1 contract requires session cookie + CSRF (`credentials: "include"`, `X-CSRFToken`).
-2. **`POST /api/auth/dev-login/` is the normal login UX** — compatibility only; forbidden as normal v1 path.
-3. **Client-only logout** clears local token without `POST /api/auth/logout/`.
-4. **No CSRF bootstrap** and no cookie credentials on `fetchBaseQuery`.
-5. **Company messages are local React state** — must become group messaging APIs (Phase 4).
+1. Token + `sessionStorage` primary browser auth → replaced by session + CSRF.
+2. `dev-login` as normal login UX → removed from frontend usage.
+3. Client-only logout → backend logout + local clear.
+4. Missing CSRF/credentials on API client → implemented.
+
+Still outstanding for later phases:
+
+5. **Company messages are local React state** — Phase 4.
 6. **Members / roles / groups UI are placeholders** — Phase 3.
 7. **No private file upload/open** — Phase 5.
-8. **No wallet / 5-token charge UX / idempotency_key on charged line creates** — Phase 6. OpenAPI already types `idempotency_key` on line create.
+8. **No wallet / 5-token charge UX / idempotency_key on charged line creates** — Phase 6.
 9. **No subscription / message-quota / disabled-payment UX** — Phase 7.
-10. **Excel plan/bulk endpoints** assumed available — not in current OpenAPI; keep dead code until Phase 8 cleanup decides fate.
-11. **HealthStatusPage still labels an old schema path** (`backend_docs/v0.0/openapi_v0_0.yaml`) — display-only drift.
+10. **Excel plan/bulk endpoints** absent from OpenAPI — Phase 8 cleanup.
+11. **HealthStatusPage still labels an old schema path** — display-only drift.
 
 ## Behavior that must remain stable across early v1 phases
 
@@ -184,12 +205,13 @@ Unless a later phase’s contract work explicitly changes it:
 - Browser print/preview path currently used in finalize
 - RTL, responsive shell, dark/light theme
 - Backend totals remain authoritative (no client financial truth)
+- Session cookie auth + CSRF after Phase 2
 
 ## Remaining v1 phase integration map
 
 | Phase | Integration focus |
 | --- | --- |
-| 2 | Session signup/login/logout/restore + CSRF; retire normal Token/`dev-login` browser flow |
+| 2 | ✅ Session signup/login/logout/restore + CSRF |
 | 3 | Company members, roles, groups; keep company/project flows |
 | 4 | Persisted group messaging replacing local messages |
 | 5 | Private files + message attachments |
@@ -199,14 +221,14 @@ Unless a later phase’s contract work explicitly changes it:
 
 ## Known limitations (current)
 
-- Auth still v0-shaped while Backend v1 session contract is documented.
+- Cross-origin cookie/CORS configuration must match the frontend origin for real login/signup.
+- Accounts without passwords need admin password setup (backend limitation).
 - Messages local-only.
 - Excel import unwired and calls removed OpenAPI paths.
 - Backend PDF export may still be blocked (409) per contract limitations.
 - Online payments disabled (`PAYMENTS_DISABLED`).
 - Branding inconsistency (`ratab` vs `Metril`).
 - No automated frontend test suite script yet.
-
 ## Safe change rules for later phases
 
 1. Read `backend_docs/current/OPENAPI.yaml` and handoff before coding.

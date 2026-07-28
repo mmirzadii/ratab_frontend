@@ -2,8 +2,7 @@ import { Building2, CircleHelp, LogOut, Settings, UserPlus } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch } from "../../app/hooks";
-import { logout } from "../../features/auth/authSlice";
-import { baseApi } from "../api/baseApi";
+import { performLogout } from "../../features/auth/logout";
 import { classNames } from "../utils/classNames";
 import { IconButton } from "./IconButton";
 import { ThemeToggle } from "./ThemeToggle";
@@ -49,9 +48,8 @@ export function PrimaryNavContent() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  function handleLogout() {
-    dispatch(logout());
-    dispatch(baseApi.util.resetApiState());
+  async function handleLogout() {
+    await performLogout(dispatch);
     navigate("/login", { replace: true });
   }
 

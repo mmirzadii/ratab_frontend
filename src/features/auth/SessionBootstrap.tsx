@@ -21,7 +21,9 @@ export function SessionBootstrap({ children }: PropsWithChildren) {
 
     async function bootstrap() {
       try {
-        await dispatch(authApi.endpoints.getCsrf.initiate(undefined, { forceRefetch: true }));
+        await dispatch(
+          authApi.endpoints.getCsrf.initiate(undefined, { forceRefetch: true })
+        ).unwrap();
       } catch {
         // Cookie may already exist from a prior visit; continue to /me/.
       }

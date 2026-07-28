@@ -10,6 +10,7 @@ import { CostReportWizardPage } from "../pages/CostReportWizardPage";
 import { HelpPage } from "../pages/HelpPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RootPage } from "../pages/RootPage";
+import { SignupPage } from "../pages/SignupPage";
 import { AppShell } from "../shared/components/AppShell";
 
 export const router = createBrowserRouter([
@@ -20,6 +21,10 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />
+  },
+  {
+    path: "/signup",
+    element: <SignupPage />
   },
   {
     path: "/status",

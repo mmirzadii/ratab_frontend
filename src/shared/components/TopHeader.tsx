@@ -2,8 +2,7 @@ import { CircleHelp, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { logout } from "../../features/auth/authSlice";
-import { baseApi } from "../api/baseApi";
+import { performLogout } from "../../features/auth/logout";
 import { Button } from "./Button";
 import { StatusBadge } from "./StatusBadge";
 
@@ -33,12 +32,11 @@ export function TopHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
-  const token = useAppSelector((state) => state.auth.token);
+  const status = useAppSelector((state) => state.auth.status);
   const copy = getHeaderCopy(pathname);
 
-  function handleLogout() {
-    dispatch(logout());
-    dispatch(baseApi.util.resetApiState());
+  async function handleLogout() {
+    await performLogout(dispatch);
     navigate("/login", { replace: true });
   }
 
@@ -58,7 +56,7 @@ export function TopHeader() {
         </div>
 
         <div className="hidden items-center gap-2 sm:flex">
-          {token && user ? (
+          {status === "authenticated" && user ? (
             <StatusBadge tone="violet">{user.display_name || user.phone_number}</StatusBadge>
           ) : null}
 
@@ -69,7 +67,7 @@ export function TopHeader() {
             <CircleHelp className="h-4 w-4" />
             راهنما
           </Link>
-          {token ? (
+          {status === "authenticated" ? (
             <Button className="h-9 px-3" onClick={handleLogout} variant="ghost">
               <LogOut className="h-4 w-4" />
               خروج

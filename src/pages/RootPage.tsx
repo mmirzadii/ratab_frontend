@@ -1,12 +1,23 @@
 import { Navigate } from "react-router-dom";
 
 import { useAppSelector } from "../app/hooks";
+import { GlassCard } from "../shared/components/GlassCard";
 import { LandingPage } from "./LandingPage";
 
 export function RootPage() {
-  const token = useAppSelector((state) => state.auth.token);
+  const status = useAppSelector((state) => state.auth.status);
 
-  if (token) {
+  if (status === "unknown") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-ratab-night p-6 text-slate-100">
+        <GlassCard className="max-w-sm p-6 text-center">
+          <p className="text-lg font-black">در حال بررسی نشست</p>
+        </GlassCard>
+      </main>
+    );
+  }
+
+  if (status === "authenticated") {
     return <Navigate replace to="/companies" />;
   }
 

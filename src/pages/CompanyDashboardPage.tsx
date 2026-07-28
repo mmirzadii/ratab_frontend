@@ -11,6 +11,7 @@ import {
   Loader2,
   type LucideIcon,
   MessageCircle,
+  Network,
   Paperclip,
   Plus,
   Send,
@@ -31,6 +32,14 @@ import {
   useRetrieveCompanyQuery,
   useUpdateCompanyMutation
 } from "../features/companies/companyApi";
+import { GroupsSection } from "../features/companies/GroupsSection";
+import { MembersSection } from "../features/companies/MembersSection";
+import {
+  canUpdateCompany,
+  findCurrentMembership,
+  getRoleLabel
+} from "../features/companies/companyPermissions";
+import { useListCompanyMembersQuery } from "../features/companies/companyMembersApi";
 import {
   type FinancialDocument,
   useListProjectFinancialDocumentsQuery
@@ -66,7 +75,7 @@ type LocalMessage = {
   attachment: LocalAttachment | null;
 };
 
-type DashboardSection = "messages" | "costReports" | "company";
+type DashboardSection = "messages" | "costReports" | "company" | "members" | "groups";
 
 type DashboardRouteState = {
   pendingCostReportAttachment?: {
@@ -80,7 +89,8 @@ type DashboardRouteState = {
 const companyNavItems = [
   { id: "messages", label: "پیام‌های شرکت", icon: MessageCircle, section: "messages" as DashboardSection },
   { id: "company", label: "اطلاعات شرکت", icon: Building2, section: "company" as DashboardSection },
-  { id: "members", label: "اعضا", icon: Users },
+  { id: "members", label: "اعضا", icon: Users, section: "members" as DashboardSection },
+  { id: "groups", label: "گروه‌ها", icon: Network, section: "groups" as DashboardSection },
   { id: "costReports", label: "پروژه‌ها", icon: FolderKanban, section: "costReports" as DashboardSection },
   { id: "coefficients", label: "ضرایب", icon: SlidersHorizontal },
   { id: "settings", label: "تنظیمات", icon: Settings }
@@ -88,6 +98,8 @@ const companyNavItems = [
 
 const mobileDashboardTabs = [
   { id: "messages", label: "پیام‌ها", icon: MessageCircle },
+  { id: "members", label: "اعضا", icon: Users },
+  { id: "groups", label: "گروه‌ها", icon: Network },
   { id: "costReports", label: "پروژه‌ها", icon: FolderKanban },
   { id: "company", label: "شرکت", icon: Building2 }
 ] satisfies Array<{
@@ -106,7 +118,7 @@ function MobileDashboardTabs({
   return (
     <nav
       aria-label="بخش‌های شرکت"
-      className="grid shrink-0 grid-cols-3 gap-1 border-b border-white/10 bg-slate-950/45 p-2 light:border-slate-200 light:bg-slate-50/80 lg:hidden"
+      className="grid shrink-0 grid-cols-5 gap-1 border-b border-white/10 bg-slate-950/45 p-2 light:border-slate-200 light:bg-slate-50/80 lg:hidden"
     >
       {mobileDashboardTabs.map((item) => {
         const Icon = item.icon;
@@ -126,7 +138,8 @@ function MobileDashboardTabs({
             type="button"
           >
             <Icon className="h-4 w-4 shrink-0" />
-            <span>{item.label}</span>
+            <span className="hidden sm:inline">{item.label}</span>
+            <span className="sm:hidden">{item.label.slice(0, 4)}</span>
           </button>
         );
       })}
@@ -202,7 +215,15 @@ function buildProjectAttachment(project: Project, companyId: number): LocalAttac
 const panelInputClasses =
   "h-11 w-full rounded-lg border border-white/10 bg-slate-950/45 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 sm:h-12 sm:px-4 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
 
-function CompanyInfoPanel({ company }: { company: Company }) {
+function CompanyInfoPanel({
+  canEdit,
+  company,
+  roleLabel
+}: {
+  canEdit: boolean;
+  company: Company;
+  roleLabel: string;
+}) {
   const dispatch = useAppDispatch();
   const [updateCompany, { isLoading: isSaving }] = useUpdateCompanyMutation();
   const [form, setForm] = useState({
@@ -219,6 +240,10 @@ function CompanyInfoPanel({ company }: { company: Company }) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canEdit) {
+      return;
+    }
+
     const body: PatchedCompanyRequest = {};
     const name = form.name.trim();
     if (name) body.name = name;
@@ -247,9 +272,18 @@ function CompanyInfoPanel({ company }: { company: Company }) {
         </div>
         <div>
           <h2 className="text-base font-black text-white sm:text-lg light:text-slate-950">اطلاعات شرکت</h2>
-          <p className="mt-1 hidden text-xs text-slate-400 sm:block light:text-slate-500">مشخصات ثبت‌شده شرکت</p>
+          <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+            نقش شما: {roleLabel}
+            {!canEdit ? " · فقط مشاهده" : ""}
+          </p>
         </div>
       </div>
+
+      {!canEdit ? (
+        <p className="mt-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400 light:border-slate-200 light:bg-slate-50 light:text-slate-600">
+          ویرایش مشخصات شرکت برای کارمند در رابط کاربری غیرفعال است. سرور مرجع نهایی دسترسی است.
+        </p>
+      ) : null}
 
       <form className="mt-4 space-y-3 sm:mt-5 sm:space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
@@ -257,8 +291,10 @@ function CompanyInfoPanel({ company }: { company: Company }) {
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام شرکت</span>
             <input
               className={panelInputClasses}
+              disabled={!canEdit}
               onChange={(e) => updateField("name", e.target.value)}
               placeholder="نام شرکت"
+              readOnly={!canEdit}
               required
               value={form.name}
             />
@@ -267,8 +303,10 @@ function CompanyInfoPanel({ company }: { company: Company }) {
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام حقوقی</span>
             <input
               className={panelInputClasses}
+              disabled={!canEdit}
               onChange={(e) => updateField("legal_name", e.target.value)}
               placeholder="اختیاری"
+              readOnly={!canEdit}
               value={form.legal_name}
             />
           </label>
@@ -276,9 +314,11 @@ function CompanyInfoPanel({ company }: { company: Company }) {
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره ثبت</span>
             <input
               className={panelInputClasses}
+              disabled={!canEdit}
               inputMode="numeric"
               onChange={(e) => updateField("registration_number", e.target.value)}
               placeholder="اختیاری"
+              readOnly={!canEdit}
               value={form.registration_number}
             />
           </label>
@@ -286,9 +326,11 @@ function CompanyInfoPanel({ company }: { company: Company }) {
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه ملی</span>
             <input
               className={panelInputClasses}
+              disabled={!canEdit}
               inputMode="numeric"
               onChange={(e) => updateField("national_id", e.target.value)}
               placeholder="اختیاری"
+              readOnly={!canEdit}
               value={form.national_id}
             />
           </label>
@@ -297,19 +339,23 @@ function CompanyInfoPanel({ company }: { company: Company }) {
             <input
               className={classNames(panelInputClasses, "text-left")}
               dir="ltr"
+              disabled={!canEdit}
               onChange={(e) => updateField("active_slug", e.target.value)}
               placeholder="optional-company-slug"
+              readOnly={!canEdit}
               value={form.active_slug}
             />
           </label>
         </div>
 
-        <div className="sticky bottom-0 z-10 -mx-3 flex border-t border-white/10 bg-slate-950/90 px-3 pb-1 pt-3 backdrop-blur-md sm:static sm:mx-0 sm:block sm:border-0 sm:bg-transparent sm:px-0 sm:pt-2 light:border-slate-200 light:bg-white/90 light:sm:bg-transparent">
-          <Button className="w-full sm:w-auto" disabled={isSaving || !form.name.trim()} type="submit">
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            ذخیره تغییرات
-          </Button>
-        </div>
+        {canEdit ? (
+          <div className="sticky bottom-0 z-10 -mx-3 flex border-t border-white/10 bg-slate-950/90 px-3 pb-1 pt-3 backdrop-blur-md sm:static sm:mx-0 sm:block sm:border-0 sm:bg-transparent sm:px-0 sm:pt-2 light:border-slate-200 light:bg-white/90 light:sm:bg-transparent">
+            <Button className="w-full sm:w-auto" disabled={isSaving || !form.name.trim()} type="submit">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              ذخیره تغییرات
+            </Button>
+          </div>
+        ) : null}
       </form>
     </div>
   );
@@ -721,6 +767,7 @@ export function CompanyDashboardPage() {
     skip: !hasValidCompanyId
   });
   const hasDismissedOnboarding = useAppSelector((state) => state.ui.hasDismissedOnboarding);
+  const authUser = useAppSelector((state) => state.auth.user);
   const [activeSection, setActiveSection] = useState<DashboardSection>("messages");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
@@ -737,6 +784,13 @@ export function CompanyDashboardPage() {
     error: projectsError,
     isLoading: isLoadingProjects
   } = useListCompanyProjectsQuery(parsedCompanyId, { skip: !hasValidCompanyId });
+  const { data: membersData } = useListCompanyMembersQuery(parsedCompanyId, {
+    skip: !hasValidCompanyId
+  });
+  const members = getListResults(membersData);
+  const myMembership = findCurrentMembership(members, authUser?.id);
+  const myRole = myMembership?.is_active ? myMembership.role : null;
+  const canEditCompany = canUpdateCompany(myRole);
   const { setSecondaryNav, setCompanyCtx } = useAppShell();
 
   useEffect(() => {
@@ -909,7 +963,15 @@ export function CompanyDashboardPage() {
             />
           )
         ) : activeSection === "company" ? (
-          <CompanyInfoPanel company={company} />
+          <CompanyInfoPanel
+            canEdit={canEditCompany}
+            company={company}
+            roleLabel={getRoleLabel(myRole)}
+          />
+        ) : activeSection === "members" ? (
+          <MembersSection companyId={company.id} />
+        ) : activeSection === "groups" ? (
+          <GroupsSection companyId={company.id} />
         ) : (
           <>
             <div className="flex min-h-0 flex-1 flex-col">
