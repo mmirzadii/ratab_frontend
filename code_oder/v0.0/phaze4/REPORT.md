@@ -67,9 +67,9 @@ Existing uncommitted Phase 3 files were present before Phase 4 and were preserve
 
 ## API Contract Notes
 
-- Used `backend_docs/v0.0/frontend_handoff_v0_0.md`.
-- Used generated types from `backend_docs/v0.0/openapi_v0_0.yaml`.
-- The prompt-required exact schema filename `backend_docs/v0.0/ratab v0.0 Backend API.yaml` is still absent.
+- Used `backend_docs/history/v0.0/frontend_handoff_v0_0.md`.
+- Used generated types from `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`.
+- The prompt-required exact schema filename `backend_docs/history/v0.0/OPENAPI.yaml` is still absent.
 - No unsupported company fields or endpoints were introduced.
 
 ## Docker / Deployment Notes
@@ -87,7 +87,7 @@ Because `docker/`, `.dockerignore`, and compose files were unchanged, Docker bui
 
 ## Risks and Assumptions
 
-- Assumed `backend_docs/v0.0/openapi_v0_0.yaml` remains the authoritative schema source.
+- Assumed `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` remains the authoritative schema source.
 - Assumed Phase 3 auth/session behavior is the base for Phase 4 and should not be reverted.
 - Assumed company creation is acceptable as the only real Phase 4 mutation.
 - Assumed project, financial document, pricebook, and real company message flows remain future phases.
@@ -100,7 +100,7 @@ Because `docker/`, `.dockerignore`, and compose files were unchanged, Docker bui
 - Confirm the company dashboard shows the correct company name and the `پیام‌های شرکت` default page.
 - Confirm the bottom-left `صورت‌بها` plus button is visibly highlighted but does not open a real flow yet.
 - Review the Phase 4 UI at desktop and mobile widths.
-- Confirm whether the OpenAPI schema should remain `backend_docs/v0.0/openapi_v0_0.yaml` or be manually copied/renamed to `backend_docs/v0.0/ratab v0.0 Backend API.yaml`.
+- Confirm whether the OpenAPI schema should remain `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` or be manually copied/renamed to `backend_docs/history/v0.0/OPENAPI.yaml`.
 
 ## Suggested Commit Message
 

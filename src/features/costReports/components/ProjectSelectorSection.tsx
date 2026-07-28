@@ -1,4 +1,4 @@
-import { FolderKanban, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import type { Project } from "../../projects/projectApi";
 import { useListCompanyProjectsQuery } from "../../projects/projectApi";
@@ -20,17 +20,7 @@ export function ProjectSelectorSection({
   const { data: projects = [], isLoading, error } = useListCompanyProjectsQuery(companyId);
 
   return (
-    <GlassCard className="p-5 sm:p-6">
-      <div className="mb-5 flex items-start gap-3">
-        <FolderKanban className="mt-1 h-5 w-5 text-violet-200 light:text-violet-700" />
-        <div>
-          <h2 className="text-xl font-black text-white light:text-slate-950">انتخاب پروژه</h2>
-          <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
-            پروژه‌ای را که این صورت‌بها به آن تعلق دارد انتخاب کنید.
-          </p>
-        </div>
-      </div>
-
+    <GlassCard className="p-3 sm:p-6">
       {isLoading ? (
         <div className="flex items-center gap-2 text-sm text-slate-400 light:text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -45,7 +35,7 @@ export function ProjectSelectorSection({
           هنوز پروژه‌ای برای این شرکت ثبت نشده است. ابتدا از داشبورد شرکت یک پروژه بسازید.
         </p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div>
             <select
               className={inputClasses}
@@ -71,20 +61,21 @@ export function ProjectSelectorSection({
           </div>
 
           {selectedProject ? (
-            <div className="rounded-lg border border-violet-300/20 bg-violet-400/10 p-4">
-              <p className="text-sm font-bold text-violet-100 light:text-violet-800">
+            <div className="rounded-lg border border-violet-300/20 bg-violet-400/10 p-3 sm:p-4">
+              <p className="hidden text-sm font-bold text-violet-100 light:text-violet-800 sm:block">
                 {cleanDisplayText(selectedProject.name, "پروژه بدون نام")}
               </p>
-              {selectedProject.contract_number ? (
-                <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
-                  شماره قرارداد: {selectedProject.contract_number}
-                </p>
-              ) : null}
-              {selectedProject.employer_name ? (
-                <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">
-                  کارفرما: {selectedProject.employer_name}
-                </p>
-              ) : null}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 light:text-slate-500 sm:mt-1 sm:block">
+                {selectedProject.contract_number ? (
+                  <p>شماره قرارداد: {selectedProject.contract_number}</p>
+                ) : null}
+                {selectedProject.employer_name ? (
+                  <p className="sm:mt-0.5">کارفرما: {selectedProject.employer_name}</p>
+                ) : null}
+                {!selectedProject.contract_number && !selectedProject.employer_name ? (
+                  <p className="sm:hidden">پروژه انتخاب شد.</p>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </div>

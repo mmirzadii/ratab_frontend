@@ -1,0 +1,28 @@
+# Frontend integration checklist
+
+- [ ] Configure API base URL per environment (no secrets in the repo).
+- [ ] Generate TypeScript (or other) types from `OPENAPI.yaml`.
+- [ ] Enable `credentials: "include"` on all API calls.
+- [ ] Bootstrap CSRF via `GET /api/auth/csrf/` and send `X-CSRFToken` on mutations.
+- [ ] Implement signup start → verify → complete → session.
+- [ ] Implement login / me / logout (204).
+- [ ] Session restore on app start via `/api/auth/me/`.
+- [ ] Route guards for authenticated vs public screens.
+- [ ] Company switcher and role-aware UI (still handle 403).
+- [ ] Groups + membership UX; messaging only for group members.
+- [ ] Page-number pagination (`page`, size 50).
+- [ ] Map field validation errors into forms.
+- [ ] Handle stable `code` errors from `ERROR_CODES.md`.
+- [ ] Multipart company file upload; authorized open/download only.
+- [ ] Financial document lock UI + backend conflict handling.
+- [ ] Pricebook browse/calculate; keep row codes as strings.
+- [ ] Wallet refresh after charged line creates.
+- [ ] Confirm UX for **5-token** official pricebook line create.
+- [ ] Always send `idempotency_key` for retryable charged creates.
+- [ ] Handle 402 insufficient tokens and 200 idempotent replay.
+- [ ] Show subscription + message quota; handle 429 quota exceeded.
+- [ ] Disabled payment UX (`PAYMENTS_DISABLED`); no client payment amounts.
+- [ ] Local/dev/prod origin, HTTPS, and cookie `SameSite` configuration.
+- [ ] Automated tests for auth, CSRF failure refresh, and charged-line retry.
+- [ ] Never store passwords/session IDs in web storage.
+- [ ] Never use Token/`dev-login` as the normal browser auth path.

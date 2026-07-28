@@ -32,5 +32,5 @@ Not applicable.
 
 ## Notes
 
-- The exact spaced OpenAPI schema filename requested by the wrapper prompt is absent; generated schema types continue to use `backend_docs/v0.0/openapi_v0_0.yaml`.
+- The exact spaced OpenAPI schema filename requested by the wrapper prompt is absent; generated schema types continue to use `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`.
 - Browser review is still needed for the full auth UX: login, redirect, auth/me validation, logout, and create-company highlight.

@@ -60,7 +60,7 @@ Not applicable.
 
 ## Implementation Details
 
-- `npm run generate:api` generates `src/shared/api/generated/schema.ts` from `backend_docs/v0.0/openapi_v0_0.yaml`.
+- `npm run generate:api` generates `src/shared/api/generated/schema.ts` from `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`.
 - RTK Query base API reads `VITE_API_BASE_URL` from environment configuration.
 - The health screen calls only `GET /api/health/`.
 - The health response type comes from generated OpenAPI TypeScript types.
@@ -81,8 +81,8 @@ Not applicable.
 
 ## API Contract Notes
 
-- Used `backend_docs/v0.0/frontend_handoff_v0_0.md`.
-- Used `backend_docs/v0.0/openapi_v0_0.yaml` because the prompt-required filename `backend_docs/v0.0/ratab v0.0 Backend API.yaml` was not present.
+- Used `backend_docs/history/v0.0/frontend_handoff_v0_0.md`.
+- Used `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` because the prompt-required filename `backend_docs/history/v0.0/OPENAPI.yaml` was not present.
 - `GET /api/health/` is documented in the handoff and OpenAPI schema as public and returns `HealthResponse`.
 - No auth, company, pricebook, coefficient, document, preview, or export endpoints were implemented in Phase 1.
 
@@ -126,7 +126,7 @@ Backend settings were not modified from this frontend phase.
 ## Issues and Findings
 
 - This folder is not currently a Git repository.
-- The exact backend schema filename requested by the prompt was absent; the available schema file is `backend_docs/v0.0/openapi_v0_0.yaml`.
+- The exact backend schema filename requested by the prompt was absent; the available schema file is `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`.
 - No prior frontend phase reports existed in `code_oder/v0.0/phaze1/`.
 - `npm install` created `node_modules/`, and `npm run build` created `dist/`; both are ignored.
 - Starting the local dev server created `vite-dev.log` and `vite-dev.err.log`; both match the `*.log` ignore rule.
@@ -134,7 +134,7 @@ Backend settings were not modified from this frontend phase.
 
 ## Risks and Assumptions
 
-- Assumed `backend_docs/v0.0/openapi_v0_0.yaml` is the authoritative OpenAPI schema because it is the available v0.0 schema file.
+- Assumed `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` is the authoritative OpenAPI schema because it is the available v0.0 schema file.
 - Assumed the documented online dev backend URL remains the correct dev API base URL.
 - Since `.env` is not created in this phase, local development should copy `.env.example` or set `VITE_API_BASE_URL` before running the app if the health card should call the dev backend directly.
 - The generated Vite bundle embeds the build-time `VITE_API_BASE_URL`; rebuild the Docker image if the dev backend URL changes.
@@ -143,7 +143,7 @@ Backend settings were not modified from this frontend phase.
 
 - Review the Phase 1 health screen visually in a browser.
 - Use `http://127.0.0.1:5173/` for the currently running local dev server.
-- Confirm whether `backend_docs/v0.0/openapi_v0_0.yaml` should be kept as the schema filename or copied/renamed manually to `backend_docs/v0.0/ratab v0.0 Backend API.yaml`.
+- Confirm whether `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` should be kept as the schema filename or copied/renamed manually to `backend_docs/history/v0.0/OPENAPI.yaml`.
 - Build and push the frontend dev image when ready:
   `docker build --build-arg VITE_API_BASE_URL=https://hw2momirzadipayload.darkube.ir -t registry.hamdocker.ir/momirzadi2004/ratab-frontend-dev:main -f docker/frontend/Dockerfile .`
   then `docker push registry.hamdocker.ir/momirzadi2004/ratab-frontend-dev:main`.

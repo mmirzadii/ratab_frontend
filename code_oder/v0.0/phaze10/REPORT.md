@@ -144,7 +144,7 @@ After manual browser review, proceed only with the next approved frontend phase.
 
 **Status: BLOCKED ON BACKEND.**
 
-`npm run generate:api` was executed and regenerated `src/shared/api/generated/schema.ts` from `backend_docs/v0.0/ratab v0.0 Backend API.yaml`. A search for every v2 vocabulary term returned **zero matches**. No feature code was written beyond this diagnostic. The frontend will be implemented in full once the backend YAML exposes the v2 contract.
+`npm run generate:api` was executed and regenerated `src/shared/api/generated/schema.ts` from `backend_docs/history/v0.0/OPENAPI.yaml`. A search for every v2 vocabulary term returned **zero matches**. No feature code was written beyond this diagnostic. The frontend will be implemented in full once the backend YAML exposes the v2 contract.
 
 Item-type detection rule (to be implemented once unblocked):
 
@@ -238,11 +238,11 @@ Manual / starred unit price is currently blocked at the backend (v0.0 `Pricebook
 | `FinancialDocumentLineCreateRequest.values` | **MISSING** |
 | `FinancialDocumentLineCreateRequest.selected_row_id` | **MISSING** |
 
-Source checked: `backend_docs/v0.0/ratab v0.0 Backend API.yaml` (the file `generate:api` reads). None of these terms appear anywhere in that YAML.
+Source checked: `backend_docs/history/v0.0/OPENAPI.yaml` (the file `generate:api` reads). None of these terms appear anywhere in that YAML.
 
 The fields that ARE present and confirmed unchanged: `requires_row_selection`, `requires_manual_unit_price`, `rows[]`, `unit_price`, `price_status`, `pricebook_row_id`, `quantity`, `coefficient_set_id`.
 
-**Required action before frontend implementation can proceed:** Update `backend_docs/v0.0/ratab v0.0 Backend API.yaml` (or the active API version's YAML) to expose all v2 schema fields with their exact names, types, and optionality. Then re-run `npm run generate:api` and re-run this implementation prompt.
+**Required action before frontend implementation can proceed:** Update `backend_docs/history/v0.0/OPENAPI.yaml` (or the active API version's YAML) to expose all v2 schema fields with their exact names, types, and optionality. Then re-run `npm run generate:api` and re-run this implementation prompt.
 
 ## Behavior Preservation Notes
 

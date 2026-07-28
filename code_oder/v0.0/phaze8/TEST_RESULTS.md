@@ -32,7 +32,7 @@ Not applicable.
 - Build and lint used the documented OpenAPI schema path:
 
 ```text
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/OPENAPI.yaml
 ```
 
 - Phase 8 added no backend code and no deployment changes.

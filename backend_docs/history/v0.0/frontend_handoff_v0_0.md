@@ -976,7 +976,7 @@ Schema and docs references:
 - OpenAPI schema endpoint: `/api/schema/`
 - Swagger UI endpoint: `/api/docs/`
 - ReDoc endpoint: `/api/redoc/`
-- Static schema file in this repository: `docs/openapi_v0_0.yaml`
+- Static schema file in this repository (historical canonical after reorganization): `backend_docs/history/v0.0/OPENAPI.yaml`
 
 Authentication header for protected API requests:
 

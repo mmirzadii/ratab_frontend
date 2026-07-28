@@ -3,15 +3,15 @@
 ## Commands Run
 
 ```powershell
-Copy-Item -LiteralPath D:\work\ratab\ratab_backend\docs\openapi_v0_0.yaml -Destination "backend_docs/v0.0/ratab v0.0 Backend API.yaml" -Force
+Copy-Item -LiteralPath D:\work\ratab\ratab_backend\docs\openapi_v0_0.yaml -Destination "backend_docs/history/v0.0/OPENAPI.yaml" -Force
 ```
 
 ```powershell
-Copy-Item -LiteralPath D:\work\ratab\ratab_backend\docs\openapi_v0_0.yaml -Destination "backend_docs/v0.0/openapi_v0_0.yaml" -Force
+Copy-Item -LiteralPath D:\work\ratab\ratab_backend\docs\openapi_v0_0.yaml -Destination "backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml" -Force
 ```
 
 ```powershell
-Copy-Item -LiteralPath D:\work\ratab\ratab_backend\docs\frontend_handoff_v0_0.md -Destination "backend_docs/v0.0/frontend_handoff_v0_0.md" -Force
+Copy-Item -LiteralPath D:\work\ratab\ratab_backend\docs\frontend_handoff_v0_0.md -Destination "backend_docs/history/v0.0/frontend_handoff_v0_0.md" -Force
 ```
 
 ```powershell
@@ -42,8 +42,8 @@ git diff --check
 
 ## Results
 
-- Backend OpenAPI and frontend handoff docs were synced into `backend_docs/v0.0/`.
-- `npm run generate:api`: passed and regenerated TypeScript API types from `backend_docs/v0.0/ratab v0.0 Backend API.yaml`.
+- Backend OpenAPI and frontend handoff docs were synced into `backend_docs/history/v0.0/`.
+- `npm run generate:api`: passed and regenerated TypeScript API types from `backend_docs/history/v0.0/OPENAPI.yaml`.
 - Generated schema includes `ActivePriceSet` and `PricebookEdition.active_price_set`.
 - `npm run build`: passed.
   - OpenAPI types regenerated.

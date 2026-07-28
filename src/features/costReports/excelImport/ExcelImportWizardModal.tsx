@@ -54,8 +54,8 @@ function AmbiguityCard({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-white/10 bg-white/5 p-4 light:border-slate-200 light:bg-slate-50">
+    <div className="min-w-0 space-y-3 sm:space-y-4">
+      <div className="rounded-lg border border-white/10 bg-white/5 p-3 sm:p-4 light:border-slate-200 light:bg-slate-50">
         <p className="text-sm font-bold text-slate-100 light:text-slate-900">
           {item.description_fa || "آیتم"}
         </p>
@@ -73,7 +73,7 @@ function AmbiguityCard({
           {item.row_codes.map((code) => (
             <label
               className={classNames(
-                "flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition",
+                "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border p-3 transition",
                 selectedRowCode === code
                   ? "border-emerald-400/50 bg-emerald-400/15 light:border-emerald-500 light:bg-emerald-50"
                   : "border-white/10 bg-white/5 hover:bg-white/8 light:border-slate-200 light:bg-white"
@@ -82,7 +82,7 @@ function AmbiguityCard({
             >
               <input
                 checked={selectedRowCode === code}
-                className="shrink-0 accent-emerald-400"
+                className="h-4 w-4 shrink-0 accent-emerald-400"
                 name="row_code_selection"
                 onChange={() => setSelectedRowCode(code)}
                 type="radio"
@@ -108,7 +108,7 @@ function AmbiguityCard({
       </label>
 
       <button
-        className="w-full rounded-lg bg-emerald-500 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-400 light:bg-emerald-600"
+        className="sticky bottom-0 z-10 min-h-11 w-full rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-bold text-white shadow-xl shadow-slate-950/40 transition hover:bg-emerald-400 sm:static sm:shadow-none light:bg-emerald-600"
         onClick={handleConfirm}
         type="button"
       >
@@ -293,7 +293,7 @@ export function ExcelImportWizardModal({
   return (
     <div
       className={classNames(
-        "fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/70 p-3 pt-6 backdrop-blur-sm sm:p-4 sm:pt-10",
+        "fixed inset-0 z-[100] flex items-end justify-center overflow-hidden bg-slate-950/70 backdrop-blur-sm sm:items-start sm:p-4 sm:pt-10",
         secondaryNav ? "lg:right-[19rem]" : "lg:right-20"
       )}
       dir="rtl"
@@ -302,22 +302,22 @@ export function ExcelImportWizardModal({
       }}
     >
       <div
-        className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-lg border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white"
+        className="flex h-[calc(100dvh-0.75rem)] max-h-[calc(100dvh-0.75rem)] w-full max-w-2xl min-w-0 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-white/10 bg-slate-950 shadow-2xl sm:h-auto sm:max-h-[90dvh] sm:rounded-lg sm:border-b light:border-slate-200 light:bg-white"
         onMouseDown={(event) => event.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/10 bg-slate-950/95 p-5 light:border-slate-200 light:bg-white/95">
-          <div>
-            <h2 className="text-lg font-black text-white light:text-slate-950">
+        <div className="z-10 flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-slate-950/95 p-3 sm:gap-4 sm:p-5 light:border-slate-200 light:bg-white/95">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-black text-white sm:text-lg light:text-slate-950">
               افزودن از اکسل
             </h2>
-            <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">
+            <p className="mt-0.5 truncate text-xs text-slate-400 light:text-slate-500">
               {stepTitles[step]}
             </p>
           </div>
           <button
             aria-label="بستن"
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/8 hover:text-white sm:h-9 sm:w-9 light:hover:bg-slate-100 light:hover:text-slate-900"
             onClick={onClose}
             type="button"
           >
@@ -326,15 +326,15 @@ export function ExcelImportWizardModal({
         </div>
 
         {/* Body */}
-        <div className="p-5">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-5 [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]">
           {/* ── Step: Source ─────────────────────────────────────────────── */}
           {step === "source" ? (
-            <div className="space-y-5">
+            <div className="min-w-0 space-y-4 sm:space-y-5">
               {/* Mode toggle */}
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex">
                 <button
                   className={classNames(
-                    "rounded-lg border px-4 py-2 text-sm font-bold transition",
+                    "flex min-h-11 items-center justify-center rounded-lg border px-3 py-2 text-sm font-bold transition sm:px-4",
                     sourceMode === "spreadsheet"
                       ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
                       : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/8 light:border-slate-200 light:bg-white light:text-slate-600"
@@ -346,7 +346,7 @@ export function ExcelImportWizardModal({
                 </button>
                 <button
                   className={classNames(
-                    "flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-bold transition",
+                    "flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-bold transition sm:px-4",
                     sourceMode === "file"
                       ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
                       : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/8 light:border-slate-200 light:bg-white light:text-slate-600"
@@ -360,19 +360,21 @@ export function ExcelImportWizardModal({
               </div>
 
               {sourceMode === "spreadsheet" ? (
-                <div className="space-y-2">
+                <div className="min-w-0 space-y-2">
                   <p className="text-xs text-slate-400 light:text-slate-500">
                     کدهای ردیف را در ستون اول و مقادیر را (اختیاری) در ستون دوم وارد کنید. از
                     اکسل می‌توانید Ctrl+V بزنید.
                   </p>
-                  <MiniSpreadsheet
-                    headers={["کد ردیف", "مقدار"]}
-                    onChange={setGridData}
-                    value={gridData}
-                  />
+                  <div className="max-h-[46dvh] max-w-full overflow-auto overscroll-contain rounded-lg sm:max-h-[50dvh] [scrollbar-width:thin]">
+                    <MiniSpreadsheet
+                      headers={["کد ردیف", "مقدار"]}
+                      onChange={setGridData}
+                      value={gridData}
+                    />
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="min-w-0 space-y-3">
                   <input
                     accept=".xlsx,.xls,.csv"
                     className="hidden"
@@ -381,7 +383,7 @@ export function ExcelImportWizardModal({
                     type="file"
                   />
                   <button
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 py-8 text-sm text-slate-300 transition hover:border-emerald-400/40 hover:text-emerald-200 light:border-slate-300 light:text-slate-600"
+                    className="flex min-h-24 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 px-3 py-6 text-sm text-slate-300 transition hover:border-emerald-400/40 hover:text-emerald-200 sm:py-8 light:border-slate-300 light:text-slate-600"
                     onClick={() => fileInputRef.current?.click()}
                     type="button"
                   >
@@ -394,8 +396,8 @@ export function ExcelImportWizardModal({
                       <p className="text-xs font-bold text-slate-400 light:text-slate-500">
                         پیش‌نمایش فایل ({uploadPreview.length} ردیف)
                       </p>
-                      <div className="overflow-x-auto rounded-lg border border-white/10 light:border-slate-200" dir="ltr">
-                        <table className="w-full text-xs">
+                      <div className="max-h-48 max-w-full overflow-auto overscroll-contain rounded-lg border border-white/10 light:border-slate-200" dir="ltr">
+                        <table className="min-w-max text-xs">
                           <tbody>
                             {previewData.map((row, r) => (
                               <tr
@@ -404,7 +406,7 @@ export function ExcelImportWizardModal({
                               >
                                 {row.slice(0, 6).map((cell, c) => (
                                   <td
-                                    className="border-b border-white/5 px-2 py-1 text-slate-300 light:border-slate-100 light:text-slate-700"
+                                    className="max-w-48 truncate whitespace-nowrap border-b border-white/5 px-2 py-1.5 text-slate-300 light:border-slate-100 light:text-slate-700"
                                     key={c}
                                   >
                                     {cell}
@@ -417,8 +419,8 @@ export function ExcelImportWizardModal({
                       </div>
 
                       {/* Column mapping */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <label className="space-y-1.5">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <label className="min-w-0 space-y-1.5">
                           <span className="text-xs font-bold text-slate-300 light:text-slate-600">
                             ستون کد ردیف
                           </span>
@@ -434,7 +436,7 @@ export function ExcelImportWizardModal({
                             ))}
                           </select>
                         </label>
-                        <label className="space-y-1.5">
+                        <label className="min-w-0 space-y-1.5">
                           <span className="text-xs font-bold text-slate-300 light:text-slate-600">
                             ستون مقدار
                           </span>
@@ -452,10 +454,10 @@ export function ExcelImportWizardModal({
                         </label>
                       </div>
 
-                      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300 light:text-slate-600">
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-slate-300 light:text-slate-600">
                         <input
                           checked={hasHeader}
-                          className="accent-emerald-400"
+                          className="h-4 w-4 shrink-0 accent-emerald-400"
                           onChange={(e) => setHasHeader(e.target.checked)}
                           type="checkbox"
                         />
@@ -479,9 +481,9 @@ export function ExcelImportWizardModal({
                 </div>
               ) : null}
 
-              <div className="flex justify-start">
+              <div className="sticky bottom-0 z-10 -mx-3 -mb-3 flex justify-start border-t border-white/10 bg-slate-950/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:static sm:mx-0 sm:mb-0 sm:border-0 sm:bg-transparent sm:p-0 light:border-slate-200 light:bg-white/95 light:sm:bg-transparent">
                 <button
-                  className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-400 disabled:opacity-50 light:bg-emerald-600"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-400 disabled:opacity-50 sm:w-auto light:bg-emerald-600"
                   disabled={extractedRows.length === 0 || excelPlanState.isLoading}
                   onClick={() => void handleCallPlan()}
                   type="button"
@@ -499,8 +501,8 @@ export function ExcelImportWizardModal({
 
           {/* ── Step: Ambiguities ─────────────────────────────────────────── */}
           {step === "ambiguities" ? (
-            <div className="space-y-5">
-              <div className="rounded-lg border border-amber-300/20 bg-amber-400/8 p-3 text-sm text-amber-100 light:text-amber-800">
+            <div className="min-w-0 space-y-4 sm:space-y-5">
+              <div className="rounded-lg border border-amber-300/20 bg-amber-400/8 p-3 text-sm leading-6 text-amber-100 light:text-amber-800">
                 {ambiguousItems.length} آیتم نیاز به تعیین تکلیف دارند. برای هر کدام گزینه
                 مناسب را انتخاب کنید.
               </div>
@@ -523,14 +525,14 @@ export function ExcelImportWizardModal({
                   <p className="text-xs font-bold text-rose-300 light:text-rose-700">
                     کدهای یافت‌نشده:
                   </p>
-                  <p className="mt-1 font-mono text-xs text-slate-400">
+                  <p className="mt-1 break-all font-mono text-xs leading-6 text-slate-400">
                     {planResponse.unmatched.join("، ")}
                   </p>
                 </GlassCard>
               ) : null}
 
               <button
-                className="flex items-center gap-1.5 text-sm text-slate-400 transition hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800"
+                className="flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm text-slate-400 transition hover:bg-white/5 hover:text-slate-200 light:text-slate-500 light:hover:bg-slate-100 light:hover:text-slate-800"
                 onClick={() => setStep("source")}
                 type="button"
               >
@@ -542,11 +544,11 @@ export function ExcelImportWizardModal({
 
           {/* ── Step: Review ─────────────────────────────────────────────── */}
           {step === "review" ? (
-            <div className="space-y-5">
+            <div className="min-w-0 space-y-4 sm:space-y-5">
               {planResponse?.unmatched && planResponse.unmatched.length > 0 ? (
                 <div className="flex items-start gap-2 rounded-lg border border-amber-300/20 bg-amber-400/8 p-3 text-sm text-amber-100 light:text-amber-800">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>
+                  <span className="min-w-0 break-words">
                     {planResponse.unmatched.length} کد یافت نشد:{" "}
                     <span className="font-mono">{planResponse.unmatched.join("، ")}</span>
                   </span>
@@ -558,11 +560,12 @@ export function ExcelImportWizardModal({
                 lines={reviewLines}
                 onLinesChange={setReviewLines}
                 onSubmit={() => void handleSubmit()}
+                submitClassName="sticky bottom-0 z-10 shadow-xl shadow-slate-950/40 sm:static sm:shadow-none"
                 submitError={submitError}
               />
 
               <button
-                className="flex items-center gap-1.5 text-sm text-slate-400 transition hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800"
+                className="flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm text-slate-400 transition hover:bg-white/5 hover:text-slate-200 light:text-slate-500 light:hover:bg-slate-100 light:hover:text-slate-800"
                 onClick={() =>
                   setStep(ambiguousItems.length > 0 ? "ambiguities" : "source")
                 }

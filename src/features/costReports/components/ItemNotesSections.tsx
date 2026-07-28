@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import type { PricebookItemDetail } from "../../pricebooks/pricebookApi";
 import { classNames } from "../../../shared/utils/classNames";
+import type { FootnoteInputErrors, FootnoteInputValues, TouchedFootnoteInputs } from "../costReportUtils";
 
 export function ReadableNotesSection({
   notes,
@@ -64,13 +65,23 @@ export function ReadableNotesSection({
 export function ChecklistNotesSection({
   disabled,
   notes,
+  inputErrors,
+  inputValues,
+  onInputBlur,
+  onInputChange,
   onToggle,
-  selectedNotes
+  selectedNotes,
+  touchedInputs
 }: {
   disabled: boolean;
   notes: PricebookItemDetail["footnotes"];
+  inputErrors: FootnoteInputErrors;
+  inputValues: FootnoteInputValues;
+  onInputBlur: (noteCode: string, inputName: string) => void;
+  onInputChange: (noteCode: string, inputName: string, value: string) => void;
   onToggle: (noteCode: string, checked: boolean) => void;
   selectedNotes: Record<string, boolean>;
+  touchedInputs: TouchedFootnoteInputs;
 }) {
   const [expandedNotes, setExpandedNotes] = useState<Record<number, boolean>>({});
 
@@ -103,7 +114,7 @@ export function ChecklistNotesSection({
               />
               <span className="min-w-0 flex-1">
                 <span className="block font-black text-slate-100 light:text-slate-900">
-                  تبصره {index + 1}: {note.title_fa}
+                  تبصره {index + 1}: {note.checkbox_text_fa || note.title_fa}
                 </span>
                 <span
                   className={classNames(
@@ -116,6 +127,38 @@ export function ChecklistNotesSection({
                 </span>
               </span>
             </label>
+            {selectedNotes[note.note_code] && note.requires_input ? (
+              <div className="mr-7 mt-2 grid max-w-xs gap-2">
+                {(note.inputs ?? []).map((input) => {
+                  const error = touchedInputs[note.note_code]?.[input.name]
+                    ? inputErrors[note.note_code]?.[input.name]
+                    : null;
+                  return (
+                    <label className="block min-w-0 text-xs" key={input.name}>
+                      <span className="mb-1 block font-bold text-slate-300 light:text-slate-700">
+                        {input.label_fa}{input.unit ? ` (${input.unit})` : ""}
+                      </span>
+                      <input
+                        className={classNames(
+                          "h-8 w-full rounded-md border bg-slate-950/45 px-2 text-left text-sm outline-none transition light:bg-white light:text-slate-950",
+                          error
+                            ? "border-rose-400/60 text-rose-100 light:border-rose-400"
+                            : "border-white/10 text-slate-100 focus:border-emerald-300/45 light:border-slate-200"
+                        )}
+                        dir={input.type === "number" ? "ltr" : "rtl"}
+                        disabled={disabled}
+                        inputMode={input.type === "number" ? "decimal" : undefined}
+                        onBlur={() => onInputBlur(note.note_code, input.name)}
+                        onChange={(event) => onInputChange(note.note_code, input.name, event.target.value)}
+                        type="text"
+                        value={inputValues[note.note_code]?.[input.name] ?? ""}
+                      />
+                      {error ? <span className="mt-1 block text-rose-300 light:text-rose-700">{error}</span> : null}
+                    </label>
+                  );
+                })}
+              </div>
+            ) : null}
             <button
               className="mt-2 text-xs font-bold text-success-300 transition hover:text-success-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 light:text-success-600 light:hover:text-success-700"
               onClick={() =>

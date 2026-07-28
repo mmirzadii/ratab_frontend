@@ -16,12 +16,14 @@ export function ReviewStep({
   lines,
   onLinesChange,
   onSubmit,
+  submitClassName,
   submitError
 }: {
   isSubmitting: boolean;
   lines: ReviewLine[];
   onLinesChange: (lines: ReviewLine[]) => void;
   onSubmit: () => void;
+  submitClassName?: string;
   submitError: string | null;
 }) {
   function updateQuantity(index: number, qty: string) {
@@ -95,7 +97,10 @@ export function ReviewStep({
       ) : null}
 
       <button
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 py-3 text-base font-bold text-white transition hover:bg-emerald-400 disabled:opacity-50 light:bg-emerald-600"
+        className={classNames(
+          "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 py-3 text-base font-bold text-white transition hover:bg-emerald-400 disabled:opacity-50 light:bg-emerald-600",
+          submitClassName
+        )}
         disabled={isSubmitting || lines.length === 0}
         onClick={onSubmit}
         type="button"

@@ -28,9 +28,10 @@ export function DocumentSummaryBox({
   );
 
   return (
-    <GlassCard className="p-3">
+    <GlassCard className="rounded-none border-0 bg-transparent p-2.5 shadow-none backdrop-blur-none sm:rounded-lg sm:border sm:border-white/12 sm:bg-slate-950/48 sm:p-3 sm:shadow-2xl sm:backdrop-blur-xl light:sm:border-slate-200 light:sm:bg-white/82">
+      <div className="flex items-center gap-2 sm:block">
       {/* Stats row — compact, single line */}
-      <div className="flex items-center gap-3 text-xs">
+      <div className="flex min-w-0 flex-1 items-center gap-2 text-xs sm:gap-3">
         <div className="flex items-center gap-1 text-slate-400">
           <Hash className="h-3 w-3" />
           <span className="font-bold text-slate-200 light:text-slate-700">{lineCount}</span>
@@ -46,9 +47,9 @@ export function DocumentSummaryBox({
       </div>
 
       {/* Action buttons */}
-      <div className="mt-2.5 grid grid-cols-2 gap-2">
+      <div className="grid shrink-0 grid-cols-2 gap-1.5 sm:mt-2.5 sm:gap-2">
         <button
-          className="flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/7 px-2 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-700"
+          className="flex h-9 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/7 px-2 text-[11px] font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-700 sm:h-auto sm:gap-1.5 sm:py-2 sm:text-xs"
           onClick={onOpenLines}
           type="button"
         >
@@ -56,26 +57,28 @@ export function DocumentSummaryBox({
           ردیف‌ها
         </button>
         <button
-          className="flex items-center justify-center gap-1.5 rounded-lg border border-amber-300/20 bg-amber-400/10 px-2 py-2 text-xs font-bold text-amber-100 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-55 light:border-amber-300/50 light:bg-amber-50 light:text-amber-800"
+          className="flex h-9 items-center justify-center gap-1 rounded-lg border border-amber-300/20 bg-amber-400/10 px-2 text-[11px] font-bold text-amber-100 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-55 light:border-amber-300/50 light:bg-amber-50 light:text-amber-800 sm:h-auto sm:gap-1.5 sm:py-2 sm:text-xs"
           disabled={Boolean(starredDisabledReason) || !onOpenStarredItem}
           onClick={onOpenStarredItem}
           title={starredDisabledReason ?? "افزودن آیتم ستاره‌دار"}
           type="button"
         >
           <Star className="h-3.5 w-3.5" />
-          آیتم ستاره‌دار
+          <span className="sm:hidden">ستاره‌دار</span>
+          <span className="hidden sm:inline">آیتم ستاره‌دار</span>
         </button>
+      </div>
       </div>
 
       {starredDisabledReason ? (
-        <p className="mt-2 text-xs leading-6 text-slate-400 light:text-slate-500">
+        <p className="mt-2 hidden text-xs leading-6 text-slate-400 light:text-slate-500 sm:block">
           {starredDisabledReason}
         </p>
       ) : null}
 
       {/* Alert: no lines yet */}
       {lineCount === 0 ? (
-        <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-amber-300/25 bg-amber-400/10 px-2.5 py-1.5 text-xs text-amber-200 light:border-amber-300/60 light:bg-amber-50 light:text-amber-800">
+        <div className="mt-2 hidden items-center gap-1.5 rounded-lg border border-amber-300/25 bg-amber-400/10 px-2.5 py-1.5 text-xs text-amber-200 light:border-amber-300/60 light:bg-amber-50 light:text-amber-800 sm:flex">
           <AlertTriangle className="h-3 w-3 shrink-0" />
           هنوز ردیفی اضافه نشده است
         </div>

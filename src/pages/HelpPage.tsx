@@ -3,6 +3,7 @@ import {
   BookOpen,
   Building2,
   Calculator,
+  ChevronDown,
   FileText,
   HelpCircle,
   Layers3,
@@ -10,6 +11,7 @@ import {
   RefreshCw,
   Sparkles
 } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useAppDispatch } from "../app/hooks";
@@ -17,6 +19,7 @@ import { resetOnboarding } from "../features/ui/uiSlice";
 import { Button } from "../shared/components/Button";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
+import { classNames } from "../shared/utils/classNames";
 
 const helpSections = [
   {
@@ -88,42 +91,87 @@ const helpSections = [
 
 export function HelpPage() {
   const dispatch = useAppDispatch();
+  const [expandedSection, setExpandedSection] = useState<number | null>(0);
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-      <GlassCard className="relative overflow-hidden p-5 sm:p-7">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-6 pt-3 sm:gap-6 sm:px-6 sm:pb-10 sm:pt-6 lg:px-8">
+      <GlassCard className="relative overflow-hidden p-4 sm:p-7">
         <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-l from-transparent via-emerald-300/70 to-transparent" />
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-3">
-            <StatusBadge tone="emerald">
-              <Sparkles className="h-3.5 w-3.5" />
-              راهنمای متریل
-            </StatusBadge>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="hidden sm:block">
+              <StatusBadge tone="emerald">
+                <Sparkles className="h-3.5 w-3.5" />
+                راهنمای متریل
+              </StatusBadge>
+            </div>
             <div>
-              <h1 className="text-3xl font-black leading-tight text-white light:text-slate-950">
+              <h1 className="text-xl font-black leading-tight text-white light:text-slate-950 sm:text-3xl">
                 راهنمای سریع فضای کار
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-300 light:text-slate-600">
+              <p className="mt-2 hidden max-w-2xl text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
                 توضیحات طولانی از صفحه‌های کاری به اینجا منتقل شده تا داشبورد، پیام‌ها و سازنده صورت‌بها خلوت بمانند.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => dispatch(resetOnboarding())} variant="secondary">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <Button
+              className="w-full px-2 text-xs sm:w-auto sm:px-4 sm:text-sm"
+              onClick={() => dispatch(resetOnboarding())}
+              variant="secondary"
+            >
               <RefreshCw className="h-4 w-4" />
-              شروع دوباره راهنما
+              <span className="sm:hidden">شروع راهنما</span>
+              <span className="hidden sm:inline">شروع دوباره راهنما</span>
             </Button>
             <Link
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-4 text-sm font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-[#f5fbf8] light:text-slate-800"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-2 text-xs font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-[#f5fbf8] light:text-slate-800 sm:w-auto sm:px-4 sm:text-sm"
               to="/companies"
             >
-              بازگشت به شرکت‌ها
+              <span className="sm:hidden">شرکت‌ها</span>
+              <span className="hidden sm:inline">بازگشت به شرکت‌ها</span>
             </Link>
           </div>
         </div>
       </GlassCard>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-2 md:hidden">
+        {helpSections.map((section, index) => {
+          const Icon = section.icon;
+          const isExpanded = expandedSection === index;
+
+          return (
+            <GlassCard className="overflow-hidden p-0" key={section.title}>
+              <button
+                aria-expanded={isExpanded}
+                className="flex min-h-14 w-full items-center gap-3 px-3 py-2 text-right"
+                onClick={() => setExpandedSection(isExpanded ? null : index)}
+                type="button"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 light:text-emerald-700">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1 text-sm font-black text-white light:text-slate-950">
+                  {section.title}
+                </span>
+                <ChevronDown
+                  className={classNames(
+                    "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+                    isExpanded && "rotate-180"
+                  )}
+                />
+              </button>
+              {isExpanded ? (
+                <p className="border-t border-white/10 px-4 py-3 text-sm leading-7 text-slate-300 light:border-slate-200 light:text-slate-600">
+                  {section.body}
+                </p>
+              ) : null}
+            </GlassCard>
+          );
+        })}
+      </div>
+
+      <div className="hidden gap-4 md:grid md:grid-cols-2">
         {helpSections.map((section) => {
           const Icon = section.icon;
           return (

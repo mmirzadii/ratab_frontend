@@ -8,12 +8,12 @@ Rebuild Phase 1 with the real backend schema imported, and add online dev Docker
 
 ```text
 AI_CODE_PRINCIPLES.md
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
 code_oder/COMMON_FRONTEND_CODEX_RULES.md
-code_oder/v0.0/reference/main_updated.html
-code_oder/v0.0/reference/UI_THEME_NOTES.md
-code_oder/v0.0/reference/PRODUCT_FLOW_NOTES.md
+docs/product_reference/v0.0/main_updated.html
+docs/product_reference/v0.0/UI_THEME_NOTES.md
+docs/product_reference/v0.0/PRODUCT_FLOW_NOTES.md
 ```
 
 ## Required tasks
@@ -24,7 +24,7 @@ code_oder/v0.0/reference/PRODUCT_FLOW_NOTES.md
 4. Configure RTK Query base API.
 5. Configure React Router.
 6. Add `.env.example` with VITE_API_BASE_URL.
-7. Read and use `backend_docs/v0.0/ratab v0.0 Backend API.yaml`.
+7. Read and use `backend_docs/history/v0.0/OPENAPI.yaml`.
 8. Generate TypeScript API types if practical.
 9. Add health/status page.
 10. Add `docker/frontend/Dockerfile`, `docker/frontend/nginx.conf`, `.dockerignore` for static nginx deployment.
@@ -44,8 +44,8 @@ code_oder/v0.0/reference/PRODUCT_FLOW_NOTES.md
 Use only:
 
 ```text
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
 ```
 
 If the required product UX is unsupported by backend, report the mismatch instead of faking behavior.

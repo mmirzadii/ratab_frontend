@@ -12,7 +12,7 @@ Phase 5 implemented the company-to-cost-report entry flow, project/report contex
 - Used the required backend API contract from:
 
 ```text
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/OPENAPI.yaml
 ```
 
 - Added and used only documented endpoints for companies, projects, financial documents, pricebooks, editions, chapters, groups, and items.
@@ -26,14 +26,14 @@ backend_docs/v0.0/ratab v0.0 Backend API.yaml
 - `src/features/financialDocuments/financialDocumentApi.ts`
 - `src/features/pricebooks/pricebookApi.ts`
 - `src/pages/CostReportWizardPage.tsx`
-- `backend_docs/v0.0/ratab v0.0 Backend API.yaml`
+- `backend_docs/history/v0.0/OPENAPI.yaml`
 - `code_oder/v0.0/phaze5/REPORT.md`
 - `code_oder/v0.0/phaze5/TEST_RESULTS.md`
 
 ## Files Modified
 
-- `backend_docs/v0.0/frontend_handoff_v0_0.md`
-- `backend_docs/v0.0/openapi_v0_0.yaml`
+- `backend_docs/history/v0.0/frontend_handoff_v0_0.md`
+- `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`
 - `package.json`
 - `src/app/router.tsx`
 - `src/shared/api/baseApi.ts`
@@ -84,8 +84,8 @@ active_price_set: ActivePriceSet | null
 
 ## API Contract Notes
 
-- `backend_docs/v0.0/frontend_handoff_v0_0.md` was synced from the backend docs.
-- `backend_docs/v0.0/ratab v0.0 Backend API.yaml` was synced from the backend OpenAPI file.
+- `backend_docs/history/v0.0/frontend_handoff_v0_0.md` was synced from the backend docs.
+- `backend_docs/history/v0.0/OPENAPI.yaml` was synced from the backend OpenAPI file.
 - The schema now exposes `active_price_set` on pricebook edition responses.
 - No price-set listing endpoint was invented.
 - Financial document creation still uses the documented `price_set_id` field, but the frontend now obtains that id from the selected edition's `active_price_set` object.

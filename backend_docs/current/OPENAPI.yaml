@@ -1,0 +1,5085 @@
+openapi: 3.0.3
+info:
+  title: ratab v1.0 Backend API
+  version: '1.0'
+  description: OpenAPI schema for ratab v1.0 backend. Browser clients use the server-side
+    session cookie and must send X-CSRFToken on state-changing session-authenticated
+    requests. Obtain a CSRF token from GET /api/auth/csrf/. Temporary local token
+    authentication remains available only through the guarded compatibility endpoint.
+paths:
+  /api/auth/csrf/:
+    get:
+      operationId: auth_csrf_retrieve
+      description: Set the readable CSRF cookie and return its masked token for browser
+        authentication requests. This endpoint does not create a session.
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfTokenResponse'
+          description: ''
+  /api/auth/dev-login/:
+    post:
+      operationId: auth_dev_login_create
+      description: Temporary dev/demo login. Returns 404 when ENABLE_DEV_LOGIN is
+        false.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DevLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DevLoginRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevLoginResponse'
+          description: ''
+        '404':
+          description: Dev login is disabled by ENABLE_DEV_LOGIN=false.
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: Authenticate with normalized phone number and password, rotate
+        the session, and set the persistent HttpOnly session cookie. Login errors
+        do not reveal which credential failed. Browser clients must first call GET
+        /api/auth/csrf/ with credentials enabled, then send the csrf_token value in
+        X-CSRFToken and retain the session cookie.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordLoginRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionAuthResponse'
+          description: ''
+        '400':
+          description: Invalid request.
+        '403':
+          description: CSRF validation failed.
+        '429':
+          description: Login rate limit exceeded.
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: Invalidate the current server-side session and expire its cookie.
+        Browser clients must first call GET /api/auth/csrf/ with credentials enabled,
+        then send the csrf_token value in X-CSRFToken and retain the session cookie.
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '403':
+          description: CSRF validation failed.
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      description: Return the current token- or session-authenticated user.
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUser'
+          description: ''
+  /api/auth/signup/complete/:
+    post:
+      operationId: auth_signup_complete_create
+      description: Consume a one-time signup ticket, hash the chosen password, create
+        the account, rotate the session, and authenticate the browser. Browser clients
+        must first call GET /api/auth/csrf/ with credentials enabled, then send the
+        csrf_token value in X-CSRFToken and retain the session cookie.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupCompleteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SignupCompleteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SignupCompleteRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionAuthResponse'
+          description: ''
+        '400':
+          description: Invalid ticket or password validation failure.
+        '403':
+          description: CSRF validation failed.
+        '429':
+          description: Signup completion rate limit exceeded.
+        '503':
+          description: Local signup verification is unavailable.
+  /api/auth/signup/start/:
+    post:
+      operationId: auth_signup_start_create
+      description: Start the local signup flow without sending or storing an SMS code.
+        Browser clients must first call GET /api/auth/csrf/ with credentials enabled,
+        then send the csrf_token value in X-CSRFToken and retain the session cookie.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupStartRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SignupStartRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SignupStartRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupStartResponse'
+          description: ''
+        '400':
+          description: Invalid or already registered phone number.
+        '403':
+          description: CSRF validation failed.
+        '429':
+          description: Signup start rate limit exceeded.
+        '503':
+          description: Local signup verification is unavailable.
+  /api/auth/signup/verify/:
+    post:
+      operationId: auth_signup_verify_create
+      description: Verify a live local challenge with any non-empty numeric code and
+        issue a short-lived one-time signup ticket. The code is never stored. Browser
+        clients must first call GET /api/auth/csrf/ with credentials enabled, then
+        send the csrf_token value in X-CSRFToken and retain the session cookie.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupVerifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SignupVerifyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SignupVerifyRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupVerifyResponse'
+          description: ''
+        '400':
+          description: Invalid, expired, or used signup challenge.
+        '403':
+          description: CSRF validation failed.
+        '429':
+          description: Signup verification rate limit exceeded.
+        '503':
+          description: Local signup verification is unavailable.
+  /api/coefficient-sets/{id}/values/:
+    get:
+      operationId: coefficient_sets_values_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project coefficient set را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - coefficient-sets
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectCoefficientValueList'
+          description: ''
+    post:
+      operationId: coefficient_sets_values_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project coefficient set را شناسایی میکند.
+        required: true
+      tags:
+      - coefficient-sets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCoefficientValueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectCoefficientValueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectCoefficientValueRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCoefficientValue'
+          description: ''
+  /api/coefficient-values/{id}/:
+    patch:
+      operationId: coefficient_values_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project coefficient value را شناسایی
+          میکند.
+        required: true
+      tags:
+      - coefficient-values
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectCoefficientValueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectCoefficientValueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectCoefficientValueRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCoefficientValue'
+          description: ''
+    delete:
+      operationId: coefficient_values_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project coefficient value را شناسایی
+          میکند.
+        required: true
+      tags:
+      - coefficient-values
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Coefficient value deleted.
+  /api/companies/:
+    get:
+      operationId: companies_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyList'
+          description: ''
+    post:
+      operationId: companies_create
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
+  /api/companies/{company_id}/files/:
+    post:
+      operationId: companies_files_create
+      description: Upload a private company file. A duplicate returns HTTP 200 with
+        the existing metadata; a newly stored file returns HTTP 201.
+      parameters:
+      - in: path
+        name: company_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrivateFileUploadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrivateFileUploadRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateFileUploadResponse'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateFileUploadResponse'
+          description: ''
+  /api/companies/{id}/:
+    get:
+      operationId: companies_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      tags:
+      - companies
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
+    patch:
+      operationId: companies_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
+  /api/companies/{id}/groups/:
+    get:
+      operationId: companies_groups_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyGroupList'
+          description: ''
+    post:
+      operationId: companies_groups_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyGroupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyGroupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyGroupRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyGroup'
+          description: ''
+  /api/companies/{id}/members/:
+    get:
+      operationId: companies_members_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyMemberList'
+          description: ''
+    post:
+      operationId: companies_members_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyMemberAddRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyMemberAddRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyMemberAddRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyMember'
+          description: ''
+  /api/companies/{id}/projects/:
+    get:
+      operationId: companies_projects_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectList'
+          description: ''
+    post:
+      operationId: companies_projects_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+  /api/companies/{id}/slug-history/:
+    get:
+      operationId: companies_slug_history_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanySlugHistoryList'
+          description: ''
+  /api/company-group-memberships/{id}/:
+    delete:
+      operationId: company_group_memberships_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group membership را شناسایی
+          میکند.
+        required: true
+      tags:
+      - company-group-memberships
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Group membership removed.
+  /api/company-group-memberships/{id}/deactivate/:
+    post:
+      operationId: company_group_memberships_deactivate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group membership را شناسایی
+          میکند.
+        required: true
+      tags:
+      - company-group-memberships
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyGroupMembership'
+          description: ''
+  /api/company-groups/{group_id}/messages/:
+    get:
+      operationId: company_groups_messages_retrieve
+      description: List persistent group messages in stable created_at/id order. Active
+        membership in the group is required.
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGroupMessage'
+          description: ''
+    post:
+      operationId: company_groups_messages_create
+      description: Create a text-only, attachment-only, or combined persistent message.
+        Attachments are references to existing private files or financial documents.
+        The configured daily message quota is checked atomically before the message
+        is created; exceeding it returns the stable MESSAGE_QUOTA_EXCEEDED response.
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - company-groups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupMessageCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GroupMessageCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GroupMessageCreateRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMessage'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageQuotaExceeded'
+          description: ''
+  /api/company-groups/{id}/:
+    get:
+      operationId: company_groups_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyGroup'
+          description: ''
+    patch:
+      operationId: company_groups_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      tags:
+      - company-groups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyGroupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyGroupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyGroupRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyGroup'
+          description: ''
+  /api/company-groups/{id}/deactivate/:
+    post:
+      operationId: company_groups_deactivate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyGroup'
+          description: ''
+  /api/company-groups/{id}/members/:
+    get:
+      operationId: company_groups_members_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyGroupMembershipList'
+          description: ''
+    post:
+      operationId: company_groups_members_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      tags:
+      - company-groups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyGroupMemberAddRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyGroupMemberAddRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyGroupMemberAddRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyGroupMembership'
+          description: ''
+  /api/company-members/{id}/:
+    delete:
+      operationId: company_members_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company member را شناسایی میکند.
+        required: true
+      tags:
+      - company-members
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Company member removed.
+  /api/company-members/{id}/deactivate/:
+    post:
+      operationId: company_members_deactivate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company member را شناسایی میکند.
+        required: true
+      tags:
+      - company-members
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyMember'
+          description: ''
+  /api/company-members/{id}/role/:
+    patch:
+      operationId: company_members_role_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company member را شناسایی میکند.
+        required: true
+      tags:
+      - company-members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyMemberRoleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyMemberRoleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyMemberRoleRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyMember'
+          description: ''
+  /api/financial-document-exports/{id}/download/:
+    get:
+      operationId: financial_document_exports_download_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document export را شناسایی
+          میکند.
+        required: true
+      tags:
+      - financial-document-exports
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportNotReady'
+          description: Export is failed/not ready or has no file in v0.0 blocked PDF
+            mode.
+  /api/financial-document-lines/{id}/:
+    patch:
+      operationId: financial_document_lines_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document line را شناسایی میکند.
+        required: true
+      tags:
+      - financial-document-lines
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFinancialDocumentLineUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFinancialDocumentLineUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFinancialDocumentLineUpdateRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocumentLine'
+          description: ''
+    delete:
+      operationId: financial_document_lines_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document line را شناسایی میکند.
+        required: true
+      tags:
+      - financial-document-lines
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Financial document line deleted.
+  /api/financial-documents/{id}/:
+    get:
+      operationId: financial_documents_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocument'
+          description: ''
+    patch:
+      operationId: financial_documents_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFinancialDocumentUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFinancialDocumentUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFinancialDocumentUpdateRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocument'
+          description: ''
+  /api/financial-documents/{id}/exports/:
+    post:
+      operationId: financial_documents_exports_create
+      description: Creates export metadata. v0.0 PDF binary rendering is blocked/unavailable,
+        so exports may be created with failed status and no file_id.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocumentExport'
+          description: ''
+  /api/financial-documents/{id}/lines/:
+    post:
+      operationId: financial_documents_lines_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinancialDocumentLineCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FinancialDocumentLineCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FinancialDocumentLineCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocumentLine'
+          description: Idempotent replay of an already-created line.
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocumentLine'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualPriceLineValidationError'
+          description: Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true.
+            Multi-row items return requires_row_selection=true when pricebook_row_id
+            is not provided.
+        '402':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenBillingError'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenBillingError'
+          description: ''
+  /api/financial-documents/{id}/lock/:
+    post:
+      operationId: financial_documents_lock_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocument'
+          description: ''
+  /api/financial-documents/{id}/preview/:
+    get:
+      operationId: financial_documents_preview_retrieve
+      description: Returns server-rendered Persian RTL HTML preview for the document.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+          description: ''
+  /api/financial-documents/{id}/recalculate/:
+    post:
+      operationId: financial_documents_recalculate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocument'
+          description: ''
+  /api/health/:
+    get:
+      operationId: health_retrieve
+      description: Public health check with no database dependency.
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+          description: ''
+  /api/health/live/:
+    get:
+      operationId: health_live_retrieve
+      description: Public liveness endpoint with no dependency checks.
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+          description: ''
+  /api/health/ready/:
+    get:
+      operationId: health_ready_retrieve
+      description: Public readiness endpoint for API dependencies. Returns 503 if
+        database, Redis, or private storage is unavailable.
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+          description: ''
+  /api/message-attachments/{id}/:
+    get:
+      operationId: message_attachments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - message-attachments
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageAttachment'
+          description: ''
+  /api/message-attachments/{id}/download/:
+    get:
+      operationId: message_attachments_download_retrieve
+      description: Download an authorized private-file message attachment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - message-attachments
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '400':
+          description: Financial-document references are opened as data, not downloaded.
+        '404':
+          description: Attached file is unavailable.
+  /api/message-attachments/{id}/open/:
+    get:
+      operationId: message_attachments_open_retrieve
+      description: Open an authorized file inline or return an authorized financial
+        document through its message/group context.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - message-attachments
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocument'
+          description: ''
+        '404':
+          description: Attachment target is unavailable.
+  /api/message-quota/:
+    get:
+      operationId: message_quota_retrieve
+      description: Return the authenticated user's daily message usage, effective
+        limit, and reset time. A null limit means no daily limit is configured for
+        this account.
+      tags:
+      - message-quota
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageQuotaStatus'
+          description: ''
+  /api/payments/orders/:
+    post:
+      operationId: payments_orders_create
+      description: Start a token-package payment. Online payment is disabled in v1.0,
+        so this endpoint returns the stable PAYMENTS_DISABLED response. When a verified
+        provider exists, the backend selects the package amount and payable price;
+        a client can never send a token amount, price, provider result, or order status.
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentOrderCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentOrderCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentOrderCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrder'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentsDisabled'
+          description: ''
+  /api/pricebook-chapters/{id}/groups/:
+    get:
+      operationId: pricebook_chapters_groups_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این pricebook chapter را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - pricebook-chapters
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPricebookGroupList'
+          description: ''
+  /api/pricebook-editions/{id}/chapters/:
+    get:
+      operationId: pricebook_editions_chapters_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این pricebook edition را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - pricebook-editions
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPricebookChapterList'
+          description: ''
+  /api/pricebook-items/:
+    get:
+      operationId: pricebook_items_list
+      parameters:
+      - in: query
+        name: chapter_id
+        schema:
+          type: integer
+      - in: query
+        name: edition_id
+        schema:
+          type: integer
+      - in: query
+        name: group_id
+        schema:
+          type: integer
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+      tags:
+      - pricebook-items
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPricebookItemListList'
+          description: ''
+  /api/pricebook-items/{id}/:
+    get:
+      operationId: pricebook_items_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این pricebook logical item را شناسایی میکند.
+        required: true
+      tags:
+      - pricebook-items
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricebookItemDetail'
+          description: ''
+  /api/pricebook-items/{id}/calculate/:
+    post:
+      operationId: pricebook_items_calculate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این pricebook logical item را شناسایی میکند.
+        required: true
+      tags:
+      - pricebook-items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PricebookCalculateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PricebookCalculateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PricebookCalculateInputRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricebookCalculateResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualPriceValidationError'
+          description: Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true.
+            Multi-row items return requires_row_selection=true when pricebook_row_id
+            is not provided.
+  /api/pricebooks/:
+    get:
+      operationId: pricebooks_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - pricebooks
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPricebookList'
+          description: ''
+  /api/pricebooks/{id}/editions/:
+    get:
+      operationId: pricebooks_editions_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این pricebook را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - pricebooks
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPricebookEditionList'
+          description: ''
+  /api/projects/{id}/:
+    get:
+      operationId: projects_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project را شناسایی میکند.
+        required: true
+      tags:
+      - projects
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+    patch:
+      operationId: projects_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project را شناسایی میکند.
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+  /api/projects/{id}/coefficient-sets/:
+    get:
+      operationId: projects_coefficient_sets_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - projects
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectCoefficientSetList'
+          description: ''
+    post:
+      operationId: projects_coefficient_sets_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project را شناسایی میکند.
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCoefficientSetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectCoefficientSetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectCoefficientSetRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCoefficientSet'
+          description: ''
+  /api/projects/{id}/financial-documents/:
+    get:
+      operationId: projects_financial_documents_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - projects
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFinancialDocumentList'
+          description: ''
+    post:
+      operationId: projects_financial_documents_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project را شناسایی میکند.
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinancialDocumentCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FinancialDocumentCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FinancialDocumentCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocument'
+          description: ''
+  /api/storage-files/{id}/download/:
+    get:
+      operationId: storage_files_download_retrieve
+      description: Download authorized private file content as an attachment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این storage file را شناسایی میکند.
+        required: true
+      tags:
+      - storage-files
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '404':
+          description: File metadata or stored content is missing.
+        '503':
+          description: Configured private storage is unavailable.
+  /api/storage-files/{id}/open/:
+    get:
+      operationId: storage_files_open_retrieve
+      description: Open authorized private file content inline.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این storage file را شناسایی میکند.
+        required: true
+      tags:
+      - storage-files
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '404':
+          description: File metadata or stored content is missing.
+        '503':
+          description: Configured private storage is unavailable.
+  /api/subscription/:
+    get:
+      operationId: subscription_retrieve
+      description: Return the authenticated user's current subscription. Subscriptions
+        are activated by an administrator while online payment is disabled.
+      tags:
+      - subscription
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSubscriptionStatus'
+          description: ''
+  /api/subscription-plans/:
+    get:
+      operationId: subscription_plans_list
+      description: List active backend-owned subscription plans. Plan limits, durations,
+        and prices are defined by the backend only.
+      tags:
+      - subscription-plans
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+  /api/token-wallet/:
+    get:
+      operationId: token_wallet_retrieve
+      description: Return the authenticated user's token wallet. The API is read-only;
+        clients cannot set balances or create grants.
+      tags:
+      - token-wallet
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenWallet'
+          description: ''
+  /api/token-wallet/transactions/:
+    get:
+      operationId: token_wallet_transactions_retrieve
+      description: List the authenticated user's append-only token ledger in stable
+        newest-first order.
+      tags:
+      - token-wallet
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTokenWalletTransaction'
+          description: ''
+components:
+  schemas:
+    ActivePriceSet:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        title_fa:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - code
+      - id
+      - is_active
+      - title_fa
+    AppUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        is_staff:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - display_name
+      - id
+      - is_active
+      - is_staff
+      - phone_number
+      - updated_at
+    AppliedCoefficient:
+      type: object
+      properties:
+        coefficient_value_id:
+          type: integer
+        coefficient_key:
+          type: string
+        key:
+          type: string
+        label_fa:
+          type: string
+        title_fa:
+          type: string
+        scope:
+          type: string
+        multiplier:
+          type: string
+        value:
+          type: string
+        factor:
+          type: string
+        target_id:
+          type: integer
+          nullable: true
+        priority_source:
+          type: string
+        row_id:
+          type: integer
+        row_code:
+          type: string
+        amount_before:
+          type: string
+        amount_after:
+          type: string
+        effect_amount:
+          type: string
+      required:
+      - amount_after
+      - amount_before
+      - coefficient_key
+      - coefficient_value_id
+      - effect_amount
+      - label_fa
+      - multiplier
+      - scope
+    AttachmentTypeEnum:
+      enum:
+      - file
+      - financial_document
+      type: string
+      description: |-
+        * `file` - File
+        * `financial_document` - Financial document
+    Company:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 180
+        legal_name:
+          type: string
+          maxLength: 240
+        registration_number:
+          type: string
+          maxLength: 80
+        national_id:
+          type: string
+          maxLength: 80
+        active_slug:
+          type: string
+          nullable: true
+          maxLength: 80
+        owner_member_id:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_active
+      - name
+      - owner_member_id
+      - updated_at
+    CompanyGroup:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 160
+        description:
+          type: string
+        created_by_member_id:
+          type: integer
+          readOnly: true
+        is_default:
+          type: boolean
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company_id
+      - created_at
+      - created_by_member_id
+      - id
+      - is_active
+      - is_default
+      - name
+      - updated_at
+    CompanyGroupMemberAddRequest:
+      type: object
+      properties:
+        member_id:
+          type: integer
+          minimum: 1
+      required:
+      - member_id
+    CompanyGroupMembership:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        group_id:
+          type: integer
+          readOnly: true
+        member_id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        role:
+          type: string
+          readOnly: true
+        added_by_member_id:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        joined_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - added_by_member_id
+      - created_at
+      - display_name
+      - group_id
+      - id
+      - is_active
+      - joined_at
+      - member_id
+      - phone_number
+      - role
+      - updated_at
+      - user_id
+    CompanyGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+      required:
+      - name
+    CompanyMember:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        member_type:
+          allOf:
+          - $ref: '#/components/schemas/MemberTypeEnum'
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        invited_by_member_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        joined_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company_id
+      - created_at
+      - display_name
+      - id
+      - invited_by_member_id
+      - is_active
+      - joined_at
+      - member_type
+      - phone_number
+      - role
+      - title
+      - updated_at
+      - user_id
+    CompanyMemberAddRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        display_name:
+          type: string
+          maxLength: 160
+        title:
+          type: string
+          maxLength: 120
+      required:
+      - phone_number
+      - role
+    CompanyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 180
+        legal_name:
+          type: string
+          maxLength: 240
+        registration_number:
+          type: string
+          maxLength: 80
+        national_id:
+          type: string
+          maxLength: 80
+        active_slug:
+          type: string
+          nullable: true
+          maxLength: 80
+      required:
+      - name
+    CompanySlugHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_id:
+          type: integer
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        changed_by_member_id:
+          type: integer
+          readOnly: true
+        activated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deactivated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - activated_at
+      - changed_by_member_id
+      - company_id
+      - deactivated_at
+      - id
+      - is_active
+      - slug
+    CsrfTokenResponse:
+      type: object
+      properties:
+        csrf_token:
+          type: string
+          readOnly: true
+      required:
+      - csrf_token
+    DevLoginRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        display_name:
+          type: string
+          maxLength: 160
+      required:
+      - phone_number
+    DevLoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          readOnly: true
+        created:
+          type: boolean
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/AppUser'
+          readOnly: true
+        temporary_auth:
+          type: boolean
+          readOnly: true
+      required:
+      - created
+      - temporary_auth
+      - token
+      - user
+    DocumentTypeEnum:
+      enum:
+      - cost_report
+      - estimate
+      - bid_proposal
+      - payment_statement
+      - adjustment
+      - formal_statement
+      type: string
+      description: |-
+        * `cost_report` - Cost report
+        * `estimate` - Estimate
+        * `bid_proposal` - Bid proposal
+        * `payment_statement` - Payment statement
+        * `adjustment` - Adjustment
+        * `formal_statement` - Formal statement
+    ExportFormatEnum:
+      enum:
+      - pdf
+      - print_html
+      - xlsx
+      - docx
+      type: string
+      description: |-
+        * `pdf` - PDF
+        * `print_html` - Print HTML
+        * `xlsx` - XLSX
+        * `docx` - DOCX
+    ExportNotReady:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    FinancialDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_id:
+          type: integer
+          readOnly: true
+        project_id:
+          type: integer
+          readOnly: true
+        document_type:
+          allOf:
+          - $ref: '#/components/schemas/DocumentTypeEnum'
+          readOnly: true
+        document_label_fa:
+          type: string
+          readOnly: true
+        document_number:
+          type: string
+          readOnly: true
+          nullable: true
+        title:
+          type: string
+          readOnly: true
+        report_title:
+          type: string
+          readOnly: true
+        document_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        period_start_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        period_end_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FinancialDocumentStatusEnum'
+          readOnly: true
+        pricebook_edition_id:
+          type: integer
+          readOnly: true
+        price_set_id:
+          type: integer
+          readOnly: true
+        coefficient_set_id:
+          type: integer
+          readOnly: true
+        created_by_member_id:
+          type: integer
+          readOnly: true
+        calculated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        locked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        locked_by_member_id:
+          type: integer
+          readOnly: true
+        totals_snapshot_json:
+          readOnly: true
+          nullable: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinancialDocumentLine'
+          readOnly: true
+        chapter_totals:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinancialDocumentChapterTotal'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - calculated_at
+      - chapter_totals
+      - coefficient_set_id
+      - company_id
+      - created_at
+      - created_by_member_id
+      - document_date
+      - document_label_fa
+      - document_number
+      - document_type
+      - id
+      - lines
+      - locked_at
+      - locked_by_member_id
+      - period_end_on
+      - period_start_on
+      - price_set_id
+      - pricebook_edition_id
+      - project_id
+      - report_title
+      - status
+      - title
+      - totals_snapshot_json
+      - updated_at
+    FinancialDocumentChapterTotal:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        chapter_code_snapshot:
+          type: string
+          readOnly: true
+        chapter_title_snapshot:
+          type: string
+          readOnly: true
+        pricebook_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        starred_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        invoice_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        paikar_material_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        raw_total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        coefficient_total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        final_total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+      required:
+      - chapter_code_snapshot
+      - chapter_title_snapshot
+      - coefficient_total_amount
+      - final_total_amount
+      - id
+      - invoice_amount
+      - paikar_material_amount
+      - pricebook_amount
+      - raw_total_amount
+      - sort_order
+      - starred_amount
+    FinancialDocumentCreateRequest:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        document_number:
+          type: string
+          nullable: true
+          maxLength: 80
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        report_title:
+          type: string
+          maxLength: 240
+        document_date:
+          type: string
+          format: date
+          nullable: true
+        period_start_on:
+          type: string
+          format: date
+          nullable: true
+        period_end_on:
+          type: string
+          format: date
+          nullable: true
+        pricebook_edition_id:
+          type: integer
+        price_set_id:
+          type: integer
+        coefficient_set_id:
+          type: integer
+          nullable: true
+      required:
+      - price_set_id
+      - pricebook_edition_id
+      - title
+    FinancialDocumentExport:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        document_id:
+          type: integer
+          readOnly: true
+        template_id:
+          type: integer
+          readOnly: true
+        export_format:
+          allOf:
+          - $ref: '#/components/schemas/ExportFormatEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FinancialDocumentExportStatusEnum'
+          readOnly: true
+        file_id:
+          type: integer
+          readOnly: true
+        render_snapshot_json:
+          readOnly: true
+          nullable: true
+        error_message:
+          type: string
+          readOnly: true
+        requested_by_member_id:
+          type: integer
+          readOnly: true
+        requested_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - document_id
+      - error_message
+      - export_format
+      - file_id
+      - finished_at
+      - id
+      - render_snapshot_json
+      - requested_at
+      - requested_by_member_id
+      - status
+      - template_id
+    FinancialDocumentExportStatusEnum:
+      enum:
+      - pending
+      - processing
+      - ready
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `processing` - Processing
+        * `ready` - Ready
+        * `failed` - Failed
+    FinancialDocumentLine:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        document_id:
+          type: integer
+          readOnly: true
+        line_no:
+          type: integer
+          readOnly: true
+        line_source:
+          allOf:
+          - $ref: '#/components/schemas/LineSourceEnum'
+          readOnly: true
+        pricebook_item_id:
+          type: integer
+          readOnly: true
+        pricebook_row_id:
+          type: integer
+          readOnly: true
+        row_code_snapshot:
+          type: string
+          readOnly: true
+        chapter_code_snapshot:
+          type: string
+          readOnly: true
+        chapter_title_snapshot:
+          type: string
+          readOnly: true
+        description_snapshot:
+          type: string
+          readOnly: true
+        unit_snapshot:
+          type: string
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+          readOnly: true
+        manual_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          readOnly: true
+          nullable: true
+        unit_price_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          readOnly: true
+        base_amount_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        coefficient_amount_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        total_amount_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        calculation_input_json:
+          readOnly: true
+          nullable: true
+        calculation_output_json:
+          readOnly: true
+          nullable: true
+        calculated_rows:
+          type: string
+          readOnly: true
+        line_coefficients:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinancialDocumentLineCoefficient'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - base_amount_snapshot
+      - calculated_rows
+      - calculation_input_json
+      - calculation_output_json
+      - chapter_code_snapshot
+      - chapter_title_snapshot
+      - coefficient_amount_snapshot
+      - created_at
+      - description_snapshot
+      - document_id
+      - id
+      - line_coefficients
+      - line_no
+      - line_source
+      - manual_unit_price
+      - pricebook_item_id
+      - pricebook_row_id
+      - quantity
+      - row_code_snapshot
+      - total_amount_snapshot
+      - unit_price_snapshot
+      - unit_snapshot
+      - updated_at
+    FinancialDocumentLineCoefficient:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        coefficient_key:
+          type: string
+          readOnly: true
+        key:
+          type: string
+          readOnly: true
+        label_fa:
+          type: string
+          readOnly: true
+        title_fa:
+          type: string
+          readOnly: true
+        multiplier:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,8})?$
+          readOnly: true
+        value:
+          type: string
+          readOnly: true
+        factor:
+          type: string
+          readOnly: true
+        applied_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,4})?$
+          readOnly: true
+        source_coefficient_value_id:
+          type: integer
+          readOnly: true
+      required:
+      - applied_amount
+      - coefficient_key
+      - factor
+      - id
+      - key
+      - label_fa
+      - multiplier
+      - source_coefficient_value_id
+      - title_fa
+      - value
+    FinancialDocumentLineCreateRequest:
+      type: object
+      properties:
+        idempotency_key:
+          type: string
+          minLength: 1
+          description: Optional retry key for exact-once creation and charging of
+            an official pricebook-backed line.
+          pattern: ^[A-Za-z0-9._:-]{1,128}$
+        pricebook_item_id:
+          type: integer
+          nullable: true
+        coefficient_set_id:
+          type: integer
+          nullable: true
+          description: Optional line-level coefficient set. Omit to use the document
+            default; null disables coefficients.
+        line_source:
+          $ref: '#/components/schemas/LineSourceEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+        manual_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          nullable: true
+        custom_prices:
+          type: object
+          additionalProperties:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          description: Optional per-row custom unit prices keyed by six-digit row_code.
+        title_fa:
+          type: string
+        description:
+          type: string
+        description_snapshot:
+          type: string
+        unit:
+          type: string
+        unit_snapshot:
+          type: string
+        pricebook_row_id:
+          type: integer
+          nullable: true
+        values:
+          type: array
+          items:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+          description: Indexed input values for v2 items. Supersedes quantity when
+            provided.
+        selected_row_id:
+          type: integer
+          nullable: true
+          description: Row selection for itemized items.
+        footnotes:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: Map of footnote_code to bool — applied checkboxes for this
+            calculation.
+      required:
+      - quantity
+    FinancialDocumentStatusEnum:
+      enum:
+      - draft
+      - calculated
+      - locked
+      - sent
+      - under_review
+      - approved
+      - rejected
+      - archived
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `calculated` - Calculated
+        * `locked` - Locked
+        * `sent` - Sent
+        * `under_review` - Under review
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `archived` - Archived
+    GroupMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        group_id:
+          type: integer
+          readOnly: true
+        sender_member_id:
+          type: integer
+          readOnly: true
+        sender_display_name:
+          type: string
+          readOnly: true
+        text:
+          type: string
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageAttachment'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attachments
+      - created_at
+      - group_id
+      - id
+      - sender_display_name
+      - sender_member_id
+      - text
+    GroupMessageCreateRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageAttachmentCreateRequest'
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+      required:
+      - service
+      - status
+    LineSourceEnum:
+      enum:
+      - pricebook
+      - starred
+      - invoice
+      - paikar_material
+      - custom
+      - adjustment
+      - carried_forward
+      type: string
+      description: |-
+        * `pricebook` - Pricebook
+        * `starred` - Starred
+        * `invoice` - Invoice
+        * `paikar_material` - Paikar material
+        * `custom` - Custom
+        * `adjustment` - Adjustment
+        * `carried_forward` - Carried forward
+    ManualPriceLineValidationError:
+      type: object
+      properties:
+        detail:
+          type: string
+        requires_manual_unit_price:
+          type: boolean
+        requires_row_selection:
+          type: boolean
+        calculation_configuration_error:
+          type: boolean
+      required:
+      - detail
+    ManualPriceValidationError:
+      type: object
+      properties:
+        detail:
+          type: string
+        requires_manual_unit_price:
+          type: boolean
+        requires_row_selection:
+          type: boolean
+        calculation_configuration_error:
+          type: boolean
+      required:
+      - detail
+    MemberTypeEnum:
+      enum:
+      - internal
+      - client
+      type: string
+      description: |-
+        * `internal` - Internal
+        * `client` - Client
+    MessageAttachment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        message_id:
+          type: integer
+          readOnly: true
+        group_id:
+          type: integer
+          readOnly: true
+        attachment_type:
+          allOf:
+          - $ref: '#/components/schemas/AttachmentTypeEnum'
+          readOnly: true
+        resource_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        is_available:
+          type: boolean
+          readOnly: true
+        original_filename:
+          type: string
+          readOnly: true
+          nullable: true
+        content_type:
+          type: string
+          readOnly: true
+          nullable: true
+        byte_size:
+          type: integer
+          readOnly: true
+          nullable: true
+        document_title:
+          type: string
+          readOnly: true
+          nullable: true
+        document_number:
+          type: string
+          readOnly: true
+          nullable: true
+        document_status:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attachment_type
+      - byte_size
+      - content_type
+      - created_at
+      - document_number
+      - document_status
+      - document_title
+      - group_id
+      - id
+      - is_available
+      - message_id
+      - original_filename
+      - resource_id
+    MessageAttachmentCreateRequest:
+      type: object
+      properties:
+        attachment_type:
+          $ref: '#/components/schemas/AttachmentTypeEnum'
+        resource_id:
+          type: integer
+          minimum: 1
+      required:
+      - attachment_type
+      - resource_id
+    MessageQuotaExceeded:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        detail:
+          type: string
+          readOnly: true
+        used_today:
+          type: string
+          readOnly: true
+        daily_limit:
+          type: string
+          readOnly: true
+        quota_date:
+          type: string
+          format: date
+          readOnly: true
+        resets_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - daily_limit
+      - detail
+      - quota_date
+      - resets_at
+      - used_today
+    MessageQuotaStatus:
+      type: object
+      properties:
+        quota_date:
+          type: string
+          format: date
+          readOnly: true
+        used_today:
+          type: integer
+          readOnly: true
+        daily_limit:
+          type: integer
+          readOnly: true
+          nullable: true
+        remaining:
+          type: integer
+          readOnly: true
+          nullable: true
+        resets_at:
+          type: string
+          format: date-time
+          readOnly: true
+        plan_code:
+          type: string
+          readOnly: true
+          nullable: true
+        subscription_status:
+          type: string
+          readOnly: true
+      required:
+      - daily_limit
+      - plan_code
+      - quota_date
+      - remaining
+      - resets_at
+      - subscription_status
+      - used_today
+    PaginatedCompanyGroupList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyGroup'
+    PaginatedCompanyGroupMembershipList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyGroupMembership'
+    PaginatedCompanyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Company'
+    PaginatedCompanyMemberList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyMember'
+    PaginatedCompanySlugHistoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanySlugHistory'
+    PaginatedFinancialDocumentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinancialDocument'
+    PaginatedGroupMessage:
+      type: object
+      properties:
+        count:
+          type: integer
+          readOnly: true
+        next:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMessage'
+          readOnly: true
+      required:
+      - count
+      - next
+      - previous
+      - results
+    PaginatedPricebookChapterList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookChapter'
+    PaginatedPricebookEditionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookEdition'
+    PaginatedPricebookGroupList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookGroup'
+    PaginatedPricebookItemListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookItemList'
+    PaginatedPricebookList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pricebook'
+    PaginatedProjectCoefficientSetList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectCoefficientSet'
+    PaginatedProjectCoefficientValueList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectCoefficientValue'
+    PaginatedProjectList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+    PaginatedTokenWalletTransaction:
+      type: object
+      properties:
+        count:
+          type: integer
+          readOnly: true
+        next:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenWalletTransaction'
+          readOnly: true
+      required:
+      - count
+      - next
+      - previous
+      - results
+    PasswordLoginRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+      required:
+      - password
+      - phone_number
+    PatchedCompanyGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+    PatchedCompanyMemberRoleRequest:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    PatchedCompanyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 180
+        legal_name:
+          type: string
+          maxLength: 240
+        registration_number:
+          type: string
+          maxLength: 80
+        national_id:
+          type: string
+          maxLength: 80
+        active_slug:
+          type: string
+          nullable: true
+          maxLength: 80
+    PatchedFinancialDocumentLineUpdateRequest:
+      type: object
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+    PatchedFinancialDocumentUpdateRequest:
+      type: object
+      properties:
+        document_number:
+          type: string
+          nullable: true
+          maxLength: 80
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        report_title:
+          type: string
+          maxLength: 240
+        document_date:
+          type: string
+          format: date
+          nullable: true
+        period_start_on:
+          type: string
+          format: date
+          nullable: true
+        period_end_on:
+          type: string
+          format: date
+          nullable: true
+    PatchedProjectCoefficientValueRequest:
+      type: object
+      properties:
+        coefficient_key:
+          type: string
+          minLength: 1
+        scope:
+          $ref: '#/components/schemas/ScopeEnum'
+        chapter_id:
+          type: integer
+          nullable: true
+        row_id:
+          type: integer
+          nullable: true
+        label_fa:
+          type: string
+        multiplier:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,8})?$
+        is_active:
+          type: boolean
+    PatchedProjectRequest:
+      type: object
+      properties:
+        project_code:
+          type: string
+          nullable: true
+          maxLength: 80
+        name:
+          type: string
+          minLength: 1
+          maxLength: 240
+        contract_number:
+          type: string
+          maxLength: 120
+        employer_name:
+          type: string
+          maxLength: 240
+        consultant_name:
+          type: string
+          maxLength: 240
+        contractor_name:
+          type: string
+          maxLength: 240
+        executive_agency_name:
+          type: string
+          maxLength: 240
+        base_year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ProjectStatusEnum'
+        starts_on:
+          type: string
+          format: date
+          nullable: true
+        ends_on:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+    PaymentOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentOrderStatusEnum'
+          readOnly: true
+        package_code_snapshot:
+          type: string
+          readOnly: true
+        token_amount_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+        price_amount_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+          readOnly: true
+        currency_snapshot:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - currency_snapshot
+      - id
+      - package_code_snapshot
+      - price_amount_snapshot
+      - status
+      - token_amount_snapshot
+    PaymentOrderCreateRequest:
+      type: object
+      description: |-
+        Only a package code and an optional retry key may be sent.
+
+        Token amount, payable price, currency, provider result, and order status
+        are never accepted from a client.
+      properties:
+        package_code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        idempotency_key:
+          type: string
+          maxLength: 128
+      required:
+      - package_code
+    PaymentOrderStatusEnum:
+      enum:
+      - created
+      - pending_provider
+      - fulfilled
+      - failed
+      - cancelled
+      type: string
+      description: |-
+        * `created` - Created
+        * `pending_provider` - Pending provider
+        * `fulfilled` - Fulfilled
+        * `failed` - Failed
+        * `cancelled` - Cancelled
+    PaymentsDisabled:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - detail
+    Pricebook:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        title_fa:
+          type: string
+          readOnly: true
+        discipline:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - code
+      - discipline
+      - id
+      - is_active
+      - title_fa
+    PricebookCalculateInputRequest:
+      type: object
+      properties:
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        values:
+          type: array
+          items:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          description: Indexed list of input values (v2 items). Supersedes quantity
+            when provided.
+        coefficient_set_id:
+          type: integer
+          nullable: true
+        manual_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          nullable: true
+        custom_prices:
+          type: object
+          additionalProperties:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          description: Optional per-row custom unit prices keyed by six-digit row_code.
+        pricebook_row_id:
+          type: integer
+          nullable: true
+        selected_row_id:
+          type: integer
+          nullable: true
+          description: Row selection for itemized items. Alias of pricebook_row_id.
+        footnotes:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: Map of footnote_code to bool — applied checkboxes for this
+            calculation.
+    PricebookCalculateResponse:
+      type: object
+      properties:
+        item_id:
+          type: integer
+        item_key:
+          type: string
+        row_id:
+          type: integer
+        row_code:
+          type: string
+        quantity:
+          type: string
+        unit:
+          type: string
+        unit_price:
+          type: string
+          nullable: true
+        currency_code:
+          type: string
+        base_amount:
+          type: string
+        coefficient_amount:
+          type: string
+        total_amount:
+          type: string
+        applied_coefficients:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedCoefficient'
+        price_source:
+          type: string
+        manual_unit_price:
+          type: string
+          nullable: true
+        custom_price_row_codes:
+          type: array
+          items:
+            type: string
+        requires_manual_unit_price:
+          type: boolean
+        calculate_message:
+          type: string
+        rows_breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookRowBreakdown'
+        calculation_input:
+          $ref: '#/components/schemas/PricebookCalculationInputSnapshotWithManual'
+        calculation_output:
+          $ref: '#/components/schemas/PricebookCalculationOutput'
+      required:
+      - applied_coefficients
+      - base_amount
+      - calculate_message
+      - calculation_input
+      - calculation_output
+      - coefficient_amount
+      - currency_code
+      - item_id
+      - item_key
+      - manual_unit_price
+      - price_source
+      - quantity
+      - requires_manual_unit_price
+      - row_code
+      - row_id
+      - rows_breakdown
+      - total_amount
+      - unit
+      - unit_price
+    PricebookCalculationInputSnapshotWithManual:
+      type: object
+      properties:
+        quantity:
+          type: string
+        values:
+          type: array
+          items:
+            type: string
+        selected_row_id:
+          type: integer
+          nullable: true
+        selected_row_code:
+          type: string
+          nullable: true
+        coefficient_set_id:
+          type: integer
+          nullable: true
+        manual_unit_price:
+          type: string
+          nullable: true
+        custom_prices:
+          type: object
+          additionalProperties:
+            type: string
+        custom_price_row_codes:
+          type: array
+          items:
+            type: string
+        footnotes:
+          type: object
+          additionalProperties: {}
+          nullable: true
+      required:
+      - coefficient_set_id
+      - manual_unit_price
+      - quantity
+    PricebookCalculationOutput:
+      type: object
+      properties:
+        base_amount:
+          type: string
+        coefficient_amount:
+          type: string
+        total_amount:
+          type: string
+        applied_coefficients:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedCoefficient'
+        formula:
+          type: string
+        price_source:
+          type: string
+        selected_row_code:
+          type: string
+          nullable: true
+        custom_price_row_codes:
+          type: array
+          items:
+            type: string
+        rows_breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookRowBreakdown'
+      required:
+      - applied_coefficients
+      - base_amount
+      - coefficient_amount
+      - formula
+      - price_source
+      - total_amount
+    PricebookChapter:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        edition_id:
+          type: integer
+          readOnly: true
+        chapter_code:
+          type: string
+          readOnly: true
+        title_fa:
+          type: string
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+      required:
+      - chapter_code
+      - edition_id
+      - id
+      - sort_order
+      - title_fa
+    PricebookEdition:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        pricebook_id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        year:
+          type: integer
+          readOnly: true
+        title_fa:
+          type: string
+          readOnly: true
+        currency_code:
+          type: string
+          readOnly: true
+        is_locked:
+          type: boolean
+          readOnly: true
+        active_price_set:
+          allOf:
+          - $ref: '#/components/schemas/ActivePriceSet'
+          nullable: true
+          readOnly: true
+      required:
+      - active_price_set
+      - code
+      - currency_code
+      - id
+      - is_locked
+      - pricebook_id
+      - title_fa
+      - year
+    PricebookGroup:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        chapter_id:
+          type: integer
+          readOnly: true
+        group_code:
+          type: string
+          readOnly: true
+        title_fa:
+          type: string
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+      required:
+      - chapter_id
+      - group_code
+      - id
+      - sort_order
+      - title_fa
+    PricebookItemDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        item_key:
+          type: string
+        short_name_fa:
+          type: string
+        description_fa:
+          type: string
+        unit:
+          type: string
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookItemRowDetail'
+        unit_price:
+          type: string
+          nullable: true
+        price_status:
+          type: string
+        requires_manual_unit_price:
+          type: boolean
+        requires_row_selection:
+          type: boolean
+        requirements:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookItemNote'
+        footnotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookItemNote'
+        has_more_details:
+          type: boolean
+        schema_version:
+          type: integer
+        value_number:
+          type: integer
+        calculation_mode:
+          type: string
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookItemInputSpec'
+        price_ranges:
+          nullable: true
+        is_itemized:
+          type: boolean
+        itemized_options:
+          nullable: true
+      required:
+      - calculation_mode
+      - description_fa
+      - footnotes
+      - has_more_details
+      - id
+      - inputs
+      - is_itemized
+      - item_key
+      - itemized_options
+      - price_ranges
+      - price_status
+      - requirements
+      - requires_manual_unit_price
+      - requires_row_selection
+      - rows
+      - schema_version
+      - short_name_fa
+      - unit
+      - unit_price
+      - value_number
+    PricebookItemInputSpec:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        value_key:
+          type: integer
+          nullable: true
+        label_fa:
+          type: string
+        unit:
+          type: string
+        data_type:
+          type: string
+        type:
+          type: string
+        min_value:
+          type: string
+          nullable: true
+        max_value:
+          type: string
+          nullable: true
+        affects_row_selection:
+          type: boolean
+        is_main_input:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PricebookSelectInputItem'
+      required:
+      - affects_row_selection
+      - data_type
+      - key
+      - label_fa
+      - max_value
+      - min_value
+      - unit
+    PricebookItemList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        item_key:
+          type: string
+          readOnly: true
+        short_name_fa:
+          type: string
+          readOnly: true
+        unit:
+          type: string
+          readOnly: true
+        group_id:
+          type: integer
+          readOnly: true
+        chapter_id:
+          type: integer
+          readOnly: true
+        edition_id:
+          type: integer
+          readOnly: true
+        unit_price:
+          type: string
+          readOnly: true
+        price_status:
+          type: string
+          readOnly: true
+        requires_manual_unit_price:
+          type: boolean
+          readOnly: true
+        requires_row_selection:
+          type: boolean
+          readOnly: true
+        has_more_details:
+          type: boolean
+          readOnly: true
+      required:
+      - chapter_id
+      - edition_id
+      - group_id
+      - has_more_details
+      - id
+      - item_key
+      - price_status
+      - requires_manual_unit_price
+      - requires_row_selection
+      - short_name_fa
+      - unit
+      - unit_price
+    PricebookItemNote:
+      type: object
+      properties:
+        id:
+          type: integer
+        note_code:
+          type: string
+        title_fa:
+          type: string
+        body_fa:
+          type: string
+        affects_calculation:
+          type: boolean
+        default_value: {}
+      required:
+      - affects_calculation
+      - body_fa
+      - default_value
+      - id
+      - note_code
+      - title_fa
+    PricebookItemRowDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        row_code:
+          type: string
+        title_fa:
+          type: string
+        short_title_fa:
+          type: string
+        description_fa:
+          type: string
+        unit:
+          type: string
+        unit_price:
+          type: string
+          nullable: true
+        currency_code:
+          type: string
+          nullable: true
+        min_value:
+          type: string
+          nullable: true
+        max_value:
+          type: string
+          nullable: true
+        selection_rule:
+          type: string
+        requires_manual_unit_price:
+          type: boolean
+      required:
+      - currency_code
+      - description_fa
+      - id
+      - max_value
+      - min_value
+      - requires_manual_unit_price
+      - row_code
+      - selection_rule
+      - short_title_fa
+      - title_fa
+      - unit
+      - unit_price
+    PricebookRowBreakdown:
+      type: object
+      properties:
+        row_id:
+          type: integer
+        row_code:
+          type: string
+        title_fa:
+          type: string
+        description_fa:
+          type: string
+        unit:
+          type: string
+        unit_price:
+          type: string
+          nullable: true
+        currency_code:
+          type: string
+        quantity:
+          type: string
+        total:
+          type: string
+        price_source:
+          type: string
+        coefficient_multiplier:
+          type: string
+        coefficient_amount:
+          type: string
+        total_after_coefficients:
+          type: string
+        applied_coefficients:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - currency_code
+      - description_fa
+      - quantity
+      - row_code
+      - row_id
+      - title_fa
+      - total
+      - unit
+      - unit_price
+    PricebookSelectInputItem:
+      type: object
+      properties:
+        short_name_fa:
+          type: string
+        long_description_fa:
+          type: string
+        row_id:
+          type: string
+      required:
+      - long_description_fa
+      - row_id
+      - short_name_fa
+    PrivateFileUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+          writeOnly: true
+        checksum_sha256:
+          type: string
+          writeOnly: true
+          maxLength: 64
+      required:
+      - file
+    PrivateFileUploadResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_id:
+          type: integer
+          readOnly: true
+        uploaded_by_member_id:
+          type: integer
+          readOnly: true
+        original_filename:
+          type: string
+          readOnly: true
+        content_type:
+          type: string
+          readOnly: true
+        byte_size:
+          type: integer
+          readOnly: true
+          nullable: true
+        sha256:
+          type: string
+          readOnly: true
+        upload_status:
+          allOf:
+          - $ref: '#/components/schemas/UploadStatusEnum'
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        duplicate:
+          type: boolean
+          readOnly: true
+      required:
+      - byte_size
+      - company_id
+      - completed_at
+      - content_type
+      - created_at
+      - duplicate
+      - id
+      - original_filename
+      - sha256
+      - upload_status
+      - uploaded_by_member_id
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_id:
+          type: integer
+          readOnly: true
+        created_by_member_id:
+          type: integer
+          readOnly: true
+        project_code:
+          type: string
+          nullable: true
+          maxLength: 80
+        name:
+          type: string
+          maxLength: 240
+        contract_number:
+          type: string
+          maxLength: 120
+        employer_name:
+          type: string
+          maxLength: 240
+        consultant_name:
+          type: string
+          maxLength: 240
+        contractor_name:
+          type: string
+          maxLength: 240
+        executive_agency_name:
+          type: string
+          maxLength: 240
+        base_year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ProjectStatusEnum'
+        starts_on:
+          type: string
+          format: date
+          nullable: true
+        ends_on:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company_id
+      - created_at
+      - created_by_member_id
+      - id
+      - name
+      - updated_at
+    ProjectCoefficientSet:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 160
+        is_default:
+          type: boolean
+        created_by_member_id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by_member_id
+      - id
+      - name
+      - project_id
+    ProjectCoefficientSetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        is_default:
+          type: boolean
+      required:
+      - name
+    ProjectCoefficientValue:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        coefficient_set_id:
+          type: integer
+          readOnly: true
+        coefficient_key:
+          type: string
+        key:
+          type: string
+          readOnly: true
+        scope:
+          $ref: '#/components/schemas/ScopeEnum'
+        chapter_id:
+          type: integer
+          nullable: true
+        row_id:
+          type: integer
+          nullable: true
+        label_fa:
+          type: string
+        title_fa:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        name_fa:
+          type: string
+          readOnly: true
+        multiplier:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,8})?$
+        value:
+          type: string
+          readOnly: true
+        factor:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - coefficient_set_id
+      - created_at
+      - factor
+      - id
+      - key
+      - name
+      - name_fa
+      - title_fa
+      - value
+    ProjectCoefficientValueRequest:
+      type: object
+      properties:
+        coefficient_key:
+          type: string
+          minLength: 1
+        scope:
+          $ref: '#/components/schemas/ScopeEnum'
+        chapter_id:
+          type: integer
+          nullable: true
+        row_id:
+          type: integer
+          nullable: true
+        label_fa:
+          type: string
+        multiplier:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,8})?$
+        is_active:
+          type: boolean
+    ProjectRequest:
+      type: object
+      properties:
+        project_code:
+          type: string
+          nullable: true
+          maxLength: 80
+        name:
+          type: string
+          minLength: 1
+          maxLength: 240
+        contract_number:
+          type: string
+          maxLength: 120
+        employer_name:
+          type: string
+          maxLength: 240
+        consultant_name:
+          type: string
+          maxLength: 240
+        contractor_name:
+          type: string
+          maxLength: 240
+        executive_agency_name:
+          type: string
+          maxLength: 240
+        base_year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ProjectStatusEnum'
+        starts_on:
+          type: string
+          format: date
+          nullable: true
+        ends_on:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+      required:
+      - name
+    ProjectStatusEnum:
+      enum:
+      - draft
+      - active
+      - archived
+      - closed
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `active` - Active
+        * `archived` - Archived
+        * `closed` - Closed
+    ReadinessChecks:
+      type: object
+      properties:
+        database:
+          type: string
+        redis:
+          type: string
+        storage:
+          type: string
+      required:
+      - database
+      - redis
+      - storage
+    ReadinessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        checks:
+          $ref: '#/components/schemas/ReadinessChecks'
+      required:
+      - checks
+      - service
+      - status
+    RoleEnum:
+      enum:
+      - owner
+      - admin
+      - employee
+      type: string
+      description: |-
+        * `owner` - Owner
+        * `admin` - Admin
+        * `employee` - Employee
+    ScopeEnum:
+      enum:
+      - project
+      - document
+      - chapter
+      - row
+      - line
+      - custom
+      type: string
+      description: |-
+        * `project` - Project
+        * `document` - Document
+        * `chapter` - Chapter
+        * `row` - Row
+        * `line` - Line
+        * `custom` - Custom
+    SessionAuthResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/AppUser'
+          readOnly: true
+      required:
+      - authenticated
+      - user
+    SignupCompleteRequest:
+      type: object
+      properties:
+        signup_ticket:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        display_name:
+          type: string
+          maxLength: 160
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        password_confirmation:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+      required:
+      - password
+      - password_confirmation
+      - signup_ticket
+    SignupStartRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+      required:
+      - phone_number
+    SignupStartResponse:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+          format: uuid
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        expires_in_seconds:
+          type: integer
+          readOnly: true
+      required:
+      - challenge_id
+      - expires_in_seconds
+      - phone_number
+    SignupVerifyRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        challenge_id:
+          type: string
+          format: uuid
+        verification_code:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 12
+          pattern: ^\d+$
+      required:
+      - challenge_id
+      - phone_number
+      - verification_code
+    SignupVerifyResponse:
+      type: object
+      properties:
+        signup_ticket:
+          type: string
+          readOnly: true
+        expires_in_seconds:
+          type: integer
+          readOnly: true
+      required:
+      - expires_in_seconds
+      - signup_ticket
+    SubscriptionPlan:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        title_fa:
+          type: string
+          readOnly: true
+        description_fa:
+          type: string
+          readOnly: true
+        daily_message_limit:
+          type: integer
+          readOnly: true
+          nullable: true
+        duration_days:
+          type: integer
+          readOnly: true
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+          readOnly: true
+        currency:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - currency
+      - daily_message_limit
+      - description_fa
+      - duration_days
+      - price_amount
+      - title_fa
+    TokenBillingError:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+        required_tokens:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        available_tokens:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+      required:
+      - code
+      - detail
+    TokenWallet:
+      type: object
+      properties:
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - balance
+      - created_at
+      - updated_at
+    TokenWalletTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        transaction_type:
+          allOf:
+          - $ref: '#/components/schemas/TransactionTypeEnum'
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+        balance_after:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        usage_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        company_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        document_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        line_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        row_code:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - balance_after
+      - company_id
+      - created_at
+      - document_id
+      - id
+      - line_id
+      - reason
+      - row_code
+      - transaction_type
+      - usage_id
+    TransactionTypeEnum:
+      enum:
+      - initial_grant
+      - manual_grant
+      - pricebook_line_usage
+      - token_package_purchase
+      type: string
+      description: |-
+        * `initial_grant` - Initial grant
+        * `manual_grant` - Manual grant
+        * `pricebook_line_usage` - Pricebook line usage
+        * `token_package_purchase` - Token package purchase
+    UploadStatusEnum:
+      enum:
+      - pending
+      - ready
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `ready` - Ready
+        * `failed` - Failed
+    UserSubscriptionStatus:
+      type: object
+      properties:
+        has_active_subscription:
+          type: boolean
+          readOnly: true
+        plan_code:
+          type: string
+          readOnly: true
+          nullable: true
+        plan_title_fa:
+          type: string
+          readOnly: true
+          nullable: true
+        status:
+          type: string
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        effective_daily_message_limit:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - effective_daily_message_limit
+      - ends_at
+      - has_active_subscription
+      - plan_code
+      - plan_title_fa
+      - starts_at
+      - status
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Token authentication. Use the format: Token <token>.'

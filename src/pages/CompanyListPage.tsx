@@ -36,28 +36,30 @@ export function CompanyListPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-10 pt-5 sm:px-6 lg:px-8">
-      <GlassCard className="relative overflow-hidden p-4 sm:p-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-6 pt-3 sm:gap-5 sm:px-6 sm:pb-10 sm:pt-5 lg:px-8">
+      <GlassCard className="relative overflow-hidden p-3 sm:p-6">
         <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-l from-transparent via-emerald-300/70 to-transparent" />
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl space-y-3">
-            <StatusBadge tone="emerald">
-              <Sparkles className="h-3.5 w-3.5" />
-              فضای شرکت‌های متریل
-            </StatusBadge>
-            <div className="space-y-2">
-              <h1 className="text-2xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
+        <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl space-y-2 sm:space-y-3">
+            <div className="hidden sm:block">
+              <StatusBadge tone="emerald">
+                <Sparkles className="h-3.5 w-3.5" />
+                فضای شرکت‌های متریل
+              </StatusBadge>
+            </div>
+            <div className="space-y-1.5 sm:space-y-2">
+              <h1 className="text-xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
                 شرکت‌های شما
               </h1>
-              <p className="text-sm leading-7 text-slate-300 light:text-slate-600">
+              <p className="hidden text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
                 یک شرکت را انتخاب کنید یا شرکت تازه بسازید تا وارد پیام‌ها و صورت‌بها شوید.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-[1fr_3rem] gap-2 sm:flex sm:flex-wrap">
             <Button
               className={classNames(
-                "shrink-0",
+                "w-full shrink-0 sm:w-auto",
                 shouldHighlightCreateCompany &&
                   "ring-2 ring-emerald-200/80 ring-offset-2 ring-offset-slate-950"
               )}
@@ -67,16 +69,22 @@ export function CompanyListPage() {
               <Plus className="h-4 w-4" />
               افزودن شرکت
             </Button>
-            <Button disabled={isFetching} onClick={() => refetch()} variant="secondary">
+            <Button
+              aria-label="به‌روزرسانی شرکت‌ها"
+              className="w-full px-0 sm:w-auto sm:px-4"
+              disabled={isFetching}
+              onClick={() => refetch()}
+              variant="secondary"
+            >
               {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              به‌روزرسانی
+              <span className="hidden sm:inline">به‌روزرسانی</span>
             </Button>
           </div>
         </div>
       </GlassCard>
 
       {isLoading ? (
-        <GlassCard className="flex min-h-48 items-center justify-center p-8">
+        <GlassCard className="flex min-h-32 items-center justify-center p-5 sm:min-h-48 sm:p-8">
           <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
             <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
             در حال دریافت شرکت‌ها
@@ -113,9 +121,9 @@ export function CompanyListPage() {
       ) : null}
 
       {!isLoading && !error && companies.length > 0 ? (
-        <section className="space-y-4">
+        <section className="space-y-2.5 sm:space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-black text-white light:text-slate-950">
+            <h2 className="text-sm font-black text-white light:text-slate-950 sm:text-lg">
               {companyCount} شرکت قابل دسترس
             </h2>
             {data?.next ? <StatusBadge tone="amber">صفحه‌های بعدی در نسخه‌های آینده تکمیل می‌شود</StatusBadge> : null}
@@ -123,15 +131,15 @@ export function CompanyListPage() {
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-tour="company-list">
             {companies.map((company) => (
-              <GlassCard className="p-4" interactive key={company.id}>
-                <Link className="block focus:outline-none" to={`/companies/${company.id}`}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 space-y-2">
+              <GlassCard className="p-3 sm:p-4" interactive key={company.id}>
+                <Link className="block min-h-11 focus:outline-none" to={`/companies/${company.id}`}>
+                  <div className="flex items-start justify-between gap-3 sm:gap-4">
+                    <div className="min-w-0 space-y-1.5 sm:space-y-2">
                       <StatusBadge tone={company.is_active ? "emerald" : "amber"}>
                         {company.is_active ? "فعال" : "غیرفعال"}
                       </StatusBadge>
                       <div>
-                        <h3 className="truncate text-lg font-black text-white light:text-slate-950">
+                        <h3 className="truncate text-base font-black text-white light:text-slate-950 sm:text-lg">
                           {company.name}
                         </h3>
                         {company.legal_name ? (
@@ -143,7 +151,7 @@ export function CompanyListPage() {
                     </div>
                     <ArrowLeft className="mt-2 h-5 w-5 shrink-0 text-emerald-200" />
                   </div>
-                  <div className="mt-4 grid gap-2 text-xs text-slate-400 light:text-slate-500">
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 light:text-slate-500 sm:mt-4 sm:grid sm:gap-2">
                     {company.national_id ? <p>شناسه ملی: {company.national_id}</p> : null}
                     {company.registration_number ? <p>شماره ثبت: {company.registration_number}</p> : null}
                   </div>

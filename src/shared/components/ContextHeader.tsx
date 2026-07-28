@@ -10,7 +10,7 @@ export function ContextHeader() {
 
   if (wizardCtx) {
     return (
-      <header className="fixed top-14 lg:top-0 left-0 right-0 lg:right-[19rem] z-30 h-16 border-b border-white/8 bg-slate-950/55 backdrop-blur-xl light:border-slate-200 light:bg-white/90">
+      <header className="fixed left-0 right-0 top-14 z-30 h-14 border-b border-white/8 bg-slate-950/55 backdrop-blur-xl light:border-slate-200 light:bg-white/90 lg:right-[19rem] lg:top-0 lg:h-16">
         <div className="flex h-full items-center gap-3 px-3 sm:px-6">
           <button
             aria-label="بازگشت"
@@ -51,7 +51,7 @@ export function ContextHeader() {
   if (companyCtx) {
     return (
       <header className="sticky top-14 lg:top-0 z-20 border-b border-white/8 bg-slate-950/28 backdrop-blur-xl light:border-slate-200 light:bg-white/70">
-        <div className="flex items-center gap-3 px-3 py-3 sm:px-6 sm:py-4">
+        <div className="flex items-center gap-2 px-3 py-1.5 sm:gap-3 sm:px-6 sm:py-4">
           <Link
             aria-label="بازگشت به شرکت‌ها"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 sm:h-9 sm:w-9 light:text-slate-500 light:hover:text-slate-900"
@@ -60,7 +60,7 @@ export function ContextHeader() {
             <ArrowRight className="h-4 w-4" />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-2xl sm:text-3xl font-black leading-6 text-white light:text-slate-950">
+            <p className="truncate text-lg font-black leading-6 text-white light:text-slate-950 sm:text-3xl">
               {companyCtx.name}
             </p>
           </div>

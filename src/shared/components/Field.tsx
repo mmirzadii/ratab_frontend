@@ -14,7 +14,7 @@ export function Field({
   required?: boolean;
 }) {
   return (
-    <label className={classNames("space-y-2", className)}>
+    <label className={classNames("space-y-1.5 sm:space-y-2", className)}>
       <span className="text-sm font-bold text-slate-200 light:text-slate-700">
         {label}
         {required ? <span className="text-emerald-300"> *</span> : null}

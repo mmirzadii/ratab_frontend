@@ -62,8 +62,8 @@ Phase 2 added the RTL design-system foundation, reusable shell primitives, a pol
 
 - No new backend endpoint calls were added.
 - Existing RTK Query health endpoint remains the only API call.
-- Used the existing generated OpenAPI type setup from `backend_docs/v0.0/openapi_v0_0.yaml`.
-- The prompt-required exact schema filename `backend_docs/v0.0/ratab v0.0 Backend API.yaml` is still absent; the available schema remains `backend_docs/v0.0/openapi_v0_0.yaml`.
+- Used the existing generated OpenAPI type setup from `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`.
+- The prompt-required exact schema filename `backend_docs/history/v0.0/OPENAPI.yaml` is still absent; the available schema remains `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`.
 
 ## Docker / Online Dev Deployment Notes
 
@@ -79,7 +79,7 @@ Because `docker/frontend/Dockerfile`, `docker/frontend/nginx.conf`, and `.docker
 
 ## Risks and Assumptions
 
-- Assumed `backend_docs/v0.0/openapi_v0_0.yaml` remains the authoritative schema source.
+- Assumed `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` remains the authoritative schema source.
 - Assumed Phase 2 should not add a test runner because the plan explicitly avoids adding one unless already present.
 - Assumed the dashboard preview should remain static to avoid fake backend behavior.
 
@@ -87,7 +87,7 @@ Because `docker/frontend/Dockerfile`, `docker/frontend/nginx.conf`, and `.docker
 
 - Review `/` in a browser for RTL layout, dashboard preview polish, light/dark mode, and guided tour behavior.
 - Review `/status` in a browser to confirm the Phase 1 health screen still works.
-- Confirm whether the OpenAPI schema should remain `backend_docs/v0.0/openapi_v0_0.yaml` or be manually copied/renamed to `backend_docs/v0.0/ratab v0.0 Backend API.yaml`.
+- Confirm whether the OpenAPI schema should remain `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` or be manually copied/renamed to `backend_docs/history/v0.0/OPENAPI.yaml`.
 
 ## Suggested Commit Message
 

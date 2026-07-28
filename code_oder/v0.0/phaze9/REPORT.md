@@ -12,8 +12,8 @@ Frontend Phase 9 added a public Ratab landing page at `/`, kept `/login` as the 
 - Used the documented backend API contract from:
 
 ```text
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
 ```
 
 - Added frontend usage of documented preview/export endpoints:
@@ -33,7 +33,7 @@ GET /api/financial-document-exports/{id}/download/
 ## Files Created
 
 - `src/pages/LandingPage.tsx`
-- `code_oder/v0.0/reference/landing_reference.html`
+- `docs/product_reference/v0.0/landing_reference.html`
 - `code_oder/v0.0/phaze9/REPORT.md`
 - `code_oder/v0.0/phaze9/TEST_RESULTS.md`
 
@@ -57,7 +57,7 @@ GET /api/financial-document-exports/{id}/download/
   - feature cards;
   - workflow section;
   - dev/demo notice.
-- Documented the provided HTML reference under `code_oder/v0.0/reference/landing_reference.html` and did not copy unsafe scripts into React.
+- Documented the provided HTML reference under `docs/product_reference/v0.0/landing_reference.html` and did not copy unsafe scripts into React.
 - Added RTK Query endpoints for:
   - HTML preview as `text/html`;
   - export metadata creation;

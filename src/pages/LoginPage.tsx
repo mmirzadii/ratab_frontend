@@ -189,7 +189,7 @@ export function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05050a] text-slate-100">
+    <main className="relative min-h-dvh overflow-x-hidden overflow-y-auto bg-[#05050a] text-slate-100">
       {/* Three.js particle canvas */}
       <ParticleBackground canvasRef={canvasRef} />
 
@@ -197,30 +197,30 @@ export function LoginPage() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(20,184,166,0.18),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(139,92,246,0.14),transparent_30%)]" />
 
       {/* Content */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
-        <div ref={cardRef} style={{ opacity: 0 }}>
-          <GlassCard className="w-full max-w-md p-6 sm:p-8">
-            <div className="mb-8 flex items-center justify-between gap-4">
+      <div className="relative z-10 flex min-h-dvh items-center justify-center px-3 py-4 sm:px-4 sm:py-8">
+        <div className="w-full max-w-md" ref={cardRef} style={{ opacity: 0 }}>
+          <GlassCard className="w-full p-4 sm:p-8">
+            <div className="mb-5 flex items-center justify-between gap-4 sm:mb-8">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 text-xl font-black text-slate-950 shadow-emerald-soft">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 text-lg font-black text-slate-950 shadow-emerald-soft sm:h-12 sm:w-12 sm:text-xl">
                   م
                 </div>
-                <p className="text-xl font-black text-white">متریل</p>
+                <p className="text-lg font-black text-white sm:text-xl">متریل</p>
               </div>
               <ThemeToggle />
             </div>
 
             {!hasConfirmedPhone ? (
-              <form className="space-y-5" onSubmit={handlePhoneStep}>
+              <form className="space-y-4 sm:space-y-5" onSubmit={handlePhoneStep}>
                 <div>
                   <label className="text-base font-bold text-slate-200" htmlFor="phone-number">
                     شماره تلفن
                   </label>
-                  <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2">
-                    <Phone className="h-5 w-5 text-emerald-300" />
+                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2 focus-within:border-emerald-300/45">
+                    <Phone className="h-5 w-5 shrink-0 text-emerald-300" />
                     <input
                       autoComplete="tel"
-                      className="h-10 flex-1 bg-transparent text-left text-base font-bold tracking-wide text-white outline-none placeholder:text-slate-500"
+                      className="h-10 min-w-0 flex-1 bg-transparent text-left text-base font-bold tracking-wide text-white outline-none placeholder:text-slate-500"
                       dir="ltr"
                       id="phone-number"
                       inputMode="tel"
@@ -240,16 +240,16 @@ export function LoginPage() {
                 </Button>
               </form>
             ) : (
-              <form className="space-y-5" onSubmit={handleDevLogin}>
+              <form className="space-y-4 sm:space-y-5" onSubmit={handleDevLogin}>
                 <div>
                   <label className="text-base font-bold text-slate-200" htmlFor="display-name">
                     نام نمایشی (اختیاری)
                   </label>
-                  <div className="mt-2 flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2">
-                    <UserRound className="h-5 w-5 text-violet-300" />
+                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2 focus-within:border-violet-300/45">
+                    <UserRound className="h-5 w-5 shrink-0 text-violet-300" />
                     <input
                       autoComplete="name"
-                      className="h-10 flex-1 bg-transparent text-base text-white outline-none placeholder:text-slate-500"
+                      className="h-10 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-slate-500"
                       id="display-name"
                       maxLength={160}
                       onChange={(event) => setDisplayName(event.target.value)}

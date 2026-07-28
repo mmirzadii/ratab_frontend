@@ -1,13 +1,105 @@
-import type { FinancialDocument } from "../financialDocuments/financialDocumentApi";
+import type {
+  FinancialDocument,
+  FinancialDocumentLine
+} from "../financialDocuments/financialDocumentApi";
 import type {
   PricebookCalculateResponse,
   PricebookChapter,
   PricebookEdition,
   PricebookItemDetail,
+  PricebookItemFootnote,
   PricebookItemInputSpec
 } from "../pricebooks/pricebookApi";
 import { getApiErrorMessage } from "../../shared/utils/apiError";
 import { normalizeNumberInput, normalizeRowCode } from "../../shared/utils/numberText";
+
+export type FootnoteInputValues = Record<string, Record<string, string>>;
+export type FootnoteInputErrors = Record<string, Record<string, string | null>>;
+export type TouchedFootnoteInputs = Record<string, Record<string, boolean>>;
+export type FootnotesPayload = Record<
+  string,
+  true | { active: true; values: Record<string, string> }
+>;
+
+function validateFootnoteNumber(
+  input: NonNullable<PricebookItemFootnote["inputs"]>[number],
+  rawValue: string
+): { message: string; ok: false } | { ok: true; value: string } {
+  const label = input.label_fa || "مقدار";
+  const value = normalizeNumberInput(rawValue).replace(/٫/g, ".");
+  if (!value) return { message: `${label} را وارد کنید.`, ok: false };
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)) {
+    return { message: `${label} باید عددی باشد.`, ok: false };
+  }
+  const numericValue = Number(value);
+  const min = input.min_value === null ? null : Number(normalizeNumberInput(input.min_value));
+  const max = input.max_value === null ? null : Number(normalizeNumberInput(input.max_value));
+  if (min !== null && Number.isFinite(min) && numericValue < min) {
+    return { message: `${label} نمی‌تواند کمتر از ${input.min_value} باشد.`, ok: false };
+  }
+  if (max !== null && Number.isFinite(max) && numericValue > max) {
+    return { message: `${label} نمی‌تواند بیشتر از ${input.max_value} باشد.`, ok: false };
+  }
+  return { ok: true, value };
+}
+
+export function validateFootnoteInputs(
+  footnotes: readonly PricebookItemFootnote[],
+  confirmedFootnotes: Record<string, boolean>,
+  values: FootnoteInputValues
+): { errors: FootnoteInputErrors; normalizedValues: FootnoteInputValues; ok: boolean } {
+  const errors: FootnoteInputErrors = {};
+  const normalizedValues: FootnoteInputValues = {};
+  let ok = true;
+  for (const note of footnotes) {
+    if (!confirmedFootnotes[note.note_code] || !note.requires_input) continue;
+    for (const input of note.inputs ?? []) {
+      const validation =
+        input.type === "number"
+          ? validateFootnoteNumber(input, values[note.note_code]?.[input.name] ?? "")
+          : (() => {
+              const value = (values[note.note_code]?.[input.name] ?? "").trim();
+              return value
+                ? ({ ok: true, value } as const)
+                : ({ message: `${input.label_fa || "مقدار"} را وارد کنید.`, ok: false } as const);
+            })();
+      if (!validation.ok) {
+        ok = false;
+        errors[note.note_code] = { ...(errors[note.note_code] ?? {}), [input.name]: validation.message };
+      } else {
+        normalizedValues[note.note_code] = {
+          ...(normalizedValues[note.note_code] ?? {}),
+          [input.name]: validation.value
+        };
+      }
+    }
+  }
+  return { errors, normalizedValues, ok };
+}
+
+export function buildFootnotesPayload({
+  notes,
+  confirmedFootnotes,
+  footnoteInputValues
+}: {
+  notes: readonly PricebookItemFootnote[];
+  confirmedFootnotes: Record<string, boolean>;
+  footnoteInputValues: FootnoteInputValues;
+}): FootnotesPayload {
+  const validation = validateFootnoteInputs(notes, confirmedFootnotes, footnoteInputValues);
+  const payload: FootnotesPayload = {};
+  for (const note of notes) {
+    if (!confirmedFootnotes[note.note_code]) continue;
+    if (!note.requires_input) payload[note.note_code] = true;
+    else if (!validation.errors[note.note_code]) {
+      payload[note.note_code] = {
+        active: true,
+        values: validation.normalizedValues[note.note_code] ?? {}
+      };
+    }
+  }
+  return payload;
+}
 
 import {
   chapterFilters,
@@ -43,10 +135,7 @@ export function getInitialWizardForm(
 }
 
 export function getDefaultEdition(editions: PricebookEdition[]) {
-  return (
-    editions.find((edition) => edition.year === 1404) ??
-    [...editions].sort((first, second) => second.year - first.year)[0]
-  );
+  return [...editions].sort((first, second) => second.year - first.year)[0];
 }
 
 export function getSnapshotString(snapshot: unknown, keys: string[]): string | null {
@@ -777,6 +866,183 @@ function hasNonZeroNumericValue(value: string | number | null | undefined): bool
 
   const numeric = Number(String(value).replace(/,/g, ""));
   return Number.isFinite(numeric) && numeric !== 0;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function getRecordArray(record: Record<string, unknown>, key: string): unknown[] {
+  const value = record[key];
+  return Array.isArray(value) ? value : [];
+}
+
+export type LineDisplayRow = {
+  parentLineId: number;
+  parentLineNo: number | null;
+  rowCode: string | null;
+  title: string;
+  quantity: string;
+  unit: string | null;
+  unitPrice: string | null;
+  total: string | null;
+  priceSource: string | null;
+  isStarredPrice: boolean;
+};
+
+function normalizeLineDisplayRow(
+  line: FinancialDocumentLine,
+  source: unknown
+): LineDisplayRow | null {
+  if (!isRecord(source)) {
+    return null;
+  }
+  const lineRecord = line as unknown as Record<string, unknown>;
+
+  const rowCode =
+    getRecordString(source, "row_code") ??
+    getRecordString(source, "rowCode") ??
+    getRecordString(source, "row_code_snapshot") ??
+    getRecordString(source, "code") ??
+    line.row_code_snapshot ??
+    null;
+  const title =
+    getRecordString(source, "description_fa") ??
+    getRecordString(source, "title_fa") ??
+    getRecordString(source, "short_title_fa") ??
+    getRecordString(source, "description_snapshot") ??
+    getRecordString(source, "description") ??
+    getRecordString(source, "title") ??
+    line.description_snapshot ??
+    "شرح ثبت نشده";
+  const quantity =
+    getRecordString(source, "quantity") ??
+    getRecordString(source, "qty") ??
+    getRecordString(source, "value") ??
+    line.quantity;
+  const unit =
+    getRecordString(source, "unit") ??
+    getRecordString(source, "unit_fa") ??
+    line.unit_snapshot ??
+    null;
+  const unitPrice =
+    getRecordString(source, "unit_price") ??
+    getRecordString(source, "unitPrice") ??
+    getRecordString(source, "unit_price_snapshot") ??
+    line.unit_price_snapshot ??
+    null;
+  const total =
+    getRecordString(source, "total") ??
+    getRecordString(source, "total_amount") ??
+    getRecordString(source, "amount") ??
+    getRecordString(source, "total_amount_snapshot") ??
+    line.total_amount_snapshot ??
+    null;
+  const priceSource =
+    getRecordString(source, "price_source") ?? getRecordString(source, "priceSource");
+  const isStarredPrice =
+    source["is_starred_price"] === true ||
+    lineRecord["is_starred_price"] === true ||
+    lineRecord["has_starred_prices"] === true ||
+    getRecordString(lineRecord, "line_source") === "starred" ||
+    isCustomPriceSource(priceSource) ||
+    (rowCode !== null && getStringSet(lineRecordValue(line, "starred_price_row_codes")).has(rowCode));
+
+  return {
+    parentLineId: line.id,
+    parentLineNo: line.line_no ?? null,
+    rowCode,
+    title,
+    quantity,
+    unit,
+    unitPrice,
+    total,
+    priceSource,
+    isStarredPrice
+  };
+}
+
+function normalizeLineDisplayRows(
+  line: FinancialDocumentLine,
+  rows: unknown[]
+): LineDisplayRow[] {
+  return rows
+    .map((row) => normalizeLineDisplayRow(line, row))
+    .filter((row): row is LineDisplayRow => row !== null)
+    .filter((row) => hasNonZeroNumericValue(row.quantity) || hasNonZeroNumericValue(row.total));
+}
+
+export function getLineDisplayRows(line: FinancialDocumentLine): LineDisplayRow[] {
+  const lineRecord = line as unknown as Record<string, unknown>;
+  const outputRecord = isRecord(line.calculation_output_json)
+    ? line.calculation_output_json
+    : {};
+  const candidateGroups = [
+    getRecordArray(lineRecord, "calculated_rows"),
+    getRecordArray(outputRecord, "calculated_rows"),
+    getRecordArray(outputRecord, "rows_breakdown"),
+    getRecordArray(outputRecord, "rows"),
+    getRecordArray(outputRecord, "values")
+  ];
+  const starredRowCodes = new Set([
+    ...getStringSet(lineRecord["starred_price_row_codes"]),
+    ...getStringSet(outputRecord["starred_price_row_codes"]),
+    ...getStringSet(outputRecord["custom_price_row_codes"])
+  ]);
+
+  for (const rows of candidateGroups) {
+    const normalizedRows = normalizeLineDisplayRows(line, rows);
+    if (normalizedRows.length > 0) {
+      return normalizedRows.map((row) => ({
+        ...row,
+        isStarredPrice:
+          row.isStarredPrice || (row.rowCode !== null && starredRowCodes.has(row.rowCode))
+      }));
+    }
+  }
+
+  return [
+    {
+      parentLineId: line.id,
+      parentLineNo: line.line_no ?? null,
+      rowCode: line.row_code_snapshot ?? null,
+      title: line.description_snapshot ?? "شرح ثبت نشده",
+      quantity: line.quantity,
+      unit: line.unit_snapshot ?? null,
+      unitPrice: line.unit_price_snapshot ?? null,
+      total: line.total_amount_snapshot ?? null,
+      priceSource: null,
+      isStarredPrice:
+        lineRecord["is_starred_price"] === true ||
+        lineRecord["has_starred_prices"] === true ||
+        getRecordString(lineRecord, "line_source") === "starred" ||
+        isCustomPriceSource(getRecordString(lineRecord, "price_source"))
+    }
+  ];
+}
+
+function lineRecordValue(line: FinancialDocumentLine, key: string): unknown {
+  return (line as unknown as Record<string, unknown>)[key];
+}
+
+function getStringSet(value: unknown): Set<string> {
+  return new Set(
+    Array.isArray(value)
+      ? value
+          .filter((item): item is string | number => typeof item === "string" || typeof item === "number")
+          .map(String)
+      : []
+  );
+}
+
+export function hasPositiveMoneyValue(value: string | number | null | undefined): boolean {
+  if (value === null || value === undefined || String(value).trim() === "") return false;
+  const numeric = Number(String(value).replace(/,/g, ""));
+  return Number.isFinite(numeric) && numeric > 0;
+}
+
+export function displayUnitPrice(value: string | number | null | undefined): string {
+  return hasPositiveMoneyValue(value) ? String(value) : "-";
 }
 
 function getCustomPriceRowCodes(calculation: PricebookCalculateResponse): Set<string> {

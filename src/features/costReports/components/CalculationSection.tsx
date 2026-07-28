@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Check, ChevronDown } from "lucide-react";
 
 import type {
   PricebookCalculateResponse,
@@ -16,6 +17,7 @@ import {
   getInputStateKey,
   getSelectInputOptions,
   getVisibleCalculationRows,
+  hasPositiveMoneyValue,
   isMainNumericInput,
   isSelectInput
 } from "../costReportUtils";
@@ -47,6 +49,93 @@ export type CalculationCustomFallbackPrice = {
 
 export type CalculationStatusDotState = "green" | "yellow" | "red";
 
+function ResponsiveRowSelect({
+  disabled,
+  selection
+}: {
+  disabled: boolean;
+  selection: CalculationRowSelection;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const selectedOption = selection.options.find((option) => option.id === selection.value);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    function closeOnOutsidePointer(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+
+    window.document.addEventListener("pointerdown", closeOnOutsidePointer);
+    window.document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      window.document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative min-w-0" ref={containerRef}>
+      <button
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={classNames(
+          inputClasses,
+          "flex min-h-11 h-auto w-full min-w-0 items-center justify-between gap-2 py-2 text-right"
+        )}
+        disabled={disabled || selection.options.length === 0}
+        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+      >
+        <span className={classNames("min-w-0 flex-1 break-words", !selectedOption && "text-slate-400")}>
+          {selectedOption?.label ?? selection.placeholder}
+        </span>
+        <ChevronDown
+          className={classNames("h-4 w-4 shrink-0 transition", isOpen && "rotate-180")}
+        />
+      </button>
+
+      {isOpen ? (
+        <div
+          aria-label={selection.label}
+          className="absolute inset-x-0 top-full z-50 mt-1 max-h-[min(45dvh,18rem)] min-w-0 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-slate-900 p-1 shadow-2xl [scrollbar-width:thin] light:border-slate-200 light:bg-white"
+          role="listbox"
+        >
+          {selection.options.map((option) => {
+            const isSelected = option.id === selection.value;
+            return (
+              <button
+                aria-selected={isSelected}
+                className={classNames(
+                  "flex w-full min-w-0 items-start gap-2 rounded-md px-3 py-2.5 text-right text-sm leading-6 transition",
+                  isSelected
+                    ? "bg-emerald-400/15 text-emerald-100 light:bg-emerald-50 light:text-emerald-800"
+                    : "text-slate-200 hover:bg-white/8 light:text-slate-800 light:hover:bg-slate-100"
+                )}
+                key={option.id}
+                onClick={() => {
+                  selection.onChange(option.id);
+                  setIsOpen(false);
+                }}
+                role="option"
+                type="button"
+              >
+                <span className="min-w-0 flex-1 whitespace-normal break-words">{option.label}</span>
+                {isSelected ? <Check className="mt-1 h-4 w-4 shrink-0" /> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function CalculationSection({
   calculation,
   calculationError,
@@ -73,7 +162,7 @@ export function CalculationSection({
   quantityError,
   rangeMatchError,
   requiresManualPrice,
-  requiresRowSelection,
+  requiresRowPrice,
   rowSelection,
   setManualUnitPrice,
   setQuantity,
@@ -104,6 +193,7 @@ export function CalculationSection({
   quantityError: string | null;
   rangeMatchError?: string | null;
   requiresManualPrice: boolean;
+  requiresRowPrice?: boolean;
   requiresRowSelection: boolean;
   rowSelection?: CalculationRowSelection;
   setManualUnitPrice: (value: string) => void;
@@ -135,8 +225,8 @@ export function CalculationSection({
   );
   const calculationPriceLabel =
     calculation?.requires_manual_unit_price || calculationRows.some((row) => row.isCustomPrice)
-      ? "دستی"
-      : "رسمی";
+      ? "★ ستاره‌دار"
+      : "قیمت رسمی";
   const hasInlineValidationError = Boolean(
     quantityError ||
       manualUnitPriceError ||
@@ -151,25 +241,11 @@ export function CalculationSection({
   const gridCols = requiresManualPrice ? "sm:grid-cols-2" : "sm:grid-cols-1";
 
   const rowSelectionField = rowSelection ? (
-    <label className="space-y-2">
+    <div className="space-y-2">
       <span className="text-sm font-bold text-slate-200 light:text-slate-700">
         {rowSelection.label}
       </span>
-      <select
-        className={inputClasses}
-        disabled={inputsDisabled}
-        onChange={(event) =>
-          rowSelection.onChange(event.target.value ? Number(event.target.value) : null)
-        }
-        value={rowSelection.value ?? ""}
-      >
-        <option value="">{rowSelection.placeholder}</option>
-        {rowSelection.options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <ResponsiveRowSelect disabled={inputsDisabled} selection={rowSelection} />
       {rowSelection.error ? (
         <p className="text-xs text-rose-300 light:text-rose-700">{rowSelection.error}</p>
       ) : null}
@@ -178,7 +254,7 @@ export function CalculationSection({
           گزینه‌ای برای انتخاب از سمت فهرست‌بها دریافت نشده است.
         </p>
       ) : null}
-    </label>
+    </div>
   ) : null;
 
   const manualPriceField = requiresManualPrice ? (
@@ -337,7 +413,7 @@ export function CalculationSection({
         )}
         title={row.priceSource ?? undefined}
       >
-        {row.isCustomPrice ? "دستی" : "رسمی"}
+        {row.isCustomPrice ? "★ ستاره‌دار" : "قیمت رسمی"}
       </span>
     );
   }
@@ -353,9 +429,11 @@ export function CalculationSection({
         />
       </div>
 
-      {requiresManualPrice ? (
+      {requiresManualPrice || requiresRowPrice ? (
         <p className="mt-3 text-sm leading-7 text-amber-100 light:text-amber-800">
-          این آیتم قیمت رسمی ندارد؛ قیمت واحد را وارد کنید تا بک‌اند با همان قیمت محاسبه کند.
+          {requiresRowPrice
+            ? "این آیتم قیمت رسمی ندارد؛ قیمت را فقط از بخش ردیف‌های فهرست‌بها و با دکمه مداد وارد کنید."
+            : "این آیتم قیمت رسمی ندارد؛ قیمت واحد را وارد کنید تا بک‌اند با همان قیمت محاسبه کند."}
         </p>
       ) : null}
 
@@ -485,7 +563,11 @@ export function CalculationSection({
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-slate-400 light:text-slate-500">بهای واحد</dt>
-                  <dd className="font-bold">{formatMoneyAmount(calculation.unit_price)}</dd>
+                  <dd className="font-bold">
+                    {hasPositiveMoneyValue(calculation.unit_price)
+                      ? formatMoneyAmount(calculation.unit_price)
+                      : "-"}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-slate-400 light:text-slate-500">قیمت</dt>
@@ -533,7 +615,9 @@ export function CalculationSection({
                           <td className="px-2 py-2">
                             {formatDecimal(row.quantity)} {row.unit ?? ""}
                           </td>
-                          <td className="px-2 py-2">{formatMoneyAmount(row.unitPrice)}</td>
+                          <td className="px-2 py-2">
+                            {hasPositiveMoneyValue(row.unitPrice) ? formatMoneyAmount(row.unitPrice) : "-"}
+                          </td>
                           <td className="px-2 py-2 font-bold">{formatMoneyAmount(row.total)}</td>
                           <td className="px-2 py-2">{renderPriceSourceBadge(row)}</td>
                         </tr>

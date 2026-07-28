@@ -25,15 +25,15 @@ export function AccountSettingsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-      <GlassCard className="p-0 overflow-hidden">
-        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4 light:border-slate-200">
+    <div className="mx-auto w-full max-w-2xl px-3 pb-6 pt-3 sm:px-6 sm:pb-10 sm:pt-6 lg:px-8">
+      <GlassCard className="overflow-hidden p-0">
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 light:border-slate-200 sm:px-5 sm:py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200 sm:h-11 sm:w-11">
               <Settings className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-lg font-black text-white light:text-slate-950">تنظیمات حساب</h1>
+              <h1 className="text-base font-black text-white light:text-slate-950 sm:text-lg">تنظیمات حساب</h1>
               <p className="mt-1 text-xs text-slate-400 light:text-slate-500">اطلاعات حساب کاربری</p>
             </div>
           </div>
@@ -43,27 +43,27 @@ export function AccountSettingsPage() {
         </div>
 
         {displayUser ? (
-          <div className="p-5 space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50">
+          <div className="space-y-3 p-3 sm:space-y-4 sm:p-5">
+            <div className="grid divide-y divide-white/10 overflow-hidden rounded-xl border border-white/10 light:divide-slate-200 light:border-slate-200 sm:grid-cols-2 sm:gap-3 sm:divide-y-0 sm:overflow-visible sm:rounded-none sm:border-0">
+              <div className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 sm:block sm:rounded-lg sm:border sm:border-white/10 sm:bg-white/7 sm:p-4 light:sm:border-slate-200 light:sm:bg-slate-50">
                 <p className="text-xs text-slate-400 light:text-slate-500">نام نمایشی</p>
-                <p className="mt-1 font-black text-slate-100 light:text-slate-900">{displayUser.display_name}</p>
+                <p className="min-w-0 break-words text-sm font-black text-slate-100 light:text-slate-900 sm:mt-1 sm:text-base">{displayUser.display_name}</p>
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50">
+              <div className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 sm:block sm:rounded-lg sm:border sm:border-white/10 sm:bg-white/7 sm:p-4 light:sm:border-slate-200 light:sm:bg-slate-50">
                 <p className="text-xs text-slate-400 light:text-slate-500">شماره تلفن</p>
-                <p className="mt-1 font-black font-mono text-slate-100 light:text-slate-900 ltr">{displayUser.phone_number}</p>
+                <p className="font-mono text-sm font-black text-slate-100 light:text-slate-900 ltr sm:mt-1 sm:text-base">{displayUser.phone_number}</p>
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50">
+              <div className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 sm:block sm:rounded-lg sm:border sm:border-white/10 sm:bg-white/7 sm:p-4 light:sm:border-slate-200 light:sm:bg-slate-50">
                 <p className="text-xs text-slate-400 light:text-slate-500">وضعیت حساب</p>
-                <p className="mt-1">
+                <p className="sm:mt-1">
                   <StatusBadge tone={displayUser.is_active ? "emerald" : "amber"}>
                     {displayUser.is_active ? "فعال" : "غیرفعال"}
                   </StatusBadge>
                 </p>
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50">
+              <div className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 sm:block sm:rounded-lg sm:border sm:border-white/10 sm:bg-white/7 sm:p-4 light:sm:border-slate-200 light:sm:bg-slate-50">
                 <p className="text-xs text-slate-400 light:text-slate-500">دسترسی ادمین</p>
-                <p className="mt-1">
+                <p className="sm:mt-1">
                   <StatusBadge tone={displayUser.is_staff ? "violet" : "slate"}>
                     {displayUser.is_staff ? "ادمین" : "کاربر عادی"}
                   </StatusBadge>
@@ -71,8 +71,8 @@ export function AccountSettingsPage() {
               </div>
             </div>
 
-            <div className="pt-2">
-              <Button onClick={handleLogout} type="button" variant="secondary">
+            <div className="sm:pt-2">
+              <Button className="w-full sm:w-auto" onClick={handleLogout} type="button" variant="secondary">
                 <LogOut className="h-4 w-4" />
                 خروج از حساب
               </Button>

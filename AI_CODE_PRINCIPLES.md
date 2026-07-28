@@ -36,20 +36,33 @@ v0.0 must support:
 
 ## Backend references
 
-Always read before coding:
+Active backend integration contract (only when synced from backend `codexphaze/frontend_docs/`):
 
 ```text
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/current/OPENAPI.yaml
+backend_docs/current/FRONTEND_HANDOFF.md
+backend_docs/current/BACKEND_VERSION
 ```
+
+Until `backend_docs/current/` is synced, Frontend v0.0 historical contracts are:
+
+```text
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
+```
+
+`backend_docs/current/` is the only active integration source. `backend_docs/history/` must not be used for new contract-driven implementation once current is synced.
+
+`backend_docs/current/BACKEND_VERSION` is the backend contract version. `code_oder/active_version.txt` is the frontend phase version. Do not conflate them.
 
 Rules:
 
-- Treat the YAML as the main API contract.
+- Treat the active OpenAPI YAML as the main API contract.
 - Do not invent endpoints.
 - Do not guess request/response fields.
 - If docs and YAML conflict, stop and report.
 - Do not modify backend code.
+- Do not depend on Django models, migrations, DB tables, or `DB_SCHEMA_REFERENCE.dbml` as architecture.
 
 Current backend dev URL:
 
@@ -68,10 +81,10 @@ VITE_API_BASE_URL=https://hw2momirzadipayload.darkube.ir
 Use as visual references:
 
 ```text
-code_oder/v0.0/reference/main_updated.html
-code_oder/v0.0/reference/UI_THEME_NOTES.md
-code_oder/v0.0/reference/PRODUCT_FLOW_NOTES.md
-code_oder/v0.0/reference/company_dual_nav_reference.png
+docs/product_reference/v0.0/main_updated.html
+docs/product_reference/v0.0/UI_THEME_NOTES.md
+docs/product_reference/v0.0/PRODUCT_FLOW_NOTES.md
+docs/product_reference/v0.0/company_dual_nav_reference.png
 ```
 
 `main_updated.html` defines the dark/glass/emerald/RTL visual direction. The screenshot is only a structural reference for dual navigation; do not copy Hamravesh branding.

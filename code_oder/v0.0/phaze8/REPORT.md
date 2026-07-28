@@ -12,8 +12,8 @@ Frontend Phase 8 improved the active financial document workflow inside the cost
 - Used only documented backend API contracts from:
 
 ```text
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
 ```
 
 - Used documented financial document endpoints:

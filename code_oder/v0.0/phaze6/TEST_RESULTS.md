@@ -25,7 +25,7 @@ rg -n "FinancialDocumentCreateRequest|FinancialDocumentLineCreateRequest|ActiveP
 ```
 
 ```powershell
-rg -n "ActivePriceSet|PricebookEdition|FinancialDocumentCreateRequest|FinancialDocumentLineCreateRequest|PricebookCalculateInputRequest|PricebookCalculateResponse|/api/pricebooks/\{id\}/editions/|/api/projects/\{id\}/financial-documents/|/api/financial-documents/\{id\}/lines/" "backend_docs/v0.0/ratab v0.0 Backend API.yaml"
+rg -n "ActivePriceSet|PricebookEdition|FinancialDocumentCreateRequest|FinancialDocumentLineCreateRequest|PricebookCalculateInputRequest|PricebookCalculateResponse|/api/pricebooks/\{id\}/editions/|/api/projects/\{id\}/financial-documents/|/api/financial-documents/\{id\}/lines/" "backend_docs/history/v0.0/OPENAPI.yaml"
 ```
 
 ```powershell

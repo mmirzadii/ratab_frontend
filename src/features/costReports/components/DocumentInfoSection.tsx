@@ -1,6 +1,7 @@
-import { FileText, XCircle } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, XCircle } from "lucide-react";
 
-import type { Pricebook, PricebookEdition } from "../../pricebooks/pricebookApi";
+import type { PricebookEdition, PricebookFamily } from "../../pricebooks/pricebookApi";
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { Field } from "../../../shared/components/Field";
 import { JalaliDateField } from "../../../shared/components/JalaliDateField";
@@ -13,57 +14,46 @@ export function DocumentInfoSection({
   editionsError,
   form,
   formError,
-  isAdvancedDevOpen,
-  isDevPriceSetConfirmed,
   isLoadingEditions,
   isLoadingPricebooks,
-  onAdvancedDevOpenChange,
-  onDevPriceSetConfirmedChange,
   onEditionChange,
   onFieldChange,
-  onPricebookChange,
-  pricebooks,
+  onFamilyChange,
+  families,
   pricebooksError,
   selectedActivePriceSet,
   selectedEdition,
-  selectedPricebook
+  selectedFamily
 }: {
   editions: PricebookEdition[];
   editionsError: unknown;
   form: WizardFormState;
   formError: string | null;
-  isAdvancedDevOpen: boolean;
-  isDevPriceSetConfirmed: boolean;
   isLoadingEditions: boolean;
   isLoadingPricebooks: boolean;
-  onAdvancedDevOpenChange: (open: boolean) => void;
-  onDevPriceSetConfirmedChange: (confirmed: boolean) => void;
   onEditionChange: (value: string) => void;
   onFieldChange: (field: keyof WizardFormState, value: string) => void;
-  onPricebookChange: (value: string) => void;
-  pricebooks: Pricebook[];
+  onFamilyChange: (value: string) => void;
+  families: PricebookFamily[];
   pricebooksError: unknown;
   selectedActivePriceSet: { id: number } | null;
   selectedEdition: PricebookEdition | undefined;
-  selectedPricebook: Pricebook | undefined;
+  selectedFamily: PricebookFamily | undefined;
 }) {
+  const [isOptionalInfoOpen, setIsOptionalInfoOpen] = useState(() =>
+    Boolean(
+      form.report_title ||
+        form.document_number ||
+        form.document_date ||
+        form.period_start_on ||
+        form.period_end_on
+    )
+  );
+
   return (
     <>
-      <GlassCard className="p-5 sm:p-6">
-        <div className="mb-5 flex items-start gap-3">
-          <FileText className="mt-1 h-5 w-5 text-violet-200" />
-          <div>
-            <h2 className="text-xl font-black text-white light:text-slate-950">
-              اطلاعات صورت‌بها
-            </h2>
-            <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
-              اطلاعات گزارش را وارد کنید. این نسخه آزمایشی مرور فهرست‌بهای فعال ۱۴۰۴ را بدون
-              نمایش شناسه‌های فنی شروع می‌کند.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
+      <GlassCard className="p-3 sm:p-5 xl:p-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:gap-x-4 xl:gap-y-2.5">
           <Field label="عنوان صورت‌بها" required>
             <input
               className={inputClasses}
@@ -73,71 +63,105 @@ export function DocumentInfoSection({
               value={form.document_title}
             />
           </Field>
-          <Field label="عنوان گزارش">
-            <input
-              className={inputClasses}
-              onChange={(event) => onFieldChange("report_title", event.target.value)}
-              placeholder="اختیاری"
-              value={form.report_title}
-            />
-          </Field>
-          <Field label="شماره سند">
-            <input
-              className={inputClasses}
-              onChange={(event) => onFieldChange("document_number", event.target.value)}
-              placeholder="اختیاری"
-              value={form.document_number}
-            />
-          </Field>
-          <Field label="تاریخ سند">
-            <JalaliDateField
-              inputClass={inputClasses}
-              onChange={(iso) => onFieldChange("document_date", iso)}
-              value={form.document_date}
-            />
-          </Field>
-          <Field label="شروع دوره">
-            <JalaliDateField
-              inputClass={inputClasses}
-              onChange={(iso) => onFieldChange("period_start_on", iso)}
-              value={form.period_start_on}
-            />
-          </Field>
-          <Field label="پایان دوره">
-            <JalaliDateField
-              inputClass={inputClasses}
-              onChange={(iso) => onFieldChange("period_end_on", iso)}
-              value={form.period_end_on}
-            />
-          </Field>
-          <Field label="فهرست‌بها و سال">
-            <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <Field label="فهرست‌بها">
               <select
-                className={inputClasses}
-                disabled={isLoadingPricebooks || pricebooks.length === 0}
-                onChange={(event) => onPricebookChange(event.target.value)}
-                value={selectedPricebook?.id ?? ""}
+                aria-label="فهرست‌بها"
+                className={`${inputClasses} min-w-0 px-2 sm:px-4`}
+                disabled={isLoadingPricebooks || families.length === 0}
+                onChange={(event) => onFamilyChange(event.target.value)}
+                value={selectedFamily?.id ?? ""}
               >
-                {pricebooks.map((pricebook) => (
-                  <option key={pricebook.id} value={pricebook.id}>
-                    {pricebook.code} - {pricebook.title_fa}
+                {families.map((family) => (
+                  <option key={family.id} value={family.id}>
+                    {family.nameFa}
                   </option>
                 ))}
               </select>
+            </Field>
+            <Field label="سال">
               <select
-                className={inputClasses}
+                aria-label="سال"
+                className={`${inputClasses} min-w-0 px-2 sm:px-4`}
                 disabled={isLoadingEditions || editions.length === 0}
                 onChange={(event) => onEditionChange(event.target.value)}
                 value={selectedEdition?.id ?? ""}
               >
                 {editions.map((edition) => (
                   <option key={edition.id} value={edition.id}>
-                    {edition.year} - {edition.title_fa}
+                    {edition.year}
                   </option>
                 ))}
               </select>
-            </div>
-          </Field>
+            </Field>
+          </div>
+        </div>
+
+        <button
+          aria-controls="optional-document-info"
+          aria-expanded={isOptionalInfoOpen}
+          className="mt-3 flex min-h-11 w-full items-center justify-between rounded-lg border border-white/10 bg-white/[0.035] px-3 text-sm font-bold text-slate-200 light:border-slate-200 light:bg-slate-50 light:text-slate-700 sm:hidden"
+          onClick={() => setIsOptionalInfoOpen((current) => !current)}
+          type="button"
+        >
+          <span className="flex items-center gap-2">
+            اطلاعات تکمیلی
+            <span className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] font-medium text-slate-400 light:bg-slate-200 light:text-slate-500">
+              اختیاری
+            </span>
+          </span>
+          <ChevronDown
+            className={classNames(
+              "h-4 w-4 transition-transform",
+              isOptionalInfoOpen && "rotate-180"
+            )}
+          />
+        </button>
+
+        <div
+          className={classNames(
+            "mt-3 gap-3 sm:mt-4 sm:grid sm:grid-cols-2 xl:gap-x-4 xl:gap-y-2.5",
+            isOptionalInfoOpen ? "grid" : "hidden"
+          )}
+          id="optional-document-info"
+        >
+            <Field label="عنوان گزارش">
+              <input
+                className={inputClasses}
+                onChange={(event) => onFieldChange("report_title", event.target.value)}
+                placeholder="اختیاری"
+                value={form.report_title}
+              />
+            </Field>
+            <Field label="شماره سند">
+              <input
+                className={inputClasses}
+                onChange={(event) => onFieldChange("document_number", event.target.value)}
+                placeholder="اختیاری"
+                value={form.document_number}
+              />
+            </Field>
+            <Field label="تاریخ سند">
+              <JalaliDateField
+                inputClass={inputClasses}
+                onChange={(iso) => onFieldChange("document_date", iso)}
+                value={form.document_date}
+              />
+            </Field>
+            <Field label="شروع دوره">
+              <JalaliDateField
+                inputClass={inputClasses}
+                onChange={(iso) => onFieldChange("period_start_on", iso)}
+                value={form.period_start_on}
+              />
+            </Field>
+            <Field label="پایان دوره">
+              <JalaliDateField
+                inputClass={inputClasses}
+                onChange={(iso) => onFieldChange("period_end_on", iso)}
+                value={form.period_end_on}
+              />
+            </Field>
         </div>
 
         {pricebooksError || editionsError ? (
@@ -147,7 +171,7 @@ export function DocumentInfoSection({
           </div>
         ) : null}
 
-        {!isLoadingPricebooks && !pricebooksError && pricebooks.length === 0 ? (
+        {!isLoadingPricebooks && !pricebooksError && families.length === 0 ? (
           <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100 light:text-amber-800">
             هنوز فهرست‌بهایی برای مرور در دسترس نیست.
           </div>
@@ -159,51 +183,6 @@ export function DocumentInfoSection({
           </div>
         ) : null}
 
-        <div className="mt-4 rounded-lg border border-emerald-300/20 bg-emerald-400/10 p-4 text-sm leading-7 text-emerald-100 light:text-emerald-800">
-          این نسخه آزمایشی از فهرست‌بهای فعال ۱۴۰۴ استفاده می‌کند. اگر سال انتخابی قیمت فعال
-          داشته باشد، سند صورت‌بها هم‌زمان ساخته می‌شود و بعد از محاسبه می‌توانید آیتم‌ها را
-          به آن اضافه کنید.
-        </div>
-
-        <details
-          className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100 light:text-amber-800"
-          onToggle={(event) => {
-            onAdvancedDevOpenChange(event.currentTarget.open);
-            if (!event.currentTarget.open) {
-              onDevPriceSetConfirmedChange(false);
-            }
-          }}
-        >
-          <summary className="cursor-pointer font-black">تنظیمات پیشرفته توسعه</summary>
-          <p className="mt-3">
-            این بخش فقط برای تست داخلی است. مسیر عادی از قیمت فعال سال انتخاب‌شده استفاده
-            می‌کند؛ این مقدار فقط وقتی لازم است که همان پاسخ هنوز قیمت فعال نداشته باشد.
-          </p>
-          <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
-            <label className="space-y-2">
-              <span className="text-xs font-bold">شناسه فنی مجموعه قیمت</span>
-              <input
-                className={classNames(inputClasses, "text-left")}
-                dir="ltr"
-                inputMode="numeric"
-                onChange={(event) => onFieldChange("price_set_id", event.target.value)}
-                placeholder="فقط برای تست توسعه"
-                value={form.price_set_id}
-              />
-            </label>
-            <label className="flex items-center gap-2 self-end rounded-lg border border-amber-300/20 px-3 py-3 text-xs font-bold">
-              <input
-                checked={isDevPriceSetConfirmed}
-                disabled={!isAdvancedDevOpen}
-                onChange={(event) =>
-                  onDevPriceSetConfirmedChange(event.target.checked)
-                }
-                type="checkbox"
-              />
-              تایید استفاده آزمایشی
-            </label>
-          </div>
-        </details>
       </GlassCard>
 
       {formError ? (
@@ -213,9 +192,6 @@ export function DocumentInfoSection({
         </div>
       ) : null}
 
-      <p className="text-xs leading-6 text-slate-400 light:text-slate-500">
-        بعد از موفقیت، فصل‌های فهرست‌بها از سرویس خوانده می‌شوند.
-      </p>
     </>
   );
 }

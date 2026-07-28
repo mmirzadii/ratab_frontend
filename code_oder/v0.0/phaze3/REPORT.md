@@ -55,9 +55,9 @@ The backend contract does not support password or OTP login in v0.0, so no passw
 
 ## API Contract Notes
 
-- Used `backend_docs/v0.0/frontend_handoff_v0_0.md`.
-- Used generated types from `backend_docs/v0.0/openapi_v0_0.yaml`.
-- The prompt-required exact schema filename `backend_docs/v0.0/ratab v0.0 Backend API.yaml` is still absent.
+- Used `backend_docs/history/v0.0/frontend_handoff_v0_0.md`.
+- Used generated types from `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`.
+- The prompt-required exact schema filename `backend_docs/history/v0.0/OPENAPI.yaml` is still absent.
 - Supported auth endpoints:
   - `POST /api/auth/dev-login/`
   - `GET /api/auth/me/`
@@ -77,7 +77,7 @@ Because `docker/frontend/Dockerfile`, `docker/frontend/nginx.conf`, and `.docker
 
 ## Risks and Assumptions
 
-- Assumed `backend_docs/v0.0/openapi_v0_0.yaml` remains the authoritative schema source.
+- Assumed `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` remains the authoritative schema source.
 - Assumed sessionStorage is the safest available browser storage for temporary dev tokens in this phase.
 - If `ENABLE_DEV_LOGIN=false` on the backend, the login endpoint returns `404` and the UI shows a Persian error.
 - The create-company highlight is UI-only and intentionally waits for Phase 4 APIs.
@@ -87,7 +87,7 @@ Because `docker/frontend/Dockerfile`, `docker/frontend/nginx.conf`, and `.docker
 - Manually test `/login` against the dev backend with a disposable phone number.
 - Review that `/` redirects unauthenticated users to `/login`.
 - Review logout behavior and confirm the token is removed from the current browser session.
-- Confirm whether the OpenAPI schema should remain `backend_docs/v0.0/openapi_v0_0.yaml` or be manually copied/renamed to `backend_docs/v0.0/ratab v0.0 Backend API.yaml`.
+- Confirm whether the OpenAPI schema should remain `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` or be manually copied/renamed to `backend_docs/history/v0.0/OPENAPI.yaml`.
 
 ## Suggested Commit Message
 

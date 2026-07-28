@@ -15,7 +15,7 @@
 ## Results
 
 - `npm install`: passed; 275 packages installed; 0 vulnerabilities reported.
-- `npm run generate:api`: passed; generated `src/shared/api/generated/schema.ts` from `backend_docs/v0.0/openapi_v0_0.yaml`.
+- `npm run generate:api`: passed; generated `src/shared/api/generated/schema.ts` from `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`.
 - `npm run build`: passed; generated API types, TypeScript build, and Vite production build completed.
 - `npm run lint`: passed; generated API types and ESLint completed with no reported issues.
 - Test-file scan: no test/spec files or test config found outside `node_modules` and `dist`.
@@ -33,7 +33,7 @@ Not applicable.
 
 ## Notes
 
-- The prompt-required schema filename was absent; `backend_docs/v0.0/openapi_v0_0.yaml` is the available schema file.
+- The prompt-required schema filename was absent; `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml` is the available schema file.
 - `node_modules/` and `dist/` were produced locally by verification commands and are ignored.
 - `vite-dev.log` and `vite-dev.err.log` were produced by the background dev server and are ignored by the `*.log` rule.
 - Docker push was intentionally not run.

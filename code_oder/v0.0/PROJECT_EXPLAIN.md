@@ -1,6 +1,6 @@
 # Ratab Frontend Project Explain - v0.0
 
-Last updated: 2026-07-03
+Last updated: 2026-07-28
 Active version file: `code_oder/active_version.txt`
 Current active version: `v0.0`
 Documentation root note: the repository currently uses `code_oder` as the folder name. Do not rename it to `code_order` unless the project owner explicitly asks for a migration.
@@ -14,9 +14,14 @@ Before changing code, read these files in this order:
 1. `code_oder/active_version.txt`
 2. `code_oder/<active-version>/PROJECT_EXPLAIN.md`
 3. `AI_CODE_PRINCIPLES.md`
-4. `backend_docs/v0.0/frontend_handoff_v0_0.md`
-5. `backend_docs/v0.0/ratab v0.0 Backend API.yaml`
+4. `backend_docs/README.md`
+5. Active backend contract under `backend_docs/current/` when synced; otherwise the Frontend v0.0 historical archive:
+   - `backend_docs/history/v0.0/frontend_handoff_v0_0.md`
+   - `backend_docs/history/v0.0/OPENAPI.yaml`
 6. The local source files related to the requested change.
+
+`backend_docs/current/BACKEND_VERSION` (backend contract) and `code_oder/active_version.txt` (frontend phase version) are separate identifiers.
+
 
 After every frontend update, update this file if the behavior, structure, API usage, routes, state, or known limitations changed.
 
@@ -63,13 +68,15 @@ Runtime and build stack:
 
 Package scripts in `package.json`:
 
-- `npm run dev`: generates API types, then starts Vite.
-- `npm run build`: generates API types, runs `tsc -b`, then builds Vite.
-- `npm run lint`: generates API types, then runs ESLint.
+- `npm run dev`: generates API types when current OpenAPI exists, then starts Vite.
+- `npm run build`: generates API types when current OpenAPI exists, runs `tsc -b`, then builds Vite.
+- `npm run lint`: generates API types when current OpenAPI exists, then runs ESLint.
 - `npm run preview`: serves the built Vite output.
-- `npm run generate:api`: reads `backend_docs/v0.0/ratab v0.0 Backend API.yaml` and writes `src/shared/api/generated/schema.ts`.
+- `npm run generate:api`: reads `backend_docs/current/OPENAPI.yaml` (when synced) and writes `src/shared/api/generated/schema.ts`; skips with `CURRENT_BACKEND_CONTRACT_NOT_SYNCED` if that file is absent.
+- `npm run validate:docs`: validates documentation ownership and structure.
 
-Important: `src/shared/api/generated/schema.ts` is generated. Do not hand-edit it unless the task is explicitly about a temporary generated-schema patch.
+Important: `src/shared/api/generated/schema.ts` is generated. Do not hand-edit it unless the task is explicitly about a temporary generated-schema patch. Do not regenerate from historical OpenAPI once `backend_docs/current/OPENAPI.yaml` exists.
+
 
 ## Runtime Environment
 
@@ -102,7 +109,9 @@ Top-level files and folders:
 - `src/features/`: domain modules and RTK Query APIs.
 - `src/shared/`: reusable components, API base, generated schema, utilities.
 - `src/styles/index.css`: global Tailwind entry and RTL/light-theme CSS.
-- `backend_docs/v0.0/`: OpenAPI and backend handoff documents.
+- `backend_docs/`: backend-delivered contracts only (`current/` active when synced; `history/` archive).
+- `docs/`: frontend-owned product/design references and documentation reports.
+- `docs/product_reference/v0.0/`: UI/product flow references formerly under `code_oder/v0.0/reference/`.
 - `code_oder/`: AI/Codex instructions, phase reports, active version file, project explanations.
 - `docker/frontend/`: static nginx container files for online dev/demo deployment.
 - `dist/`: build output, not a source of truth.
@@ -277,7 +286,7 @@ Endpoints:
 - `PATCH /api/coefficient-values/{valueId}/`
 - `DELETE /api/coefficient-values/{valueId}/`
 
-Current UI only creates project-scope coefficient values. Chapter and row scope types exist in types/constants but are not fully exposed in the current form.
+The coefficient screen exposes all backend-supported scopes in one compact form: whole project, a selected pricebook chapter, or a row already present in the current financial document. The screen keeps set creation collapsed, removes the former priority tutorial/table, and shows registered coefficients in a compact editable list. Submitting an existing coefficient-key/scope/target combination updates that value instead of attempting a duplicate create. Backend calculation remains authoritative; for equal coefficient keys, row scope overrides chapter scope and chapter scope overrides project scope.
 
 ### Financial Document API
 
@@ -323,14 +332,18 @@ Used by `/status`.
 
 `src/shared/components/AppShell.tsx` is the protected app frame:
 
+- The shell is constrained to `100dvh` on mobile and desktop. The browser page itself stays fixed; `main` is the controlled vertical scroll region and feature panels may use smaller internal scroll regions for long lists/tables.
+
 - Desktop:
   - fixed primary nav on the right (`PrimaryNav`)
   - optional secondary nav beside it (`SecondaryNav`)
   - content gets `lg:pr-20` or `lg:pr-[19rem]`
 - Mobile:
   - fixed `PrimaryTopBar`
+  - compact context header below the primary bar
   - slide-out `MobileDrawer`
   - optional secondary panel inside drawer
+  - no duplicate inline wizard step strip; wizard sections remain available in the drawer and next/back stay in the fixed context header
 - Always includes:
   - `ContextHeader`
   - `GuidedTour`
@@ -356,6 +369,7 @@ Context header:
 - If `wizardCtx` exists, shows wizard back/next/finalize controls.
 - Else if `companyCtx` exists, shows company name/status and back to companies.
 - Else shows generic `TopHeader`.
+- Mobile headers avoid repeating the brand block and secondary descriptions already shown by `PrimaryTopBar`.
 
 ## Pages
 
@@ -364,6 +378,8 @@ Context header:
 File: `src/pages/LandingPage.tsx`
 
 Public marketing/demo page. Shows feature cards and workflow. CTA goes to `/login` unless a token exists, then `/companies`.
+
+On mobile the example pricebook table becomes stacked row cards, actions use a two-column layout, and the hero/features/workflow use compact spacing without horizontal page overflow.
 
 Current branding in this page is `Metril`, not `Ratab`.
 
@@ -391,6 +407,7 @@ Visual details:
 - Three.js particle canvas is dynamically imported.
 - GSAP entrance animation is dynamically imported.
 - If either import fails, the page still works.
+- The login frame uses dynamic viewport height and remains vertically usable when the mobile keyboard reduces the visible viewport.
 
 No OTP or real password is currently implemented.
 
@@ -406,6 +423,7 @@ Features:
 - highlighted create-company button after a newly created login session
 - refresh button
 - company cards linking to `/companies/{id}`
+- Mobile cards/actions are compact, have at least 44px touch targets, and avoid separate horizontal overflow.
 
 ### Company Create Page
 
@@ -425,6 +443,8 @@ Optional fields:
 - `active_slug`
 
 Number-like fields are normalized before submit. After successful creation, navigates to `/companies/{createdCompany.id}`.
+
+On mobile only the required company name is shown initially. The optional fields live in one responsive disclosure; the same field instances are reused on desktop rather than mounting duplicate mobile and desktop forms.
 
 ### Company Dashboard Page
 
@@ -476,6 +496,13 @@ Document list flow:
 
 - `ProjectDocumentsPanel` lists documents with `useListProjectFinancialDocumentsQuery(project.id)`.
 - Existing documents open the wizard with route state `{ existingDocument: document, existingProject: project }`.
+
+Mobile dashboard behavior:
+
+- A visible three-tab switcher exposes messages, projects, and company info without requiring the drawer.
+- The dashboard card fits the remaining viewport and each active panel owns its necessary internal scroll.
+- Project/document cards, message attachments, composer actions, and empty states use compact mobile layouts.
+- Project creation is a viewport-bounded bottom sheet with a scrollable body and sticky actions; company-info save remains reachable at the bottom of its panel.
 
 ### Cost Report Wizard Page
 
@@ -535,7 +562,18 @@ Document creation:
   - optional document number/report title/dates
   - required title
   - `pricebook_edition_id`
-  - `price_set_id`
+- `price_set_id`
+- The document form treats pricebook family and yearly edition as separate selections. It aggregates editions from the existing per-pricebook endpoints, deduplicates families by backend `pricebook_family_code`, displays `pricebook_persian_name` only, displays the explicit numeric `year` only, and submits the selected edition's real `id`. Existing documents retain their saved edition even when newer years are available.
+- The document-information step has no duplicate card/page heading and omits the former informational/development blocks.
+- Mobile shows only the required title and pricebook/year initially; report title, document number, and dates are grouped under one optional `اطلاعات تکمیلی` disclosure.
+- The project step likewise relies on the context-header title rather than repeating a heading inside its card.
+- On every viewport, `AppShell` is constrained to `100dvh`; navigation/context actions stay reachable while genuinely long content scrolls inside the app content region instead of moving the whole browser page.
+
+Mobile section behavior:
+
+- Pricebook browsing is a viewport-bounded panel with compact chapter/group/search controls and an internally scrolling item list.
+- Coefficients use two mobile panes (`افزودن ضریب` and `ثبت‌شده‌ها`) while keeping the active coefficient-set selector visible; the panel and lists own their scroll.
+- Final review uses mobile line cards instead of the desktop-wide table, with compact totals/details and a bounded preview region.
 
 Finalize:
 
@@ -548,11 +586,15 @@ File: `src/pages/HelpPage.tsx`
 
 Static help content plus a button to reset onboarding via `resetOnboarding`.
 
+Mobile help renders as a one-open-at-a-time accordion; desktop keeps the two-column help cards.
+
 ### Account Settings Page
 
 File: `src/pages/AccountSettingsPage.tsx`
 
 Shows current user info from Redux or fresh `auth/me` query.
+
+Mobile account data is rendered as compact label/value rows and the logout action is full width.
 
 Logout behavior:
 
@@ -565,6 +607,8 @@ Logout behavior:
 File: `src/features/health/HealthStatusPage.tsx`
 
 Shows API base URL, health endpoint, and health response/error. Useful for checking `VITE_API_BASE_URL`.
+
+Long URLs/schema paths break safely on mobile, status rows are compact, and retry is a full-width touch target.
 
 ## Cost Report Components
 
@@ -647,7 +691,8 @@ Coefficient behavior:
 - Different `coefficient_key` values can apply together.
 - Chapter targets come from the active pricebook edition chapters.
 - Row targets come from rows already present in the current document lines and use backend row DB ids while displaying `row_code` as a string.
-- A compact effective-priority preview groups active values by key and shows project/chapter/row/effective values.
+- Registered values are shown as a compact editable list; the former priority tutorial and preview table were removed to keep the screen focused.
+- Deleting a coefficient from an unlocked document recalculates that document and replaces wizard document state with the authoritative backend response, so final totals and subsequently generated previews cannot retain the deleted coefficient snapshot. Locked documents disable coefficient deletion.
 
 ### Pricebook Browser Section
 
@@ -664,9 +709,12 @@ Desktop layout:
 Mobile layout:
 
 - one panel at a time: chapters or items
+- the redundant five-step card is hidden on the pricebook step because the same navigation remains available through the mobile drawer and wizard back/next controls
 - chapter filters are horizontal pills
 - group filters are horizontal pills
-- search can expand in items pane
+- search replaces the chapter title in the same toolbar instead of adding another vertical row
+- document totals/actions collapse into one compact toolbar, empty-state messaging is suppressed there, and the redundant `آیتم‌ها` list heading is removed
+- the item list receives the remaining viewport height and owns its own scrolling
 
 Selecting an item opens `ItemDetailModal`.
 
@@ -719,6 +767,7 @@ Adding line:
 - Then calls `recalculateFinancialDocument`.
 - Updates parent `createdDocument`.
 - Shows `AddedRowsView`.
+- Expands the newly added logical line into active official rows from `calculated_rows` or `calculation_output_json.rows_breakdown`, falling back to line snapshots only when no breakdown exists.
 
 Manual price:
 
@@ -728,6 +777,7 @@ Manual price:
 
 Row-level custom prices:
 
+- Price entry has one source of truth: whenever an API item exposes concrete rows, user prices are edited only on those rows and stored in `custom_prices[row_code]`; the generic `manual_unit_price` field is reserved for legacy/standalone items with no concrete row. Range fallback rows follow the same row editor path instead of rendering a second price field.
 - Static item rows are visually separate from backend calculation output.
 - On mobile, static item rows render as dense list items with inline price/edit controls, one-line title/description, and compact active quantity/amount text.
 - Each item row can enter a compact inline unit-price edit mode from the pencil icon action.
@@ -737,6 +787,9 @@ Row-level custom prices:
 - Reverting a row removes it from `custom_prices`.
 - Changing an applied custom price participates in `stablePayloadKey`, so automatic calculation becomes stale and refreshes after debounce.
 - Calculation row source badges prefer backend source metadata and fall back to locally applied custom row-code keys when needed.
+- Any user-determined unit price uses the product label `★ ستاره‌دار`, including missing/zero official rows, official overrides, range fallbacks, footnote prices, and standalone starred items. A zero or absent starred unit price renders as `-`, never as a valid zero price.
+- Add validates locally known active starred rows and maps backend `requires_starred_prices` / `missing_starred_prices` responses by exact string `row_code`. All missing rows are highlighted with compact inline editors; the modal scrolls to and focuses the first missing input, and the status dot becomes red only because Add failed.
+- Calculation details, the immediate added-row view, document lines, final review, and browser-built print/export preview classify each expanded row independently from backend price-source and starred snapshot fields. Mixed official/starred rows therefore retain separate labels inside one logical line.
 
 Out-of-range range fallback:
 
@@ -757,12 +810,18 @@ Row selection:
 - Before calculate/add-line, the selected row code is resolved against `item.rows[].row_code` and sent to the backend as DB id `selected_row_id`.
 - `values` contains only non-select numeric inputs, sorted by `value_key`; selected-row inputs are excluded from `values` and validated separately.
 - Items that require row selection block automatic calculation/add until a row/option is selected.
+- Item row selection uses an app-rendered responsive listbox instead of the browser-native select. Long Persian option labels wrap inside the modal width, the menu has a viewport-bounded internal scroll, and the mobile modal header places title/close above coefficient/add actions to prevent horizontal overflow.
 - Range-based items still auto-match the backend row range from the entered driving value.
 
 Footnotes:
 
 - Checklist state is held locally as `Record<noteCode, boolean>`.
-- It is included in calculate/add-line body if selected.
+- Input-bearing footnotes render compact conditional fields directly below the checked note; defaults initialize on first selection and local drafts survive temporary unchecking.
+- Footnote input drafts, touched state, and field errors are keyed by string note codes and metadata input names. Numeric validation normalizes localized digits and enforces optional minimum/maximum values, including zero.
+- `buildFootnotesPayload()` is the canonical source for calculate, add-line, and stable calculation keys: boolean notes remain `true`, while input-bearing notes use `{ active: true, values }`; unchecked or invalid hidden values are excluded.
+- Incomplete active footnote inputs pause automatic calculation with the yellow status dot. Add marks fields touched and turns the dot red on validation failure; structured backend footnote errors are mapped back to their field.
+- Footnote values, including cross-chapter and starred-price metadata inputs, are submitted to the backend for authoritative calculation and document snapshot handling; the frontend does not calculate their financial effect.
+- The v0.0 generated schema does not yet model `requires_input`, `inputs`, or their field metadata, so `pricebookApi.ts` temporarily extends the generated note/detail types without modifying generated schema.
 
 ### Calculation Section
 
@@ -813,6 +872,7 @@ Behavior:
 - Creates a line with `line_source: "starred"` and then calls `recalculateFinancialDocument`.
 - Updates parent `createdDocument`, closes on success, and shows a toast.
 - Respects locked documents and disables submit/close interactions while submitting.
+- On mobile it is a full-height sheet with fixed header/footer, an internally scrolling form, and optional description collapsed until requested.
 
 ### Document Lines Modal
 
@@ -821,6 +881,10 @@ File: `src/features/costReports/components/DocumentLinesModal.tsx`
 Shows current lines, allows quantity edit/delete if document is not locked, and recalculates document after changes.
 
 It keeps a local copy of lines for immediate modal display.
+
+When a logical document line contains multiple active calculated pricebook rows, the modal shows the parent line once with edit/delete controls and displays the expanded official rows inside the group.
+
+On mobile the modal is a full-height sheet. Header/footer remain fixed, the line list is the only vertical scroll region, and edit/delete controls use touch-sized targets.
 
 ### Current Document Panel
 
@@ -839,6 +903,10 @@ Capabilities:
 - Uses `B-NAZANIN.TTF` for printable preview.
 - Shows preview inside sandboxed iframe with `sandbox=""`.
 - Opens a print window for browser PDF export.
+
+Line rendering and the browser-built official preview use `getLineDisplayRows()` so multi-row calculations are shown as their active official rows while totals still come from backend snapshots.
+
+Mobile final review replaces the wide table with vertically scrolling line cards and collapses secondary document totals/metadata; desktop retains the table.
 
 Important limitation:
 
@@ -861,6 +929,7 @@ Status:
 - It uses `xlsx`, `financialDocumentExcelPlan`, and `createFinancialDocumentLinesBulk`.
 - It supports direct spreadsheet paste or file upload, column mapping, ambiguity resolution, review, and bulk submit.
 - It is not currently connected to `CostReportWizardPage` or any visible button.
+- Its mobile shell is already viewport-bounded: fixed header/primary actions, one scrolling body, stacked column mapping, and bounded spreadsheet/file previews.
 
 If enabling it later, add a clear UI entry point, wire modal open/close state, and verify backend expectations around ambiguous row selection.
 
@@ -994,8 +1063,8 @@ Do not:
 
 For API-backed changes:
 
-1. Read `backend_docs/v0.0/ratab v0.0 Backend API.yaml`.
-2. Regenerate schema with `npm run generate:api` if backend schema changed.
+1. Read `backend_docs/current/OPENAPI.yaml` when synced; otherwise the historical Frontend v0.0 archive `backend_docs/history/v0.0/OPENAPI.yaml`.
+2. Regenerate schema with `npm run generate:api` if the active backend schema changed (requires current OpenAPI).
 3. Add endpoint to the relevant `features/*/*Api.ts` file by injecting into `baseApi`.
 4. Use generated component schema types.
 5. Add invalidation/provides tags deliberately.
@@ -1020,9 +1089,12 @@ For cost-report changes:
 For UI changes:
 
 1. Keep RTL and mobile behavior.
-2. Preserve shell offsets when secondary nav exists.
-3. Use existing shared components and Tailwind tokens.
-4. Avoid adding large new abstractions unless they remove real duplication.
+2. Keep route shells at `100dvh`; put scrolling in `AppShell` main or a clearly bounded feature panel, not on the browser page.
+3. Preserve shell offsets when secondary nav exists.
+4. Keep primary mobile actions at least 44px tall and prevent long Persian text/codes from widening the viewport.
+5. Use existing shared components and Tailwind tokens.
+6. Avoid mounting duplicate mobile/desktop forms; prefer one responsive field tree or a small reusable field component.
+7. Avoid adding large new abstractions unless they remove real duplication.
 
 ## Version Documentation Rule
 

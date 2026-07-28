@@ -8,12 +8,12 @@ Implement coefficient set/value screens and integrate coefficient selection with
 
 ```text
 AI_CODE_PRINCIPLES.md
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
 code_oder/COMMON_FRONTEND_CODEX_RULES.md
-code_oder/v0.0/reference/main_updated.html
-code_oder/v0.0/reference/UI_THEME_NOTES.md
-code_oder/v0.0/reference/PRODUCT_FLOW_NOTES.md
+docs/product_reference/v0.0/main_updated.html
+docs/product_reference/v0.0/UI_THEME_NOTES.md
+docs/product_reference/v0.0/PRODUCT_FLOW_NOTES.md
 ```
 
 ## Required tasks
@@ -41,8 +41,8 @@ code_oder/v0.0/reference/PRODUCT_FLOW_NOTES.md
 Use only:
 
 ```text
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
 ```
 
 If the required product UX is unsupported by backend, report the mismatch instead of faking behavior.

@@ -9,6 +9,7 @@ import {
   FileText,
   FolderKanban,
   Loader2,
+  type LucideIcon,
   MessageCircle,
   Paperclip,
   Plus,
@@ -85,6 +86,54 @@ const companyNavItems = [
   { id: "settings", label: "تنظیمات", icon: Settings }
 ];
 
+const mobileDashboardTabs = [
+  { id: "messages", label: "پیام‌ها", icon: MessageCircle },
+  { id: "costReports", label: "پروژه‌ها", icon: FolderKanban },
+  { id: "company", label: "شرکت", icon: Building2 }
+] satisfies Array<{
+  id: DashboardSection;
+  label: string;
+  icon: LucideIcon;
+}>;
+
+function MobileDashboardTabs({
+  activeSection,
+  onChange
+}: {
+  activeSection: DashboardSection;
+  onChange: (section: DashboardSection) => void;
+}) {
+  return (
+    <nav
+      aria-label="بخش‌های شرکت"
+      className="grid shrink-0 grid-cols-3 gap-1 border-b border-white/10 bg-slate-950/45 p-2 light:border-slate-200 light:bg-slate-50/80 lg:hidden"
+    >
+      {mobileDashboardTabs.map((item) => {
+        const Icon = item.icon;
+        const isActive = item.id === activeSection;
+
+        return (
+          <button
+            aria-current={isActive ? "page" : undefined}
+            className={classNames(
+              "flex min-h-11 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-bold transition",
+              isActive
+                ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
+                : "border-transparent text-slate-400 hover:bg-white/6 hover:text-slate-100 light:text-slate-600 light:hover:bg-white light:hover:text-slate-950"
+            )}
+            key={item.id}
+            onClick={() => onChange(item.id)}
+            type="button"
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            <span>{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 function getSnapshotString(snapshot: unknown, keys: string[]) {
   if (!snapshot || typeof snapshot !== "object") {
     return null;
@@ -151,7 +200,7 @@ function buildProjectAttachment(project: Project, companyId: number): LocalAttac
 }
 
 const panelInputClasses =
-  "h-12 w-full rounded-lg border border-white/10 bg-slate-950/45 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
+  "h-11 w-full rounded-lg border border-white/10 bg-slate-950/45 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 sm:h-12 sm:px-4 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
 
 function CompanyInfoPanel({ company }: { company: Company }) {
   const dispatch = useAppDispatch();
@@ -191,20 +240,20 @@ function CompanyInfoPanel({ company }: { company: Company }) {
   }
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col overflow-y-auto p-4 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
-      <div className="flex items-center gap-3 border-b border-white/10 pb-4 light:border-slate-200">
-        <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
+      <div className="flex items-center gap-2.5 border-b border-white/10 pb-3 sm:gap-3 sm:pb-4 light:border-slate-200">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 sm:h-11 sm:w-11">
           <Building2 className="h-5 w-5" />
         </div>
         <div>
-          <h2 className="text-lg font-black text-white light:text-slate-950">اطلاعات شرکت</h2>
-          <p className="mt-1 text-xs text-slate-400 light:text-slate-500">مشخصات ثبت‌شده شرکت</p>
+          <h2 className="text-base font-black text-white sm:text-lg light:text-slate-950">اطلاعات شرکت</h2>
+          <p className="mt-1 hidden text-xs text-slate-400 sm:block light:text-slate-500">مشخصات ثبت‌شده شرکت</p>
         </div>
       </div>
 
-      <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-          <label className="space-y-2">
+      <form className="mt-4 space-y-3 sm:mt-5 sm:space-y-4" onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+          <label className="space-y-1.5 sm:space-y-2">
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام شرکت</span>
             <input
               className={panelInputClasses}
@@ -214,7 +263,7 @@ function CompanyInfoPanel({ company }: { company: Company }) {
               value={form.name}
             />
           </label>
-          <label className="space-y-2">
+          <label className="space-y-1.5 sm:space-y-2">
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام حقوقی</span>
             <input
               className={panelInputClasses}
@@ -223,7 +272,7 @@ function CompanyInfoPanel({ company }: { company: Company }) {
               value={form.legal_name}
             />
           </label>
-          <label className="space-y-2">
+          <label className="space-y-1.5 sm:space-y-2">
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره ثبت</span>
             <input
               className={panelInputClasses}
@@ -233,7 +282,7 @@ function CompanyInfoPanel({ company }: { company: Company }) {
               value={form.registration_number}
             />
           </label>
-          <label className="space-y-2">
+          <label className="space-y-1.5 sm:space-y-2">
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه ملی</span>
             <input
               className={panelInputClasses}
@@ -243,7 +292,7 @@ function CompanyInfoPanel({ company }: { company: Company }) {
               value={form.national_id}
             />
           </label>
-          <label className="space-y-2 sm:col-span-2">
+          <label className="space-y-1.5 sm:col-span-2 sm:space-y-2">
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه کوتاه شرکت</span>
             <input
               className={classNames(panelInputClasses, "text-left")}
@@ -255,8 +304,8 @@ function CompanyInfoPanel({ company }: { company: Company }) {
           </label>
         </div>
 
-        <div className="pt-2">
-          <Button disabled={isSaving || !form.name.trim()} type="submit">
+        <div className="sticky bottom-0 z-10 -mx-3 flex border-t border-white/10 bg-slate-950/90 px-3 pb-1 pt-3 backdrop-blur-md sm:static sm:mx-0 sm:block sm:border-0 sm:bg-transparent sm:px-0 sm:pt-2 light:border-slate-200 light:bg-white/90 light:sm:bg-transparent">
+          <Button className="w-full sm:w-auto" disabled={isSaving || !form.name.trim()} type="submit">
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             ذخیره تغییرات
           </Button>
@@ -317,24 +366,28 @@ function AddProjectModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-2 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <GlassCard className="w-full max-w-lg p-6" dir="rtl">
-        <div className="mb-5 flex items-start justify-between gap-3">
+      <GlassCard
+        className="max-h-[calc(100dvh-0.5rem)] w-full max-w-lg overflow-y-auto p-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6 [scrollbar-width:thin]"
+        dir="rtl"
+      >
+        <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5">
           <div className="flex items-center gap-3">
             <FolderKanban className="h-5 w-5 text-emerald-200 light:text-emerald-700" />
             <div>
               <h2 className="text-lg font-black text-white light:text-slate-950">افزودن پروژه</h2>
-              <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+              <p className="mt-1 hidden text-xs text-slate-400 sm:block light:text-slate-500">
                 ایجاد پروژه جدید برای این شرکت
               </p>
             </div>
           </div>
           <button
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200 light:border-slate-200 light:text-slate-500"
+            aria-label="بستن"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200 sm:h-8 sm:w-8 light:border-slate-200 light:text-slate-500"
             onClick={onClose}
             type="button"
           >
@@ -342,8 +395,8 @@ function AddProjectModal({
           </button>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block space-y-2">
+        <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit}>
+          <label className="block space-y-1.5 sm:space-y-2">
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">
               نام پروژه <span className="text-rose-400">*</span>
             </span>
@@ -356,8 +409,8 @@ function AddProjectModal({
               value={form.name}
             />
           </label>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="block space-y-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <label className="block space-y-1.5 sm:space-y-2">
               <span className="text-sm font-bold text-slate-200 light:text-slate-700">کد پروژه</span>
               <input
                 className={panelInputClasses}
@@ -366,7 +419,7 @@ function AddProjectModal({
                 value={form.project_code}
               />
             </label>
-            <label className="block space-y-2">
+            <label className="block space-y-1.5 sm:space-y-2">
               <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره قرارداد</span>
               <input
                 className={panelInputClasses}
@@ -376,7 +429,7 @@ function AddProjectModal({
               />
             </label>
           </div>
-          <label className="block space-y-2">
+          <label className="block space-y-1.5 sm:space-y-2">
             <span className="text-sm font-bold text-slate-200 light:text-slate-700">کارفرما</span>
             <input
               className={panelInputClasses}
@@ -385,15 +438,15 @@ function AddProjectModal({
               value={form.employer_name}
             />
           </label>
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="sticky bottom-0 z-10 -mx-4 -mb-4 grid grid-cols-2 gap-2 border-t border-white/10 bg-slate-950/95 p-4 backdrop-blur-md sm:static sm:mx-0 sm:mb-0 sm:flex sm:items-center sm:justify-end sm:gap-3 sm:border-0 sm:bg-transparent sm:p-0 sm:pt-2 light:border-slate-200 light:bg-white/95 light:sm:bg-transparent">
             <button
-              className="h-11 rounded-lg border border-white/10 px-5 text-sm font-bold text-slate-300 transition hover:border-white/20 hover:text-white light:border-slate-200 light:text-slate-600 light:hover:text-slate-950"
+              className="h-11 w-full rounded-lg border border-white/10 px-4 text-sm font-bold text-slate-300 transition hover:border-white/20 hover:text-white sm:w-auto sm:px-5 light:border-slate-200 light:text-slate-600 light:hover:text-slate-950"
               onClick={onClose}
               type="button"
             >
               انصراف
             </button>
-            <Button disabled={isLoading || !form.name.trim()} type="submit">
+            <Button className="w-full sm:w-auto" disabled={isLoading || !form.name.trim()} type="submit">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderKanban className="h-4 w-4" />}
               ایجاد پروژه
             </Button>
@@ -420,27 +473,27 @@ function ProjectsPanel({
   projects: Project[];
 }) {
   return (
-    <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto p-4 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4 light:border-slate-200">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
+      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 sm:gap-3 sm:pb-4 light:border-slate-200">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <div className="hidden h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 sm:flex">
             <FolderKanban className="h-5 w-5" />
           </div>
-          <div>
-            <h2 className="text-lg font-black text-white light:text-slate-950">پروژه‌ها</h2>
-            <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-black text-white sm:text-lg light:text-slate-950">پروژه‌ها</h2>
+            <p className="mt-1 hidden text-xs text-slate-400 sm:block light:text-slate-500">
               پروژه‌های ثبت‌شده این شرکت
             </p>
           </div>
         </div>
-        <button className={linkButtonClasses} onClick={onAddProject} type="button">
+        <button className={classNames(linkButtonClasses, "shrink-0 px-3 sm:px-4")} onClick={onAddProject} type="button">
           <CirclePlus className="h-4 w-4" />
           افزودن پروژه
         </button>
       </div>
 
       {isLoading ? (
-        <div className="flex min-h-64 items-center justify-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
+        <div className="flex min-h-0 flex-1 items-center justify-center gap-3 py-10 text-sm font-bold text-slate-300 light:text-slate-600">
           <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
           در حال دریافت پروژه‌ها
         </div>
@@ -453,15 +506,15 @@ function ProjectsPanel({
       ) : null}
 
       {!isLoading && !error && projects.length === 0 ? (
-        <div className="flex min-h-72 items-center justify-center">
+        <div className="flex min-h-0 flex-1 items-center justify-center py-8 sm:min-h-72">
           <div className="max-w-md text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200">
-              <FolderKanban className="h-7 w-7" />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200 sm:h-14 sm:w-14">
+              <FolderKanban className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
-            <h3 className="mt-4 text-xl font-black text-white light:text-slate-950">
+            <h3 className="mt-3 text-base font-black text-white sm:mt-4 sm:text-xl light:text-slate-950">
               هنوز پروژه‌ای ثبت نشده است
             </h3>
-            <p className="mt-3 text-sm leading-7 text-slate-300 light:text-slate-600">
+            <p className="mt-3 hidden text-sm leading-7 text-slate-300 sm:block light:text-slate-600">
               برای شروع یک پروژه بسازید. هر پروژه می‌تواند چندین صورت‌بها داشته باشد.
             </p>
             <button
@@ -480,7 +533,7 @@ function ProjectsPanel({
         <div className="grid gap-3 md:grid-cols-2">
           {projects.map((project) => (
             <article
-              className="flex flex-col rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-[#f5fbf8]"
+              className="flex flex-col rounded-lg border border-white/10 bg-white/7 p-3 sm:p-4 light:border-slate-200 light:bg-[#f5fbf8]"
               key={project.id}
             >
               <div className="min-w-0 flex-1">
@@ -498,7 +551,7 @@ function ProjectsPanel({
                   </p>
                 ) : null}
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex gap-2 sm:mt-4 sm:flex-wrap">
                 <button
                   className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-3 text-sm font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-slate-50 light:text-slate-800"
                   onClick={() => onSelectProject(project)}
@@ -508,12 +561,13 @@ function ProjectsPanel({
                   صورت‌بهاها
                 </button>
                 <Link
-                  className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-3 text-sm font-bold text-emerald-100 transition hover:bg-emerald-400/20 light:text-emerald-800"
+                  aria-label={`افزودن صورت‌بها به ${cleanDisplayText(project.name, "پروژه بدون نام")}`}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-0 text-sm font-bold text-emerald-100 transition hover:bg-emerald-400/20 sm:w-auto sm:flex-1 sm:px-3 light:text-emerald-800"
                   state={{ existingProject: project }}
                   to={`/companies/${companyId}/cost-reports/new`}
                 >
                   <CirclePlus className="h-4 w-4" />
-                  افزودن صورت‌بها
+                  <span className="hidden sm:inline">افزودن صورت‌بها</span>
                 </Link>
               </div>
             </article>
@@ -539,35 +593,37 @@ function ProjectDocumentsPanel({
   );
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto p-4 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4 light:border-slate-200">
-        <div className="flex items-center gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
+      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 sm:gap-3 sm:pb-4 light:border-slate-200">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <button
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-300 transition hover:border-white/20 hover:text-white light:border-slate-200 light:text-slate-600 light:hover:text-slate-950"
+            aria-label="بازگشت به پروژه‌ها"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-300 transition hover:border-white/20 hover:text-white sm:h-9 sm:w-9 light:border-slate-200 light:text-slate-600 light:hover:text-slate-950"
             onClick={onBack}
             type="button"
           >
             <ArrowRight className="h-4 w-4" />
           </button>
-          <div>
-            <h2 className="text-lg font-black text-white light:text-slate-950">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-black text-white sm:text-lg light:text-slate-950">
               {cleanDisplayText(project.name, "پروژه بدون نام")}
             </h2>
-            <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">صورت‌بهاهای این پروژه</p>
+            <p className="mt-0.5 hidden text-xs text-slate-400 sm:block light:text-slate-500">صورت‌بهاهای این پروژه</p>
           </div>
         </div>
         <Link
-          className={linkButtonClasses}
+          className={classNames(linkButtonClasses, "shrink-0 px-3 sm:px-4")}
           state={{ existingProject: project }}
           to={`/companies/${companyId}/cost-reports/new`}
         >
           <CirclePlus className="h-4 w-4" />
-          افزودن صورت‌بها
+          <span className="sm:hidden">افزودن</span>
+          <span className="hidden sm:inline">افزودن صورت‌بها</span>
         </Link>
       </div>
 
       {isLoading ? (
-        <div className="flex min-h-64 items-center justify-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
+        <div className="flex min-h-0 flex-1 items-center justify-center gap-3 py-10 text-sm font-bold text-slate-300 light:text-slate-600">
           <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
           در حال دریافت صورت‌بهاها
         </div>
@@ -580,15 +636,15 @@ function ProjectDocumentsPanel({
       ) : null}
 
       {!isLoading && !error && documents.length === 0 ? (
-        <div className="flex min-h-72 items-center justify-center">
+        <div className="flex min-h-0 flex-1 items-center justify-center py-8 sm:min-h-72">
           <div className="max-w-md text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200">
-              <FileText className="h-7 w-7" />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200 sm:h-14 sm:w-14">
+              <FileText className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
-            <h3 className="mt-4 text-xl font-black text-white light:text-slate-950">
+            <h3 className="mt-3 text-base font-black text-white sm:mt-4 sm:text-xl light:text-slate-950">
               هنوز صورت‌بهایی ثبت نشده است
             </h3>
-            <p className="mt-3 text-sm leading-7 text-slate-300 light:text-slate-600">
+            <p className="mt-3 hidden text-sm leading-7 text-slate-300 sm:block light:text-slate-600">
               برای این پروژه یک صورت‌بها بسازید.
             </p>
             <Link
@@ -607,7 +663,7 @@ function ProjectDocumentsPanel({
         <div className="grid gap-3 md:grid-cols-2">
           {documents.map((document) => (
             <article
-              className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-[#f5fbf8]"
+              className="rounded-lg border border-white/10 bg-white/7 p-3 sm:p-4 light:border-slate-200 light:bg-[#f5fbf8]"
               key={document.id}
             >
               <div className="flex items-start justify-between gap-3">
@@ -625,14 +681,14 @@ function ProjectDocumentsPanel({
                   {getDocumentStatusLabel(document.status)}
                 </StatusBadge>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-lg border border-white/10 bg-slate-950/25 p-3 light:border-slate-200 light:bg-white">
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:mt-4">
+                <div className="rounded-lg border border-white/10 bg-slate-950/25 p-2.5 sm:p-3 light:border-slate-200 light:bg-white">
                   <span className="block text-slate-400 light:text-slate-500">ردیف‌ها</span>
                   <span className="mt-1 block font-black text-slate-100 light:text-slate-900">
                     {getDocumentLineCount(document)}
                   </span>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-slate-950/25 p-3 light:border-slate-200 light:bg-white">
+                <div className="rounded-lg border border-white/10 bg-slate-950/25 p-2.5 sm:p-3 light:border-slate-200 light:bg-white">
                   <span className="block text-slate-400 light:text-slate-500">جمع کل</span>
                   <span className="mt-1 block font-black text-slate-100 light:text-slate-900">
                     {formatMoneyAmount(getDocumentTotalAmount(document))}
@@ -640,7 +696,7 @@ function ProjectDocumentsPanel({
                 </div>
               </div>
               <Link
-                className={classNames(linkButtonClasses, "mt-4 w-full")}
+                className={classNames(linkButtonClasses, "mt-3 w-full sm:mt-4")}
                 state={{ existingDocument: document, existingProject: project }}
                 to={`/companies/${companyId}/cost-reports/new`}
               >
@@ -832,8 +888,9 @@ export function CompanyDashboardPage() {
   }
 
   return (
-    <div className="relative mx-auto flex w-full max-w-full flex-col px-4 pb-2 pt-5 sm:px-6">
-      <GlassCard className="relative flex min-h-[400px] h-[calc(100dvh-145px)] sm:h-[calc(100dvh-153px)] md:h-[calc(100dvh-97px)] flex-col overflow-hidden p-0">
+    <div className="relative mx-auto flex w-full max-w-full flex-col sm:px-6 sm:pb-2 sm:pt-5">
+      <GlassCard className="relative flex h-[calc(100dvh-7.75rem)] min-h-0 flex-col overflow-hidden p-0 sm:h-[calc(100dvh-153px)] lg:h-[calc(100dvh-97px)]">
+        <MobileDashboardTabs activeSection={activeSection} onChange={setActiveSection} />
         {activeSection === "costReports" ? (
           selectedProject !== null ? (
             <ProjectDocumentsPanel
@@ -856,29 +913,30 @@ export function CompanyDashboardPage() {
         ) : (
           <>
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4 pb-3 sm:p-5 sm:pb-3 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]" data-tour="messages-area">
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-5 sm:pb-3 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]" data-tour="messages-area">
                 {messages.length === 0 ? (
                   <div className="flex flex-1 items-center justify-center">
                     <div className="mx-auto max-w-md text-center">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200">
-                        <MessageCircle className="h-8 w-8" />
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200 sm:h-16 sm:w-16">
+                        <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8" />
                       </div>
-                      <h3 className="mt-5 text-xl font-black text-white light:text-slate-950">
+                      <h3 className="mt-3 text-base font-black text-white sm:mt-5 sm:text-xl light:text-slate-950">
                         هنوز پیامی برای این شرکت وجود ندارد
                       </h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-300 light:text-slate-600">
+                      <p className="mt-3 hidden text-sm leading-7 text-slate-300 sm:block light:text-slate-600">
                         یک پیام کوتاه بنویسید یا صورت‌بها را مثل یک پیوست از دکمه + اضافه کنید.
                       </p>
                       <Link className={classNames(linkButtonClasses, "mt-4")} to={`/companies/${company.id}/cost-reports/new`}>
                         <Paperclip className="h-4 w-4" />
-                        افزودن صورت‌بها از فهرست‌بها
+                        <span className="sm:hidden">افزودن صورت‌بها</span>
+                        <span className="hidden sm:inline">افزودن صورت‌بها از فهرست‌بها</span>
                       </Link>
                     </div>
                   </div>
                 ) : (
                   messages.map((message) => (
                     <div
-                      className="mr-auto max-w-[min(34rem,100%)] rounded-2xl rounded-bl-sm border border-emerald-300/20 bg-emerald-400/12 p-4 text-sm leading-7 text-slate-100 light:bg-emerald-50 light:text-slate-800"
+                      className="mr-auto max-w-[min(34rem,100%)] rounded-2xl rounded-bl-sm border border-emerald-300/20 bg-emerald-400/12 p-3 text-sm leading-7 text-slate-100 sm:p-4 light:bg-emerald-50 light:text-slate-800"
                       key={message.id}
                     >
                       {message.text ? <p>{message.text}</p> : null}
@@ -935,14 +993,14 @@ export function CompanyDashboardPage() {
                 )}
               </div>
 
-              <div className="shrink-0 border-t border-white/10 bg-slate-950/80 px-4 py-3 backdrop-blur-md light:border-slate-200 light:bg-white/90 sm:px-5" data-tour="message-input-area">
+              <div className="shrink-0 border-t border-white/10 bg-slate-950/80 p-3 backdrop-blur-md sm:px-5 light:border-slate-200 light:bg-white/90" data-tour="message-input-area">
                 <form
                   className="relative"
                   onSubmit={handleSendMessage}
                 >
                   {pendingAttachment ? (
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100 light:text-emerald-800">
-                      <div className="flex items-center gap-2">
+                    <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-emerald-300/20 bg-emerald-400/10 p-2.5 text-sm text-emerald-100 sm:mb-3 sm:flex-wrap sm:gap-3 sm:p-3 light:text-emerald-800">
+                      <div className="flex min-w-0 items-center gap-2">
                         {pendingAttachment.kind === "project" ? (
                           <FolderKanban className="h-4 w-4" />
                         ) : (
@@ -950,20 +1008,20 @@ export function CompanyDashboardPage() {
                         )}
                         {pendingAttachment.kind === "document" ? (
                           <Link
-                            className="font-bold transition hover:text-white light:hover:text-emerald-950"
+                            className="truncate font-bold transition hover:text-white light:hover:text-emerald-950"
                             state={getAttachmentEditState(pendingAttachment)}
                             to={pendingAttachment.to}
                           >
                             {pendingAttachment.title}
                           </Link>
                         ) : (
-                          <span className="font-bold">{pendingAttachment.title}</span>
+                          <span className="truncate font-bold">{pendingAttachment.title}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-3">
                         {pendingAttachment.kind === "document" ? (
                           <Link
-                            className="text-xs font-bold text-emerald-100 transition hover:text-white light:text-emerald-800 light:hover:text-emerald-950"
+                            className="hidden text-xs font-bold text-emerald-100 transition hover:text-white sm:inline light:text-emerald-800 light:hover:text-emerald-950"
                             state={getAttachmentEditState(pendingAttachment)}
                             to={pendingAttachment.to}
                           >
@@ -971,11 +1029,13 @@ export function CompanyDashboardPage() {
                           </Link>
                         ) : null}
                         <button
-                          className="text-xs font-bold text-slate-300 transition hover:text-white light:text-slate-600 light:hover:text-slate-950"
+                          aria-label="حذف پیوست"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/8 hover:text-white sm:h-auto sm:w-auto sm:bg-transparent light:text-slate-600 light:hover:text-slate-950"
                           onClick={() => setPendingAttachment(null)}
                           type="button"
                         >
-                          حذف پیوست
+                          <X className="h-4 w-4 sm:hidden" />
+                          <span className="hidden text-xs font-bold sm:inline">حذف پیوست</span>
                         </button>
                       </div>
                     </div>
@@ -983,7 +1043,7 @@ export function CompanyDashboardPage() {
 
                   <div className="flex items-end gap-2" ref={addMenuRef}>
                     {isAddMenuOpen ? (
-                      <div className="absolute bottom-[72px] right-3 z-20 w-[min(22rem,calc(100vw-5rem))] rounded-lg border border-white/10 bg-slate-950/95 p-2 shadow-2xl backdrop-blur-xl light:border-slate-200 light:bg-white/95">
+                      <div className="absolute bottom-[3.5rem] right-0 z-20 w-full rounded-lg border border-white/10 bg-slate-950/95 p-2 shadow-2xl backdrop-blur-xl sm:bottom-[72px] sm:right-3 sm:w-[min(22rem,calc(100vw-5rem))] light:border-slate-200 light:bg-white/95">
                         <Link
                           className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-emerald-400/10 light:hover:bg-emerald-50"
                           onClick={() => setIsAddMenuOpen(false)}
@@ -996,7 +1056,7 @@ export function CompanyDashboardPage() {
                             <span className="block text-sm font-black text-white light:text-slate-950">
                               افزودن صورت‌بها از فهرست‌بها
                             </span>
-                            <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
+                            <span className="mt-1 hidden text-xs leading-6 text-slate-400 sm:block light:text-slate-500">
                               وارد سازنده می‌شوید و بعد از ثبت، صورت‌بها مثل پیوست آماده ارسال برمی‌گردد.
                             </span>
                           </span>
@@ -1016,13 +1076,13 @@ export function CompanyDashboardPage() {
                             <span className="block text-sm font-black text-white light:text-slate-950">
                               افزودن پروژه
                             </span>
-                            <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
+                            <span className="mt-1 hidden text-xs leading-6 text-slate-400 sm:block light:text-slate-500">
                               یک پروژه جدید بسازید و به پیام پیوست کنید.
                             </span>
                           </span>
                         </button>
                         <button
-                          className="mt-1 flex w-full cursor-not-allowed items-start gap-3 rounded-lg px-3 py-3 text-right opacity-60"
+                          className="mt-1 hidden w-full cursor-not-allowed items-start gap-3 rounded-lg px-3 py-3 text-right opacity-60 sm:flex"
                           disabled
                           type="button"
                         >
@@ -1055,7 +1115,7 @@ export function CompanyDashboardPage() {
                       <Plus className="h-4 w-4" />
                     </button>
                     <textarea
-                      className="min-h-11 flex-1 resize-none rounded-lg border border-white/10 bg-slate-900/60 px-4 py-3 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-slate-50 light:text-slate-950"
+                      className="min-h-11 max-h-24 flex-1 resize-none overflow-y-auto rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 sm:px-4 sm:py-3 light:border-slate-200 light:bg-slate-50 light:text-slate-950"
                       onChange={(event) => setMessageText(event.target.value)}
                       placeholder="پیام خود را بنویسید..."
                       rows={1}

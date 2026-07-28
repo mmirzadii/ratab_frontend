@@ -24,10 +24,13 @@ import { classNames } from "../../../shared/utils/classNames";
 import { inputClasses } from "../constants";
 import {
   classifyPricebookItem,
+  buildFootnotesPayload,
   findMatchedRangeRow,
   getActiveCalculationRows,
   getCalculationInputs,
   getInputStateKey,
+  getLineDisplayRows,
+  hasPositiveMoneyValue,
   getRangeFallbackRow,
   getSelectInputOptions,
   getSelectedRowInput,
@@ -44,8 +47,10 @@ import {
   requiresRowSelection,
   shouldValidateInputAgainstMainValue,
   stablePayloadKey,
+  validateFootnoteInputs,
   validateNumericInput
 } from "../costReportUtils";
+import type { FootnoteInputErrors, FootnoteInputValues, TouchedFootnoteInputs } from "../costReportUtils";
 import {
   CalculationSection,
   type CalculationRowSelectionOption,
@@ -54,15 +59,21 @@ import {
 import { ChecklistNotesSection, ReadableNotesSection } from "./ItemNotesSections";
 
 function AddedRowsView({
-  document,
+  lines,
   onClose,
   onToast
 }: {
-  document: FinancialDocument | null;
+  lines: FinancialDocument["lines"];
   onClose: () => void;
   onToast: (message: string, type?: "success" | "error" | "info") => void;
 }) {
-  const [localLines, setLocalLines] = useState(() => document?.lines ?? []);
+  const [localLines, setLocalLines] = useState(() => lines);
+  const displayGroups = localLines.map((line) => ({
+    line,
+    rows: getLineDisplayRows(line)
+  }));
+  const displayRowCount = displayGroups.reduce((sum, group) => sum + group.rows.length, 0);
+  const hasMultipleRows = displayRowCount > 1;
 
   return (
     <div className="space-y-5">
@@ -71,8 +82,15 @@ function AddedRowsView({
           ردیف‌های اضافه‌شده
         </h3>
         <p className="mt-1 text-sm leading-7 text-slate-300 light:text-slate-600">
-          ردیف با موفقیت به صورت‌بها اضافه شد.
+          {hasMultipleRows
+            ? "ردیف‌ها با موفقیت به صورت‌بها اضافه شدند."
+            : "ردیف با موفقیت به صورت‌بها اضافه شد."}
         </p>
+        {hasMultipleRows ? (
+          <p className="mt-1 text-xs font-bold text-emerald-200 light:text-emerald-700">
+            {formatDecimal(displayRowCount)} ردیف اضافه شد
+          </p>
+        ) : null}
       </div>
       <div className="space-y-2">
         {localLines.length === 0 ? (
@@ -80,50 +98,76 @@ function AddedRowsView({
             هنوز ردیفی اضافه نشده است.
           </p>
         ) : null}
-        {localLines.map((line) => (
+        {displayGroups.map(({ line, rows }) => (
           <div
-            className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50"
+            className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50"
             key={line.id}
           >
-            <div className="min-w-0 flex-1">
-              <p
-                className="truncate text-base font-bold text-slate-100 light:text-slate-900"
-                title={cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
-              >
-                {cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-300 light:text-slate-600">
-                <span>
-                  کد:{" "}
-                  <span className="font-mono text-emerald-200 light:text-emerald-700">
-                    {line.row_code_snapshot}
-                  </span>
-                </span>
-                <span>مقدار: {formatDecimal(line.quantity)}</span>
-                <span>جمع: {formatMoneyAmount(line.total_amount_snapshot)}</span>
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <p
+                  className="truncate text-base font-bold text-slate-100 light:text-slate-900"
+                  title={cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
+                >
+                  {cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
+                </p>
+                {rows.length > 1 ? (
+                  <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+                    {formatDecimal(rows.length)} ردیف محاسبه‌شده
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <button
+                  aria-label="ویرایش"
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-emerald-500/10 hover:text-emerald-400"
+                  onClick={() => onToast("ویرایش در نسخه بعدی")}
+                  title="ویرایش"
+                  type="button"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  aria-label="حذف"
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-400"
+                  onClick={() =>
+                    setLocalLines((current) => current.filter((item) => item.id !== line.id))
+                  }
+                  title="حذف از نمایش"
+                  type="button"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
-            <div className="flex shrink-0 gap-1">
-              <button
-                aria-label="ویرایش"
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-emerald-500/10 hover:text-emerald-400"
-                onClick={() => onToast("ویرایش در نسخه بعدی")}
-                title="ویرایش"
-                type="button"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-              <button
-                aria-label="حذف"
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-400"
-                onClick={() =>
-                  setLocalLines((current) => current.filter((item) => item.id !== line.id))
-                }
-                title="حذف از نمایش"
-                type="button"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+
+            <div className="mt-3 space-y-2">
+              {rows.map((row, index) => (
+                <div
+                  className="grid gap-2 rounded-lg border border-white/10 bg-slate-950/25 p-3 text-sm light:border-slate-200 light:bg-white sm:grid-cols-[6rem_1fr_7rem_8rem] sm:items-center"
+                  key={`${row.parentLineId}-${row.rowCode ?? "row"}-${index}`}
+                >
+                  <span className="font-mono font-bold text-emerald-200 light:text-emerald-700">
+                    {row.rowCode ?? "—"}
+                  </span>
+                  <span
+                    className="min-w-0 truncate text-slate-100 light:text-slate-900"
+                    title={cleanDisplayText(row.title, "شرح ثبت نشده")}
+                  >
+                    {cleanDisplayText(row.title, "شرح ثبت نشده")}
+                  </span>
+                  <span className="text-slate-400 light:text-slate-500">
+                    {formatDecimal(row.quantity)} {cleanDisplayText(row.unit, "")}
+                  </span>
+                  <span className="font-bold text-slate-200 light:text-slate-800">
+                    {formatMoneyAmount(row.total)}
+                  </span>
+                  <span className="text-xs text-slate-500 light:text-slate-500 sm:col-start-4">
+                    {row.isStarredPrice ? "★ ستاره‌دار · " : "قیمت رسمی · "}
+                    بهای واحد: {hasPositiveMoneyValue(row.unitPrice) ? formatMoneyAmount(row.unitPrice) : "-"}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         ))}
@@ -173,6 +217,40 @@ function getBackendCustomPriceRequest(error: unknown): { rowCode: string | null 
   };
 }
 
+function getBackendMissingStarredPrices(error: unknown): string[] | null {
+  if (!error || typeof error !== "object" || !("data" in error)) return null;
+  const data = (error as { data?: unknown }).data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const record = data as Record<string, unknown>;
+  if (record["requires_starred_prices"] !== true) return null;
+  const missing = Array.isArray(record["missing_starred_prices"])
+    ? record["missing_starred_prices"]
+    : [];
+  return missing
+    .map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+      const rowCode = (entry as Record<string, unknown>)["row_code"];
+      return typeof rowCode === "string" || typeof rowCode === "number" ? String(rowCode) : null;
+    })
+    .filter((rowCode): rowCode is string => rowCode !== null);
+}
+
+function getBackendFootnoteInputError(error: unknown) {
+  if (!error || typeof error !== "object" || !("data" in error)) return null;
+  const data = (error as { data?: unknown }).data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const record = data as Record<string, unknown>;
+  if (record["requires_footnote_input"] !== true) return null;
+  const footnoteId = record["footnote_id"];
+  const field = record["field"];
+  if (typeof footnoteId !== "string" || typeof field !== "string") return null;
+  return {
+    detail: typeof record["detail"] === "string" ? record["detail"] : "مقدار این تبصره معتبر نیست.",
+    field,
+    footnoteId
+  };
+}
+
 type ModalHeaderProps = {
   action?: ReactNode;
   onClose: () => void;
@@ -181,7 +259,7 @@ type ModalHeaderProps = {
 
 function ModalHeader({ action, onClose, title }: ModalHeaderProps) {
   return (
-    <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-slate-950/95 p-4 backdrop-blur light:border-slate-200 light:bg-white/95 sm:flex-nowrap">
+    <div className="sticky top-0 z-20 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-white/10 bg-slate-950/95 p-3 backdrop-blur light:border-slate-200 light:bg-white/95 sm:flex sm:flex-nowrap sm:gap-3 sm:p-4">
       <button
         aria-label="بستن"
         className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
@@ -194,7 +272,7 @@ function ModalHeader({ action, onClose, title }: ModalHeaderProps) {
       <h2 className="min-w-0 flex-1 truncate text-right text-base font-black text-white light:text-slate-950">
         {title}
       </h2>
-      <div className="flex min-w-0 flex-wrap items-end justify-end gap-2 sm:min-w-[12rem]">{action}</div>
+      <div className="col-span-2 flex min-w-0 w-full flex-wrap items-end justify-end gap-2 sm:col-auto sm:w-auto sm:min-w-[12rem]">{action}</div>
     </div>
   );
 }
@@ -264,10 +342,16 @@ function ItemDetailContent({
   const [customPriceErrors, setCustomPriceErrors] = useState<Record<string, string | null>>({});
   const [editingRowCode, setEditingRowCode] = useState<string | null>(null);
   const [editingRowPrice, setEditingRowPrice] = useState("");
-  const [customFallbackDraftPrice, setCustomFallbackDraftPrice] = useState("");
   const [backendFallbackRowCode, setBackendFallbackRowCode] = useState<string | null>(null);
+  const [missingStarredRowCodes, setMissingStarredRowCodes] = useState<string[]>([]);
+  const [missingStarredDraftPrices, setMissingStarredDraftPrices] = useState<Record<string, string>>({});
+  const [guidedMissingRowCode, setGuidedMissingRowCode] = useState<string | null>(null);
   const [confirmedFootnotes, setConfirmedFootnotes] = useState<Record<string, boolean>>({});
+  const [footnoteInputValues, setFootnoteInputValues] = useState<FootnoteInputValues>({});
+  const [footnoteInputErrors, setFootnoteInputErrors] = useState<FootnoteInputErrors>({});
+  const [touchedFootnoteInputs, setTouchedFootnoteInputs] = useState<TouchedFootnoteInputs>({});
   const [showAddedRows, setShowAddedRows] = useState(false);
+  const [addedRowsLines, setAddedRowsLines] = useState<FinancialDocument["lines"]>([]);
   const [calculatePricebookItem, calculateState] = useCalculatePricebookItemMutation();
   const [createFinancialDocumentLine, createLineState] = useCreateFinancialDocumentLineMutation();
   const [recalculateFinancialDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
@@ -278,8 +362,53 @@ function ItemDetailContent({
   const inFlightPayloadKeyRef = useRef<string | null>(null);
   const calculationRef = useRef<PricebookCalculateResponse | null>(null);
   const rowsSectionRef = useRef<HTMLElement | null>(null);
+  const modalScrollRef = useRef<HTMLDivElement | null>(null);
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const rowPriceInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const lastGuidedMissingSetRef = useRef("");
+  const missingStarredRowCodesRef = useRef<string[]>([]);
 
-  const requiresManualPrice = hasManualUnitPrice(item);
+  const revealMissingStarredPrices = useCallback((rowCodes: string[], forceGuide = false) => {
+    const uniqueCodes = [...new Set(rowCodes)];
+    const previousCodes = missingStarredRowCodesRef.current;
+    missingStarredRowCodesRef.current = uniqueCodes;
+    setMissingStarredRowCodes(uniqueCodes);
+    setMissingStarredDraftPrices((current) => ({
+      ...current,
+      ...Object.fromEntries(uniqueCodes.map((rowCode) => [rowCode, current[rowCode] ?? ""]))
+    }));
+    setCustomPriceErrors((current) => {
+      const next = { ...current };
+      previousCodes.forEach((rowCode) => {
+        if (!uniqueCodes.includes(rowCode) && next[rowCode] === "باید قیمت را تعیین کنید") {
+          next[rowCode] = null;
+        }
+      });
+      uniqueCodes.forEach((rowCode) => {
+        next[rowCode] = "باید قیمت را تعیین کنید";
+      });
+      return next;
+    });
+    const firstCode = uniqueCodes.find((rowCode) => !isPositiveDecimal(customPrices[rowCode] ?? ""));
+    if (!firstCode) return;
+    const missingSetKey = uniqueCodes.slice().sort().join("\u0000");
+    if (!forceGuide && lastGuidedMissingSetRef.current === missingSetKey) return;
+    lastGuidedMissingSetRef.current = missingSetKey;
+    setGuidedMissingRowCode(firstCode);
+    window.setTimeout(() => {
+      const container = modalScrollRef.current;
+      const row = rowRefs.current[firstCode];
+      if (!container || !row) return;
+      const containerRect = container.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      const targetTop = container.scrollTop + rowRect.top - containerRect.top
+        - Math.max(12, (container.clientHeight - rowRect.height) / 2);
+      container.scrollTo({ behavior: "smooth", top: Math.max(0, targetTop) });
+    }, 0);
+  }, [customPrices]);
+
+  const usesRowSpecificPriceInputs = item.rows.length > 0;
+  const requiresManualPrice = hasManualUnitPrice(item) && !usesRowSpecificPriceInputs;
   const needsRowSelection = requiresRowSelection(item);
   const documentLocked = isFinancialDocumentLocked(document);
   const showItemizedPicker = itemType === "itemized" && selectedRowInput === null;
@@ -517,6 +646,11 @@ function ItemDetailContent({
       const calculateBody: PricebookCalculateInputPayload = {};
       const nextInputErrors: Record<string, string | null> = {};
       const nextCustomPriceErrors: Record<string, string | null> = {};
+      const footnoteValidation = validateFootnoteInputs(
+        item.footnotes,
+        confirmedFootnotes,
+        footnoteInputValues
+      );
       let nextQuantityError: string | null = null;
       let nextManualUnitPriceError: string | null = null;
       let nextRowSelectionError: string | null = null;
@@ -529,6 +663,7 @@ function ItemDetailContent({
           setRowSelectionError(nextRowSelectionError);
           setCustomPriceErrors((current) => ({ ...current, ...nextCustomPriceErrors }));
           setCalculationError(message);
+          setFootnoteInputErrors(footnoteValidation.errors);
         }
         return { message, ok: false };
       }
@@ -541,6 +676,7 @@ function ItemDetailContent({
         setRowSelectionError(null);
         setCustomPriceErrors({});
         setCalculationError(null);
+        setFootnoteInputErrors({});
       }
 
       function applySelectedRowInputs() {
@@ -698,9 +834,14 @@ function ItemDetailContent({
         calculateBody.selected_row_id = selectedRowId;
       }
 
-      const selectedFootnotes = Object.fromEntries(
-        Object.entries(confirmedFootnotes).filter(([, checked]) => checked)
-      );
+      if (!footnoteValidation.ok) {
+        return applyFailure("ورودی‌های لازم تبصره‌ها را کامل و معتبر وارد کنید.");
+      }
+      const selectedFootnotes = buildFootnotesPayload({
+        notes: item.footnotes,
+        confirmedFootnotes,
+        footnoteInputValues
+      });
       if (Object.keys(selectedFootnotes).length > 0) {
         calculateBody.footnotes = selectedFootnotes;
       }
@@ -715,6 +856,7 @@ function ItemDetailContent({
       activeCustomPrices,
       calculationInputs,
       confirmedFootnotes,
+      footnoteInputValues,
       hasDrivingValueForRange,
       inputValues,
       item,
@@ -789,6 +931,24 @@ function ItemDetailContent({
         return result;
       } catch (error) {
         if (requestId === latestRequestIdRef.current) {
+          const missingStarredPrices = getBackendMissingStarredPrices(error);
+          if (missingStarredPrices) {
+            const knownCodes = new Set(item.rows.map((row) => row.row_code));
+            const unknownCodes = missingStarredPrices.filter((rowCode) => !knownCodes.has(rowCode));
+            revealMissingStarredPrices(missingStarredPrices.filter((rowCode) => knownCodes.has(rowCode)));
+            setCalculation(null);
+            calculationRef.current = null;
+            latestCalculatedPayloadKeyRef.current = null;
+            setCalculationStatus(options.forAdd ? "error" : "waiting");
+            setCalculationError(
+              unknownCodes.length > 0
+                ? `ردیف‌های قیمت‌گذاری‌نشده در جزئیات آیتم پیدا نشدند: ${unknownCodes.join("، ")}`
+                : options.forAdd
+                  ? `قیمت ${missingStarredPrices.length} ردیف باید تعیین شود.`
+                  : null
+            );
+            return null;
+          }
           const customPriceRequest = getBackendCustomPriceRequest(error);
           if (customPriceRequest) {
             const fallbackRowCode = customPriceRequest.rowCode ?? rangeFallbackRow?.row_code ?? null;
@@ -806,6 +966,27 @@ function ItemDetailContent({
                 }));
               }
             }
+            return null;
+          }
+
+          const footnoteError = getBackendFootnoteInputError(error);
+          if (footnoteError) {
+            setFootnoteInputErrors((current) => ({
+              ...current,
+              [footnoteError.footnoteId]: {
+                ...(current[footnoteError.footnoteId] ?? {}),
+                [footnoteError.field]: footnoteError.detail
+              }
+            }));
+            setTouchedFootnoteInputs((current) => ({
+              ...current,
+              [footnoteError.footnoteId]: {
+                ...(current[footnoteError.footnoteId] ?? {}),
+                [footnoteError.field]: true
+              }
+            }));
+            setCalculationStatus(options.forAdd ? "error" : "waiting");
+            setCalculationError(options.forAdd ? footnoteError.detail : null);
             return null;
           }
 
@@ -829,7 +1010,7 @@ function ItemDetailContent({
         }
       }
     },
-    [calculatePricebookItem, item.id, rangeFallbackRow?.row_code]
+    [calculatePricebookItem, item.id, item.rows, rangeFallbackRow?.row_code, revealMissingStarredPrices]
   );
 
   useEffect(() => {
@@ -892,29 +1073,18 @@ function ItemDetailContent({
     setLineError(null);
   }, []);
 
-  const handleCustomFallbackPriceChange = useCallback((rowCode: string, value: string) => {
-    const normalized = normalizeQuantityValue(value);
-
-    setCustomFallbackDraftPrice(value);
-    setCustomPriceErrors((current) => ({ ...current, [rowCode]: null }));
-    setHasSubmitAttempted(false);
-    setCalculationError(null);
-    setLineError(null);
-
-    if (!value.trim() || !isPositiveDecimal(normalized)) {
-      setCustomPrices((current) => {
-        const next = { ...current };
-        delete next[rowCode];
-        return next;
-      });
-      return;
-    }
-
-    setCustomPrices((current) => ({ ...current, [rowCode]: normalized }));
-  }, []);
-
   const handleAddLine = useCallback(async () => {
     setHasSubmitAttempted(true);
+    setTouchedFootnoteInputs(
+      Object.fromEntries(
+        item.footnotes
+          .filter((note) => confirmedFootnotes[note.note_code] && note.requires_input)
+          .map((note) => [
+            note.note_code,
+            Object.fromEntries((note.inputs ?? []).map((input) => [input.name, true]))
+          ])
+      )
+    );
     setLineError(null);
     setLineSuccess(null);
 
@@ -925,6 +1095,27 @@ function ItemDetailContent({
 
     if (documentLocked) {
       setLineError("این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد.");
+      return;
+    }
+
+    const locallyActiveRows = item.rows.filter((row) =>
+      item.rows.length === 1 ||
+      row.id === selectedRowId ||
+      row.id === matchedRangeRow?.id
+    );
+    const locallyMissingStarredPrices = locallyActiveRows
+      .filter(
+        (row) =>
+          (row.requires_manual_unit_price ||
+            (item.rows.length === 1 && item.requires_manual_unit_price)) &&
+          !hasPositiveMoneyValue(row.unit_price) &&
+          !isPositiveDecimal(customPrices[row.row_code] ?? "")
+      )
+      .map((row) => row.row_code);
+    if (locallyMissingStarredPrices.length > 0) {
+      revealMissingStarredPrices(locallyMissingStarredPrices, true);
+      setCalculationStatus("error");
+      setCalculationError(`قیمت ${locallyMissingStarredPrices.length} ردیف باید تعیین شود.`);
       return;
     }
 
@@ -979,16 +1170,38 @@ function ItemDetailContent({
     }
 
     try {
-      await createFinancialDocumentLine({
+      const createdLine = await createFinancialDocumentLine({
         body: lineBody,
         documentId: document.id
       }).unwrap();
       const updatedDocument = await recalculateFinancialDocument(document.id).unwrap();
       onDocumentUpdated(updatedDocument);
+      const addedLine =
+        updatedDocument.lines.find((line) => line.id === createdLine.id) ?? createdLine;
+      const addedDisplayRows = getLineDisplayRows(addedLine);
+      setAddedRowsLines([addedLine]);
       setHasSubmitAttempted(false);
-      onToast("ردیف به صورت‌بها اضافه شد.", "success");
+      onToast(
+        addedDisplayRows.length > 1
+          ? "ردیف‌ها به صورت‌بها اضافه شدند."
+          : "ردیف به صورت‌بها اضافه شد.",
+        "success"
+      );
       setShowAddedRows(true);
     } catch (error) {
+      const missingStarredPrices = getBackendMissingStarredPrices(error);
+      if (missingStarredPrices) {
+        const knownCodes = new Set(item.rows.map((row) => row.row_code));
+        const matchedCodes = missingStarredPrices.filter((rowCode) => knownCodes.has(rowCode));
+        const unknownCodes = missingStarredPrices.filter((rowCode) => !knownCodes.has(rowCode));
+        revealMissingStarredPrices(matchedCodes, true);
+        setLineError(
+          unknownCodes.length > 0
+            ? `ردیف‌های قیمت‌گذاری‌نشده در جزئیات آیتم پیدا نشدند: ${unknownCodes.join("، ")}`
+            : null
+        );
+        return;
+      }
       const msg = getManualPriceValidationMessage(error);
       setLineError(msg);
       if (
@@ -1010,13 +1223,21 @@ function ItemDetailContent({
     buildCalculationPayload,
     clearPendingAutoCalculation,
     createFinancialDocumentLine,
+    confirmedFootnotes,
+    customPrices,
     document,
     documentLocked,
     item.id,
+    item.footnotes,
+    item.requires_manual_unit_price,
+    item.rows,
+    matchedRangeRow?.id,
     onDocumentUpdated,
     onToast,
     recalculateFinancialDocument,
-    runCalculation
+    revealMissingStarredPrices,
+    runCalculation,
+    selectedRowId
   ]);
 
   const handleSelectedCoefficientSetIdChange = useCallback(
@@ -1037,9 +1258,13 @@ function ItemDetailContent({
     const rowCode = row.row_code;
     setEditingRowCode(rowCode);
     setEditingRowPrice(customPrices[rowCode] ?? row.unit_price ?? "");
+    setGuidedMissingRowCode(null);
     setCustomPriceErrors((current) => ({ ...current, [rowCode]: null }));
     setCalculationError(null);
     setLineError(null);
+    window.setTimeout(() => {
+      rowPriceInputRefs.current[rowCode]?.focus({ preventScroll: true });
+    }, 0);
   }
 
   function handleEditingRowPriceChange(rowCode: string, value: string) {
@@ -1053,13 +1278,13 @@ function ItemDetailContent({
     setCustomPriceErrors((current) => ({ ...current, [rowCode]: null }));
   }
 
-  function applyRowCustomPrice(rowCode: string) {
-    const normalized = normalizeQuantityValue(editingRowPrice);
+  function applyRowCustomPrice(rowCode: string, draftPrice = editingRowPrice) {
+    const normalized = normalizeQuantityValue(draftPrice);
 
     if (!isPositiveDecimal(normalized)) {
       setCustomPriceErrors((current) => ({
         ...current,
-        [rowCode]: "قیمت دستی باید یک عدد مثبت باشد."
+        [rowCode]: "قیمت ستاره‌دار باید یک عدد مثبت باشد."
       }));
       return;
     }
@@ -1068,8 +1293,19 @@ function ItemDetailContent({
     setCustomPriceErrors((current) => ({ ...current, [rowCode]: null }));
     setEditingRowCode(null);
     setEditingRowPrice("");
-    if (rangeFallbackRow?.row_code === rowCode) {
-      setCustomFallbackDraftPrice("");
+    setMissingStarredDraftPrices((current) => {
+      const next = { ...current };
+      delete next[rowCode];
+      return next;
+    });
+    const remainingMissingCodes = missingStarredRowCodes.filter((code) => code !== rowCode);
+    missingStarredRowCodesRef.current = remainingMissingCodes;
+    setMissingStarredRowCodes(remainingMissingCodes);
+    lastGuidedMissingSetRef.current = "";
+    if (remainingMissingCodes.length > 0) {
+      revealMissingStarredPrices(remainingMissingCodes, true);
+    } else {
+      setGuidedMissingRowCode(null);
     }
     setHasSubmitAttempted(false);
     setCalculationError(null);
@@ -1087,9 +1323,6 @@ function ItemDetailContent({
       setEditingRowCode(null);
       setEditingRowPrice("");
     }
-    if (rangeFallbackRow?.row_code === rowCode) {
-      setCustomFallbackDraftPrice("");
-    }
     setHasSubmitAttempted(false);
     setCalculationError(null);
     setLineError(null);
@@ -1099,13 +1332,6 @@ function ItemDetailContent({
   const isCalculating = isAutoCalculating || calculateState.isLoading;
   const isAddingLine =
     isAddFlowCalculating || createLineState.isLoading || recalculateState.isLoading;
-  const fallbackCustomPriceValue = rangeFallbackRow
-    ? customFallbackDraftPrice || customPrices[rangeFallbackRow.row_code] || ""
-    : "";
-  const hasFallbackCustomPrice = Boolean(
-    rangeFallbackRow && activeCustomPrices[rangeFallbackRow.row_code]
-  );
-  const needsFallbackCustomPrice = requiresCustomFallbackPrice && !hasFallbackCustomPrice;
   const addLineDisabledReason = !document
     ? "سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید."
     : documentLocked
@@ -1120,6 +1346,7 @@ function ItemDetailContent({
       rowSelectionError ||
       Object.values(inputErrors).some(Boolean) ||
       Object.values(customPriceErrors).some(Boolean)
+      || Object.values(footnoteInputErrors).some((fields) => Object.values(fields).some(Boolean))
   );
   const hasExplicitAddFailure = hasSubmitAttempted && hasCommittedInputError;
   const calculationStatusDot: CalculationStatusDotState = hasExplicitAddFailure
@@ -1137,13 +1364,13 @@ function ItemDetailContent({
   }, []);
 
   const headerAction = (
-    <div className="flex flex-wrap items-end justify-end gap-2">
-      <label className="space-y-1">
+    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+      <label className="min-w-0 space-y-1">
         <span className="block text-xs font-bold text-slate-400 light:text-slate-500">
           ضرایب
         </span>
         <select
-          className={classNames(inputClasses, "h-9 w-28 max-w-[8rem] px-2 text-xs sm:h-10 sm:w-40 sm:max-w-[10rem]")}
+          className={classNames(inputClasses, "h-9 w-full min-w-0 px-2 text-xs sm:h-10 sm:w-40 sm:max-w-[10rem]")}
           disabled={isAddingLine}
           onChange={(event) =>
             handleSelectedCoefficientSetIdChange(
@@ -1167,7 +1394,7 @@ function ItemDetailContent({
         </select>
       </label>
       <Button
-        className="min-w-28 px-4"
+        className="min-w-24 px-3 sm:min-w-28 sm:px-4"
         disabled={Boolean(addLineDisabledReason) || isAddingLine}
         onClick={handleAddLine}
         type="button"
@@ -1187,7 +1414,7 @@ function ItemDetailContent({
       <div className="flex max-h-[85dvh] flex-col">
         <ModalHeader onClose={onClose} title={item.short_name_fa ?? "جزئیات آیتم"} />
         <div className="overflow-y-auto p-4">
-          <AddedRowsView document={document} onClose={onClose} onToast={onToast} />
+          <AddedRowsView lines={addedRowsLines} onClose={onClose} onToast={onToast} />
         </div>
       </div>
     );
@@ -1196,7 +1423,7 @@ function ItemDetailContent({
   return (
     <div className="flex max-h-[85dvh] flex-col">
       <ModalHeader action={headerAction} onClose={onClose} title={item.short_name_fa ?? "جزئیات آیتم"} />
-      <div className="space-y-3 overflow-y-auto p-4">
+      <div ref={modalScrollRef} className="space-y-3 overflow-y-auto overscroll-contain p-4">
         {item.description_fa ? (
           <p className="text-sm leading-7 text-slate-300 light:text-slate-600">
             {item.description_fa}
@@ -1217,24 +1444,6 @@ function ItemDetailContent({
             calculationStatus === "error" ? calculationError : hasSubmitAttempted ? calculationError : null
           }
           calculationStatusDot={calculationStatusDot}
-          customFallbackPrice={
-            requiresCustomFallbackPrice && rangeFallbackRow
-              ? {
-                  error: customPriceErrors[rangeFallbackRow.row_code] ?? null,
-                  officialUnitPrice: rangeFallbackRow.unit_price,
-                  onChange: (value) =>
-                    handleCustomFallbackPriceChange(rangeFallbackRow.row_code, value),
-                  rowCode: rangeFallbackRow.row_code,
-                  title:
-                    rangeFallbackRow.title_fa ||
-                    rangeFallbackRow.short_title_fa ||
-                    rangeFallbackRow.description_fa ||
-                    "ردیف اصلی",
-                  unit: rangeFallbackRow.unit,
-                  value: fallbackCustomPriceValue
-                }
-              : undefined
-          }
           customPriceRowCodes={activeCustomPriceRowCodes}
           inputErrors={
             hasSubmitAttempted && usesInputDrivenCalculation ? inputErrors : undefined
@@ -1266,6 +1475,7 @@ function ItemDetailContent({
           quantityError={hasSubmitAttempted ? quantityError : null}
           rangeMatchError={hasSubmitAttempted && itemType === "range-based" ? rangeMatchError : undefined}
           requiresManualPrice={requiresManualPrice}
+          requiresRowPrice={hasManualUnitPrice(item) && usesRowSpecificPriceInputs}
           requiresRowSelection={needsRowSelection || selectedRowInput !== null}
           rowSelection={rowSelection}
           setManualUnitPrice={handleManualUnitPriceChange}
@@ -1275,14 +1485,52 @@ function ItemDetailContent({
 
         <ChecklistNotesSection
           disabled={isAddingLine}
+          inputErrors={footnoteInputErrors}
+          inputValues={footnoteInputValues}
           notes={item.footnotes}
+          onInputBlur={(noteCode, inputName) => {
+            setTouchedFootnoteInputs((current) => ({
+              ...current,
+              [noteCode]: { ...(current[noteCode] ?? {}), [inputName]: true }
+            }));
+            const validation = validateFootnoteInputs(item.footnotes, confirmedFootnotes, footnoteInputValues);
+            setFootnoteInputErrors(validation.errors);
+          }}
+          onInputChange={(noteCode, inputName, value) => {
+            setFootnoteInputValues((current) => ({
+              ...current,
+              [noteCode]: { ...(current[noteCode] ?? {}), [inputName]: value }
+            }));
+            setFootnoteInputErrors((current) => ({
+              ...current,
+              [noteCode]: { ...(current[noteCode] ?? {}), [inputName]: null }
+            }));
+            setHasSubmitAttempted(false);
+            setCalculationError(null);
+            setLineError(null);
+          }}
           onToggle={(noteCode, checked) => {
             setConfirmedFootnotes((current) => ({ ...current, [noteCode]: checked }));
+            if (checked) {
+              const note = item.footnotes.find((candidate) => candidate.note_code === noteCode);
+              setFootnoteInputValues((current) => ({
+                ...current,
+                [noteCode]: {
+                  ...(current[noteCode] ?? {}),
+                  ...Object.fromEntries(
+                    (note?.inputs ?? [])
+                      .filter((input) => current[noteCode]?.[input.name] === undefined && input.default_value !== null)
+                      .map((input) => [input.name, input.default_value as string])
+                  )
+                }
+              }));
+            }
             setHasSubmitAttempted(false);
             setCalculationError(null);
             setLineError(null);
           }}
           selectedNotes={confirmedFootnotes}
+          touchedInputs={touchedFootnoteInputs}
         />
 
         {item.rows.length > 0 ? (
@@ -1295,14 +1543,22 @@ function ItemDetailContent({
                 const customPrice = customPrices[row.row_code];
                 const hasCustomPrice = Boolean(customPrice);
                 const hasOfficialPrice =
-                  row.unit_price !== null &&
-                  row.unit_price !== undefined &&
-                  String(row.unit_price).trim() !== "";
+                  hasPositiveMoneyValue(row.unit_price);
+                const isMissingStarredPrice =
+                  !hasCustomPrice &&
+                  !hasOfficialPrice &&
+                  (row.requires_manual_unit_price ||
+                    (item.rows.length === 1 && item.requires_manual_unit_price) ||
+                    missingStarredRowCodes.includes(row.row_code));
                 const officialPriceLabel = hasOfficialPrice
                   ? formatMoneyAmount(row.unit_price)
-                  : "بدون قیمت رسمی";
+                  : "-";
                 const calculatedRow = activeCalculationRowsByCode.get(row.row_code) ?? null;
+                const isMissingPriceEdit = missingStarredRowCodes.includes(row.row_code);
                 const isEditing = editingRowCode === row.row_code;
+                const currentEditingPrice = isMissingPriceEdit
+                  ? missingStarredDraftPrices[row.row_code] ?? ""
+                  : editingRowPrice;
                 const priceControlsDisabled = documentLocked || isAddingLine;
                 const rowTitle = row.title_fa || row.short_title_fa || row.row_code;
                 const mobileDescription = getCompactRowDescription(
@@ -1315,9 +1571,14 @@ function ItemDetailContent({
 
                 return (
                   <div
+                    ref={(element) => { rowRefs.current[row.row_code] = element; }}
                     className={classNames(
                       "relative overflow-hidden border-b px-2.5 py-2 text-sm transition last:border-b-0 md:rounded-lg md:border md:px-3 md:py-2",
-                      calculatedRow
+                      missingStarredRowCodes.includes(row.row_code)
+                        ? "border-rose-400/50 bg-rose-500/8 light:border-rose-300 light:bg-rose-50"
+                        : isMissingStarredPrice
+                          ? "border-amber-300/35 bg-amber-400/8 light:border-amber-300 light:bg-amber-50"
+                      : calculatedRow
                         ? "border-b-emerald-300/25 bg-emerald-400/8 before:absolute before:inset-y-1 before:right-0 before:w-0.5 before:rounded-full before:bg-emerald-300 light:bg-emerald-50/80 md:border-emerald-300/35 md:bg-emerald-400/10 md:before:hidden light:md:border-emerald-300/60 light:md:bg-emerald-50"
                         : "border-b-white/10 bg-transparent light:border-b-slate-200 md:border-white/10 md:bg-white/7 light:md:border-slate-200 light:md:bg-slate-50"
                     )}
@@ -1340,22 +1601,25 @@ function ItemDetailContent({
                           {isEditing ? (
                             <>
                               <input
-                                aria-label="بهای واحد"
+                                ref={(element) => { rowPriceInputRefs.current[row.row_code] = element; }}
+                                aria-label={isMissingStarredPrice ? `باید قیمت ردیف ${row.row_code} را تعیین کنید` : `ویرایش قیمت ردیف ${row.row_code}`}
                                 className="h-7 w-24 max-w-[7rem] rounded-md border border-white/10 bg-slate-950/45 px-2 text-left text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-white light:text-slate-950"
                                 dir="ltr"
                                 disabled={priceControlsDisabled}
                                 inputMode="decimal"
                                 onChange={(event) =>
-                                  handleEditingRowPriceChange(row.row_code, event.target.value)
+                                  isMissingPriceEdit
+                                    ? setMissingStarredDraftPrices((current) => ({ ...current, [row.row_code]: event.target.value }))
+                                    : handleEditingRowPriceChange(row.row_code, event.target.value)
                                 }
                                 placeholder={hasOfficialPrice ? String(row.unit_price) : "بهای واحد"}
-                                value={editingRowPrice}
+                                value={currentEditingPrice}
                               />
                               <button
                                 aria-label="ثبت بهای واحد"
                                 className="inline-flex h-6 w-6 items-center justify-center rounded-md text-emerald-200 transition hover:bg-emerald-400/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 light:text-emerald-700 light:hover:bg-emerald-50"
                                 disabled={priceControlsDisabled}
-                                onClick={() => applyRowCustomPrice(row.row_code)}
+                                onClick={() => applyRowCustomPrice(row.row_code, currentEditingPrice)}
                                 title="ثبت بهای واحد"
                                 type="button"
                               >
@@ -1382,12 +1646,16 @@ function ItemDetailContent({
                                     : "text-emerald-200 light:text-emerald-700"
                                 )}
                               >
-                                {hasCustomPrice ? "دستی" : "رسمی"}
+                                {hasCustomPrice || isMissingStarredPrice ? "★ ستاره‌دار" : "قیمت رسمی"}
                               </span>
                               <span
                                 className="max-w-[7rem] truncate text-left text-xs font-bold text-slate-200 light:text-slate-800"
                                 dir="ltr"
-                                title={displayPrice}
+                                title={
+                                  isMissingStarredPrice
+                                    ? "باید قیمت این ردیف را تعیین کنید."
+                                    : displayPrice
+                                }
                               >
                                 {displayPrice}
                               </span>
@@ -1474,23 +1742,26 @@ function ItemDetailContent({
                       <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:justify-end">
                         {isEditing ? (
                           <>
-                            <input
-                              aria-label="بهای واحد"
+                              <input
+                              ref={(element) => { rowPriceInputRefs.current[row.row_code] = element; }}
+                              aria-label={isMissingStarredPrice ? `باید قیمت ردیف ${row.row_code} را تعیین کنید` : `ویرایش قیمت ردیف ${row.row_code}`}
                               className="h-8 w-32 rounded-md border border-white/10 bg-slate-950/45 px-2 text-left text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-white light:text-slate-950"
                               dir="ltr"
                               disabled={priceControlsDisabled}
                               inputMode="decimal"
                               onChange={(event) =>
-                                handleEditingRowPriceChange(row.row_code, event.target.value)
+                                isMissingPriceEdit
+                                  ? setMissingStarredDraftPrices((current) => ({ ...current, [row.row_code]: event.target.value }))
+                                  : handleEditingRowPriceChange(row.row_code, event.target.value)
                               }
                               placeholder={hasOfficialPrice ? String(row.unit_price) : "بهای واحد"}
-                              value={editingRowPrice}
+                              value={currentEditingPrice}
                             />
                             <button
                               aria-label="ثبت بهای واحد"
                               className="inline-flex h-7 w-7 items-center justify-center rounded-md text-emerald-200 transition hover:bg-emerald-400/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 light:text-emerald-700 light:hover:bg-emerald-50"
                               disabled={priceControlsDisabled}
-                              onClick={() => applyRowCustomPrice(row.row_code)}
+                              onClick={() => applyRowCustomPrice(row.row_code, currentEditingPrice)}
                               title="ثبت بهای واحد"
                               type="button"
                             >
@@ -1517,9 +1788,16 @@ function ItemDetailContent({
                                   : "border-emerald-300/30 bg-emerald-400/10 text-emerald-100 light:text-emerald-800"
                               )}
                             >
-                              {hasCustomPrice ? "قیمت دستی" : "قیمت رسمی"}
+                              {hasCustomPrice || isMissingStarredPrice ? "★ ستاره‌دار" : "قیمت رسمی"}
                             </span>
-                            <span className="font-bold text-slate-200 light:text-slate-800">
+                            <span
+                              className="font-bold text-slate-200 light:text-slate-800"
+                              title={
+                                isMissingStarredPrice
+                                  ? "باید قیمت این ردیف را تعیین کنید."
+                                  : displayPrice
+                              }
+                            >
                               {displayPrice}
                             </span>
                             {hasCustomPrice ? (
@@ -1553,9 +1831,26 @@ function ItemDetailContent({
                         )}
                       </div>
                     </div>
+                    {guidedMissingRowCode === row.row_code && !isEditing ? (
+                      <div
+                        className="mt-2 rounded-md border border-amber-300/35 bg-amber-400/12 px-2.5 py-2 text-xs font-bold leading-5 text-amber-100 shadow-lg light:border-amber-300 light:bg-amber-50 light:text-amber-900 md:mr-auto md:max-w-sm"
+                        role="tooltip"
+                      >
+                        برای ادامه، روی مداد بزنید و قیمت این ردیف را وارد کنید.
+                      </div>
+                    ) : null}
                     {customPriceErrors[row.row_code] ? (
                       <p className="mt-1 text-xs text-rose-300 light:text-rose-700">
                         {customPriceErrors[row.row_code]}
+                      </p>
+                    ) : null}
+                    {isMissingStarredPrice && !customPriceErrors[row.row_code] ? (
+                      <p
+                        aria-label={`باید قیمت ردیف ${row.row_code} را تعیین کنید`}
+                        className="mt-1 text-xs text-amber-200 light:text-amber-700"
+                        title="باید قیمت را تعیین کنید"
+                      >
+                        قیمت تعیین نشده
                       </p>
                     ) : null}
                   </div>

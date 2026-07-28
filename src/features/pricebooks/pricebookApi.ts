@@ -2,11 +2,73 @@ import { baseApi } from "../../shared/api/baseApi";
 import type { components } from "../../shared/api/generated/schema";
 
 export type Pricebook = components["schemas"]["Pricebook"];
-export type PricebookEdition = components["schemas"]["PricebookEdition"];
+type GeneratedPricebookEdition = components["schemas"]["PricebookEdition"];
+// Runtime compatibility for the current multi-year backend schema. Remove this
+// extension after the checked-in OpenAPI document includes these read-only fields.
+export type PricebookEdition = GeneratedPricebookEdition & {
+  pricebook_family_code?: string;
+  pricebook_persian_name?: string;
+  pricebook_english_name?: string;
+};
+export type PricebookFamily = {
+  id: string;
+  nameFa: string;
+  nameEn: string;
+};
+
+export function getPricebookEditionFamilyId(edition: PricebookEdition): string {
+  return edition.pricebook_family_code?.trim() || `pricebook:${edition.pricebook_id}`;
+}
+
+export function getPricebookFamilies(
+  pricebooks: Pricebook[],
+  editions: PricebookEdition[]
+): PricebookFamily[] {
+  const pricebooksById = new Map(pricebooks.map((pricebook) => [pricebook.id, pricebook]));
+  const families = new Map<string, PricebookFamily>();
+
+  editions.forEach((edition) => {
+    const id = getPricebookEditionFamilyId(edition);
+    if (families.has(id)) return;
+    const legacyPricebook = pricebooksById.get(edition.pricebook_id);
+    families.set(id, {
+      id,
+      nameFa:
+        edition.pricebook_persian_name?.trim() ||
+        legacyPricebook?.title_fa?.trim() ||
+        edition.title_fa,
+      nameEn: edition.pricebook_english_name?.trim() || ""
+    });
+  });
+
+  return Array.from(families.values());
+}
 export type PricebookChapter = components["schemas"]["PricebookChapter"];
 export type PricebookGroup = components["schemas"]["PricebookGroup"];
 export type PricebookItemList = components["schemas"]["PricebookItemList"];
-export type PricebookItemDetail = components["schemas"]["PricebookItemDetail"];
+type GeneratedPricebookItemDetail = components["schemas"]["PricebookItemDetail"];
+type GeneratedPricebookItemNote = components["schemas"]["PricebookItemNote"];
+
+// Temporary runtime extension: the backend exposes conditional footnote inputs,
+// but the v0.0 OpenAPI schema does not model them yet. Remove after schema catches up.
+export type PricebookFootnoteInput = {
+  name: string;
+  label_fa: string;
+  type: string;
+  unit: string | null;
+  min_value: string | null;
+  max_value: string | null;
+  default_value: string | null;
+};
+export type PricebookItemFootnote = GeneratedPricebookItemNote & {
+  checkbox_text_fa?: string | null;
+  requires_input?: boolean;
+  inputs?: PricebookFootnoteInput[];
+  has_starred_price?: boolean;
+};
+export type PricebookItemDetail = Omit<GeneratedPricebookItemDetail, "footnotes"> & {
+  footnotes: PricebookItemFootnote[];
+};
 export type PricebookItemInputSpec = components["schemas"]["PricebookItemInputSpec"];
 export type PricebookItemRowDetail = components["schemas"]["PricebookItemRowDetail"];
 export type PricebookCalculateInputRequest =
@@ -79,6 +141,25 @@ export const pricebookApi = baseApi.injectEndpoints({
         { type: "Pricebook", id: `editions-${pricebookId}` }
       ]
     }),
+    listPricebookEditionsForFamilies: builder.query<PricebookEdition[], number[]>({
+      async queryFn(pricebookIds, _api, _extraOptions, fetchWithBQ) {
+        const responses = await Promise.all(
+          pricebookIds.map((pricebookId) =>
+            fetchWithBQ(`/api/pricebooks/${pricebookId}/editions/`)
+          )
+        );
+        const failedResponse = responses.find((response) => response.error);
+        if (failedResponse?.error) return { error: failedResponse.error };
+
+        const editions = responses.flatMap((response) =>
+          normalizeListResponse(response.data as ListResponse<PricebookEdition>)
+        );
+        return {
+          data: Array.from(new Map(editions.map((edition) => [edition.id, edition])).values())
+        };
+      },
+      providesTags: [{ type: "Pricebook", id: "editions-all" }]
+    }),
     listPricebookChapters: builder.query<PaginatedPricebookChapterList, number>({
       query: (editionId) => `/api/pricebook-editions/${editionId}/chapters/`,
       providesTags: (_result, _error, editionId) => [
@@ -122,6 +203,7 @@ export const {
   useCalculatePricebookItemMutation,
   useListPricebookChaptersQuery,
   useListPricebookEditionsQuery,
+  useListPricebookEditionsForFamiliesQuery,
   useListPricebookGroupsQuery,
   useListPricebookItemsQuery,
   useListPricebooksQuery,

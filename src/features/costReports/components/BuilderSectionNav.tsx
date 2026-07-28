@@ -16,12 +16,17 @@ export function BuilderSectionNav({
   isUnlocked: boolean;
   onSelect: (section: BuilderSection) => void;
 }) {
+  const activeSectionIndex = builderSections.findIndex(
+    (section) => section.id === activeSection
+  );
+  const activeSectionConfig = builderSections[activeSectionIndex];
+
   return (
-    <GlassCard className="p-3" dir="rtl">
+    <GlassCard className="p-2 lg:p-3" dir="rtl">
       <div className="mb-3 hidden px-2 lg:block">
         <p className="text-xs font-bold text-slate-400 light:text-slate-500">مراحل ساخت صورت‌بها</p>
       </div>
-      <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+      <nav className="grid grid-cols-5 gap-1 lg:flex lg:flex-col lg:gap-2">
         {builderSections.map((section) => {
           const enabled =
             section.id === "project" || section.id === "document" || isUnlocked;
@@ -32,7 +37,7 @@ export function BuilderSectionNav({
           return (
             <button
               className={classNames(
-                "group flex min-w-[104px] items-center gap-2 rounded-lg border p-2 text-right transition motion-safe:duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 lg:min-w-0",
+                "group flex min-w-0 flex-col items-center gap-1 rounded-lg border px-1 py-1.5 text-center transition motion-safe:duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 lg:flex-row lg:gap-2 lg:p-2 lg:text-right",
                 isActive
                   ? "border-success-300/55 bg-success-400/12 text-white shadow-md shadow-success-950/20 light:border-success-400/60 light:bg-success-50 light:text-slate-950"
                   : isDone
@@ -48,7 +53,7 @@ export function BuilderSectionNav({
             >
               <span
                 className={classNames(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-xs font-black transition motion-safe:duration-150",
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-black transition motion-safe:duration-150 lg:h-9 lg:w-9",
                   isActive
                     ? "border-success-400/60 bg-success-500 text-white light:border-success-500 light:bg-success-500 light:text-white"
                     : isDone
@@ -58,10 +63,10 @@ export function BuilderSectionNav({
               >
                 {isDone && !isActive ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
               </span>
-              <span className="min-w-0">
-                <span className="block text-xs font-black">
-                  <span className="me-1">{section.number}</span>
-                  {section.shortLabel}
+              <span className="w-full min-w-0 lg:w-auto">
+                <span className="block truncate text-[9px] font-black sm:text-[11px] lg:text-xs">
+                  <span className="hidden lg:inline lg:me-1">{section.number}</span>
+                  {section.id === "pricebook" ? "فهرست" : section.shortLabel}
                 </span>
                 <span className="hidden text-[11px] leading-5 text-slate-400 light:text-slate-500 sm:block lg:block">
                   {section.description}
@@ -71,7 +76,11 @@ export function BuilderSectionNav({
           );
         })}
       </nav>
-
+      {activeSectionConfig ? (
+        <p className="mt-2 truncate px-1 text-center text-[11px] font-bold text-slate-300 light:text-slate-600 lg:hidden">
+          مرحله {activeSectionIndex + 1} از {builderSections.length}: {activeSectionConfig.shortLabel}
+        </p>
+      ) : null}
     </GlassCard>
   );
 }

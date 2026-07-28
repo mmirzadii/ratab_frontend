@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { Loader2, Star, X, XCircle } from "lucide-react";
+import { ChevronDown, Loader2, Star, X, XCircle } from "lucide-react";
 
 import type {
   FinancialDocument,
@@ -55,6 +55,7 @@ export function StarredItemModal({
   const [touched, setTouched] = useState<TouchedFields>({});
   const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [createLine, createLineState] = useCreateFinancialDocumentLineMutation();
   const [recalculateDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
 
@@ -149,7 +150,7 @@ export function StarredItemModal({
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4"
+      className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/70 backdrop-blur-sm sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !isSubmitting) {
           onClose();
@@ -157,14 +158,14 @@ export function StarredItemModal({
       }}
     >
       <form
-        className="w-full max-w-2xl overflow-hidden rounded-lg border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white"
+        className="flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white sm:h-auto sm:max-h-[90dvh] sm:rounded-lg"
         onMouseDown={(event) => event.stopPropagation()}
         onSubmit={handleSubmit}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-950/95 p-4 light:border-slate-200 light:bg-white/95">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-slate-950/95 px-3 py-1.5 light:border-slate-200 light:bg-white/95 sm:p-4">
           <button
             aria-label="بستن"
-            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/8 hover:text-white disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/8 hover:text-white disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900 sm:h-9 sm:w-9"
             disabled={isSubmitting}
             onClick={onClose}
             type="button"
@@ -176,20 +177,20 @@ export function StarredItemModal({
               آیتم ستاره‌دار
               <Star className="h-4 w-4 text-amber-300" />
             </h2>
-            <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+            <p className="mt-1 hidden text-xs text-slate-400 light:text-slate-500 sm:block">
               یک ردیف مستقل با بهای دستی به صورت‌بها اضافه می‌شود.
             </p>
           </div>
         </div>
 
-        <div className="max-h-[75dvh] space-y-4 overflow-y-auto p-4">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 overscroll-contain sm:space-y-4 sm:p-4">
           {locked ? (
             <div className="rounded-lg border border-violet-300/25 bg-violet-400/10 p-3 text-sm leading-7 text-violet-100 light:text-violet-800">
               این صورت‌بها قفل شده و امکان افزودن آیتم ستاره‌دار ندارد.
             </div>
           ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             <Field label="عنوان آیتم" required>
               <input
                 className={inputClasses}
@@ -247,22 +248,47 @@ export function StarredItemModal({
             </Field>
           </div>
 
-          <Field label="توضیحات اختیاری">
-            <textarea
-              className={textareaClasses}
-              disabled={isSubmitting || locked}
-              onBlur={() => markTouched("description")}
-              onChange={(event) => updateField("description", event.target.value)}
-              rows={3}
-              value={form.description}
+          <button
+            aria-controls="optional-starred-description"
+            aria-expanded={isDescriptionOpen}
+            className="flex min-h-11 w-full items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 text-sm font-bold text-slate-300 light:border-slate-200 light:bg-slate-50 light:text-slate-700 sm:hidden"
+            onClick={() => setIsDescriptionOpen((current) => !current)}
+            type="button"
+          >
+            افزودن توضیحات (اختیاری)
+            <ChevronDown
+              className={classNames(
+                "h-4 w-4 transition-transform",
+                isDescriptionOpen && "rotate-180"
+              )}
             />
-          </Field>
+          </button>
+          <div
+            className={classNames(
+              "mt-3 sm:mt-0 sm:block",
+              isDescriptionOpen ? "block" : "hidden"
+            )}
+            id="optional-starred-description"
+          >
+            <label className="block space-y-2">
+              <span className="hidden text-sm font-bold text-slate-200 light:text-slate-700 sm:block">
+                توضیحات اختیاری
+              </span>
+              <textarea
+                aria-label="توضیحات اختیاری"
+                className={textareaClasses}
+                disabled={isSubmitting || locked}
+                onBlur={() => markTouched("description")}
+                onChange={(event) => updateField("description", event.target.value)}
+                rows={3}
+                value={form.description}
+              />
+            </label>
+          </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50">
-            <p className="text-xs font-bold text-slate-400 light:text-slate-500">
-              مبلغ کل
-            </p>
-            <p className="mt-1 text-lg font-black text-emerald-300 light:text-emerald-700">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50 sm:block">
+            <p className="shrink-0 text-xs font-bold text-slate-400 light:text-slate-500">مبلغ کل</p>
+            <p className="min-w-0 text-left text-sm font-black text-emerald-300 light:text-emerald-700 sm:mt-1 sm:text-right sm:text-lg">
               {totalPreview ? formatMoneyAmount(totalPreview) : "پس از ورود مقدار و بها نمایش داده می‌شود"}
             </p>
           </div>
@@ -275,8 +301,8 @@ export function StarredItemModal({
           ) : null}
         </div>
 
-        <div className="flex flex-col-reverse gap-2 border-t border-white/10 p-4 light:border-slate-200 sm:flex-row sm:justify-end">
-          <Button disabled={isSubmitting} onClick={onClose} type="button" variant="secondary">
+        <div className="grid shrink-0 grid-cols-[auto_1fr] gap-2 border-t border-white/10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 light:border-slate-200 sm:flex sm:justify-end sm:p-4">
+          <Button className="px-3" disabled={isSubmitting} onClick={onClose} type="button" variant="secondary">
             انصراف
           </Button>
           <Button disabled={isSubmitting || locked} type="submit">

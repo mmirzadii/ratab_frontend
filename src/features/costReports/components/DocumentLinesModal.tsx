@@ -12,7 +12,13 @@ import { GlassCard } from "../../../shared/components/GlassCard";
 import { classNames } from "../../../shared/utils/classNames";
 import { cleanDisplayText, formatDecimal, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { inputClasses } from "../constants";
-import { isFinancialDocumentLocked, isPositiveDecimal, normalizeQuantityValue } from "../costReportUtils";
+import {
+  getLineDisplayRows,
+  hasPositiveMoneyValue,
+  isFinancialDocumentLocked,
+  isPositiveDecimal,
+  normalizeQuantityValue
+} from "../costReportUtils";
 
 export function DocumentLinesModal({
   document,
@@ -97,7 +103,7 @@ export function DocumentLinesModal({
   return (
     <div
       className={classNames(
-        "fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/70 p-3 pt-8 backdrop-blur-sm sm:p-4 sm:pt-12",
+        "fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/70 backdrop-blur-sm sm:items-start sm:p-4 sm:pt-12",
         secondaryNav ? "lg:right-[19rem]" : "lg:right-20"
       )}
       onMouseDown={(event) => {
@@ -105,14 +111,14 @@ export function DocumentLinesModal({
       }}
     >
       <div
-        className="max-h-[80dvh] w-full max-w-2xl overflow-y-auto rounded-lg border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white"
+        className="flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white sm:h-auto sm:max-h-[80dvh] sm:rounded-lg"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/10 bg-slate-950/95 p-4 light:border-slate-200 light:bg-white/95">
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 bg-slate-950/95 px-3 py-1.5 light:border-slate-200 light:bg-white/95 sm:p-4">
           <h2 className="text-base font-black text-white light:text-slate-950">ردیف‌های صورت‌بها</h2>
           <button
             aria-label="بستن"
-            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900 sm:h-9 sm:w-9"
             onClick={onClose}
             type="button"
           >
@@ -120,7 +126,7 @@ export function DocumentLinesModal({
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 overscroll-contain sm:p-4">
           {localLines.length === 0 ? (
             <p className="py-8 text-center text-sm text-slate-400 light:text-slate-500">
               هنوز ردیفی اضافه نشده است.
@@ -131,18 +137,20 @@ export function DocumentLinesModal({
               const isEditingThis = editingLineId === line.id;
               const isDeletingThis = deletingLineId === line.id;
               const isSavingThis = savingLineId === line.id;
+              const displayRows = getLineDisplayRows(line);
 
               return (
-                <GlassCard className="p-3" key={line.id}>
+                <GlassCard className="p-2.5 sm:p-3" key={line.id}>
                   <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-slate-100 light:text-slate-900">
                         {cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
                       </p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-slate-400 light:text-slate-500">
-                        <span className="font-mono text-emerald-200 light:text-emerald-700">
-                          {line.row_code_snapshot}
-                        </span>
+                        <span>خط {formatDecimal(line.line_no)}</span>
+                        {displayRows.length > 1 ? (
+                          <span>{formatDecimal(displayRows.length)} ردیف محاسبه‌شده</span>
+                        ) : null}
                         {isEditingThis ? (
                           <div className="flex items-center gap-1.5" dir="ltr">
                             <span className="text-slate-400">مقدار:</span>
@@ -228,13 +236,43 @@ export function DocumentLinesModal({
                       )}
                     </div>
                   </div>
+                  <div className="mt-3 space-y-2">
+                    {displayRows.map((row, index) => (
+                      <div
+                        className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 rounded-lg border border-white/10 bg-slate-950/25 p-2.5 text-xs light:border-slate-200 light:bg-white sm:grid-cols-[5.5rem_1fr_6rem_7rem_7rem] sm:items-center sm:gap-2 sm:p-3"
+                        key={`${row.parentLineId}-${row.rowCode ?? "row"}-${index}`}
+                      >
+                        <span className="order-1 font-mono font-bold text-emerald-200 light:text-emerald-700 sm:order-none">
+                          {row.rowCode ?? "—"}
+                        </span>
+                        <span
+                          className="order-3 col-span-2 min-w-0 truncate font-bold text-slate-100 light:text-slate-900 sm:order-none sm:col-span-1"
+                          title={cleanDisplayText(row.title, "شرح ثبت نشده")}
+                        >
+                          {cleanDisplayText(row.title, "شرح ثبت نشده")}
+                        </span>
+                        <span className="order-4 text-slate-400 light:text-slate-500 sm:order-none">
+                          {formatDecimal(row.quantity)} {cleanDisplayText(row.unit, "")}
+                        </span>
+                        <span className="order-5 truncate text-left text-slate-300 light:text-slate-600 sm:order-none sm:text-right">
+                          {row.isStarredPrice ? "★ ستاره‌دار · " : "قیمت رسمی · "}
+                          {hasPositiveMoneyValue(row.unitPrice) ? formatMoneyAmount(row.unitPrice) : "-"}
+                        </span>
+                        <span className="order-2 font-bold text-slate-200 light:text-slate-800 sm:order-none">
+                          {formatMoneyAmount(row.total)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </GlassCard>
               );
             })}
           </div>
 
+        </div>
+        <div className="shrink-0 border-t border-white/10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 light:border-slate-200 sm:p-4">
           <button
-            className="mt-4 w-full rounded-lg border border-white/10 bg-white/8 py-2.5 text-sm font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-800"
+            className="min-h-11 w-full rounded-lg border border-white/10 bg-white/8 py-2.5 text-sm font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-800"
             onClick={onClose}
             type="button"
           >

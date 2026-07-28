@@ -30,5 +30,5 @@ Not applicable.
 
 ## Notes
 
-- The exact spaced OpenAPI schema filename requested by the wrapper prompt is absent; the current generated schema uses `backend_docs/v0.0/openapi_v0_0.yaml`.
+- The exact spaced OpenAPI schema filename requested by the wrapper prompt is absent; the current generated schema uses `backend_docs/history/v0.0/OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`.
 - The Vite dev server was already available or started locally on `http://127.0.0.1:5173/` for route checks.

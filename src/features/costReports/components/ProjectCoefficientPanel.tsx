@@ -1,5 +1,5 @@
 import { type FormEvent, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { CheckCircle2, Loader2, Pencil, Plus, Power, Trash2, X } from "lucide-react";
 
 import {
   type ProjectCoefficientSet,
@@ -15,11 +15,11 @@ import type {
   FinancialDocument,
   FinancialDocumentLine
 } from "../../financialDocuments/financialDocumentApi";
+import { useRecalculateFinancialDocumentMutation } from "../../financialDocuments/financialDocumentApi";
 import type { PricebookChapter } from "../../pricebooks/pricebookApi";
 import { Button } from "../../../shared/components/Button";
 import { Field } from "../../../shared/components/Field";
 import { GlassCard } from "../../../shared/components/GlassCard";
-import { HelpHint } from "../../../shared/components/HelpHint";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { classNames, linkButtonClasses } from "../../../shared/utils/classNames";
 import { getApiErrorMessage } from "../../../shared/utils/apiError";
@@ -37,6 +37,7 @@ import type {
 import {
   getCoefficientKeyLabel,
   getCoefficientScopeLabel,
+  isFinancialDocumentLocked,
   isPositiveDecimal,
   normalizeQuantityValue
 } from "../costReportUtils";
@@ -46,15 +47,6 @@ type RowTarget = {
   id: number;
   rowCode: string;
   title: string;
-};
-
-type EffectivePreviewRow = {
-  chapterValue: ProjectCoefficientValue | null;
-  effectiveScope: CoefficientScope;
-  effectiveValue: ProjectCoefficientValue;
-  key: string;
-  projectValue: ProjectCoefficientValue | null;
-  rowValue: ProjectCoefficientValue | null;
 };
 
 function getValueScope(value: ProjectCoefficientValue): CoefficientScope {
@@ -117,39 +109,12 @@ function getLineRowId(line: FinancialDocumentLine): number | null {
   return Number.isInteger(rowId) && rowId > 0 ? rowId : null;
 }
 
-function getEffectivePreviewRows(values: ProjectCoefficientValue[]): EffectivePreviewRow[] {
-  const activeValues = values.filter((value) => value.is_active !== false);
-  const keys = Array.from(new Set(activeValues.map((value) => value.coefficient_key)));
-
-  return keys.flatMap((key) => {
-    const keyValues = activeValues.filter((value) => value.coefficient_key === key);
-    const rowValue = keyValues.find((value) => getValueScope(value) === "row") ?? null;
-    const chapterValue =
-      keyValues.find((value) => getValueScope(value) === "chapter") ?? null;
-    const projectValue =
-      keyValues.find((value) => getValueScope(value) === "project") ?? null;
-    const effectiveValue = rowValue ?? chapterValue ?? projectValue;
-
-    if (!effectiveValue) return [];
-
-    return [
-      {
-        chapterValue,
-        effectiveScope: getValueScope(effectiveValue),
-        effectiveValue,
-        key,
-        projectValue,
-        rowValue
-      }
-    ];
-  });
-}
-
 export function ProjectCoefficientPanel({
   chapters,
   coefficientSets,
   currentDocument,
   isLoadingSets,
+  onDocumentUpdated,
   onSelectedCoefficientSetIdChange,
   projectId,
   selectedCoefficientSetId,
@@ -159,6 +124,7 @@ export function ProjectCoefficientPanel({
   coefficientSets: ProjectCoefficientSet[];
   currentDocument?: FinancialDocument | null;
   isLoadingSets: boolean;
+  onDocumentUpdated: (document: FinancialDocument) => void;
   onSelectedCoefficientSetIdChange: (setId: number | null) => void;
   projectId: number;
   selectedCoefficientSetId: number | null;
@@ -168,6 +134,7 @@ export function ProjectCoefficientPanel({
     coefficientSets.find((set) => set.id === selectedCoefficientSetId) ?? null;
   const availableChapters = chapters ?? [];
   const rowTargets = useMemo(() => getRowTargets(currentDocument ?? null), [currentDocument]);
+  const documentLocked = isFinancialDocumentLocked(currentDocument ?? null);
 
   const [setName, setSetName] = useState("");
   const [setError, setSetError] = useState<string | null>(null);
@@ -178,6 +145,7 @@ export function ProjectCoefficientPanel({
   const [editForm, setEditForm] = useState<CoefficientValueFormState>(
     initialCoefficientValueForm
   );
+  const [mobilePane, setMobilePane] = useState<"add" | "list">("add");
   const [valueError, setValueError] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -185,12 +153,19 @@ export function ProjectCoefficientPanel({
   const [createValue, createValueState] = useCreateCoefficientValueMutation();
   const [updateValue, updateValueState] = useUpdateCoefficientValueMutation();
   const [deleteValue, deleteValueState] = useDeleteCoefficientValueMutation();
+  const [recalculateDocument, recalculateDocumentState] =
+    useRecalculateFinancialDocumentMutation();
   const {
     data: values = [],
     error: valuesError,
     isLoading: isLoadingValues
   } = useListCoefficientValuesQuery(selectedSet?.id ?? 0, { skip: !selectedSet });
-  const previewRows = useMemo(() => getEffectivePreviewRows(values), [values]);
+
+  async function refreshDocumentAfterCoefficientChange() {
+    if (!currentDocument) return;
+    const updatedDocument = await recalculateDocument(currentDocument.id).unwrap();
+    onDocumentUpdated(updatedDocument);
+  }
 
   async function handleCreateSet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -303,14 +278,42 @@ export function ProjectCoefficientPanel({
     }
 
     try {
-      await createValue({
-        setId: selectedSet.id,
-        body: validation.body
-      }).unwrap();
+      const existingValue = values.find((value) => {
+        if (
+          value.coefficient_key !== validation.body?.coefficient_key ||
+          getValueScope(value) !== validation.body.scope
+        ) {
+          return false;
+        }
+
+        if (validation.body.scope === "chapter") {
+          return value.chapter_id === validation.body.chapter_id;
+        }
+
+        if (validation.body.scope === "row") {
+          return value.row_id === validation.body.row_id;
+        }
+
+        return true;
+      });
+
+      if (existingValue) {
+        await updateValue({
+          setId: selectedSet.id,
+          valueId: existingValue.id,
+          body: validation.body
+        }).unwrap();
+      } else {
+        await createValue({
+          setId: selectedSet.id,
+          body: validation.body
+        }).unwrap();
+      }
       setValueForm({
         ...initialCoefficientValueForm,
         label_fa: getCoefficientKeyLabel(initialCoefficientValueForm.coefficient_key)
       });
+      setMobilePane("list");
     } catch (error) {
       setValueError(getApiErrorMessage(error));
     }
@@ -356,9 +359,14 @@ export function ProjectCoefficientPanel({
 
   async function handleDeleteValue(value: ProjectCoefficientValue) {
     if (!selectedSet) return;
+    if (documentLocked) {
+      setValueError("ضرایب سند قفل‌شده قابل تغییر نیستند.");
+      return;
+    }
 
     try {
       await deleteValue({ setId: selectedSet.id, valueId: value.id }).unwrap();
+      await refreshDocumentAfterCoefficientChange();
     } catch (error) {
       setValueError(getApiErrorMessage(error));
     }
@@ -469,7 +477,7 @@ export function ProjectCoefficientPanel({
     return (
       <>
         {renderScopeControls(form, setter)}
-        <Field label="کلید/نوع ضریب">
+        <Field label="نوع ضریب">
           <select
             className={inputClasses}
             onChange={(event) =>
@@ -484,15 +492,6 @@ export function ProjectCoefficientPanel({
             ))}
           </select>
         </Field>
-        <Field label="عنوان ضریب">
-          <input
-            className={inputClasses}
-            onChange={(event) =>
-              setter((current) => ({ ...current, label_fa: event.target.value }))
-            }
-            value={form.label_fa}
-          />
-        </Field>
         <Field label="مقدار ضریب">
           <input
             className={classNames(inputClasses, "text-left")}
@@ -505,102 +504,104 @@ export function ProjectCoefficientPanel({
             value={form.multiplier}
           />
         </Field>
-        <label className="flex items-center gap-2 text-sm font-bold text-slate-200 light:text-slate-700">
-          <input
-            checked={form.is_active}
-            className="accent-emerald-400"
-            onChange={(event) =>
-              setter((current) => ({ ...current, is_active: event.target.checked }))
-            }
-            type="checkbox"
-          />
-          فعال باشد
-        </label>
       </>
     );
   }
 
   return (
-    <GlassCard className="p-0">
-      <div className="flex flex-wrap items-center justify-between gap-4 p-5">
+    <GlassCard className="flex max-h-[calc(100dvh-8.5rem)] min-h-0 flex-col overflow-hidden p-0 lg:h-[calc(100dvh-7.5rem)] lg:max-h-none">
+      <div className="hidden shrink-0 flex-wrap items-center justify-between gap-3 p-3 sm:flex sm:p-4">
         <div>
-          <h2 className="flex items-center gap-2 text-lg font-black text-white light:text-slate-950">
-            ضرایب
-            <HelpHint text="ضرایب انتخاب‌شده فقط به بک‌اند ارسال می‌شوند و محاسبه مبلغ نهایی در فرانت انجام نمی‌شود." />
-          </h2>
-          <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
-            برای هر نوع ضریب، اولویت اعمال با ضریب ردیف است؛ اگر برای ردیف ضریبی تعریف نشده باشد، ضریب فصل و اگر آن هم تعریف نشده باشد، ضریب کل پروژه اعمال می‌شود.
+          <h2 className="text-lg font-black text-white light:text-slate-950">ضرایب پروژه</h2>
+          <p className="mt-1 hidden text-xs text-slate-400 light:text-slate-500 sm:block">
+            ضریب را برای کل پروژه، یک فصل یا یک ردیف مشخص ثبت کنید.
           </p>
         </div>
         <StatusBadge tone={selectedSet ? "emerald" : "amber"}>
-          {selectedSet ? `مجموعه فعال: ${selectedSet.name}` : "بدون ضریب"}
+          {selectedSet ? (
+            <>
+              <span className="sm:hidden">فعال</span>
+              <span className="hidden sm:inline">مجموعه فعال: {selectedSet.name}</span>
+            </>
+          ) : (
+            "بدون ضریب"
+          )}
         </StatusBadge>
       </div>
 
-      <div className="border-t border-white/10 p-5 light:border-slate-200">
-        <div className="mb-4 grid gap-3 rounded-lg border border-violet-300/20 bg-violet-400/10 p-4 text-sm leading-7 text-violet-100 light:border-violet-300/40 light:bg-violet-50 light:text-violet-800 md:grid-cols-[1fr_auto] md:items-center">
-          <div>
-            <p>
-              ضرایب با نوع‌های متفاوت می‌توانند هم‌زمان اعمال شوند.
-            </p>
-            <p className="mt-1 text-xs text-violet-200 light:text-violet-700">
-              این اولویت فقط برای ضریب‌هایی با کلید/نوع یکسان است.
-            </p>
+      <div className="shrink-0 space-y-2 border-white/10 p-3 light:border-slate-200 sm:border-t sm:p-4 lg:pb-3">
+        <label className="grid gap-1.5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-3">
+          <span className="text-xs font-bold text-slate-300 light:text-slate-600 sm:text-sm">
+            مجموعه فعال
+          </span>
+          <select
+            className={inputClasses}
+            disabled={isLoadingSets}
+            onChange={(event) =>
+              onSelectedCoefficientSetIdChange(
+                event.target.value ? Number(event.target.value) : null
+              )
+            }
+            value={selectedCoefficientSetId ?? ""}
+          >
+            <option value="">بدون ضریب</option>
+            {coefficientSets.map((set) => (
+              <option key={set.id} value={set.id}>
+                {set.name}
+                {set.is_default ? " - پیش‌فرض" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {isLoadingSets ? (
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            در حال دریافت مجموعه‌ها
           </div>
-          <div className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/7 px-4 py-2 text-sm font-black light:border-violet-200 light:bg-white">
-            <span>ردیف</span>
-            <span>←</span>
-            <span>فصل</span>
-            <span>←</span>
-            <span>کل پروژه</span>
+        ) : null}
+        {setsError ? (
+          <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-2.5 text-xs text-rose-100 light:text-rose-700">
+            {getApiErrorMessage(setsError)}
           </div>
+        ) : null}
+
+        <div className="grid grid-cols-2 gap-2 lg:hidden">
+          <button
+            className={classNames(
+              "min-h-11 rounded-lg border px-3 py-2 text-xs font-black transition",
+              mobilePane === "add"
+                ? "border-emerald-300/45 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
+                : "border-white/10 bg-white/5 text-slate-400 light:border-slate-200 light:bg-white"
+            )}
+            onClick={() => setMobilePane("add")}
+            type="button"
+          >
+            افزودن ضریب
+          </button>
+          <button
+            className={classNames(
+              "min-h-11 rounded-lg border px-3 py-2 text-xs font-black transition",
+              mobilePane === "list"
+                ? "border-emerald-300/45 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
+                : "border-white/10 bg-white/5 text-slate-400 light:border-slate-200 light:bg-white"
+            )}
+            onClick={() => setMobilePane("list")}
+            type="button"
+          >
+            ثبت‌شده‌ها ({values.length})
+          </button>
         </div>
+      </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]">
-          <div className="space-y-4">
-            <label className="block space-y-2">
-              <span className="text-sm font-bold text-slate-200 light:text-slate-700">
-                مجموعه فعال برای محاسبه
-              </span>
-              <select
-                className={inputClasses}
-                disabled={isLoadingSets}
-                onChange={(event) =>
-                  onSelectedCoefficientSetIdChange(
-                    event.target.value ? Number(event.target.value) : null
-                  )
-                }
-                value={selectedCoefficientSetId ?? ""}
-              >
-                <option value="">بدون ضریب</option>
-                {coefficientSets.map((set) => (
-                  <option key={set.id} value={set.id}>
-                    {set.name}
-                    {set.is_default ? " - پیش‌فرض" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {isLoadingSets ? (
-              <div className="flex items-center gap-2 text-sm text-slate-400">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                در حال دریافت مجموعه ضرایب
-              </div>
-            ) : null}
-
-            {setsError ? (
-              <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
-                {getApiErrorMessage(setsError)}
-              </div>
-            ) : null}
-
-            {!isLoadingSets && !setsError && coefficientSets.length === 0 ? (
-              <div className="rounded-lg border border-white/10 bg-white/7 p-3 text-sm leading-7 text-slate-300 light:border-slate-200 light:bg-white light:text-slate-600">
-                هنوز مجموعه ضرایبی برای این پروژه ثبت نشده است. یک مجموعه بسازید تا در مودال آیتم‌ها قابل انتخاب باشد.
-              </div>
-            ) : null}
-
+      <div className="min-h-0 flex-1 border-t border-white/10 p-3 light:border-slate-200 sm:p-4 lg:overflow-hidden">
+        <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]">
+          <div
+            className={classNames(
+              "h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain lg:block lg:space-y-4 lg:pl-1 [scrollbar-width:thin]",
+              mobilePane === "list" ? "block" : "hidden"
+            )}
+          >
             {selectedSet ? (
               <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -627,14 +628,14 @@ export function ProjectCoefficientPanel({
                 <div className="mt-3 space-y-2">
                   {values.map((value) => (
                     <div
-                      className="rounded-lg border border-white/10 bg-slate-950/35 p-3 light:border-slate-200 light:bg-white"
+                      className="rounded-lg border border-white/10 bg-slate-950/35 p-2.5 light:border-slate-200 light:bg-white sm:p-3"
                       key={value.id}
                     >
                       {editingValueId === value.id ? (
                         <form className="space-y-3" onSubmit={handleUpdateValue}>
                           {renderValueFormFields(editForm, setEditForm)}
                           <div className="flex flex-wrap gap-2">
-                            <Button disabled={updateValueState.isLoading} type="submit">
+                            <Button className="flex-1 sm:flex-none" disabled={updateValueState.isLoading} type="submit">
                               {updateValueState.isLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
@@ -643,6 +644,7 @@ export function ProjectCoefficientPanel({
                               ذخیره
                             </Button>
                             <Button
+                              className="flex-1 sm:flex-none"
                               onClick={() => setEditingValueId(null)}
                               type="button"
                               variant="secondary"
@@ -659,15 +661,16 @@ export function ProjectCoefficientPanel({
                         </form>
                       ) : (
                         <>
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
                               <p className="font-black text-white light:text-slate-950">
                                 {value.label_fa || getCoefficientKeyLabel(value.coefficient_key)}
                               </p>
-                              <p className="mt-1 text-xs leading-6 text-slate-400 light:text-slate-500">
-                                {getCoefficientKeyLabel(value.coefficient_key)} |{" "}
-                                {getCoefficientScopeLabel(value.scope)} | {getValueTargetLabel(value)} | ضریب{" "}
-                                {value.multiplier ?? "1"}
+                              <p className="mt-1 truncate text-xs text-slate-400 light:text-slate-500">
+                                {getCoefficientScopeLabel(value.scope)} · {getValueTargetLabel(value)}
+                              </p>
+                              <p className="mt-1 text-sm font-black text-emerald-200 light:text-emerald-700">
+                                ضریب {value.multiplier ?? "1"}
                               </p>
                             </div>
                             <StatusBadge
@@ -676,32 +679,49 @@ export function ProjectCoefficientPanel({
                               {value.is_active === false ? "غیرفعال" : "فعال"}
                             </StatusBadge>
                           </div>
-                          <div className="mt-3 flex flex-wrap gap-2">
+                          <div className="mt-2 flex gap-1.5 sm:mt-3 sm:gap-2">
                             <button
                               className={linkButtonClasses}
                               disabled={updateValueState.isLoading}
                               onClick={() => beginEdit(value)}
+                              aria-label="ویرایش ضریب"
+                              title="ویرایش ضریب"
                               type="button"
                             >
                               <Pencil className="h-4 w-4" />
-                              ویرایش
+                              <span className="hidden sm:inline">ویرایش</span>
                             </button>
                             <button
                               className={linkButtonClasses}
                               disabled={updateValueState.isLoading}
                               onClick={() => void handleToggleValue(value)}
+                              aria-label={value.is_active === false ? "فعال‌کردن ضریب" : "غیرفعال‌کردن ضریب"}
+                              title={value.is_active === false ? "فعال‌کردن ضریب" : "غیرفعال‌کردن ضریب"}
                               type="button"
                             >
-                              {value.is_active === false ? "فعال‌کردن" : "غیرفعال‌کردن"}
+                              <Power className="h-4 w-4" />
+                              <span className="hidden sm:inline">
+                                {value.is_active === false ? "فعال‌کردن" : "غیرفعال‌کردن"}
+                              </span>
                             </button>
                             <button
                               className={linkButtonClasses}
-                              disabled={deleteValueState.isLoading}
+                              disabled={
+                                deleteValueState.isLoading ||
+                                recalculateDocumentState.isLoading ||
+                                documentLocked
+                              }
                               onClick={() => void handleDeleteValue(value)}
+                              aria-label="حذف ضریب"
+                              title={
+                                documentLocked
+                                  ? "ضرایب سند قفل‌شده قابل تغییر نیستند"
+                                  : "حذف ضریب"
+                              }
                               type="button"
                             >
                               <Trash2 className="h-4 w-4" />
-                              حذف
+                              <span className="hidden sm:inline">حذف</span>
                             </button>
                           </div>
                         </>
@@ -710,70 +730,60 @@ export function ProjectCoefficientPanel({
                   ))}
                 </div>
               </div>
-            ) : null}
-
-            {selectedSet && previewRows.length > 0 ? (
-              <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-white">
-                <p className="text-sm font-black text-white light:text-slate-950">
-                  پیش‌نمایش اولویت مؤثر
-                </p>
-                <div className="mt-3 overflow-x-auto">
-                  <table className="min-w-full text-right text-xs text-slate-300 light:text-slate-700">
-                    <thead className="text-slate-400 light:text-slate-500">
-                      <tr>
-                        <th className="px-2 py-2">نوع</th>
-                        <th className="px-2 py-2">کل پروژه</th>
-                        <th className="px-2 py-2">فصل</th>
-                        <th className="px-2 py-2">ردیف</th>
-                        <th className="px-2 py-2">مؤثر</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewRows.map((row) => (
-                        <tr className="border-t border-white/10 light:border-slate-200" key={row.key}>
-                          <td className="px-2 py-2 font-bold">
-                            {getCoefficientKeyLabel(row.key)}
-                          </td>
-                          <td className="px-2 py-2">{row.projectValue?.multiplier ?? "-"}</td>
-                          <td className="px-2 py-2">{row.chapterValue?.multiplier ?? "-"}</td>
-                          <td className="px-2 py-2">{row.rowValue?.multiplier ?? "-"}</td>
-                          <td className="px-2 py-2 font-black text-emerald-200 light:text-emerald-700">
-                            {row.effectiveValue.multiplier ?? "1"} از{" "}
-                            {getCoefficientScopeLabel(row.effectiveScope)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            ) : (
+              <div className="rounded-lg border border-white/10 bg-white/7 p-4 text-center text-sm text-slate-400 light:border-slate-200 light:bg-white light:text-slate-500">
+                مجموعه‌ای برای نمایش انتخاب نشده است.
               </div>
-            ) : null}
+            )}
+
           </div>
 
-          <div className="space-y-4">
-            <form className="space-y-3 rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-white" onSubmit={handleCreateSet}>
-              <Field label="ساخت مجموعه ضرایب">
-                <input
-                  className={inputClasses}
-                  onChange={(event) => setSetName(event.target.value)}
-                  placeholder="مثلا ضرایب قرارداد اصلی"
-                  value={setName}
-                />
-              </Field>
-              <Button disabled={createSetState.isLoading} type="submit">
-                {createSetState.isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                ساخت مجموعه
-              </Button>
-              {setError ? (
-                <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
-                  {setError}
-                </p>
-              ) : null}
-            </form>
+          <div
+            className={classNames(
+              "h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain lg:block lg:space-y-4 lg:pl-1 [scrollbar-width:thin]",
+              mobilePane === "add" ? "block" : "hidden"
+            )}
+          >
+            {!isLoadingSets && !setsError && coefficientSets.length === 0 ? (
+              <div className="rounded-lg border border-amber-300/20 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100 light:text-amber-800">
+                ابتدا یک مجموعه بسازید؛ سپس ضریب‌های آن را ثبت کنید.
+              </div>
+            ) : null}
+            <details
+              className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-white"
+              open={coefficientSets.length === 0 ? true : undefined}
+            >
+              <summary className="flex min-h-11 cursor-pointer items-center text-sm font-black text-slate-200 light:text-slate-800 sm:min-h-0">
+                ساخت مجموعه جدید
+              </summary>
+              <form className="mt-3 space-y-3" onSubmit={handleCreateSet}>
+                <Field label="نام مجموعه">
+                  <input
+                    className={inputClasses}
+                    onChange={(event) => setSetName(event.target.value)}
+                    placeholder="مثلا ضرایب قرارداد اصلی"
+                    value={setName}
+                  />
+                </Field>
+                <Button
+                  className="w-full sm:w-auto"
+                  disabled={createSetState.isLoading}
+                  type="submit"
+                >
+                  {createSetState.isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  ساخت مجموعه
+                </Button>
+                {setError ? (
+                  <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+                    {setError}
+                  </p>
+                ) : null}
+              </form>
+            </details>
 
             <form className="space-y-3 rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-white" onSubmit={handleCreateValue}>
               <div className="flex items-center justify-between gap-2">
@@ -783,8 +793,12 @@ export function ProjectCoefficientPanel({
                 <Plus className="h-4 w-4 text-emerald-200 light:text-emerald-700" />
               </div>
               {renderValueFormFields(valueForm, setValueForm)}
-              <Button disabled={!selectedSet || createValueState.isLoading} type="submit">
-                {createValueState.isLoading ? (
+              <Button
+                className="w-full sm:w-auto"
+                disabled={!selectedSet || createValueState.isLoading || updateValueState.isLoading}
+                type="submit"
+              >
+                {createValueState.isLoading || updateValueState.isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <CheckCircle2 className="h-4 w-4" />

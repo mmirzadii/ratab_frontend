@@ -12,7 +12,7 @@ Phase 6 implemented the real pricebook item modal calculation flow inside the ex
 - Used the required backend API contract from:
 
 ```text
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/OPENAPI.yaml
 ```
 
 - Used only documented pricebook and financial document endpoints:
@@ -157,7 +157,7 @@ Docker build was not required because `docker/`, `.dockerignore`, and compose fi
 
 ## Risks and Assumptions
 
-- Assumed `backend_docs/v0.0/ratab v0.0 Backend API.yaml` is the authoritative contract.
+- Assumed `backend_docs/history/v0.0/OPENAPI.yaml` is the authoritative contract.
 - Assumed ABN1404 / 1404 has an active price set in the target backend data.
 - Assumed the local backend-tested flow and payloads match the target v0.0 backend behavior.
 - Assumed coefficient selection belongs to a later frontend phase.

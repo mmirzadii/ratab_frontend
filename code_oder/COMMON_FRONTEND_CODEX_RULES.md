@@ -12,12 +12,16 @@ React + TypeScript + Vite + Redux Toolkit + RTK Query + Tailwind CSS
 
 ```text
 AI_CODE_PRINCIPLES.md
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
-code_oder/v0.0/reference/main_updated.html
-code_oder/v0.0/reference/UI_THEME_NOTES.md
-code_oder/v0.0/reference/PRODUCT_FLOW_NOTES.md
+backend_docs/README.md
+backend_docs/current/   (active contract when synced)
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
+docs/product_reference/v0.0/main_updated.html
+docs/product_reference/v0.0/UI_THEME_NOTES.md
+docs/product_reference/v0.0/PRODUCT_FLOW_NOTES.md
 ```
+
+Prefer `backend_docs/current/` whenever it contains the official synced package. Historical v0 files are archive-only after that sync.
 
 ## Backend
 

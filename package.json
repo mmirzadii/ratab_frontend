@@ -8,7 +8,8 @@
     "build": "npm run generate:api && tsc -b && vite build",
     "lint": "npm run generate:api && eslint .",
     "preview": "vite preview",
-    "generate:api": "openapi-typescript \"backend_docs/v0.0/ratab v0.0 Backend API.yaml\" -o src/shared/api/generated/schema.ts"
+    "generate:api": "node scripts/generate-api.mjs",
+    "validate:docs": "node scripts/validate-doc-structure.mjs"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.6",

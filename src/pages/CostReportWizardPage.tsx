@@ -18,15 +18,16 @@ import {
   type PricebookEdition,
   type PricebookGroup,
   type PricebookItemList,
+  getPricebookEditionFamilyId,
+  getPricebookFamilies,
   useListPricebookChaptersQuery,
-  useListPricebookEditionsQuery,
+  useListPricebookEditionsForFamiliesQuery,
   useListPricebookGroupsQuery,
   useListPricebookItemsQuery,
   useListPricebooksQuery
 } from "../features/pricebooks/pricebookApi";
 import { type Project } from "../features/projects/projectApi";
 
-import { BuilderSectionNav } from "../features/costReports/components/BuilderSectionNav";
 import { CurrentDocumentPanel } from "../features/costReports/components/CurrentDocumentPanel";
 import { DocumentInfoSection } from "../features/costReports/components/DocumentInfoSection";
 import { DocumentLinesModal } from "../features/costReports/components/DocumentLinesModal";
@@ -94,9 +95,8 @@ export function CostReportWizardPage() {
     builderState?.existingDocument ?? null
   );
   const [documentSetupNotice, setDocumentSetupNotice] = useState<string | null>(null);
-  const [isAdvancedDevOpen, setIsAdvancedDevOpen] = useState(false);
-  const [isDevPriceSetConfirmed, setIsDevPriceSetConfirmed] = useState(false);
-  const [selectedPricebookId, setSelectedPricebookId] = useState<number | null>(null);
+  const isDevPriceSetConfirmed = false;
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
   const [selectedEditionId, setSelectedEditionId] = useState<number | null>(null);
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
@@ -118,22 +118,51 @@ export function CostReportWizardPage() {
     isLoading: isLoadingPricebooks
   } = useListPricebooksQuery();
   const pricebooks = getListResults<Pricebook>(pricebooksData);
-  const selectedPricebook =
-    pricebooks.find((pricebook) => pricebook.id === selectedPricebookId) ??
-    pricebooks.find((pricebook) => pricebook.code === "ABN1404") ??
-    pricebooks.find((pricebook) => pricebook.is_active) ??
-    pricebooks[0];
+  const activePricebooks = useMemo(
+    () => pricebooks.filter((pricebook) => pricebook.is_active),
+    [pricebooks]
+  );
+  const activePricebookIds = useMemo(
+    () => activePricebooks.map((pricebook) => pricebook.id),
+    [activePricebooks]
+  );
 
   const {
     data: editionsData,
     error: editionsError,
     isLoading: isLoadingEditions
-  } = useListPricebookEditionsQuery(selectedPricebook?.id ?? 0, {
-    skip: !selectedPricebook
+  } = useListPricebookEditionsForFamiliesQuery(activePricebookIds, {
+    skip: activePricebookIds.length === 0
   });
-  const editions = getListResults<PricebookEdition>(editionsData);
+  const availableEditions = useMemo(
+    () =>
+      getListResults<PricebookEdition>(editionsData).filter(
+        (edition) =>
+          edition.id === createdDocument?.pricebook_edition_id ||
+          edition.active_price_set?.is_active === true
+      ),
+    [createdDocument?.pricebook_edition_id, editionsData]
+  );
+  const families = useMemo(
+    () => getPricebookFamilies(activePricebooks, availableEditions),
+    [activePricebooks, availableEditions]
+  );
+  const savedEdition = availableEditions.find(
+    (edition) => edition.id === createdDocument?.pricebook_edition_id
+  );
+  const selectedFamily =
+    families.find((family) => family.id === selectedFamilyId) ??
+    families.find(
+      (family) => savedEdition && family.id === getPricebookEditionFamilyId(savedEdition)
+    ) ??
+    families[0];
+  const editions = availableEditions.filter(
+    (edition) =>
+      selectedFamily && getPricebookEditionFamilyId(edition) === selectedFamily.id
+  );
   const selectedEdition =
     editions.find((edition) => edition.id === selectedEditionId) ??
+    editions.find((edition) => edition.id === savedEdition?.id) ??
     getDefaultEdition(editions);
   const selectedActivePriceSet = selectedEdition?.active_price_set ?? null;
 
@@ -297,7 +326,9 @@ export function CostReportWizardPage() {
     }
 
     setWizardCtx({
-      title: "افزودن صورت‌بها",
+      title:
+        builderSections.find((section) => section.id === activeSection)?.title ??
+        "افزودن صورت‌بها",
       companyName: cleanDisplayText(company?.name, "شرکت"),
       tokenBalanceLabel: "—",
       isLastStep,
@@ -386,8 +417,8 @@ export function CostReportWizardPage() {
     await doSubmit();
   }
 
-  function handlePricebookChange(value: string) {
-    setSelectedPricebookId(Number(value));
+  function handleFamilyChange(value: string) {
+    setSelectedFamilyId(value);
     setSelectedEditionId(null);
     setSelectedChapterId(null);
     setSelectedGroupId(null);
@@ -418,7 +449,7 @@ export function CostReportWizardPage() {
       return;
     }
 
-    if (isLoadingPricebooks || pricebooksError || pricebooks.length === 0 || !selectedPricebook) {
+    if (isLoadingPricebooks || pricebooksError || families.length === 0 || !selectedFamily) {
       setFormError("فهرست‌بها هنوز بارگذاری نشده است. دوباره تلاش کنید.");
       return;
     }
@@ -507,23 +538,13 @@ export function CostReportWizardPage() {
 
   return (
     <div className={classNames(
-      "mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 pt-3 sm:px-6 sm:pt-5 lg:px-8",
-      activeSection !== "pricebook" && "pb-10"
+      "mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pt-3 sm:px-6 sm:pt-4 lg:min-h-full lg:px-6 lg:py-3 xl:px-8",
+      activeSection !== "pricebook" && "pb-6 lg:pb-3"
     )}>
-      {/* Mobile-only step nav (desktop handled by SecondaryNav + ContextHeader) */}
-      <div className="lg:hidden" dir="rtl">
-        <BuilderSectionNav
-          activeSection={activeSection}
-          completedSections={completedSections}
-          isUnlocked={isBuilderUnlocked}
-          onSelect={handleBuilderSectionSelect}
-        />
-      </div>
-
-      <div className="min-w-0 space-y-5" dir="rtl">
+      <div className="min-w-0 space-y-3" dir="rtl">
         {step === "setup" ? (
           <form
-            className="space-y-5"
+            className="space-y-3"
             onSubmit={(event) => {
               if (activeSection === "project") {
                 event.preventDefault();
@@ -543,29 +564,22 @@ export function CostReportWizardPage() {
             ) : null}
 
             {activeSection === "document" ? (
-              <>
-                <h2 className="text-lg font-black text-white light:text-slate-950">اطلاعات صورت‌بها</h2>
                 <DocumentInfoSection
                   editions={editions}
                   editionsError={editionsError}
+                  families={families}
                   form={form}
                   formError={formError}
-                  isAdvancedDevOpen={isAdvancedDevOpen}
-                  isDevPriceSetConfirmed={isDevPriceSetConfirmed}
                   isLoadingEditions={isLoadingEditions}
                   isLoadingPricebooks={isLoadingPricebooks}
-                  onAdvancedDevOpenChange={setIsAdvancedDevOpen}
-                  onDevPriceSetConfirmedChange={setIsDevPriceSetConfirmed}
                   onEditionChange={handleEditionChange}
+                  onFamilyChange={handleFamilyChange}
                   onFieldChange={updateField}
-                  onPricebookChange={handlePricebookChange}
-                  pricebooks={pricebooks}
                   pricebooksError={pricebooksError}
                   selectedActivePriceSet={selectedActivePriceSet}
                   selectedEdition={selectedEdition}
-                  selectedPricebook={selectedPricebook}
+                  selectedFamily={selectedFamily}
                 />
-              </>
             ) : null}
             <button aria-hidden="true" className="sr-only" tabIndex={-1} type="submit" />
           </form>
@@ -588,6 +602,7 @@ export function CostReportWizardPage() {
                 coefficientSets={coefficientSets}
                 currentDocument={createdDocument}
                 isLoadingSets={isLoadingCoefficientSets}
+                onDocumentUpdated={setCreatedDocument}
                 onSelectedCoefficientSetIdChange={setSelectedCoefficientSetId}
                 projectId={createdProject.id}
                 selectedCoefficientSetId={selectedCoefficientSetId}

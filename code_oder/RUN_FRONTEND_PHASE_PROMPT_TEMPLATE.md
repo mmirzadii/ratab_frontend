@@ -43,12 +43,14 @@ code_oder/v0.0/phaze{PHASE_NUMBER}/
 
 ```text
 AI_CODE_PRINCIPLES.md
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/README.md
+backend_docs/current/                  (active contract when synced)
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
 code_oder/COMMON_FRONTEND_CODEX_RULES.md
-code_oder/v0.0/reference/main_updated.html
-code_oder/v0.0/reference/UI_THEME_NOTES.md
-code_oder/v0.0/reference/PRODUCT_FLOW_NOTES.md
+docs/product_reference/v0.0/main_updated.html
+docs/product_reference/v0.0/UI_THEME_NOTES.md
+docs/product_reference/v0.0/PRODUCT_FLOW_NOTES.md
 code_oder/v0.0/phaze{PHASE_NUMBER}/
 ```
 
@@ -62,19 +64,19 @@ Then implement only the current phase.
 
 ## Backend schema requirement
 
-The backend OpenAPI schema file is available and must be used:
+The active OpenAPI source for TypeScript generation is:
 
 ```text
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/current/OPENAPI.yaml
 ```
 
-If useful, generate TypeScript API types to:
+Until that file is synced from backend `codexphaze/frontend_docs/`, Frontend v0.0 historical reference remains:
 
 ```text
-src/shared/api/generated/schema.ts
+backend_docs/history/v0.0/OPENAPI.yaml
 ```
 
-Suggested tool: `openapi-typescript`.
+Do not invent a current contract from historical files. Generate types only via `npm run generate:api` when current OpenAPI exists.
 
 ## Docker goal
 

@@ -11,6 +11,7 @@ export type PricebookFinancialDocumentLineCreatePayload =
   FinancialDocumentLineCreateRequest & {
     coefficient_set_id?: number | null;
     custom_prices?: Record<string, string>;
+    footnotes?: Record<string, unknown>;
   };
 export type StandaloneStarredFinancialDocumentLineCreatePayload =
   Omit<FinancialDocumentLineCreateRequest, "pricebook_item_id"> & {

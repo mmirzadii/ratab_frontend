@@ -12,8 +12,8 @@ Frontend Phase 7 added project coefficient management to the cost report workspa
 - Used the documented backend contract from:
 
 ```text
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
 ```
 
 - Added frontend usage of the documented coefficient endpoints:

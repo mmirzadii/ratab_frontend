@@ -68,10 +68,10 @@ Before changing code, read:
 
 ```text
 AI_CODE_PRINCIPLES.md
-backend_docs/v0.0/frontend_handoff_v0_0.md
-backend_docs/v0.0/ratab v0.0 Backend API.yaml
+backend_docs/history/v0.0/frontend_handoff_v0_0.md
+backend_docs/history/v0.0/OPENAPI.yaml
 code_oder/COMMON_FRONTEND_CODEX_RULES.md
-code_oder/v0.0/reference/PRODUCT_FLOW_NOTES.md
+docs/product_reference/v0.0/PRODUCT_FLOW_NOTES.md
 code_oder/v0.0/phaze9/REPORT.md
 code_oder/v0.0/phaze9/TEST_RESULTS.md
 ```
@@ -81,7 +81,7 @@ Also read the provided landing page HTML reference.
 Suggested reference path:
 
 ```text
-code_oder/v0.0/reference/landing_reference.html
+docs/product_reference/v0.0/landing_reference.html
 ```
 
 If the file is not already there, copy the provided HTML reference into that path and use it only as a design reference.

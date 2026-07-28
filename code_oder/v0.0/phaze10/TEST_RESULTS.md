@@ -18,7 +18,7 @@ node -e "const p=require('./package.json'); console.log(p.scripts && p.scripts.t
 
 - `npm run build`: passed.
 - `npm run lint`: passed.
-- Both build and lint ran the existing `generate:api` script and regenerated `src/shared/api/generated/schema.ts` from `backend_docs/v0.0/ratab v0.0 Backend API.yaml`.
+- Both build and lint ran the existing `generate:api` script and regenerated `src/shared/api/generated/schema.ts` from `backend_docs/history/v0.0/OPENAPI.yaml`.
 - `node ... package.json`: returned `NO_TEST_SCRIPT`.
 - Build produced the existing non-blocking Vite warning that one JavaScript chunk is larger than 500 kB.
 
@@ -110,7 +110,7 @@ grep -c "schema_version\|value_number\|is_itemized\|itemized_options\|price_rang
 
 ### Results
 
-- `npm run generate:api`: passed (100.3 ms). Regenerated `src/shared/api/generated/schema.ts` from `backend_docs/v0.0/ratab v0.0 Backend API.yaml`.
+- `npm run generate:api`: passed (100.3 ms). Regenerated `src/shared/api/generated/schema.ts` from `backend_docs/history/v0.0/OPENAPI.yaml`.
 - v2 vocabulary grep: **0 matches**.
 - `npm run lint`: **not run** — no code was changed.
 - `npm run build`: **not run** — no code was changed.
@@ -134,7 +134,7 @@ No feature code was written. No existing files were modified except the two repo
 
 ### Required Backend Action
 
-Update `backend_docs/v0.0/ratab v0.0 Backend API.yaml` to expose the v2 schema fields. Then re-run `npm run generate:api`, confirm all nine fields appear in `schema.ts`, and re-run the implementation prompt to proceed.
+Update `backend_docs/history/v0.0/OPENAPI.yaml` to expose the v2 schema fields. Then re-run `npm run generate:api`, confirm all nine fields appear in `schema.ts`, and re-run the implementation prompt to proceed.
 
 ---
 
@@ -145,7 +145,7 @@ Update `backend_docs/v0.0/ratab v0.0 Backend API.yaml` to expose the v2 schema f
 ```bash
 npm run generate:api
 # grep for all nine v2 terms across YAML and generated schema
-grep -c "schema_version|is_itemized|itemized_options|price_ranges|selected_row_id" "backend_docs/v0.0/ratab v0.0 Backend API.yaml"
+grep -c "schema_version|is_itemized|itemized_options|price_ranges|selected_row_id" "backend_docs/history/v0.0/OPENAPI.yaml"
 grep -c "schema_version|is_itemized|itemized_options|price_ranges|selected_row_id|\"values\"|\"inputs\"|value_number|multi_input" src/shared/api/generated/schema.ts
 ```
 

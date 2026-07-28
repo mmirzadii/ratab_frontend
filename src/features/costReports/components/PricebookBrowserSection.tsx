@@ -1,5 +1,5 @@
 import { type ReactNode, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, Layers3, Loader2, Search } from "lucide-react";
+import { ArrowRight, BookOpen, Layers3, Loader2, Search } from "lucide-react";
 
 import type { PricebookChapter, PricebookGroup, PricebookItemList } from "../../pricebooks/pricebookApi";
 import { EmptyState } from "../../../shared/components/EmptyState";
@@ -238,7 +238,7 @@ export function PricebookBrowserSection({
       ) : null}
       {items.map((item: PricebookItemList, index) => (
         <button
-          className="w-full min-w-0 px-3 py-3 text-right transition hover:bg-white/7 light:hover:bg-slate-50"
+          className="w-full min-w-0 px-3 py-2.5 text-right transition hover:bg-white/7 light:hover:bg-slate-50 sm:py-3"
           data-tour={index === 0 ? "pricebook-item" : undefined}
           key={item.id}
           onClick={() => onItemSelect(item.id)}
@@ -405,26 +405,18 @@ export function PricebookBrowserSection({
   // ══════════════════════════════════════════════════════════════════════════
   const mobileLayout = (
     <GlassCard
-      className="lg:hidden flex flex-col overflow-hidden p-0 h-[calc(100dvh-11rem)]"
+      className="flex h-[calc(100dvh-8.75rem)] min-h-0 flex-col overflow-hidden p-0 lg:hidden"
       dir="rtl"
     >
       {mobileView === "chapters" ? (
         // ── Chapters pane ──────────────────────────────────────────────
         <>
           {/* Header */}
-          <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 light:border-slate-200">
+          <div className="flex shrink-0 items-center border-b border-white/10 px-4 py-3 light:border-slate-200">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-emerald-200" />
               <h2 className="text-sm font-black text-white light:text-slate-950">فصل‌ها</h2>
             </div>
-            <button
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/7 px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:border-white/20 hover:text-white light:border-slate-200 light:bg-white light:text-slate-600"
-              onClick={() => setMobileView("items")}
-              type="button"
-            >
-              آیتم‌ها
-              <ArrowLeft className="h-3.5 w-3.5" />
-            </button>
           </div>
 
           {/* Chapter filter pills — single-row horizontal scroll */}
@@ -471,18 +463,43 @@ export function PricebookBrowserSection({
             >
               <ArrowRight className="h-4 w-4" />
             </button>
-            <h2 className="min-w-0 flex-1 truncate text-sm font-black text-white light:text-slate-950">
-              {selectedChapter?.title_fa ?? "یک فصل انتخاب کنید"}
-            </h2>
-            {selectedChapter ? (
-              <StatusBadge tone="violet">فصل {selectedChapter.chapter_code}</StatusBadge>
-            ) : null}
+            {mobileSearchOpen && selectedChapter ? (
+              <label className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-emerald-300/35 bg-slate-950/45 px-2 text-slate-400 light:border-emerald-300 light:bg-white">
+                <Search className="h-3.5 w-3.5 shrink-0 text-emerald-300 light:text-emerald-600" />
+                <input
+                  autoFocus
+                  className="h-full min-w-0 flex-1 bg-transparent text-xs text-slate-100 outline-none placeholder:text-slate-500 light:text-slate-950"
+                  onChange={(event) => onSearchTermChange(event.target.value)}
+                  placeholder="جستجو در آیتم‌ها یا کد ردیف"
+                  value={searchTerm}
+                />
+                {searchTerm ? (
+                  <button
+                    aria-label="پاک کردن جستجو"
+                    className="text-base leading-none text-slate-400 transition hover:text-white light:hover:text-slate-950"
+                    onClick={() => onSearchTermChange("")}
+                    type="button"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </label>
+            ) : (
+              <>
+                <h2 className="min-w-0 flex-1 truncate text-sm font-black text-white light:text-slate-950">
+                  {selectedChapter?.title_fa ?? "یک فصل انتخاب کنید"}
+                </h2>
+                {selectedChapter ? (
+                  <StatusBadge tone="violet">فصل {selectedChapter.chapter_code}</StatusBadge>
+                ) : null}
+              </>
+            )}
             {selectedChapter ? (
               <button
                 aria-label="جستجو"
                 className={classNames(
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition",
-                  mobileSearchOpen
+                  mobileSearchOpen || searchTerm
                     ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-200"
                     : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500"
                 )}
@@ -493,31 +510,6 @@ export function PricebookBrowserSection({
               </button>
             ) : null}
           </div>
-
-          {/* Expandable search row */}
-          {mobileSearchOpen && selectedChapter ? (
-            <div className="shrink-0 border-b border-white/10 px-3 py-2 light:border-slate-200">
-              <label className="flex h-10 items-center gap-2 rounded-lg border border-emerald-300/35 bg-slate-950/45 px-3 text-slate-400 light:border-emerald-300 light:bg-white">
-                <Search className="h-3.5 w-3.5 shrink-0 text-emerald-300 light:text-emerald-600" />
-                <input
-                  autoFocus
-                  className="h-full flex-1 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500 light:text-slate-950"
-                  onChange={(event) => onSearchTermChange(event.target.value)}
-                  placeholder="جستجو در آیتم‌ها یا کد ردیف"
-                  value={searchTerm}
-                />
-                {searchTerm ? (
-                  <button
-                    className="text-lg leading-none text-slate-400 transition hover:text-white light:hover:text-slate-950"
-                    onClick={() => onSearchTermChange("")}
-                    type="button"
-                  >
-                    ×
-                  </button>
-                ) : null}
-              </label>
-            </div>
-          ) : null}
 
           {/* Group filter pills — single-row horizontal scroll */}
           {selectedChapter ? (
@@ -569,20 +561,16 @@ export function PricebookBrowserSection({
             </div>
           ) : null}
 
-          {/* Items list header */}
-          {selectedChapter ? (
-            <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-4 py-2.5 light:border-slate-200">
-              <Layers3 className="h-4 w-4 text-emerald-200" />
-              <h3 className="text-sm font-black text-white light:text-slate-950">آیتم‌ها</h3>
-              {isFetchingItems ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-200" />
-              ) : null}
-            </div>
-          ) : null}
-
           {/* Items list — fills remaining height */}
           {selectedChapter ? (
-            <div className="min-h-0 flex-1 divide-y divide-white/10 overflow-y-auto [scrollbar-color:rgba(16,185,129,0.5)_rgba(15,23,42,0.2)] [scrollbar-width:thin] light:divide-slate-200">
+            <div className="relative min-h-0 flex-1 divide-y divide-white/10 overflow-y-auto [scrollbar-color:rgba(16,185,129,0.5)_rgba(15,23,42,0.2)] [scrollbar-width:thin] light:divide-slate-200">
+              {isFetchingItems ? (
+                <div className="pointer-events-none sticky top-0 z-10 flex h-0 justify-center">
+                  <span className="mt-2 rounded-full border border-emerald-300/25 bg-slate-950/90 p-1.5 text-emerald-200 shadow-lg light:bg-white">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  </span>
+                </div>
+              ) : null}
               {itemRows}
             </div>
           ) : (

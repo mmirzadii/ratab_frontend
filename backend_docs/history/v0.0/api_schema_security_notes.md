@@ -44,7 +44,7 @@ Never place real secrets in OpenAPI examples, generated YAML, handoff docs, repo
 - S3 access keys or secret keys;
 - Hamravesh/Hamdocker credentials.
 
-The static schema at `docs/openapi_v0_0.yaml` uses placeholder auth descriptions only and does not need runtime credentials.
+The static schema at `backend_docs/history/v0.0/OPENAPI.yaml` (and the archived non-canonical `OPENAPI.NON_CANONICAL.openapi_v0_0.yaml`) uses placeholder auth descriptions only and does not need runtime credentials.
 
 ## Token Authentication
 

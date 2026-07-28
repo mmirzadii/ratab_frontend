@@ -28,7 +28,7 @@ import { GlassCard } from "../../../shared/components/GlassCard";
 import { InfoBox } from "../../../shared/components/InfoBox";
 import { StatusBadge } from "../../../shared/components/StatusBadge";
 import { classNames } from "../../../shared/utils/classNames";
-import { cleanDisplayText, formatMoneyAmount } from "../../../shared/utils/formatters";
+import { cleanDisplayText, formatDecimal, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { getApiErrorMessage } from "../../../shared/utils/apiError";
 import { inputClasses } from "../constants";
 import type { DocumentTotals } from "../types";
@@ -36,6 +36,8 @@ import {
   getDocumentStatusLabel,
   getDocumentStatusTone,
   getDocumentTotals,
+  getLineDisplayRows,
+  hasPositiveMoneyValue,
   isFinancialDocumentLocked,
   isPositiveDecimal,
   normalizeQuantityValue
@@ -88,6 +90,7 @@ function buildOfficialFormHtml({
   const editionYear = escapeHtml(selectedEditionYear ? String(selectedEditionYear) : "—");
   const coefficientName = escapeHtml(selectedCoefficientSetName ?? "بدون ضریب");
   const lines = document.lines ?? [];
+  const displayRows = lines.flatMap((line) => getLineDisplayRows(line));
   const chapterTotals = document.chapter_totals ?? [];
   const totalFinal = Number(totals.totalAmount ?? 0);
 
@@ -114,20 +117,20 @@ function buildOfficialFormHtml({
   // Per-chapter detail tables
   const chapterDetailBlocks = chapterTotals
     .map((chapter) => {
-      const chapterLines = lines.filter((line) =>
-        line.row_code_snapshot?.startsWith(chapter.chapter_code_snapshot)
+      const chapterRows = displayRows.filter((row) =>
+        row.rowCode?.startsWith(chapter.chapter_code_snapshot)
       );
-      const lineRows = chapterLines
+      const lineRows = chapterRows
         .map(
-          (line) => `
+          (row) => `
         <tr>
-          <td>${escapeHtml(line.line_no)}</td>
-          <td class="code">${escapeHtml(line.row_code_snapshot)}</td>
-          <td class="desc">${escapeHtml(line.description_snapshot, "شرح ثبت نشده")}</td>
-          <td>${escapeHtml(line.unit_snapshot, "—")}</td>
-          <td>${formatMoneyAmount(line.unit_price_snapshot)}</td>
-          <td>${escapeHtml(line.quantity)}</td>
-          <td>${formatMoneyAmount(line.total_amount_snapshot)}</td>
+          <td>${escapeHtml(row.parentLineNo)}</td>
+          <td class="code">${escapeHtml(row.rowCode)}</td>
+          <td class="desc">${escapeHtml(row.title, "شرح ثبت نشده")}</td>
+          <td>${escapeHtml(row.unit, "—")}</td>
+          <td>${row.isStarredPrice ? "★ ستاره‌دار<br>" : ""}${hasPositiveMoneyValue(row.unitPrice) ? formatMoneyAmount(row.unitPrice) : "-"}</td>
+          <td>${escapeHtml(formatDecimal(row.quantity))}</td>
+          <td>${formatMoneyAmount(row.total)}</td>
         </tr>`
         )
         .join("");
@@ -160,22 +163,22 @@ function buildOfficialFormHtml({
     .join("");
 
   // Ungrouped lines (lines that didn't match any chapter)
-  const ungroupedLines = lines.filter((line) => {
+  const ungroupedDisplayRows = displayRows.filter((row) => {
     return !chapterTotals.some((chapter) =>
-      line.row_code_snapshot?.startsWith(chapter.chapter_code_snapshot)
+      row.rowCode?.startsWith(chapter.chapter_code_snapshot)
     );
   });
-  const ungroupedRows = ungroupedLines
+  const ungroupedRows = ungroupedDisplayRows
     .map(
-      (line) => `
+      (row) => `
       <tr>
-        <td>${escapeHtml(line.line_no)}</td>
-        <td class="code">${escapeHtml(line.row_code_snapshot)}</td>
-        <td class="desc">${escapeHtml(line.description_snapshot, "شرح ثبت نشده")}</td>
-        <td>${escapeHtml(line.unit_snapshot, "—")}</td>
-        <td>${formatMoneyAmount(line.unit_price_snapshot)}</td>
-        <td>${escapeHtml(line.quantity)}</td>
-        <td>${formatMoneyAmount(line.total_amount_snapshot)}</td>
+        <td>${escapeHtml(row.parentLineNo)}</td>
+        <td class="code">${escapeHtml(row.rowCode)}</td>
+        <td class="desc">${escapeHtml(row.title, "شرح ثبت نشده")}</td>
+        <td>${escapeHtml(row.unit, "—")}</td>
+        <td>${row.isStarredPrice ? "★ ستاره‌دار<br>" : ""}${hasPositiveMoneyValue(row.unitPrice) ? formatMoneyAmount(row.unitPrice) : "-"}</td>
+        <td>${escapeHtml(formatDecimal(row.quantity))}</td>
+        <td>${formatMoneyAmount(row.total)}</td>
       </tr>`
     )
     .join("");
@@ -477,6 +480,65 @@ export function CurrentDocumentPanel({
     }
   }
 
+  function renderLineActions(line: FinancialDocumentLine) {
+    const isEditing = editingLineId === line.id;
+
+    return (
+      <div className="flex shrink-0 items-center gap-1">
+        {isEditing ? (
+          <>
+            <button
+              aria-label="ذخیره مقدار"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-45 light:text-emerald-700 sm:h-8 sm:w-8"
+              disabled={isActionBusy || isLocked}
+              onClick={() => void handleSaveLine(line)}
+              title="ذخیره"
+              type="button"
+            >
+              <Save className="h-3.5 w-3.5" />
+            </button>
+            <button
+              aria-label="انصراف"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-slate-300 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-45 light:border-slate-200 light:bg-white light:text-slate-600 sm:h-8 sm:w-8"
+              disabled={isActionBusy}
+              onClick={() => {
+                setEditingLineId(null);
+                setEditingQuantity("");
+              }}
+              title="انصراف"
+              type="button"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              aria-label="ویرایش مقدار"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-emerald-500/10 hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
+              disabled={isActionBusy || isLocked}
+              onClick={() => startEditingLine(line)}
+              title="ویرایش مقدار"
+              type="button"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              aria-label="حذف خط"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-danger-500/10 hover:text-danger-400 disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
+              disabled={isActionBusy || isLocked}
+              onClick={() => void handleDeleteLine(line)}
+              title="حذف خط"
+              type="button"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
   function handleTogglePreview() {
     if (previewHtml) {
       setPreviewHtml(null);
@@ -549,18 +611,25 @@ export function CurrentDocumentPanel({
   }
 
   return (
-    <GlassCard className="p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <GlassCard className="flex max-h-[calc(100dvh-8.5rem)] min-h-0 flex-col overflow-hidden p-3 sm:block sm:max-h-none sm:overflow-visible sm:p-5">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-2 sm:gap-3">
         <div>
           <h2 className="text-lg font-black text-white light:text-slate-950">صورت‌بهای جاری</h2>
-          <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
+          <p className="mt-2 hidden text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
             خطوطی که از محاسبه آیتم‌ها به سند اضافه می‌شوند، اینجا نمایش داده می‌شوند.
           </p>
         </div>
         {document ? (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="sm:hidden">
+            <StatusBadge tone={getDocumentStatusTone(document.status)}>
+              {totals.lineCount} خط
+            </StatusBadge>
+          </div>
+        ) : null}
+        {document ? (
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
             <Button
-              className="h-12 text-base font-bold"
+              className="h-11 px-2 text-xs font-bold sm:h-12 sm:px-4 sm:text-base"
               data-tour="preview-btn"
               disabled={isActionBusy}
               onClick={handleTogglePreview}
@@ -568,10 +637,11 @@ export function CurrentDocumentPanel({
               variant={previewHtml ? "secondary" : "primary"}
             >
               {previewHtml ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              {previewHtml ? "بستن پیش‌نمایش" : "پیش‌نمایش صورت‌بها"}
+              <span className="sm:hidden">{previewHtml ? "بستن پیش‌نمایش" : "پیش‌نمایش"}</span>
+              <span className="hidden sm:inline">{previewHtml ? "بستن پیش‌نمایش" : "پیش‌نمایش صورت‌بها"}</span>
             </Button>
             <Button
-              className="h-12 text-base font-bold"
+              className="h-11 px-2 text-xs font-bold sm:h-12 sm:px-4 sm:text-base"
               disabled={isActionBusy}
               onClick={handleBrowserPdfDownload}
               type="button"
@@ -583,9 +653,11 @@ export function CurrentDocumentPanel({
               )}
               خروجی گرفتن
             </Button>
-            <StatusBadge tone={getDocumentStatusTone(document.status)}>
-              {`${getDocumentStatusLabel(document.status)} - ${totals.lineCount} خط`}
-            </StatusBadge>
+            <div className="hidden sm:block">
+              <StatusBadge tone={getDocumentStatusTone(document.status)}>
+                {`${getDocumentStatusLabel(document.status)} - ${totals.lineCount} خط`}
+              </StatusBadge>
+            </div>
           </div>
         ) : (
           <StatusBadge tone="amber">سند ساخته نشده</StatusBadge>
@@ -599,8 +671,40 @@ export function CurrentDocumentPanel({
       ) : null}
 
       {document ? (
-        <div className="mt-4 space-y-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div
+          className="mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden sm:mt-4 sm:block sm:space-y-4 sm:overflow-visible"
+          data-tour="finalize-rows"
+        >
+          <details className="shrink-0 rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50 sm:hidden">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center">
+              <span className="flex w-full items-center justify-between gap-3">
+                <span className="text-xs font-bold text-slate-400 light:text-slate-500">جمع کل</span>
+                <span className="text-base font-black text-emerald-200 light:text-emerald-700">
+                  {formatMoneyAmount(totals.totalAmount)}
+                </span>
+              </span>
+            </summary>
+            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-white/10 pt-3 text-xs light:border-slate-200">
+              <span className="text-slate-400 light:text-slate-500">شماره سند</span>
+              <span className="truncate text-left font-bold text-slate-200 light:text-slate-800">
+                {cleanDisplayText(document.document_number, "—")}
+              </span>
+              <span className="text-slate-400 light:text-slate-500">سال فهرست‌بها</span>
+              <span className="text-left font-bold text-slate-200 light:text-slate-800">
+                {selectedEditionYear ? String(selectedEditionYear) : "—"}
+              </span>
+              <span className="text-slate-400 light:text-slate-500">جمع فهرست‌بها</span>
+              <span className="text-left font-bold text-slate-200 light:text-slate-800">
+                {formatMoneyAmount(totals.pricebookAmount)}
+              </span>
+              <span className="text-slate-400 light:text-slate-500">جمع ضرایب</span>
+              <span className="text-left font-bold text-slate-200 light:text-slate-800">
+                {formatMoneyAmount(totals.coefficientAmount)}
+              </span>
+            </div>
+          </details>
+
+          <div className="hidden gap-3 sm:grid md:grid-cols-2 xl:grid-cols-4">
             <InfoBox
               label="عنوان سند"
               value={cleanDisplayText(document.title, "صورت‌بهای بدون عنوان")}
@@ -613,7 +717,7 @@ export function CurrentDocumentPanel({
             <InfoBox label="ضریب فعال" value={selectedCoefficientSetName ?? "بدون ضریب"} />
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="hidden gap-3 sm:grid md:grid-cols-3">
             <InfoBox label="جمع فهرست‌بها" value={formatMoneyAmount(totals.pricebookAmount)} />
             <InfoBox label="جمع ضرایب" value={formatMoneyAmount(totals.coefficientAmount)} />
             <InfoBox label="جمع کل" value={formatMoneyAmount(totals.totalAmount)} />
@@ -637,9 +741,9 @@ export function CurrentDocumentPanel({
           ) : null}
 
           {previewHtml ? (
-            <section className="overflow-hidden rounded-lg border border-brand-300/20">
+            <section className="min-h-0 flex-1 overflow-hidden rounded-lg border border-brand-300/20 sm:flex-none">
               <iframe
-                className="h-[75vh] w-full bg-white"
+                className="h-full min-h-[20rem] w-full bg-white sm:h-[75vh]"
                 sandbox=""
                 srcDoc={previewHtml}
                 title="پیش‌نمایش صورت وضعیت"
@@ -647,7 +751,111 @@ export function CurrentDocumentPanel({
             </section>
           ) : null}
 
-          <div className="overflow-hidden rounded-lg border border-white/10 light:border-slate-200">
+          <div
+            className={classNames(
+              "min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain rounded-lg [scrollbar-width:thin] sm:hidden",
+              previewHtml && "hidden"
+            )}
+          >
+            {lines.length === 0 ? (
+              <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-8 text-center text-sm text-slate-400 light:border-slate-200 light:bg-white light:text-slate-500">
+                هنوز خطی به صورت‌بها اضافه نشده است.
+              </div>
+            ) : null}
+            {lines.map((line) => {
+              const displayRows = getLineDisplayRows(line);
+
+              return (
+                <article
+                  className="rounded-lg border border-white/10 bg-white/5 p-2.5 light:border-slate-200 light:bg-white"
+                  key={line.id}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2 text-xs">
+                      <span className="shrink-0 text-slate-400 light:text-slate-500">
+                        خط {formatDecimal(line.line_no)}
+                      </span>
+                      <span className="truncate font-black text-slate-200 light:text-slate-800">
+                        {formatMoneyAmount(line.total_amount_snapshot)}
+                      </span>
+                    </div>
+                    {renderLineActions(line)}
+                  </div>
+
+                  {editingLineId === line.id ? (
+                    <label className="mt-2 flex items-center gap-2 rounded-lg bg-slate-950/30 p-2 text-xs text-slate-400 light:bg-slate-50 light:text-slate-500">
+                      مقدار
+                      <input
+                        autoFocus
+                        className={classNames(inputClasses, "h-9 min-w-0 flex-1 text-left")}
+                        dir="ltr"
+                        inputMode="decimal"
+                        onChange={(event) => setEditingQuantity(event.target.value)}
+                        value={editingQuantity}
+                      />
+                    </label>
+                  ) : null}
+
+                  <div className="mt-2 space-y-2">
+                    {displayRows.map((row, index) => (
+                      <div
+                        className="rounded-lg border border-white/8 bg-slate-950/25 p-2.5 light:border-slate-200 light:bg-slate-50"
+                        key={`${row.parentLineId}-${row.rowCode ?? "row"}-${index}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-mono text-xs font-bold text-brand-300 light:text-brand-700">
+                            {row.rowCode ?? "—"}
+                          </span>
+                          <span className="text-xs font-black text-emerald-200 light:text-emerald-700">
+                            {formatMoneyAmount(row.total)}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 break-words text-sm font-bold leading-6 text-slate-100 light:text-slate-900">
+                          {cleanDisplayText(row.title, "شرح ثبت نشده")}
+                        </p>
+                        <div className="mt-1.5 flex items-center justify-between gap-3 text-[11px] text-slate-400 light:text-slate-500">
+                          <span>
+                            {formatDecimal(row.quantity)} {cleanDisplayText(row.unit, "")}
+                          </span>
+                          <span className="min-w-0 truncate text-left">
+                            {row.isStarredPrice ? "★ ستاره‌دار" : "بهای واحد"} ·{" "}
+                            {hasPositiveMoneyValue(row.unitPrice)
+                              ? formatMoneyAmount(row.unitPrice)
+                              : "-"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
+
+            {document.chapter_totals.length > 0 ? (
+              <details className="rounded-lg border border-white/10 bg-white/5 p-3 light:border-slate-200 light:bg-white">
+                <summary className="flex min-h-11 cursor-pointer items-center text-sm font-black text-slate-200 light:text-slate-800">
+                  جمع فصل‌ها
+                </summary>
+                <div className="mt-3 space-y-2">
+                  {document.chapter_totals.map((chapterTotal) => (
+                    <div
+                      className="rounded-lg bg-slate-950/30 p-2.5 text-xs light:bg-slate-50"
+                      key={chapterTotal.id}
+                    >
+                      <p className="font-bold text-slate-200 light:text-slate-800">
+                        {chapterTotal.chapter_code_snapshot} - {chapterTotal.chapter_title_snapshot}
+                      </p>
+                      <p className="mt-1 text-slate-400 light:text-slate-500">
+                        جمع: {formatMoneyAmount(chapterTotal.final_total_amount)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ) : null}
+          </div>
+
+          <div className="hidden overflow-hidden rounded-lg border border-white/10 light:border-slate-200 sm:block">
             <div className="overflow-x-auto">
               <div className="min-w-[1120px]">
                 <div className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 bg-white/7 px-4 py-3 text-xs font-bold text-slate-300 light:bg-slate-50 light:text-slate-600">
@@ -667,103 +875,72 @@ export function CurrentDocumentPanel({
                     هنوز خطی به صورت‌بها اضافه نشده است.
                   </div>
                 ) : null}
-                <div className="max-h-[36vh] overflow-y-auto [scrollbar-color:rgba(37,99,235,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]" data-tour="finalize-rows">
-                  {lines.map((line: FinancialDocumentLine) => (
-                    <div
-                      className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-200 light:border-slate-200 light:text-slate-700"
-                      key={line.id}
-                    >
-                      <span>{line.line_no}</span>
-                      <span className="font-mono text-brand-300 light:text-brand-700">
-                        {line.row_code_snapshot}
-                      </span>
-                      <span
-                        className="truncate"
-                        title={cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
-                      >
-                        {cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
-                      </span>
-                      <span>
-                        {editingLineId === line.id ? (
-                          <input
-                            className={classNames(inputClasses, "h-9 text-left")}
-                            dir="ltr"
-                            inputMode="decimal"
-                            onChange={(event) => setEditingQuantity(event.target.value)}
-                            value={editingQuantity}
-                          />
-                        ) : (
-                          line.quantity
-                        )}
-                      </span>
-                      <span>{cleanDisplayText(line.unit_snapshot, "—")}</span>
-                      <span>{formatMoneyAmount(line.unit_price_snapshot)}</span>
-                      <span>{formatMoneyAmount(line.base_amount_snapshot)}</span>
-                      <span>{formatMoneyAmount(line.coefficient_amount_snapshot)}</span>
-                      <span className="font-bold text-slate-100 light:text-slate-900">
-                        {formatMoneyAmount(line.total_amount_snapshot)}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {editingLineId === line.id ? (
-                          <>
-                            <button
-                              aria-label="ذخیره مقدار"
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-45 light:text-emerald-700"
-                              disabled={isActionBusy || isLocked}
-                              onClick={() => void handleSaveLine(line)}
-                              title="ذخیره"
-                              type="button"
+                <div className="max-h-[36vh] overflow-y-auto [scrollbar-color:rgba(37,99,235,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]">
+                  {lines.map((line: FinancialDocumentLine) => {
+                    const displayRows = getLineDisplayRows(line);
+                    const isExpanded =
+                      displayRows.length > 1 ||
+                      displayRows.some((row) => row.rowCode !== line.row_code_snapshot);
+
+                    return (
+                      <div key={line.id}>
+                        {displayRows.map((row, index) => (
+                          <div
+                            className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-200 light:border-slate-200 light:text-slate-700"
+                            key={`${row.parentLineId}-${row.rowCode ?? "row"}-${index}`}
+                          >
+                            <span>{index === 0 ? line.line_no : ""}</span>
+                            <span className="font-mono text-brand-300 light:text-brand-700">
+                              {row.rowCode ?? "—"}
+                            </span>
+                            <span
+                              className="truncate"
+                              title={cleanDisplayText(row.title, "شرح ثبت نشده")}
                             >
-                              <Save className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              aria-label="انصراف"
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-slate-300 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-45 light:border-slate-200 light:bg-white light:text-slate-600"
-                              disabled={isActionBusy}
-                              onClick={() => {
-                                setEditingLineId(null);
-                                setEditingQuantity("");
-                              }}
-                              title="انصراف"
-                              type="button"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              aria-label="ویرایش مقدار"
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-emerald-500/10 hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45"
-                              disabled={isActionBusy || isLocked}
-                              onClick={() => startEditingLine(line)}
-                              title="ویرایش مقدار"
-                              type="button"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              aria-label="حذف خط"
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-danger-500/10 hover:text-danger-400 disabled:cursor-not-allowed disabled:opacity-45"
-                              disabled={isActionBusy || isLocked}
-                              onClick={() => void handleDeleteLine(line)}
-                              title="حذف خط"
-                              type="button"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </>
-                        )}
+                              {cleanDisplayText(row.title, "شرح ثبت نشده")}
+                            </span>
+                            <span>
+                              {editingLineId === line.id && index === 0 ? (
+                                <input
+                                  className={classNames(inputClasses, "h-9 text-left")}
+                                  dir="ltr"
+                                  inputMode="decimal"
+                                  onChange={(event) => setEditingQuantity(event.target.value)}
+                                  value={editingQuantity}
+                                />
+                              ) : (
+                                formatDecimal(row.quantity)
+                              )}
+                            </span>
+                            <span>{cleanDisplayText(row.unit, "—")}</span>
+                            <span>
+                              {row.isStarredPrice ? "★ ستاره‌دار · " : "قیمت رسمی · "}
+                              {hasPositiveMoneyValue(row.unitPrice) ? formatMoneyAmount(row.unitPrice) : "-"}
+                            </span>
+                            <span>
+                              {formatMoneyAmount(isExpanded ? row.total : line.base_amount_snapshot)}
+                            </span>
+                            <span>
+                              {isExpanded
+                                ? "—"
+                                : formatMoneyAmount(line.coefficient_amount_snapshot)}
+                            </span>
+                            <span className="font-bold text-slate-100 light:text-slate-900">
+                              {formatMoneyAmount(isExpanded ? row.total : line.total_amount_snapshot)}
+                            </span>
+                            {index === 0 ? renderLineActions(line) : <span />}
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
 
           {document.chapter_totals.length > 0 ? (
-            <details className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50">
+            <details className="hidden rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50 sm:block">
               <summary className="cursor-pointer text-sm font-black text-white light:text-slate-950">
                 جمع فصل‌ها
               </summary>
