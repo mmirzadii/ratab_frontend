@@ -9,7 +9,11 @@
     "lint": "npm run generate:api && eslint .",
     "preview": "vite preview",
     "generate:api": "node scripts/generate-api.mjs",
-    "validate:docs": "node scripts/validate-doc-structure.mjs"
+    "validate:docs": "node scripts/validate-doc-structure.mjs",
+    "test:auth-password": "node --experimental-strip-types --test src/features/auth/signupPassword.test.ts",
+    "test:membership-access": "node --experimental-strip-types --test src/features/companies/membershipAccess.test.ts",
+    "test:invitations": "node --experimental-strip-types --test src/features/companies/membershipAccess.test.ts src/features/companies/companyInvitations.test.ts",
+    "test:company-groups": "node --experimental-strip-types --test src/features/companies/groupKinds.test.ts"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.6",

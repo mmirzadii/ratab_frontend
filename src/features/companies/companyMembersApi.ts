@@ -6,6 +6,7 @@ export type CompanyMemberAddRequest = components["schemas"]["CompanyMemberAddReq
 export type PaginatedCompanyMemberList = components["schemas"]["PaginatedCompanyMemberList"];
 export type PatchedCompanyMemberRoleRequest = components["schemas"]["PatchedCompanyMemberRoleRequest"];
 export type RoleEnum = components["schemas"]["RoleEnum"];
+export type MembershipActionResponse = components["schemas"]["MembershipActionResponse"];
 
 export const companyMembersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -20,7 +21,7 @@ export const companyMembersApi = baseApi.injectEndpoints({
       ]
     }),
     addCompanyMember: builder.mutation<
-      CompanyMember,
+      MembershipActionResponse,
       { companyId: number; body: CompanyMemberAddRequest }
     >({
       query: ({ companyId, body }) => ({
@@ -28,9 +29,26 @@ export const companyMembersApi = baseApi.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: (_result, _error, { companyId }) => [
-        { type: "CompanyMember", id: `COMPANY-${companyId}` }
-      ]
+      invalidatesTags: (result, _error, { companyId }) => {
+        const tags: Array<{
+          type: "CompanyMember" | "CompanyInvitation" | "Company" | "CompanyGroup" | "GroupMessage";
+          id?: string | number;
+        }> = [
+          { type: "CompanyMember", id: `COMPANY-${companyId}` },
+          { type: "CompanyInvitation", id: "LIST" },
+          { type: "Company", id: "LIST" }
+        ];
+        const groupId =
+          result?.group?.id ?? result?.group_membership?.group_id ?? result?.invitation?.target_group_id;
+        if (groupId != null) {
+          tags.push({ type: "CompanyGroup", id: `MEMBERS-${groupId}` });
+          tags.push({ type: "GroupMessage", id: `GROUP-${groupId}` });
+        }
+        if (result?.invitation?.id != null) {
+          tags.push({ type: "CompanyInvitation", id: result.invitation.id });
+        }
+        return tags;
+      }
     }),
     updateCompanyMemberRole: builder.mutation<
       CompanyMember,

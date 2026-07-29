@@ -1,4 +1,10 @@
 import { looksLikeHtmlPayload } from "../../features/auth/csrf";
+import {
+  formatMembershipAccessMessage,
+  isAlreadyCompanyMemberError,
+  isAlreadyGroupMemberError,
+  isGroupMembershipRequiredError
+} from "../../features/companies/membershipAccess";
 
 const DEFAULT_FALLBACK = "در ارتباط با سرور خطایی رخ داد. لطفاً دوباره تلاش کنید.";
 const CSRF_ORIGIN_FALLBACK =
@@ -50,6 +56,14 @@ function messageFromJsonData(data: object): string | null {
 
 export function getApiErrorMessage(error: unknown, fallback = DEFAULT_FALLBACK): string {
   const status = statusOf(error);
+
+  if (
+    isGroupMembershipRequiredError(error) ||
+    isAlreadyCompanyMemberError(error) ||
+    isAlreadyGroupMemberError(error)
+  ) {
+    return formatMembershipAccessMessage(error, fallback);
+  }
 
   if (typeof error === "object" && error && "data" in error) {
     const data = (error as { data?: unknown }).data;

@@ -24,7 +24,16 @@ export const companyApi = baseApi.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: [{ type: "Company", id: "LIST" }]
+      invalidatesTags: (result) => [
+        { type: "Company", id: "LIST" },
+        ...(result
+          ? [
+              { type: "Company" as const, id: result.id },
+              { type: "CompanyGroup" as const, id: `COMPANY-${result.id}` },
+              { type: "CompanyMember" as const, id: `COMPANY-${result.id}` }
+            ]
+          : [])
+      ]
     }),
     retrieveCompany: builder.query<Company, number>({
       query: (companyId) => `/api/companies/${companyId}/`,

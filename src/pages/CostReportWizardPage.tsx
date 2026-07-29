@@ -268,26 +268,49 @@ export function CostReportWizardPage() {
     return idx >= 0 && idx < builderOrder.length - 1 ? builderOrder[idx + 1] : null;
   }
 
+  function navigateBackToCompany(document?: FinancialDocument | null) {
+    const returnGroupId = builderState?.returnToGroupId;
+    const doc = document ?? createdDocument;
+    navigate(`/companies/${parsedCompanyId}`, {
+      state:
+        doc && returnGroupId != null
+          ? {
+              focusSection: "messages",
+              focusGroupId: returnGroupId,
+              pendingFinancialDocumentAttachment: {
+                documentId: doc.id,
+                title: cleanDisplayText(doc.title || doc.report_title, "صورت‌بها"),
+                documentNumber: doc.document_number ?? null
+              }
+            }
+          : doc
+            ? {
+                focusSection: "messages",
+                pendingFinancialDocumentAttachment: {
+                  documentId: doc.id,
+                  title: cleanDisplayText(doc.title || doc.report_title, "صورت‌بها"),
+                  documentNumber: doc.document_number ?? null
+                }
+              }
+            : returnGroupId != null
+              ? { focusSection: "messages", focusGroupId: returnGroupId }
+              : undefined
+    });
+  }
+
   function handleWizardBack() {
     const prev = getPrevSection(activeSection);
     if (prev) {
+      // Skip locked project step when returning
+      if (prev === "project" && builderState?.lockProject && builderState.existingProject) {
+        navigateBackToCompany(createdDocument);
+        return;
+      }
       handleBuilderSectionSelect(prev);
     } else if (createdDocument) {
-      navigate(`/companies/${parsedCompanyId}`, {
-        state: {
-          focusSection: "messages",
-          pendingFinancialDocumentAttachment: {
-            documentId: createdDocument.id,
-            title: cleanDisplayText(
-              createdDocument.title || createdDocument.report_title,
-              "صورت‌بها در حال ویرایش"
-            ),
-            documentNumber: createdDocument.document_number ?? null
-          }
-        }
-      });
+      navigateBackToCompany(createdDocument);
     } else {
-      navigate(`/companies/${parsedCompanyId}`);
+      navigateBackToCompany(null);
     }
   }
 
@@ -409,7 +432,7 @@ export function CostReportWizardPage() {
     try {
       await lockDocument(createdDocument.id).unwrap();
       dispatch(addToast({ message: "صورت‌بها با موفقیت نهایی شد.", type: "success" }));
-      navigate(`/companies/${parsedCompanyId}`);
+      navigateBackToCompany(createdDocument);
     } catch (error) {
       dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
     }
@@ -560,7 +583,7 @@ export function CostReportWizardPage() {
             {activeSection === "project" ? (
               <ProjectSelectorSection
                 companyId={parsedCompanyId}
-                isLocked={Boolean(builderState?.existingProject)}
+                isLocked={Boolean(builderState?.existingProject) || Boolean(builderState?.lockProject)}
                 onSelect={setCreatedProject}
                 selectedProject={createdProject}
               />

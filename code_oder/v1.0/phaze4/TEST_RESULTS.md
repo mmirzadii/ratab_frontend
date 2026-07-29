@@ -71,3 +71,25 @@ Manual checklist for review:
 | Production build | Pass |
 | Automated messaging/routing tests | Not available |
 | Live messaging QA | Manual / pending reviewer |
+
+---
+
+## Post-v1 correction re-check (2026-07-28)
+
+### Membership-access + Persian membership error mapping
+
+```text
+Command: npm run test:membership-access
+Exit code: 0
+Asserts:
+  - Active membership in this group is required. → approved Persian
+  - no raw HTML in mapped messages
+  - already company/group member → informative Persian
+  - OpenAPI has no invented invitation paths
+```
+
+Also re-validated: `npm run test:auth-password`, `npm run lint`, `npm run build` (all exit 0).
+
+Manual messaging regression still required for: gate skips message fetch for non-members; after direct group add, messages load; auth/company/group flows unchanged.
+
+

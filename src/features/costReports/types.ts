@@ -8,6 +8,10 @@ export type PricebookItemType = "single" | "multi-input" | "range-based" | "item
 export type CostReportBuilderState = {
   existingDocument?: FinancialDocument;
   existingProject?: Project;
+  /** Return to this conversation after wizard exit and attach the document. */
+  returnToGroupId?: number;
+  /** When true, project step is skipped/locked to existingProject. */
+  lockProject?: boolean;
 };
 
 export type WizardFormState = {

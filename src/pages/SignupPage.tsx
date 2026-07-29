@@ -9,6 +9,13 @@ import {
   useSignupVerifyMutation
 } from "../features/auth/authApi";
 import { sessionAuthenticated } from "../features/auth/authSlice";
+import {
+  SIGNUP_PASSWORD_MIN_LENGTH_MESSAGE,
+  SIGNUP_PASSWORD_WEAK_WARNING,
+  classifySignupCompleteError,
+  isSignupPasswordWeak,
+  meetsSignupPasswordMinLength
+} from "../features/auth/signupPassword";
 import { Button } from "../shared/components/Button";
 import { GlassCard } from "../shared/components/GlassCard";
 import { ThemeToggle } from "../shared/components/ThemeToggle";
@@ -35,6 +42,9 @@ export function SignupPage() {
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [passwordFieldError, setPasswordFieldError] = useState<string | null>(null);
+  const [passwordConfirmError, setPasswordConfirmError] = useState<string | null>(null);
+  const [passwordSubmitAttempted, setPasswordSubmitAttempted] = useState(false);
 
   const [signupStart, { isLoading: starting }] = useSignupStartMutation();
   const [signupVerify, { isLoading: verifying }] = useSignupVerifyMutation();
@@ -43,6 +53,10 @@ export function SignupPage() {
   const normalizedPhone = useMemo(() => normalizeNumberInput(phoneNumber), [phoneNumber]);
   const codeDigits = useMemo(() => digitsOnly(verificationCode), [verificationCode]);
   const isBusy = starting || verifying || completing;
+  const passwordTooShort = !meetsSignupPasswordMinLength(password);
+  const showMinLengthError =
+    passwordTooShort && (passwordSubmitAttempted || password.length > 0);
+  const showWeakWarning = !passwordTooShort && isSignupPasswordWeak(password);
 
   if (status === "unknown") {
     return (
@@ -56,6 +70,19 @@ export function SignupPage() {
 
   if (status === "authenticated") {
     return <Navigate replace to="/companies" />;
+  }
+
+  function resetSignupToPhone(message: string | null = null) {
+    setStep("phone");
+    setChallengeId("");
+    setVerificationCode("");
+    setSignupTicket("");
+    setPassword("");
+    setPasswordConfirmation("");
+    setPasswordFieldError(null);
+    setPasswordConfirmError(null);
+    setPasswordSubmitAttempted(false);
+    setFormError(message);
   }
 
   async function handlePhoneStep(event: FormEvent<HTMLFormElement>) {
@@ -93,6 +120,11 @@ export function SignupPage() {
         verification_code: codeDigits
       }).unwrap();
       setSignupTicket(result.signup_ticket);
+      setPassword("");
+      setPasswordConfirmation("");
+      setPasswordFieldError(null);
+      setPasswordConfirmError(null);
+      setPasswordSubmitAttempted(false);
       setStep("password");
     } catch (error) {
       const statusCode =
@@ -100,11 +132,7 @@ export function SignupPage() {
           ? Number((error as { status?: unknown }).status)
           : null;
       if (statusCode === 400) {
-        setFormError("کد یا چالش منقضی/نامعتبر است. ثبت‌نام را از ابتدا شروع کنید.");
-        setStep("phone");
-        setChallengeId("");
-        setVerificationCode("");
-        setSignupTicket("");
+        resetSignupToPhone("کد یا چالش منقضی/نامعتبر است. ثبت‌نام را از ابتدا شروع کنید.");
         return;
       }
       setFormError(getApiErrorMessage(error, "تأیید کد ناموفق بود."));
@@ -114,14 +142,22 @@ export function SignupPage() {
   async function handleCompleteStep(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
+    setPasswordFieldError(null);
+    setPasswordConfirmError(null);
+    setPasswordSubmitAttempted(true);
 
-    if (!password || !passwordConfirmation) {
-      setFormError("رمز عبور و تکرار آن را وارد کنید.");
+    if (!meetsSignupPasswordMinLength(password)) {
+      setPasswordFieldError(SIGNUP_PASSWORD_MIN_LENGTH_MESSAGE);
+      return;
+    }
+
+    if (!passwordConfirmation) {
+      setPasswordConfirmError("تکرار رمز عبور را وارد کنید.");
       return;
     }
 
     if (password !== passwordConfirmation) {
-      setFormError("رمز عبور و تکرار آن یکسان نیست.");
+      setPasswordConfirmError("رمز عبور و تکرار آن یکسان نیست.");
       return;
     }
 
@@ -135,21 +171,23 @@ export function SignupPage() {
       dispatch(sessionAuthenticated({ user: result.user, highlightCreateCompany: true }));
       navigate("/companies", { replace: true });
     } catch (error) {
-      const statusCode =
-        typeof error === "object" && error && "status" in error
-          ? Number((error as { status?: unknown }).status)
-          : null;
-      if (statusCode === 400) {
-        setFormError("بلیط ثبت‌نام منقضی یا نامعتبر است. از ابتدا شروع کنید.");
-        setStep("phone");
-        setChallengeId("");
-        setVerificationCode("");
-        setSignupTicket("");
-        setPassword("");
-        setPasswordConfirmation("");
+      const classified = classifySignupCompleteError(
+        error,
+        getApiErrorMessage(error, "تکمیل ثبت‌نام ناموفق بود.")
+      );
+      if (classified.kind === "password") {
+        setPasswordFieldError(classified.message);
         return;
       }
-      setFormError(getApiErrorMessage(error, "تکمیل ثبت‌نام ناموفق بود."));
+      if (classified.kind === "password_confirmation") {
+        setPasswordConfirmError(classified.message);
+        return;
+      }
+      if (classified.kind === "ticket") {
+        resetSignupToPhone(classified.message);
+        return;
+      }
+      setFormError(classified.message);
     }
   }
 
@@ -288,11 +326,24 @@ export function SignupPage() {
                       className="h-10 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-slate-500"
                       dir="ltr"
                       id="signup-password"
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        setPasswordFieldError(null);
+                        setFormError(null);
+                      }}
                       type="password"
                       value={password}
                     />
                   </div>
+                  {passwordFieldError || showMinLengthError ? (
+                    <p className="mt-2 text-sm font-bold text-rose-300" role="alert">
+                      {passwordFieldError || SIGNUP_PASSWORD_MIN_LENGTH_MESSAGE}
+                    </p>
+                  ) : showWeakWarning ? (
+                    <p className="mt-2 text-sm font-bold text-amber-300" role="status">
+                      {SIGNUP_PASSWORD_WEAK_WARNING}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div>
@@ -306,16 +357,29 @@ export function SignupPage() {
                       className="h-10 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-slate-500"
                       dir="ltr"
                       id="signup-password-confirm"
-                      onChange={(event) => setPasswordConfirmation(event.target.value)}
+                      onChange={(event) => {
+                        setPasswordConfirmation(event.target.value);
+                        setPasswordConfirmError(null);
+                        setFormError(null);
+                      }}
                       type="password"
                       value={passwordConfirmation}
                     />
                   </div>
+                  {passwordConfirmError ? (
+                    <p className="mt-2 text-sm font-bold text-rose-300" role="alert">
+                      {passwordConfirmError}
+                    </p>
+                  ) : null}
                 </div>
 
                 {formError ? <p className="text-sm font-bold text-amber-200">{formError}</p> : null}
 
-                <Button className="w-full text-base" disabled={isBusy} type="submit">
+                <Button
+                  className="w-full text-base"
+                  disabled={isBusy || passwordTooShort}
+                  type="submit"
+                >
                   <CheckCircle2 className="h-5 w-5" />
                   {completing ? "در حال ایجاد حساب" : "تکمیل ثبت‌نام"}
                 </Button>

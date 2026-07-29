@@ -38,7 +38,21 @@ export const projectApi = baseApi.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: [{ type: "Project", id: "LIST" }]
+      invalidatesTags: (result, _error, { companyId }) => {
+        const tags: Array<{ type: "Project" | "CompanyGroup" | "GroupMessage"; id: string | number }> = [
+          { type: "Project", id: "LIST" },
+          { type: "CompanyGroup", id: `COMPANY-${companyId}` }
+        ];
+        if (result?.id != null) {
+          tags.push({ type: "Project", id: result.id });
+        }
+        if (result?.group_id != null) {
+          tags.push({ type: "CompanyGroup", id: result.group_id });
+          tags.push({ type: "CompanyGroup", id: `MEMBERS-${result.group_id}` });
+          tags.push({ type: "GroupMessage", id: `GROUP-${result.group_id}` });
+        }
+        return tags;
+      }
     })
   })
 });

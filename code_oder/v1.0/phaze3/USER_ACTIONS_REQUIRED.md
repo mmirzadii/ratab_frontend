@@ -17,3 +17,13 @@
 No hard frontend blocker for Phase 3 compile/lint/build.
 
 Optional product/process gap: no automated frontend test suite yet, so role UX regressions rely on manual QA until a later phase adds tests.
+
+---
+
+## Post-v1 — invitation workflow blocker
+
+**Resolved (same day):** invitation endpoints are present in the updated `backend_docs/current/OPENAPI.yaml`. Frontend now lists pending invitations on `/companies` and supports accept/reject.
+
+**Manual QA still recommended:** invite User B from Members, log in as B, confirm pending section appears, accept, enter company/messages without logout.
+
+

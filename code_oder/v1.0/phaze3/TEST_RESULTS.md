@@ -70,3 +70,19 @@ Manual checklist for review (not executed end-to-end in this phase run):
 | Production build | Pass |
 | Automated company/role/UI/routing tests | Not available |
 | Live multi-role API QA | Manual / pending reviewer |
+
+---
+
+## Post-v1 correction re-check (2026-07-28)
+
+### Focused membership-access tests
+
+```text
+Command: npm run test:invitations
+Exit code: 0
+Result: 15 tests passed (invitation outcome messaging, OpenAPI paths, list normalization, accept cache tags)
+```
+
+Also: `npm run test:auth-password` (when run), `npx tsc -b`, focused eslint, `npm run build` (exit 0).
+
+

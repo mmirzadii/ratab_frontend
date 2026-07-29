@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import {
   Ban,
   FileText,
+  Info,
   Loader2,
   MessageCircle,
   Network,
@@ -21,11 +22,11 @@ import { classNames } from "../../shared/utils/classNames";
 import { getApiErrorMessage } from "../../shared/utils/apiError";
 import { getListResults } from "../../shared/utils/listResults";
 import {
-  AttachFinancialDocumentModal,
+  FinancialDocumentActionModal,
   type SelectedFinancialDocumentAttachment
 } from "./AttachFinancialDocumentModal";
 import { useUploadCompanyFileMutation } from "./companyFilesApi";
-import { useListCompanyGroupsQuery } from "./companyGroupsApi";
+import { useListCompanyGroupsQuery, useListCompanyGroupMembersQuery } from "./companyGroupsApi";
 import { useListCompanyMembersQuery } from "./companyMembersApi";
 import {
   formatQuotaResetHint,
@@ -36,9 +37,20 @@ import {
   useLazyListGroupMessagesQuery
 } from "./companyMessagesApi";
 import { findCurrentMembership } from "./companyPermissions";
+import {
+  classifyCompanyGroup,
+  findLinkedProject,
+  groupKindLabel,
+  resolveGroupDisplayName
+} from "./groupKinds";
 import { MessageAttachmentCard } from "./MessageAttachmentCard";
 import {
-  formatQuotaResetsAt,
+  GROUP_MEMBERSHIP_REQUIRED_MESSAGE,
+  formatMembershipAccessMessage,
+  isGroupMembershipRequiredError
+} from "./membershipAccess";
+import { useListCompanyProjectsQuery } from "../projects/projectApi";
+import {
   formatQuotaUsageLabel,
   useGetMessageQuotaQuery
 } from "../subscription/subscriptionApi";
@@ -102,12 +114,23 @@ export function MessagesSection({
   companyId,
   highlightAddAction,
   seedFinancialDocumentAttachment,
-  onSeedFinancialDocumentConsumed
+  onSeedFinancialDocumentConsumed,
+  selectedGroupId: controlledGroupId,
+  onSelectedGroupIdChange,
+  hideGroupPicker = false,
+  onOpenDetails,
+  openFinancialDocumentRequestId = 0
 }: {
   companyId: number;
   highlightAddAction?: boolean;
   seedFinancialDocumentAttachment?: SeedFinancialDocumentAttachment | null;
   onSeedFinancialDocumentConsumed?: () => void;
+  selectedGroupId?: number | null;
+  onSelectedGroupIdChange?: (groupId: number) => void;
+  hideGroupPicker?: boolean;
+  onOpenDetails?: () => void;
+  /** Increment from parent (e.g. drawer) to open the shared financial-document selector. */
+  openFinancialDocumentRequestId?: number;
 }) {
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
@@ -123,14 +146,23 @@ export function MessagesSection({
     refetch: refetchGroups
   } = useListCompanyGroupsQuery(companyId);
   const { data: membersData } = useListCompanyMembersQuery(companyId);
+  const { data: projects = [] } = useListCompanyProjectsQuery(companyId);
   const members = getListResults(membersData);
   const myMembership = findCurrentMembership(members, authUser?.id);
   const myMemberId = myMembership?.is_active ? myMembership.id : null;
 
   const groups = getListResults(groupsData).filter((group) => group.is_active);
-  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [internalGroupId, setInternalGroupId] = useState<number | null>(null);
+  const selectedGroupId = controlledGroupId !== undefined ? controlledGroupId : internalGroupId;
+  const setSelectedGroupId = (groupId: number) => {
+    onSelectedGroupIdChange?.(groupId);
+    if (controlledGroupId === undefined) {
+      setInternalGroupId(groupId);
+    }
+  };
   const effectiveGroupId = selectedGroupId ?? groups[0]?.id ?? null;
   const activeGroup = groups.find((group) => group.id === effectiveGroupId) ?? null;
+  const linkedProject = activeGroup ? findLinkedProject(activeGroup, projects) : null;
 
   const [fetchMessages] = useLazyListGroupMessagesQuery();
   const [createMessage, { isLoading: isSending }] = useCreateGroupMessageMutation();
@@ -147,13 +179,44 @@ export function MessagesSection({
   const [quotaBlockedHint, setQuotaBlockedHint] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
-  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+
+  const {
+    data: groupMembershipsData,
+    error: groupMembershipsError,
+    isFetching: isFetchingGroupMemberships
+  } = useListCompanyGroupMembersQuery(effectiveGroupId ?? 0, {
+    skip: effectiveGroupId == null
+  });
+  const groupMemberships = getListResults(groupMembershipsData);
+  const isActiveGroupMember =
+    myMemberId != null &&
+    groupMemberships.some(
+      (membership) => membership.is_active && membership.member_id === myMemberId
+    );
+  const membershipGateKnown =
+    effectiveGroupId == null ||
+    (!isFetchingGroupMemberships &&
+      (groupMembershipsData != null || groupMembershipsError != null));
+  // Only gate on a successful memberships list. Random list failures must not
+  // permanently block message bootstrap; membership-required errors use membershipDeniedByError.
+  const membershipDeniedByGate =
+    membershipGateKnown &&
+    effectiveGroupId != null &&
+    myMemberId != null &&
+    groupMembershipsData != null &&
+    !isActiveGroupMember;
+  const membershipDeniedByError =
+    isGroupMembershipRequiredError(loadError) ||
+    isGroupMembershipRequiredError(groupMembershipsError);
+  const membershipDenied = membershipDeniedByGate || membershipDeniedByError;
 
   const lastPage =
     totalCount > 0 ? Math.max(1, Math.ceil(totalCount / GROUP_MESSAGE_PAGE_SIZE)) : 1;
   const canLoadEarlier = oldestLoadedPage != null && oldestLoadedPage > 1;
-  const canCompose = Boolean(activeGroup) && !loadError && !quotaBlockedHint;
+  const canCompose =
+    Boolean(activeGroup) && !loadError && !quotaBlockedHint && !membershipDenied;
   const canSend =
     canCompose &&
     !isSending &&
@@ -205,7 +268,51 @@ export function MessagesSection({
   }, [onSeedFinancialDocumentConsumed, seedFinancialDocumentAttachment]);
 
   useEffect(() => {
+    if (!isAddMenuOpen) return;
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node | null;
+      if (target && addMenuRef.current && !addMenuRef.current.contains(target)) {
+        setIsAddMenuOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsAddMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAddMenuOpen]);
+
+  useEffect(() => {
+    if (openFinancialDocumentRequestId <= 0) return;
+    setIsAddMenuOpen(false);
+    setIsDocumentModalOpen(true);
+  }, [openFinancialDocumentRequestId]);
+
+  function openFinancialDocumentFlow() {
+    setIsAddMenuOpen(false);
+    setIsDocumentModalOpen(true);
+  }
+
+  useEffect(() => {
     if (effectiveGroupId == null) {
+      setMessages([]);
+      setOldestLoadedPage(null);
+      setTotalCount(0);
+      setLoadError(null);
+      setIsBootstrapping(false);
+      return;
+    }
+
+    // Do not repeatedly request messages when the current user is not an active group member.
+    if (!membershipGateKnown) {
+      setIsBootstrapping(true);
+      return;
+    }
+    if (membershipDeniedByGate) {
       setMessages([]);
       setOldestLoadedPage(null);
       setTotalCount(0);
@@ -263,7 +370,13 @@ export function MessagesSection({
     return () => {
       cancelled = true;
     };
-  }, [effectiveGroupId, fetchMessages, reloadToken]);
+  }, [
+    effectiveGroupId,
+    fetchMessages,
+    membershipDeniedByGate,
+    membershipGateKnown,
+    reloadToken
+  ]);
 
   useEffect(() => {
     if (!shouldStickToBottomRef.current || !listRef.current) {
@@ -271,31 +384,6 @@ export function MessagesSection({
     }
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages, isBootstrapping, effectiveGroupId]);
-
-  useEffect(() => {
-    if (!isAddMenuOpen) {
-      return;
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) {
-        setIsAddMenuOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsAddMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isAddMenuOpen]);
 
   async function handleLoadEarlier() {
     if (!effectiveGroupId || oldestLoadedPage == null || oldestLoadedPage <= 1 || isLoadingEarlier) {
@@ -498,35 +586,83 @@ export function MessagesSection({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 border-b border-white/10 px-3 py-2 sm:px-5 light:border-slate-200">
-        <label className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-          <span className="text-xs font-bold text-slate-400 light:text-slate-500">گروه فعال</span>
+    <div className="flex min-h-0 flex-1 flex-col bg-transparent">
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-white/8 px-3 light:border-slate-200">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/8 text-slate-300 light:bg-slate-100 light:text-slate-600">
+          <Network className="h-4 w-4" />
+        </span>
+        <button
+          className="min-w-0 flex-1 text-right"
+          onClick={onOpenDetails}
+          type="button"
+        >
+          <p className="truncate text-sm font-black text-white light:text-slate-950">
+            {activeGroup
+              ? resolveGroupDisplayName(activeGroup, projects)
+              : "گروهی انتخاب نشده"}
+          </p>
+          {activeGroup ? (
+            <p className="truncate text-[11px] text-slate-400 light:text-slate-500">
+              {groupKindLabel(classifyCompanyGroup(activeGroup, projects))}
+            </p>
+          ) : null}
+        </button>
+        {!hideGroupPicker ? (
           <select
-            className="h-10 w-full rounded-lg border border-white/10 bg-slate-950/45 px-3 text-sm font-bold text-slate-100 outline-none transition focus:border-emerald-300/45 sm:max-w-sm light:border-slate-200 light:bg-white light:text-slate-900"
+            aria-label="گروه فعال"
+            className="h-9 max-w-[11rem] rounded-lg border border-white/10 bg-slate-950/45 px-2 text-xs font-bold text-slate-100 outline-none sm:max-w-xs light:border-slate-200 light:bg-white light:text-slate-900"
             onChange={(event) => setSelectedGroupId(Number(event.target.value))}
             value={effectiveGroupId ?? ""}
           >
             {groups.map((group) => (
               <option key={group.id} value={group.id}>
-                {group.name}
-                {group.is_default ? " (پیش‌فرض)" : ""}
+                {resolveGroupDisplayName(group, projects)}
               </option>
             ))}
           </select>
-        </label>
-        <p className="mt-2 text-xs text-slate-400 light:text-slate-500">
-          پیام و پیوست فقط برای اعضای فعال گروه در دسترس است. فایل‌ها فقط از مسیرهای مجاز سرور باز/دانلود
-          می‌شوند.
-        </p>
+        ) : null}
+        {onOpenDetails ? (
+          <button
+            aria-label="جزئیات گروه"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
+            onClick={onOpenDetails}
+            type="button"
+          >
+            <Info className="h-4 w-4" />
+          </button>
+        ) : null}
       </div>
 
       <div
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:p-5 sm:pb-3 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]"
+        className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 py-3 sm:px-4 [scrollbar-color:rgba(148,163,184,.35)_transparent] [scrollbar-width:thin]"
         data-tour="messages-area"
         ref={listRef}
       >
-        {isBootstrapping ? (
+        {membershipDenied ? (
+          <EmptyState
+            action={
+              <Link
+                className={classNames(
+                  "inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold transition",
+                  "border border-white/10 bg-white/8 text-slate-100 hover:border-white/20 hover:bg-white/12",
+                  "light:border-slate-200 light:bg-white light:text-slate-800 light:hover:bg-slate-50"
+                )}
+                state={{ focusInvitations: true }}
+                to="/companies"
+              >
+                مشاهده دعوت‌های عضویت
+              </Link>
+            }
+            description={
+              isGroupMembershipRequiredError(loadError) ||
+              isGroupMembershipRequiredError(groupMembershipsError)
+                ? formatMembershipAccessMessage(loadError ?? groupMembershipsError)
+                : GROUP_MEMBERSHIP_REQUIRED_MESSAGE
+            }
+            icon={<Ban className="h-7 w-7" />}
+            title="عضویت فعال گروه لازم است"
+          />
+        ) : isBootstrapping ? (
           <div className="flex flex-1 items-center justify-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
             <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
             در حال دریافت پیام‌ها
@@ -539,7 +675,11 @@ export function MessagesSection({
                   تلاش دوباره
                 </Button>
               }
-              description={getApiErrorMessage(loadError)}
+              description={
+                isGroupMembershipRequiredError(loadError)
+                  ? formatMembershipAccessMessage(loadError)
+                  : getApiErrorMessage(loadError)
+              }
               icon={<XCircle className="h-7 w-7" />}
               title="دسترسی به پیام‌های گروه ممکن نشد"
             />
@@ -561,44 +701,78 @@ export function MessagesSection({
             ) : null}
 
             {messages.length === 0 ? (
-              <div className="flex flex-1 items-center justify-center">
-                <div className="mx-auto max-w-md text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200 sm:h-16 sm:w-16">
-                    <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8" />
-                  </div>
-                  <h3 className="mt-3 text-base font-black text-white sm:mt-5 sm:text-xl light:text-slate-950">
-                    هنوز پیامی در این گروه نیست
-                  </h3>
-                  <p className="mt-3 hidden text-sm leading-7 text-slate-300 sm:block light:text-slate-600">
-                    پیام متنی بفرستید یا از دکمه + فایل خصوصی / صورت‌بها را پیوست کنید.
+              <div
+                className="flex flex-1 items-center justify-center py-3"
+                data-tour="empty-chat-state"
+              >
+                <div className="mx-auto max-w-[16rem] space-y-3 text-center">
+                  <MessageCircle className="mx-auto h-6 w-6 text-slate-500" />
+                  <p className="text-sm font-black text-white light:text-slate-950">هنوز پیامی نیست</p>
+                  <p className="text-xs leading-5 text-slate-400 light:text-slate-500">
+                    اولین پیام را بفرستید یا یک صورت‌بها اضافه کنید.
                   </p>
+                  <Button
+                    className="w-full"
+                    data-tour="empty-chat-add-financial-document"
+                    disabled={!canCompose || effectiveGroupId == null}
+                    onClick={openFinancialDocumentFlow}
+                    type="button"
+                    variant="secondary"
+                  >
+                    <FileText className="h-4 w-4" />
+                    افزودن صورت‌بها
+                  </Button>
                 </div>
               </div>
             ) : (
-              messages.map((message) => {
+              messages.map((message, index) => {
                 const isMine = myMemberId != null && message.sender_member_id === myMemberId;
+                const prev = messages[index - 1];
+                const sameSender =
+                  prev != null && prev.sender_member_id === message.sender_member_id;
                 return (
                   <div
                     className={classNames(
-                      "max-w-[min(34rem,100%)] rounded-2xl border p-3 text-sm leading-7 sm:p-4",
-                      isMine
-                        ? "mr-auto rounded-bl-sm border-emerald-300/20 bg-emerald-400/12 text-slate-100 light:bg-emerald-50 light:text-slate-800"
-                        : "ml-auto rounded-br-sm border-white/10 bg-white/8 text-slate-100 light:border-slate-200 light:bg-white light:text-slate-800"
+                      "flex w-full",
+                      isMine ? "justify-start" : "justify-end",
+                      sameSender ? "mt-0.5" : "mt-2"
                     )}
                     key={message.id}
                   >
-                    <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-400 light:text-slate-500">
-                      <span>{message.sender_display_name || "عضو"}</span>
-                      <span>{formatMessageTime(message.created_at)}</span>
+                    <div
+                      className={classNames(
+                        "max-w-[72%] rounded-2xl px-3 py-2 text-sm leading-6",
+                        isMine
+                          ? "rounded-br-md bg-emerald-500/20 text-slate-50 light:bg-emerald-100 light:text-slate-900"
+                          : "rounded-bl-md bg-white/10 text-slate-100 light:bg-slate-100 light:text-slate-900"
+                      )}
+                    >
+                      {!isMine && !sameSender ? (
+                        <p className="mb-0.5 text-[11px] font-bold text-emerald-200/90 light:text-emerald-700">
+                          {message.sender_display_name || "عضو"}
+                        </p>
+                      ) : null}
+                      {message.text ? (
+                        <p className="whitespace-pre-wrap break-words">{message.text}</p>
+                      ) : null}
+                      {message.attachments.map((attachment) => (
+                        <MessageAttachmentCard
+                          attachment={attachment}
+                          companyId={companyId}
+                          key={attachment.id}
+                        />
+                      ))}
+                      <p
+                        className={classNames(
+                          "mt-1 text-[10px] font-bold",
+                          isMine
+                            ? "text-emerald-100/70 light:text-emerald-800/70"
+                            : "text-slate-400 light:text-slate-500"
+                        )}
+                      >
+                        {formatMessageTime(message.created_at)}
+                      </p>
                     </div>
-                    {message.text ? <p className="whitespace-pre-wrap">{message.text}</p> : null}
-                    {message.attachments.map((attachment) => (
-                      <MessageAttachmentCard
-                        attachment={attachment}
-                        companyId={companyId}
-                        key={attachment.id}
-                      />
-                    ))}
                   </div>
                 );
               })
@@ -608,50 +782,41 @@ export function MessagesSection({
       </div>
 
       <div
-        className="shrink-0 border-t border-white/10 bg-slate-950/80 p-3 backdrop-blur-md sm:px-5 light:border-slate-200 light:bg-white/90"
+        className="shrink-0 border-t border-white/8 bg-slate-950/70 px-2 py-2 backdrop-blur-md light:border-slate-200 light:bg-white/95"
         data-tour="message-input-area"
       >
         {quotaBlockedHint ? (
-          <p className="mb-2 rounded-lg border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-100 light:border-amber-200 light:bg-amber-50 light:text-amber-800">
+          <p className="mb-1.5 rounded-lg border border-amber-300/25 bg-amber-400/10 px-2.5 py-1.5 text-[11px] font-bold text-amber-100 light:border-amber-200 light:bg-amber-50 light:text-amber-800">
             {quotaBlockedHint}
           </p>
-        ) : messageQuota ? (
-          <p className="mb-2 text-[11px] font-bold text-slate-400 light:text-slate-500">
+        ) : messageQuota &&
+          messageQuota.daily_limit != null &&
+          messageQuota.remaining != null &&
+          messageQuota.remaining <= 3 ? (
+          <p className="mb-1.5 text-[11px] font-bold text-slate-400 light:text-slate-500">
             {formatQuotaUsageLabel(messageQuota)}
-            {formatQuotaResetsAt(messageQuota.resets_at)
-              ? ` — بازنشانی: ${formatQuotaResetsAt(messageQuota.resets_at)}`
-              : ""}
-            {messageQuota.daily_limit != null &&
-            messageQuota.remaining != null &&
-            messageQuota.remaining <= 0
-              ? " — سقف امروز پر است؛ ارسال ممکن است توسط سرور رد شود."
-              : ""}
+            {messageQuota.remaining <= 0 ? " — سقف امروز پر است." : ""}
           </p>
         ) : null}
 
         {pendingAttachments.length > 0 ? (
-          <ul className="mb-2 space-y-2">
+          <ul className="mb-1.5 space-y-1">
             {pendingAttachments.map((attachment) => (
               <li
-                className="flex items-center justify-between gap-2 rounded-lg border border-emerald-300/20 bg-emerald-400/10 p-2.5 text-sm text-emerald-100 light:text-emerald-800"
+                className="flex items-center justify-between gap-2 rounded-lg bg-emerald-400/10 px-2 py-1.5 text-xs text-emerald-100 light:text-emerald-800"
                 key={attachment.key}
               >
                 <div className="flex min-w-0 items-center gap-2">
                   {attachment.attachment_type === "file" ? (
-                    <Paperclip className="h-4 w-4 shrink-0" />
+                    <Paperclip className="h-3.5 w-3.5 shrink-0" />
                   ) : (
-                    <FileText className="h-4 w-4 shrink-0" />
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
                   )}
-                  <div className="min-w-0">
-                    <p className="truncate font-bold">{attachment.label}</p>
-                    {attachment.detail ? (
-                      <p className="truncate text-xs opacity-80">{attachment.detail}</p>
-                    ) : null}
-                  </div>
+                  <p className="truncate font-bold">{attachment.label}</p>
                 </div>
                 <button
                   aria-label="حذف پیوست"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/8 hover:text-white light:text-slate-600"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/8 light:text-slate-600"
                   onClick={() =>
                     setPendingAttachments((current) =>
                       current.filter((item) => item.key !== attachment.key)
@@ -659,7 +824,7 @@ export function MessagesSection({
                   }
                   type="button"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </li>
             ))}
@@ -667,84 +832,7 @@ export function MessagesSection({
         ) : null}
 
         <form className="relative" onSubmit={(event) => void handleSend(event)}>
-          <div className="flex items-end gap-2" ref={addMenuRef}>
-            {isAddMenuOpen ? (
-              <div className="absolute bottom-[3.5rem] right-0 z-20 w-full rounded-lg border border-white/10 bg-slate-950/95 p-2 shadow-2xl backdrop-blur-xl sm:bottom-[72px] sm:right-3 sm:w-[min(22rem,calc(100vw-5rem))] light:border-slate-200 light:bg-white/95">
-                <button
-                  className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-emerald-400/10 disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-emerald-50"
-                  disabled={!canCompose || isUploading}
-                  onClick={() => {
-                    setIsAddMenuOpen(false);
-                    fileInputRef.current?.click();
-                  }}
-                  type="button"
-                >
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-400/15 text-emerald-200 light:text-emerald-700">
-                    <Paperclip className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-black text-white light:text-slate-950">
-                      آپلود فایل خصوصی
-                    </span>
-                    <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
-                      فایل ابتدا در شرکت ذخیره می‌شود، سپس به پیام ارجاع داده می‌شود.
-                    </span>
-                  </span>
-                </button>
-                <button
-                  className="mt-1 flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-violet-400/10 disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-violet-50"
-                  disabled={!canCompose}
-                  onClick={() => {
-                    setIsAddMenuOpen(false);
-                    setIsDocumentModalOpen(true);
-                  }}
-                  type="button"
-                >
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200 light:text-violet-700">
-                    <FileText className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-black text-white light:text-slate-950">
-                      پیوست صورت‌بها
-                    </span>
-                    <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
-                      ارجاع به یک صورت‌بهای موجود در پروژه‌های همین شرکت.
-                    </span>
-                  </span>
-                </button>
-                <Link
-                  className="mt-1 flex w-full items-start gap-3 rounded-lg px-3 py-3 text-right transition hover:bg-emerald-400/10 light:hover:bg-emerald-50"
-                  onClick={() => setIsAddMenuOpen(false)}
-                  to={`/companies/${companyId}/cost-reports/new`}
-                >
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-400/15 text-emerald-200 light:text-emerald-700">
-                    <Plus className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-black text-white light:text-slate-950">
-                      ساخت صورت‌بها جدید
-                    </span>
-                    <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
-                      پس از ذخیره می‌توانید آن را به پیام پیوست کنید.
-                    </span>
-                  </span>
-                </Link>
-                <div className="mt-1 flex w-full cursor-not-allowed items-start gap-3 rounded-lg px-3 py-3 text-right opacity-60">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-400/15 text-slate-400 light:text-slate-500">
-                    <Ban className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-black text-white light:text-slate-950">
-                      مدیریت فایل‌های شرکت
-                    </span>
-                    <span className="mt-1 block text-xs leading-6 text-slate-400 light:text-slate-500">
-                      فهرست مستقل فایل‌ها در قرارداد فعلی نیست؛ فقط آپلود و پیوست پیام پشتیبانی می‌شود.
-                    </span>
-                  </span>
-                </div>
-              </div>
-            ) : null}
-
+          <div className="flex items-end gap-1.5" ref={addMenuRef}>
             <input
               accept="*/*"
               className="hidden"
@@ -753,32 +841,84 @@ export function MessagesSection({
               type="file"
             />
 
-            <button
-              aria-expanded={isAddMenuOpen}
-              aria-label="افزودن پیوست"
-              className={classNames(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-45 light:text-emerald-700",
-                highlightAddAction && "ring-4 ring-emerald-200/35"
-              )}
-              data-tour="add-attachment-btn"
-              disabled={!canCompose || isUploading}
-              onClick={() => setIsAddMenuOpen((current) => !current)}
-              type="button"
-            >
-              {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            </button>
+            <div className="relative shrink-0">
+              <button
+                aria-expanded={isAddMenuOpen}
+                aria-haspopup="menu"
+                aria-label="افزودن"
+                className={classNames(
+                  "flex h-11 items-center gap-1.5 rounded-xl px-2.5 text-xs font-black text-emerald-200 transition hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-45 light:text-emerald-700",
+                  highlightAddAction && "ring-2 ring-emerald-200/40",
+                  isAddMenuOpen && "bg-emerald-400/15"
+                )}
+                data-tour="composer-add-action"
+                disabled={!canCompose || isUploading}
+                onClick={() => setIsAddMenuOpen((open) => !open)}
+                type="button"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                افزودن
+              </button>
+
+              {isAddMenuOpen ? (
+                <div
+                  className="absolute bottom-[calc(100%+0.4rem)] right-0 z-20 min-w-[11rem] overflow-hidden rounded-xl border border-white/10 bg-slate-950/95 py-1 shadow-xl backdrop-blur-md light:border-slate-200 light:bg-white"
+                  data-tour="composer-add-menu"
+                  role="menu"
+                >
+                  <button
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-slate-100 transition hover:bg-white/8 light:text-slate-900 light:hover:bg-slate-100"
+                    data-tour="composer-add-file"
+                    disabled={isUploading}
+                    onClick={() => {
+                      setIsAddMenuOpen(false);
+                      fileInputRef.current?.click();
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    <Paperclip className="h-4 w-4 text-emerald-200 light:text-emerald-700" />
+                    فایل
+                  </button>
+                  <button
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-slate-100 transition hover:bg-white/8 light:text-slate-900 light:hover:bg-slate-100"
+                    data-tour="composer-add-financial-document"
+                    disabled={effectiveGroupId == null}
+                    onClick={openFinancialDocumentFlow}
+                    role="menuitem"
+                    type="button"
+                  >
+                    <FileText className="h-4 w-4 text-violet-200 light:text-violet-700" />
+                    صورت‌بها
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
             <textarea
-              className="min-h-11 max-h-24 flex-1 resize-none overflow-y-auto rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 sm:px-4 sm:py-3 light:border-slate-200 light:bg-slate-50 light:text-slate-950"
+              className="max-h-28 min-h-11 flex-1 resize-none overflow-y-auto rounded-xl border-0 bg-white/8 px-3 py-2.5 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-500 focus:bg-white/10 light:bg-slate-100 light:text-slate-950 light:focus:bg-slate-50"
               disabled={!canCompose}
               onChange={(event) => setMessageText(event.target.value)}
-              placeholder={
-                activeGroup ? `پیام در گروه «${activeGroup.name}»…` : "ابتدا یک گروه انتخاب کنید"
-              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  const form = event.currentTarget.form;
+                  if (form && canSend) {
+                    form.requestSubmit();
+                  }
+                }
+              }}
+              placeholder={activeGroup ? "پیام…" : "ابتدا یک گروه انتخاب کنید"}
               rows={1}
               value={messageText}
             />
             <button
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-45 light:border-slate-200 light:bg-white light:text-slate-800"
+              aria-label="ارسال"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/90 text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45"
               disabled={!canSend}
               type="submit"
             >
@@ -787,8 +927,8 @@ export function MessagesSection({
           </div>
         </form>
 
-        {loadError ? (
-          <p className="mt-2 text-xs text-slate-400 light:text-slate-500">
+        {loadError && !membershipDenied ? (
+          <p className="mt-1.5 text-[11px] text-slate-400 light:text-slate-500">
             ارسال تا رفع خطای بارگذاری غیرفعال است.{" "}
             <button
               className="font-bold text-emerald-200 underline light:text-emerald-700"
@@ -801,9 +941,11 @@ export function MessagesSection({
         ) : null}
       </div>
 
-      {isDocumentModalOpen ? (
-        <AttachFinancialDocumentModal
+      {isDocumentModalOpen && effectiveGroupId != null ? (
+        <FinancialDocumentActionModal
           companyId={companyId}
+          groupId={effectiveGroupId}
+          lockedProject={linkedProject}
           onClose={() => setIsDocumentModalOpen(false)}
           onSelect={handleSelectDocument}
         />

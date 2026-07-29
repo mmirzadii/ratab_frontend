@@ -85,3 +85,15 @@ Against `Origin: http://localhost:1000` → `http://localhost:15000`:
 ## Stop
 
 Phase 2 complete after local CSRF/origin fix. Waiting for review before Phase 3.
+
+---
+
+## Post-v1 maintenance — signup password UX (2026-07-28)
+
+Not a new phase. Approved correction to signup password completion:
+
+- Client blocking rule: password length ≥ 6; red field message `رمز عبور باید حداقل ۶ کاراکتر باشد.`; submit disabled while unmet.
+- Non-blocking yellow weak warning after length ≥ 6 (length &lt; 8, digits-only, letters-only, repeated character, or obvious local patterns). Never sent to backend; never disables submit.
+- `classifySignupCompleteError` maps `password` / `password_confirmation` field errors to the matching inputs; only real ticket field/detail/code restarts signup with the ticket message. No blanket “every 400 is invalid ticket”.
+- Pure helpers + Node test runner: `src/features/auth/signupPassword.ts` + `signupPassword.test.ts` (`npm run test:auth-password`).
+

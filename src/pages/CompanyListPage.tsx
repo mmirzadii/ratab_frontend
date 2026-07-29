@@ -12,23 +12,36 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { clearCreateCompanyHighlight } from "../features/auth/authSlice";
 import { useListCompaniesQuery } from "../features/companies/companyApi";
+import { useListMyCompanyInvitationsQuery } from "../features/companies/companyInvitationsApi";
+import { PendingInvitationsSection } from "../features/companies/PendingInvitationsSection";
 import { Button } from "../shared/components/Button";
 import { EmptyState } from "../shared/components/EmptyState";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
 import { getApiErrorMessage } from "../shared/utils/apiError";
 import { classNames } from "../shared/utils/classNames";
+import { getListResults } from "../shared/utils/listResults";
 
 export function CompanyListPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const authStatus = useAppSelector((state) => state.auth.status);
   const shouldHighlightCreateCompany = useAppSelector(
     (state) => state.auth.shouldHighlightCreateCompany
   );
-  const { data, error, isFetching, isLoading, refetch } = useListCompaniesQuery();
+  const sessionReady = authStatus === "authenticated";
+  const { data, error, isFetching, isLoading, refetch } = useListCompaniesQuery(undefined, {
+    skip: !sessionReady
+  });
+  const { data: invitationsData } = useListMyCompanyInvitationsQuery(undefined, {
+    skip: !sessionReady
+  });
 
   const companies = data?.results ?? [];
   const companyCount = data?.count ?? companies.length;
+  const pendingInvitationCount = getListResults(invitationsData).filter(
+    (item) => item.status === "pending"
+  ).length;
 
   function goToCreate() {
     dispatch(clearCreateCompanyHighlight());
@@ -52,7 +65,7 @@ export function CompanyListPage() {
                 شرکت‌های شما
               </h1>
               <p className="hidden text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
-                یک شرکت را انتخاب کنید یا شرکت تازه بسازید تا وارد پیام‌ها و صورت‌بها شوید.
+                شرکت‌های فعال و دعوت‌های در انتظار تأیید به‌صورت جداگانه نمایش داده می‌شوند.
               </p>
             </div>
           </div>
@@ -83,6 +96,8 @@ export function CompanyListPage() {
         </div>
       </GlassCard>
 
+      <PendingInvitationsSection skip={!sessionReady} />
+
       {isLoading ? (
         <GlassCard className="flex min-h-32 items-center justify-center p-5 sm:min-h-48 sm:p-8">
           <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
@@ -109,14 +124,20 @@ export function CompanyListPage() {
       {!isLoading && !error && companies.length === 0 ? (
         <EmptyState
           action={
-            <Button onClick={goToCreate}>
-              <Plus className="h-4 w-4" />
-              افزودن شرکت
-            </Button>
+            pendingInvitationCount > 0 ? undefined : (
+              <Button onClick={goToCreate}>
+                <Plus className="h-4 w-4" />
+                افزودن شرکت
+              </Button>
+            )
           }
-          description="هنوز شرکتی برای این حساب ثبت نشده است. ساخت شرکت، نقطه ورود به فضای کار متریل است."
+          description={
+            pendingInvitationCount > 0
+              ? "هنوز شرکت فعالی ندارید. دعوت‌های در انتظار را در بخش بالا تأیید یا رد کنید."
+              : "هنوز شرکتی برای این حساب ثبت نشده است. ساخت شرکت، نقطه ورود به فضای کار متریل است."
+          }
           icon={<Building2 className="h-7 w-7" />}
-          title="اولین شرکت خود را بسازید"
+          title={pendingInvitationCount > 0 ? "شرکت فعال ندارید" : "اولین شرکت خود را بسازید"}
         />
       ) : null}
 
@@ -124,9 +145,11 @@ export function CompanyListPage() {
         <section className="space-y-2.5 sm:space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-sm font-black text-white light:text-slate-950 sm:text-lg">
-              {companyCount} شرکت قابل دسترس
+              {companyCount} شرکت فعال قابل دسترس
             </h2>
-            {data?.next ? <StatusBadge tone="amber">صفحه‌های بعدی در نسخه‌های آینده تکمیل می‌شود</StatusBadge> : null}
+            {data?.next ? (
+              <StatusBadge tone="amber">صفحه‌های بعدی در نسخه‌های آینده تکمیل می‌شود</StatusBadge>
+            ) : null}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-tour="company-list">

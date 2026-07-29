@@ -2,7 +2,7 @@
 
 This directory contains the frontend upgrade plan from v0.0 to v1.0.
 
-**Status: Phases 1–8 completed (2026-07-28).** Awaiting final review.
+**Status: Phases 1–9 completed (2026-07-28).** Awaiting Phase 9 review.
 
 Rules:
 
@@ -23,16 +23,17 @@ Phase order:
 6. wallet and 5-token line-charge UX — **completed 2026-07-28**
 7. subscriptions, quota, and disabled payment UX — **completed 2026-07-28**
 8. final integration, regression, cleanup, and handoff — **completed 2026-07-28**
+9. Telegram-inspired company workspace UX simplification — **completed 2026-07-28**
 
-## Current baseline (after Phase 8)
+## Current baseline (after Phase 9 refinement)
 
 - Frontend active version: `code_oder/active_version.txt` = `v1.0`
 - Package version: `package.json` = `1.0.0`
 - Backend contract: `backend_docs/current/BACKEND_VERSION` = `v1.0`
 - OpenAPI generation: `backend_docs/current/OPENAPI.yaml` → `src/shared/api/generated/schema.ts`
 - Browser auth: session cookies + CSRF (signup/login/logout/restore)
-- Workspace: members, groups, persisted messages, private files/attachments
+- Workspace: conversation-first RTL shell (گفتگوها + اعضا + شرکت); project/group create via list `+`; composer **افزودن** (فایل | صورت‌بها); list-first صورت‌بها selector; drawer tabs صورت‌بهاها / فایل‌ها / لینک‌ها / اعضا
 - Billing UX: wallet, 5-token official line charge + idempotency, subscription/quota, disabled payment
-- Handoff: root `README.md`, `PROJECT_EXPLAIN.md`, `phaze8/` reports
+- Handoff: root `README.md`, `PROJECT_EXPLAIN.md`, `phaze8/` + `phaze9/` reports
 
 See `PROJECT_EXPLAIN.md` and each `phazeN/REPORT.md` for details.

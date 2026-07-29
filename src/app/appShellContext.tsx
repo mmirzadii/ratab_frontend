@@ -14,6 +14,8 @@ export type CompanyCtx = {
   id: number;
   name: string;
   isActive: boolean;
+  /** When true, AppShell yields chrome to the company workspace layout. */
+  workspaceActive?: boolean;
 };
 
 export type WizardCtx = {

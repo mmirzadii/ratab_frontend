@@ -83,3 +83,14 @@ Storage-file endpoints exist in the contract and are available via the same auth
 ## Stop point
 
 Phase 5 complete for review. Phase 6 not started. No commit/push performed.
+
+---
+
+## Post-v1 correction (2026-07-28) — no project message attachments
+
+Compose/create paths remain limited to `file` and `financial_document` per OpenAPI `AttachmentTypeEnum`.
+
+- No project-attachment action in the plus menu.
+- Historical unsupported attachment types render read-only (no create/open/download actions invented).
+- File upload and financial-document attach flows are unchanged.
+

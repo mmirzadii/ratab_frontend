@@ -50,19 +50,17 @@ export function ContextHeader() {
 
   if (companyCtx) {
     return (
-      <header className="sticky top-14 lg:top-0 z-20 border-b border-white/8 bg-slate-950/28 backdrop-blur-xl light:border-slate-200 light:bg-white/70">
-        <div className="flex items-center gap-2 px-3 py-1.5 sm:gap-3 sm:px-6 sm:py-4">
+      <header className="sticky top-14 z-20 border-b border-white/8 bg-slate-950/40 backdrop-blur-xl light:border-slate-200 light:bg-white/80 lg:top-0">
+        <div className="flex h-11 items-center gap-2 px-2.5 sm:h-12 sm:gap-3 sm:px-4">
           <Link
             aria-label="بازگشت به شرکت‌ها"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 sm:h-9 sm:w-9 light:text-slate-500 light:hover:text-slate-900"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 light:text-slate-500 light:hover:text-slate-900"
             to="/companies"
           >
             <ArrowRight className="h-4 w-4" />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-black leading-6 text-white light:text-slate-950 sm:text-3xl">
-              {companyCtx.name}
-            </p>
+            <p className="truncate text-sm font-black text-white light:text-slate-950">{companyCtx.name}</p>
           </div>
           <StatusBadge tone={companyCtx.isActive ? "emerald" : "amber"}>
             {companyCtx.isActive ? "فعال" : "غیرفعال"}

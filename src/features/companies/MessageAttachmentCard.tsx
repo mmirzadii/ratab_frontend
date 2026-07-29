@@ -36,23 +36,38 @@ export function MessageAttachmentCard({
   const navigate = useNavigate();
   const [busyAction, setBusyAction] = useState<"open" | "download" | null>(null);
 
-  const isFile = attachment.attachment_type === "file";
+  const attachmentType = attachment.attachment_type as string;
+  const isFile = attachmentType === "file";
+  const isFinancialDocument = attachmentType === "financial_document";
+  const isSupportedComposeType = isFile || isFinancialDocument;
   const title = isFile
     ? cleanDisplayText(attachment.original_filename, "فایل پیوست")
-    : cleanDisplayText(attachment.document_title, "صورت‌بها");
+    : isFinancialDocument
+      ? cleanDisplayText(attachment.document_title, "صورت‌بها")
+      : cleanDisplayText(attachment.document_title || attachment.original_filename, "پیوست");
   const metaParts = [
     isFile ? attachment.content_type : attachment.document_status,
-    isFile ? formatBytes(attachment.byte_size) : attachment.document_number
+    isFile ? formatBytes(attachment.byte_size) : attachment.document_number,
+    !isSupportedComposeType ? "فقط مشاهده" : null
   ].filter(Boolean);
 
   async function handleOpen() {
+    if (!isSupportedComposeType) {
+      dispatch(
+        addToast({
+          message: "این نوع پیوست دیگر برای ایجاد پشتیبانی نمی‌شود و فقط به‌صورت فقط‌خواندنی نمایش داده می‌شود.",
+          type: "info"
+        })
+      );
+      return;
+    }
     if (!attachment.is_available) {
       dispatch(addToast({ message: "این پیوست در دسترس نیست.", type: "error" }));
       return;
     }
     setBusyAction("open");
     try {
-      if (attachment.attachment_type === "financial_document") {
+      if (isFinancialDocument) {
         const result = await openMessageAttachmentResource(attachment.id);
         if (result.kind !== "json") {
           throw new Error("پاسخ باز کردن صورت‌بها نامعتبر بود.");
@@ -82,7 +97,7 @@ export function MessageAttachmentCard({
       dispatch(addToast({ message: "این پیوست در دسترس نیست.", type: "error" }));
       return;
     }
-    if (attachment.attachment_type !== "file") {
+    if (!isFile) {
       dispatch(
         addToast({
           message: "صورت‌بها از مسیر باز کردن دریافت می‌شود، نه دانلود باینری.",
@@ -125,7 +140,7 @@ export function MessageAttachmentCard({
           <p className="mt-2 text-xs font-bold text-amber-200 light:text-amber-700">
             منبع پیوست در دسترس نیست.
           </p>
-        ) : (
+        ) : isSupportedComposeType ? (
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/8 px-3 text-xs font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 disabled:opacity-45 light:border-slate-200 light:bg-slate-50 light:text-slate-800"
@@ -156,6 +171,10 @@ export function MessageAttachmentCard({
               </button>
             ) : null}
           </div>
+        ) : (
+          <p className="mt-2 text-xs font-bold text-slate-400 light:text-slate-500">
+            پیوست تاریخی — ایجاد پیوست پروژه در قرارداد فعلی پشتیبانی نمی‌شود.
+          </p>
         )}
       </div>
     </div>

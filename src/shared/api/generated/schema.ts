@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/me/invitations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List pending company invitations for the authenticated user. */
+        get: operations["auth_me_invitations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/signup/complete/": {
         parameters: {
             query?: never;
@@ -98,7 +115,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Consume a one-time signup ticket, hash the chosen password, create the account, rotate the session, and authenticate the browser. Browser clients must first call GET /api/auth/csrf/ with credentials enabled, then send the csrf_token value in X-CSRFToken and retain the session cookie. */
+        /** @description Consume a one-time signup ticket, hash the chosen password, create the account, rotate the session, and authenticate the browser. Password policy: minimum length 6 only; shorter passwords return a JSON field error on `password` without consuming a still-valid ticket. Browser clients must first call GET /api/auth/csrf/ with credentials enabled, then send the csrf_token value in X-CSRFToken and retain the session cookie. */
         post: operations["auth_signup_complete_create"];
         delete?: never;
         options?: never;
@@ -237,6 +254,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companies/{id}/invitations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["companies_invitations_list"];
+        put?: never;
+        post: operations["companies_invitations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companies/{id}/members/": {
         parameters: {
             query?: never;
@@ -246,6 +279,7 @@ export interface paths {
         };
         get: operations["companies_members_list"];
         put?: never;
+        /** @description Invite a registered non-member (pending invitation) or, when the user is already an active company member, add them to the target group (default group when group_id is omitted). Pending invitations do not grant company or group access. */
         post: operations["companies_members_create"];
         delete?: never;
         options?: never;
@@ -367,6 +401,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/company-groups/{id}/invitations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["company_groups_invitations_list"];
+        put?: never;
+        post: operations["company_groups_invitations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/company-groups/{id}/members/": {
         parameters: {
             query?: never;
@@ -376,7 +426,73 @@ export interface paths {
         };
         get: operations["company_groups_members_list"];
         put?: never;
+        /** @description Add an existing active company member to this group. Idempotent when the member is already an active group member. */
         post: operations["company_groups_members_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-invitations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List pending company invitations for the authenticated user. */
+        get: operations["company_invitations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-invitations/{id}/accept/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["company_invitations_accept_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-invitations/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["company_invitations_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-invitations/{id}/reject/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["company_invitations_reject_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -604,6 +720,40 @@ export interface paths {
         };
         /** @description Public readiness endpoint for API dependencies. Returns 503 if database, Redis, or private storage is unavailable. */
         get: operations["health_ready_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/invitations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List pending company invitations for the authenticated user. */
+        get: operations["me_invitations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/membership-invitations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List pending company invitations for the authenticated user. */
+        get: operations["membership_invitations_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1011,6 +1161,7 @@ export interface components {
             national_id?: string;
             active_slug?: string | null;
             readonly owner_member_id: number;
+            readonly public_group_id: number | null;
             readonly is_active: boolean;
             /** Format: date-time */
             readonly created_at: string;
@@ -1054,6 +1205,13 @@ export interface components {
             name: string;
             description?: string;
         };
+        CompanyInvitationCreateRequest: {
+            phone_number: string;
+            role: components["schemas"]["RoleEnum"];
+            group_id?: number;
+            display_name?: string;
+            title?: string;
+        };
         CompanyMember: {
             readonly id: number;
             readonly company_id: number;
@@ -1077,7 +1235,36 @@ export interface components {
             role: components["schemas"]["RoleEnum"];
             display_name?: string;
             title?: string;
+            group_id?: number;
         };
+        CompanyMembershipInvitation: {
+            readonly id: number;
+            readonly company_id: number;
+            readonly company_name: string;
+            readonly invited_user_id: number;
+            readonly invited_user_phone_number: string;
+            readonly invited_by_member_id: number;
+            readonly target_group_id: number;
+            readonly target_group_name: string;
+            readonly proposed_role: components["schemas"]["ProposedRoleEnum"];
+            readonly display_name: string;
+            readonly title: string;
+            readonly status: components["schemas"]["CompanyMembershipInvitationStatusEnum"];
+            /** Format: date-time */
+            readonly responded_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `pending` - Pending
+         *     * `accepted` - Accepted
+         *     * `rejected` - Rejected
+         *     * `cancelled` - Cancelled
+         * @enum {string}
+         */
+        CompanyMembershipInvitationStatusEnum: "pending" | "accepted" | "rejected" | "cancelled";
         CompanyRequest: {
             name: string;
             legal_name?: string;
@@ -1310,6 +1497,12 @@ export interface components {
          * @enum {string}
          */
         FinancialDocumentStatusEnum: "draft" | "calculated" | "locked" | "sent" | "under_review" | "approved" | "rejected" | "archived";
+        GroupInvitationCreateRequest: {
+            phone_number: string;
+            role: components["schemas"]["RoleEnum"];
+            display_name?: string;
+            title?: string;
+        };
         GroupMessage: {
             readonly id: number;
             readonly group_id: number;
@@ -1357,6 +1550,14 @@ export interface components {
          * @enum {string}
          */
         MemberTypeEnum: "internal" | "client";
+        MembershipActionResponse: {
+            outcome: string;
+            invitation: components["schemas"]["CompanyMembershipInvitation"] | null;
+            company_member: components["schemas"]["CompanyMember"] | null;
+            group_membership: components["schemas"]["CompanyGroupMembership"] | null;
+            company: components["schemas"]["Company"] | null;
+            group: components["schemas"]["CompanyGroup"] | null;
+        };
         MessageAttachment: {
             readonly id: number;
             readonly message_id: number;
@@ -1457,6 +1658,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["CompanyMember"][];
+        };
+        PaginatedCompanyMembershipInvitationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["CompanyMembershipInvitation"][];
         };
         PaginatedCompanySlugHistoryList: {
             /** @example 123 */
@@ -1682,6 +1898,8 @@ export interface components {
             /** Format: date */
             ends_on?: string | null;
             description?: string;
+            /** @default true */
+            include_all_company_members_in_group: boolean;
         };
         PaymentOrder: {
             readonly id: number;
@@ -1936,6 +2154,7 @@ export interface components {
             readonly id: number;
             readonly company_id: number;
             readonly created_by_member_id: number;
+            readonly group_id: number;
             project_code?: string | null;
             name: string;
             contract_number?: string;
@@ -1950,6 +2169,8 @@ export interface components {
             /** Format: date */
             ends_on?: string | null;
             description?: string;
+            /** @default true */
+            include_all_company_members_in_group: boolean;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -2013,6 +2234,8 @@ export interface components {
             /** Format: date */
             ends_on?: string | null;
             description?: string;
+            /** @default true */
+            include_all_company_members_in_group: boolean;
         };
         /**
          * @description * `draft` - Draft
@@ -2022,6 +2245,13 @@ export interface components {
          * @enum {string}
          */
         ProjectStatusEnum: "draft" | "active" | "archived" | "closed";
+        /**
+         * @description * `owner` - Owner
+         *     * `admin` - Admin
+         *     * `employee` - Employee
+         * @enum {string}
+         */
+        ProposedRoleEnum: "owner" | "admin" | "employee";
         ReadinessChecks: {
             database: string;
             redis: string;
@@ -2056,6 +2286,7 @@ export interface components {
         SignupCompleteRequest: {
             signup_ticket: string;
             display_name?: string;
+            /** @description Account password. Backend enforces a minimum length of 6 characters only; additional strength checks are frontend UX and do not block signup. */
             password: string;
             password_confirmation: string;
         };
@@ -2292,6 +2523,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppUser"];
+                };
+            };
+        };
+    };
+    auth_me_invitations_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanyMembershipInvitationList"];
                 };
             };
         };
@@ -2741,6 +2994,67 @@ export interface operations {
             };
         };
     };
+    companies_invitations_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanyMembershipInvitationList"];
+                };
+            };
+        };
+    };
+    companies_invitations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyInvitationCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CompanyInvitationCreateRequest"];
+                "multipart/form-data": components["schemas"]["CompanyInvitationCreateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipActionResponse"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipActionResponse"];
+                };
+            };
+        };
+    };
     companies_members_list: {
         parameters: {
             query?: {
@@ -2784,12 +3098,20 @@ export interface operations {
             };
         };
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipActionResponse"];
+                };
+            };
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CompanyMember"];
+                    "application/json": components["schemas"]["MembershipActionResponse"];
                 };
             };
         };
@@ -3043,6 +3365,67 @@ export interface operations {
             };
         };
     };
+    company_groups_invitations_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanyMembershipInvitationList"];
+                };
+            };
+        };
+    };
+    company_groups_invitations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupInvitationCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GroupInvitationCreateRequest"];
+                "multipart/form-data": components["schemas"]["GroupInvitationCreateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipActionResponse"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipActionResponse"];
+                };
+            };
+        };
+    };
     company_groups_members_list: {
         parameters: {
             query?: {
@@ -3086,12 +3469,108 @@ export interface operations {
             };
         };
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipActionResponse"];
+                };
+            };
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CompanyGroupMembership"];
+                    "application/json": components["schemas"]["MembershipActionResponse"];
+                };
+            };
+        };
+    };
+    company_invitations_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanyMembershipInvitationList"];
+                };
+            };
+        };
+    };
+    company_invitations_accept_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company membership invitation را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipActionResponse"];
+                };
+            };
+        };
+    };
+    company_invitations_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company membership invitation را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipActionResponse"];
+                };
+            };
+        };
+    };
+    company_invitations_reject_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company membership invitation را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipActionResponse"];
                 };
             };
         };
@@ -3508,6 +3987,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReadinessResponse"];
+                };
+            };
+        };
+    };
+    me_invitations_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanyMembershipInvitationList"];
+                };
+            };
+        };
+    };
+    membership_invitations_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanyMembershipInvitationList"];
                 };
             };
         };

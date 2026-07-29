@@ -98,3 +98,65 @@ Exit code: **0** (`✓ 1702 modules transformed`)
 | Raw HTML 403 shown in UI path | blocked by `getApiErrorMessage` sanitization |
 | generate:api / tsc / eslint / build | pass |
 | npm test | Not run (no script) |
+
+---
+
+## Post-v1 maintenance — signup password UX (2026-07-28)
+
+Focused correction (not a new phase). Mandatory ≥6 chars (blocking red), live weak-password yellow warning (non-blocking), and signup-complete error classification so password field `400`s are not mislabeled as invalid tickets.
+
+### Generated schema verification
+
+```text
+Command: npm run generate:api
+Exit code: 0
+```
+
+### TypeScript
+
+```text
+Command: npx tsc -b --force
+Exit code: 0
+```
+
+### ESLint
+
+```text
+Command: npm run lint
+Exit code: 0
+Result: generate:api succeeded; eslint . clean
+```
+
+### Focused authentication tests
+
+```text
+Command: npm run test:auth-password
+  → node --experimental-strip-types --test src/features/auth/signupPassword.test.ts
+Exit code: 0
+Result: 12 tests, 3 suites, pass 12, fail 0
+Coverage of required cases:
+  - empty / 1–5 chars cannot submit (min-length helper + canSubmit)
+  - 6-char password submittable
+  - 123456 / abcdef yellow-weak but submittable
+  - stronger password clears weak flag; typing sequence updates live
+  - backend password field error classified as password (not ticket)
+  - short-password backend message mapped to Persian min-length text
+  - real signup_ticket / ticket-detail 400 → restart ticket message
+  - raw HTML 403 not rendered in classified message
+```
+
+### Broader frontend test suite
+
+```text
+Status: Not run
+Reason: no project-wide vitest/jest/playwright suite beyond test:auth-password
+```
+
+### Production build
+
+```text
+Command: npm run build
+Exit code: 0
+Result: generate:api + tsc -b + vite build succeeded (~13.91s)
+```
+

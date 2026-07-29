@@ -21,3 +21,17 @@ Optional gaps:
 - No automated frontend test suite yet.
 - Full message-quota status UI remains Phase 7; only send-time `MESSAGE_QUOTA_EXCEEDED` handling is in Phase 4.
 - Attachment upload/open remains Phase 5.
+
+---
+
+## Post-v1 — membership gate QA
+
+After the message-access correction, manually verify:
+
+1. Company admin/owner who is **not** in a group: Messages shows Persian membership-required empty state; network tab should **not** spam message list requests.
+2. After being added to the group via `POST .../members/` (direct activation): messages load without logout.
+3. English detail `Active membership in this group is required.` never appears in the UI.
+4. Link “رفتن به بخش گروه‌ها” focuses the groups section.
+
+Invitation accept → message unlock still requires backend invitation endpoints (see Phase 3 `USER_ACTIONS_REQUIRED.md`).
+

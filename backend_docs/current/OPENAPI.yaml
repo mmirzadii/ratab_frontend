@@ -115,13 +115,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/AppUser'
           description: ''
+  /api/auth/me/invitations/:
+    get:
+      operationId: auth_me_invitations_list
+      description: List pending company invitations for the authenticated user.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyMembershipInvitationList'
+          description: ''
   /api/auth/signup/complete/:
     post:
       operationId: auth_signup_complete_create
-      description: Consume a one-time signup ticket, hash the chosen password, create
-        the account, rotate the session, and authenticate the browser. Browser clients
-        must first call GET /api/auth/csrf/ with credentials enabled, then send the
-        csrf_token value in X-CSRFToken and retain the session cookie.
+      description: 'Consume a one-time signup ticket, hash the chosen password, create
+        the account, rotate the session, and authenticate the browser. Password policy:
+        minimum length 6 only; shorter passwords return a JSON field error on `password`
+        without consuming a still-valid ticket. Browser clients must first call GET
+        /api/auth/csrf/ with credentials enabled, then send the csrf_token value in
+        X-CSRFToken and retain the session cookie.'
       tags:
       - auth
       requestBody:
@@ -535,6 +560,73 @@ paths:
               schema:
                 $ref: '#/components/schemas/CompanyGroup'
           description: ''
+  /api/companies/{id}/invitations/:
+    get:
+      operationId: companies_invitations_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyMembershipInvitationList'
+          description: ''
+    post:
+      operationId: companies_invitations_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyInvitationCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyInvitationCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyInvitationCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipActionResponse'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipActionResponse'
+          description: ''
   /api/companies/{id}/members/:
     get:
       operationId: companies_members_list
@@ -565,6 +657,10 @@ paths:
           description: ''
     post:
       operationId: companies_members_create
+      description: Invite a registered non-member (pending invitation) or, when the
+        user is already an active company member, add them to the target group (default
+        group when group_id is omitted). Pending invitations do not grant company
+        or group access.
       parameters:
       - in: path
         name: id
@@ -590,11 +686,17 @@ paths:
       - tokenAuth: []
       - cookieAuth: []
       responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipActionResponse'
+          description: ''
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CompanyMember'
+                $ref: '#/components/schemas/MembershipActionResponse'
           description: ''
   /api/companies/{id}/projects/:
     get:
@@ -867,6 +969,73 @@ paths:
               schema:
                 $ref: '#/components/schemas/CompanyGroup'
           description: ''
+  /api/company-groups/{id}/invitations/:
+    get:
+      operationId: company_groups_invitations_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyMembershipInvitationList'
+          description: ''
+    post:
+      operationId: company_groups_invitations_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      tags:
+      - company-groups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupInvitationCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GroupInvitationCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GroupInvitationCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipActionResponse'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipActionResponse'
+          description: ''
   /api/company-groups/{id}/members/:
     get:
       operationId: company_groups_members_list
@@ -897,6 +1066,8 @@ paths:
           description: ''
     post:
       operationId: company_groups_members_create
+      description: Add an existing active company member to this group. Idempotent
+        when the member is already an active group member.
       parameters:
       - in: path
         name: id
@@ -922,11 +1093,109 @@ paths:
       - tokenAuth: []
       - cookieAuth: []
       responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipActionResponse'
+          description: ''
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CompanyGroupMembership'
+                $ref: '#/components/schemas/MembershipActionResponse'
+          description: ''
+  /api/company-invitations/:
+    get:
+      operationId: company_invitations_list
+      description: List pending company invitations for the authenticated user.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - company-invitations
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyMembershipInvitationList'
+          description: ''
+  /api/company-invitations/{id}/accept/:
+    post:
+      operationId: company_invitations_accept_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company membership invitation را شناسایی
+          میکند.
+        required: true
+      tags:
+      - company-invitations
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipActionResponse'
+          description: ''
+  /api/company-invitations/{id}/cancel/:
+    post:
+      operationId: company_invitations_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company membership invitation را شناسایی
+          میکند.
+        required: true
+      tags:
+      - company-invitations
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipActionResponse'
+          description: ''
+  /api/company-invitations/{id}/reject/:
+    post:
+      operationId: company_invitations_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company membership invitation را شناسایی
+          میکند.
+        required: true
+      tags:
+      - company-invitations
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipActionResponse'
           description: ''
   /api/company-members/{id}/:
     delete:
@@ -1332,6 +1601,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReadinessResponse'
+          description: ''
+  /api/me/invitations/:
+    get:
+      operationId: me_invitations_list
+      description: List pending company invitations for the authenticated user.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - me
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyMembershipInvitationList'
+          description: ''
+  /api/membership-invitations/:
+    get:
+      operationId: membership_invitations_list
+      description: List pending company invitations for the authenticated user.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - membership-invitations
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyMembershipInvitationList'
           description: ''
   /api/message-attachments/{id}/:
     get:
@@ -2108,6 +2423,10 @@ components:
         owner_member_id:
           type: integer
           readOnly: true
+        public_group_id:
+          type: integer
+          nullable: true
+          readOnly: true
         is_active:
           type: boolean
           readOnly: true
@@ -2125,6 +2444,7 @@ components:
       - is_active
       - name
       - owner_member_id
+      - public_group_id
       - updated_at
     CompanyGroup:
       type: object
@@ -2137,7 +2457,7 @@ components:
           readOnly: true
         name:
           type: string
-          maxLength: 160
+          maxLength: 240
         description:
           type: string
         created_by_member_id:
@@ -2235,11 +2555,32 @@ components:
         name:
           type: string
           minLength: 1
-          maxLength: 160
+          maxLength: 240
         description:
           type: string
       required:
       - name
+    CompanyInvitationCreateRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        group_id:
+          type: integer
+          minimum: 1
+        display_name:
+          type: string
+          maxLength: 160
+        title:
+          type: string
+          maxLength: 120
+      required:
+      - phone_number
+      - role
     CompanyMember:
       type: object
       properties:
@@ -2318,9 +2659,94 @@ components:
         title:
           type: string
           maxLength: 120
+        group_id:
+          type: integer
+          minimum: 1
       required:
       - phone_number
       - role
+    CompanyMembershipInvitation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_id:
+          type: integer
+          readOnly: true
+        company_name:
+          type: string
+          readOnly: true
+        invited_user_id:
+          type: integer
+          readOnly: true
+        invited_user_phone_number:
+          type: string
+          readOnly: true
+        invited_by_member_id:
+          type: integer
+          readOnly: true
+        target_group_id:
+          type: integer
+          readOnly: true
+        target_group_name:
+          type: string
+          readOnly: true
+        proposed_role:
+          allOf:
+          - $ref: '#/components/schemas/ProposedRoleEnum'
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CompanyMembershipInvitationStatusEnum'
+          readOnly: true
+        responded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company_id
+      - company_name
+      - created_at
+      - display_name
+      - id
+      - invited_by_member_id
+      - invited_user_id
+      - invited_user_phone_number
+      - proposed_role
+      - responded_at
+      - status
+      - target_group_id
+      - target_group_name
+      - title
+      - updated_at
+    CompanyMembershipInvitationStatusEnum:
+      enum:
+      - pending
+      - accepted
+      - rejected
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `accepted` - Accepted
+        * `rejected` - Rejected
+        * `cancelled` - Cancelled
     CompanyRequest:
       type: object
       properties:
@@ -2989,6 +3415,24 @@ components:
         * `approved` - Approved
         * `rejected` - Rejected
         * `archived` - Archived
+    GroupInvitationCreateRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        display_name:
+          type: string
+          maxLength: 160
+        title:
+          type: string
+          maxLength: 120
+      required:
+      - phone_number
+      - role
     GroupMessage:
       type: object
       properties:
@@ -3095,6 +3539,38 @@ components:
       description: |-
         * `internal` - Internal
         * `client` - Client
+    MembershipActionResponse:
+      type: object
+      properties:
+        outcome:
+          type: string
+        invitation:
+          allOf:
+          - $ref: '#/components/schemas/CompanyMembershipInvitation'
+          nullable: true
+        company_member:
+          allOf:
+          - $ref: '#/components/schemas/CompanyMember'
+          nullable: true
+        group_membership:
+          allOf:
+          - $ref: '#/components/schemas/CompanyGroupMembership'
+          nullable: true
+        company:
+          allOf:
+          - $ref: '#/components/schemas/Company'
+          nullable: true
+        group:
+          allOf:
+          - $ref: '#/components/schemas/CompanyGroup'
+          nullable: true
+      required:
+      - company
+      - company_member
+      - group
+      - group_membership
+      - invitation
+      - outcome
     MessageAttachment:
       type: object
       properties:
@@ -3330,6 +3806,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CompanyMember'
+    PaginatedCompanyMembershipInvitationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyMembershipInvitation'
     PaginatedCompanySlugHistoryList:
       type: object
       required:
@@ -3633,7 +4132,7 @@ components:
         name:
           type: string
           minLength: 1
-          maxLength: 160
+          maxLength: 240
         description:
           type: string
     PatchedCompanyMemberRoleRequest:
@@ -3759,6 +4258,9 @@ components:
           nullable: true
         description:
           type: string
+        include_all_company_members_in_group:
+          type: boolean
+          default: true
     PaymentOrder:
       type: object
       properties:
@@ -4502,6 +5004,9 @@ components:
         created_by_member_id:
           type: integer
           readOnly: true
+        group_id:
+          type: integer
+          readOnly: true
         project_code:
           type: string
           nullable: true
@@ -4541,6 +5046,9 @@ components:
           nullable: true
         description:
           type: string
+        include_all_company_members_in_group:
+          type: boolean
+          default: true
         created_at:
           type: string
           format: date-time
@@ -4553,6 +5061,7 @@ components:
       - company_id
       - created_at
       - created_by_member_id
+      - group_id
       - id
       - name
       - updated_at
@@ -4718,6 +5227,9 @@ components:
           nullable: true
         description:
           type: string
+        include_all_company_members_in_group:
+          type: boolean
+          default: true
       required:
       - name
     ProjectStatusEnum:
@@ -4732,6 +5244,16 @@ components:
         * `active` - Active
         * `archived` - Archived
         * `closed` - Closed
+    ProposedRoleEnum:
+      enum:
+      - owner
+      - admin
+      - employee
+      type: string
+      description: |-
+        * `owner` - Owner
+        * `admin` - Admin
+        * `employee` - Employee
     ReadinessChecks:
       type: object
       properties:
@@ -4812,6 +5334,8 @@ components:
           type: string
           writeOnly: true
           minLength: 1
+          description: Account password. Backend enforces a minimum length of 6 characters
+            only; additional strength checks are frontend UX and do not block signup.
           maxLength: 128
         password_confirmation:
           type: string

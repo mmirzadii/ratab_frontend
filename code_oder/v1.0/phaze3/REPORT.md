@@ -112,3 +112,50 @@ Backend 403/409 responses still surface via existing `getApiErrorMessage` toasts
 ## Stop point
 
 Phase 3 complete for review. Phase 4 (persisted messaging) not started. No commit/push performed.
+
+---
+
+## Post-v1 correction (2026-07-28) — invitation workflow contract gap
+
+### Finding (superseded same day)
+
+Earlier checked-in OpenAPI omitted invitation paths. The live Backend v1 schema and the updated `backend_docs/current/OPENAPI.yaml` now include:
+
+- `POST/GET /api/companies/{id}/invitations/`
+- `POST/GET /api/company-groups/{id}/invitations/`
+- `GET /api/company-invitations/`
+- `POST /api/company-invitations/{id}/accept|reject|cancel/`
+
+`POST /api/companies/{id}/members/` returns `MembershipActionResponse` with `outcome: invitation_pending` (not an active `CompanyMember`).
+
+### Root cause of “invite succeeded but User B sees nothing”
+
+1. Frontend treated member-add success as active membership (`عضو به شرکت اضافه شد.`).
+2. No UI queried `GET /api/company-invitations/` after login.
+3. `GET /api/companies/` correctly returned empty for pending invitees.
+
+### Fix delivered
+
+- Interpret `MembershipActionResponse.outcome` (`دعوت عضویت ارسال شد.` for pending).
+- Pending invitations section on company list with accept/reject.
+- RTK tag `CompanyInvitation` + invalidation of companies/members/groups/messages/auth on accept.
+- OpenAPI synced from live backend into `backend_docs/current/`.
+
+---
+
+## Post-v1 correction (2026-07-28) — company public + project groups
+
+### Contract fields
+
+- Company: `public_group_id`, backend-created `عمومی` with `is_default: true`
+- Project: `group_id`, `include_all_company_members_in_group` (default `true`)
+- Group kind: public via `is_default`; project via matching `project.group_id`; else custom
+
+### Frontend
+
+- Company create invalidates company groups/members.
+- Project create form checkbox (default checked) sends `include_all_company_members_in_group`.
+- Project create invalidates projects + groups + group members + messages for the new group.
+- Groups/messages UI labels public vs project vs custom using backend fields (not name-only).
+
+

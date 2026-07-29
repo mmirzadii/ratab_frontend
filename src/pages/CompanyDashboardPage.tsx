@@ -1,18 +1,15 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Building2,
   CheckCircle2,
-  CirclePlus,
   Edit3,
-  FileText,
-  FolderKanban,
+  Info,
   Loader2,
-  type LucideIcon,
+  Mail,
   MessageCircle,
-  Network,
-  Settings,
-  SlidersHorizontal,
+  Search,
+  UserPlus,
   Users,
   X,
   XCircle
@@ -20,7 +17,7 @@ import {
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../app/hooks";
-import { useAppShell, type SecondaryNavItem } from "../app/appShellContext";
+import { useAppShell } from "../app/appShellContext";
 import { addToast } from "../features/ui/uiSlice";
 import {
   type Company,
@@ -28,39 +25,56 @@ import {
   useRetrieveCompanyQuery,
   useUpdateCompanyMutation
 } from "../features/companies/companyApi";
+import { useListCompanyGroupsQuery } from "../features/companies/companyGroupsApi";
+import { useListMyCompanyInvitationsQuery } from "../features/companies/companyInvitationsApi";
+import { PendingInvitationsSection } from "../features/companies/PendingInvitationsSection";
+import { GroupInfoDrawer } from "../features/companies/GroupInfoDrawer";
 import { GroupsSection } from "../features/companies/GroupsSection";
 import { MembersSection } from "../features/companies/MembersSection";
 import { MessagesSection, type SeedFinancialDocumentAttachment } from "../features/companies/MessagesSection";
 import {
+  classifyCompanyGroup,
+  groupKindLabel,
+  resolveGroupDisplayName,
+  sortConversations
+} from "../features/companies/groupKinds";
+import {
+  canManageMembers,
   canUpdateCompany,
   findCurrentMembership,
   getRoleLabel
 } from "../features/companies/companyPermissions";
 import { useListCompanyMembersQuery } from "../features/companies/companyMembersApi";
 import {
-  type FinancialDocument,
-  useListProjectFinancialDocumentsQuery
-} from "../features/financialDocuments/financialDocumentApi";
+  CompanyMobileSectionNav,
+  CompanyWorkspaceRail,
+  PRIMARY_WORKSPACE_SECTION_IDS,
+  type WorkspaceSection
+} from "../features/companies/workspace/CompanyWorkspaceRail";
+import { ConversationCreateMenu } from "../features/companies/workspace/ConversationCreateMenu";
 import {
-  type Project,
-  type ProjectRequest,
-  useCreateCompanyProjectMutation,
-  useListCompanyProjectsQuery
-} from "../features/projects/projectApi";
+  WorkspaceContextHeader,
+  WorkspaceListRow
+} from "../features/companies/workspace/WorkspaceListRow";
+import { WorkspaceDetailsDrawer } from "../features/companies/workspace/WorkspaceDetailsDrawer";
+import { useListCompanyProjectsQuery } from "../features/projects/projectApi";
+import { CreateProjectSheet } from "../features/projects/CreateProjectSheet";
 import { Button } from "../shared/components/Button";
 import { EmptyState } from "../shared/components/EmptyState";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
 import { classNames, linkButtonClasses } from "../shared/utils/classNames";
-import { cleanDisplayText, formatMoneyAmount } from "../shared/utils/formatters";
+import { cleanDisplayText } from "../shared/utils/formatters";
 import { getApiErrorMessage } from "../shared/utils/apiError";
 import { getListResults } from "../shared/utils/listResults";
 import { normalizeNumberInput } from "../shared/utils/numberText";
 
-type DashboardSection = "messages" | "costReports" | "company" | "members" | "groups";
+type MobilePane = "list" | "detail";
+type MembersListTab = "members" | "invitations";
 
 type DashboardRouteState = {
-  focusSection?: DashboardSection;
+  focusSection?: WorkspaceSection | "costReports" | "groups" | string;
+  focusGroupId?: number;
   pendingFinancialDocumentAttachment?: {
     documentId: number;
     title: string;
@@ -68,111 +82,51 @@ type DashboardRouteState = {
   };
 };
 
-const companyNavItems = [
-  { id: "messages", label: "پیام‌ها", icon: MessageCircle, section: "messages" as DashboardSection },
-  { id: "company", label: "اطلاعات شرکت", icon: Building2, section: "company" as DashboardSection },
-  { id: "members", label: "اعضا", icon: Users, section: "members" as DashboardSection },
-  { id: "groups", label: "گروه‌ها", icon: Network, section: "groups" as DashboardSection },
-  { id: "costReports", label: "پروژه‌ها", icon: FolderKanban, section: "costReports" as DashboardSection },
-  { id: "coefficients", label: "ضرایب", icon: SlidersHorizontal },
-  { id: "settings", label: "تنظیمات", icon: Settings }
-];
-
-const mobileDashboardTabs = [
-  { id: "messages", label: "پیام‌ها", icon: MessageCircle },
-  { id: "members", label: "اعضا", icon: Users },
-  { id: "groups", label: "گروه‌ها", icon: Network },
-  { id: "costReports", label: "پروژه‌ها", icon: FolderKanban },
-  { id: "company", label: "شرکت", icon: Building2 }
-] satisfies Array<{
-  id: DashboardSection;
-  label: string;
-  icon: LucideIcon;
-}>;
-
-function MobileDashboardTabs({
-  activeSection,
-  onChange
-}: {
-  activeSection: DashboardSection;
-  onChange: (section: DashboardSection) => void;
-}) {
-  return (
-    <nav
-      aria-label="بخش‌های شرکت"
-      className="grid shrink-0 grid-cols-5 gap-1 border-b border-white/10 bg-slate-950/45 p-2 light:border-slate-200 light:bg-slate-50/80 lg:hidden"
-    >
-      {mobileDashboardTabs.map((item) => {
-        const Icon = item.icon;
-        const isActive = item.id === activeSection;
-
-        return (
-          <button
-            aria-current={isActive ? "page" : undefined}
-            className={classNames(
-              "flex min-h-11 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-bold transition",
-              isActive
-                ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
-                : "border-transparent text-slate-400 hover:bg-white/6 hover:text-slate-100 light:text-slate-600 light:hover:bg-white light:hover:text-slate-950"
-            )}
-            key={item.id}
-            onClick={() => onChange(item.id)}
-            type="button"
-          >
-            <Icon className="h-4 w-4 shrink-0" />
-            <span className="truncate">{item.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
-
-function getSnapshotString(snapshot: unknown, keys: string[]) {
-  if (!snapshot || typeof snapshot !== "object") {
-    return null;
+function normalizeFocusSection(focus?: string): WorkspaceSection {
+  if (focus === "costReports" || focus === "groups") return "messages";
+  if (PRIMARY_WORKSPACE_SECTION_IDS.includes(focus as WorkspaceSection)) {
+    return focus as WorkspaceSection;
   }
-
-  const record = snapshot as Record<string, unknown>;
-  const value = keys.map((key) => record[key]).find((item) => item !== undefined && item !== null);
-
-  return typeof value === "string" || typeof value === "number" ? String(value) : null;
-}
-
-function getDocumentLineCount(document: FinancialDocument) {
-  return (
-    Number(getSnapshotString(document.totals_snapshot_json, ["line_count"])) ||
-    (document.lines ?? []).length ||
-    0
-  );
-}
-
-function getDocumentTotalAmount(document: FinancialDocument) {
-  return getSnapshotString(document.totals_snapshot_json, ["total_amount", "final_total_amount"]);
-}
-
-function getDocumentTitle(document: FinancialDocument) {
-  return cleanDisplayText(document.title || document.report_title, "صورت‌بهای بدون عنوان");
-}
-
-function getDocumentStatusLabel(status: FinancialDocument["status"]) {
-  if (status === "draft") return "در حال ویرایش";
-  if (status === "calculated") return "محاسبه‌شده";
-  if (status === "locked") return "قفل‌شده";
-  return cleanDisplayText(status, "نامشخص");
+  return "messages";
 }
 
 const panelInputClasses =
   "h-11 w-full rounded-lg border border-white/10 bg-slate-950/45 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 sm:h-12 sm:px-4 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
 
-function CompanyInfoPanel({
+function useIsXlViewport() {
+  const [isXl, setIsXl] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(min-width: 1280px)").matches : false
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1280px)");
+    const handleChange = () => setIsXl(mediaQuery.matches);
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  return isXl;
+}
+
+function SummaryField({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value?.trim()) return null;
+  return (
+    <div className="border-b border-white/6 py-2.5 last:border-0 light:border-slate-100">
+      <dt className="text-[11px] font-bold text-slate-400 light:text-slate-500">{label}</dt>
+      <dd className="mt-0.5 text-sm font-bold text-slate-100 light:text-slate-900">{value}</dd>
+    </div>
+  );
+}
+
+function CompanyEditModal({
   canEdit,
   company,
-  roleLabel
+  onClose
 }: {
   canEdit: boolean;
   company: Company;
-  roleLabel: string;
+  onClose: () => void;
 }) {
   const dispatch = useAppDispatch();
   const [updateCompany, { isLoading: isSaving }] = useUpdateCompanyMutation();
@@ -190,9 +144,7 @@ function CompanyInfoPanel({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canEdit) {
-      return;
-    }
+    if (!canEdit) return;
 
     const body: PatchedCompanyRequest = {};
     const name = form.name.trim();
@@ -209,146 +161,9 @@ function CompanyInfoPanel({
     try {
       await updateCompany({ companyId: company.id, body }).unwrap();
       dispatch(addToast({ message: "اطلاعات شرکت ذخیره شد.", type: "success" }));
-    } catch (error) {
-      dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
-    }
-  }
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
-      <div className="flex items-center gap-2.5 border-b border-white/10 pb-3 sm:gap-3 sm:pb-4 light:border-slate-200">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 sm:h-11 sm:w-11">
-          <Building2 className="h-5 w-5" />
-        </div>
-        <div>
-          <h2 className="text-base font-black text-white sm:text-lg light:text-slate-950">اطلاعات شرکت</h2>
-          <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
-            نقش شما: {roleLabel}
-            {!canEdit ? " · فقط مشاهده" : ""}
-          </p>
-        </div>
-      </div>
-
-      {!canEdit ? (
-        <p className="mt-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400 light:border-slate-200 light:bg-slate-50 light:text-slate-600">
-          ویرایش مشخصات شرکت برای کارمند در رابط کاربری غیرفعال است. سرور مرجع نهایی دسترسی است.
-        </p>
-      ) : null}
-
-      <form className="mt-4 space-y-3 sm:mt-5 sm:space-y-4" onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-          <label className="space-y-1.5 sm:space-y-2">
-            <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام شرکت</span>
-            <input
-              className={panelInputClasses}
-              disabled={!canEdit}
-              onChange={(e) => updateField("name", e.target.value)}
-              placeholder="نام شرکت"
-              readOnly={!canEdit}
-              required
-              value={form.name}
-            />
-          </label>
-          <label className="space-y-1.5 sm:space-y-2">
-            <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام حقوقی</span>
-            <input
-              className={panelInputClasses}
-              disabled={!canEdit}
-              onChange={(e) => updateField("legal_name", e.target.value)}
-              placeholder="اختیاری"
-              readOnly={!canEdit}
-              value={form.legal_name}
-            />
-          </label>
-          <label className="space-y-1.5 sm:space-y-2">
-            <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره ثبت</span>
-            <input
-              className={panelInputClasses}
-              disabled={!canEdit}
-              inputMode="numeric"
-              onChange={(e) => updateField("registration_number", e.target.value)}
-              placeholder="اختیاری"
-              readOnly={!canEdit}
-              value={form.registration_number}
-            />
-          </label>
-          <label className="space-y-1.5 sm:space-y-2">
-            <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه ملی</span>
-            <input
-              className={panelInputClasses}
-              disabled={!canEdit}
-              inputMode="numeric"
-              onChange={(e) => updateField("national_id", e.target.value)}
-              placeholder="اختیاری"
-              readOnly={!canEdit}
-              value={form.national_id}
-            />
-          </label>
-          <label className="space-y-1.5 sm:col-span-2 sm:space-y-2">
-            <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه کوتاه شرکت</span>
-            <input
-              className={classNames(panelInputClasses, "text-left")}
-              dir="ltr"
-              disabled={!canEdit}
-              onChange={(e) => updateField("active_slug", e.target.value)}
-              placeholder="optional-company-slug"
-              readOnly={!canEdit}
-              value={form.active_slug}
-            />
-          </label>
-        </div>
-
-        {canEdit ? (
-          <div className="sticky bottom-0 z-10 -mx-3 flex border-t border-white/10 bg-slate-950/90 px-3 pb-1 pt-3 backdrop-blur-md sm:static sm:mx-0 sm:block sm:border-0 sm:bg-transparent sm:px-0 sm:pt-2 light:border-slate-200 light:bg-white/90 light:sm:bg-transparent">
-            <Button className="w-full sm:w-auto" disabled={isSaving || !form.name.trim()} type="submit">
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              ذخیره تغییرات
-            </Button>
-          </div>
-        ) : null}
-      </form>
-    </div>
-  );
-}
-
-function AddProjectModal({
-  companyId,
-  onClose,
-  onSuccess
-}: {
-  companyId: number;
-  onClose: () => void;
-  onSuccess: (project: Project) => void;
-}) {
-  const dispatch = useAppDispatch();
-  const [createProject, { isLoading }] = useCreateCompanyProjectMutation();
-  const [form, setForm] = useState({
-    name: "",
-    project_code: "",
-    contract_number: "",
-    employer_name: ""
-  });
-
-  function updateField(field: keyof typeof form, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const body: ProjectRequest = { name: form.name.trim() };
-    const code = form.project_code.trim();
-    if (code) body.project_code = code;
-    const contractNum = form.contract_number.trim();
-    if (contractNum) body.contract_number = contractNum;
-    const employer = form.employer_name.trim();
-    if (employer) body.employer_name = employer;
-
-    try {
-      const newProject = await createProject({ companyId, body }).unwrap();
-      dispatch(addToast({ message: "پروژه با موفقیت ایجاد شد.", type: "success" }));
-      onSuccess(newProject);
-    } catch (error) {
-      dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
+      onClose();
+    } catch (submitError) {
+      dispatch(addToast({ message: getApiErrorMessage(submitError), type: "error" }));
     }
   }
 
@@ -371,15 +186,10 @@ function AddProjectModal({
         className="max-h-[calc(100dvh-0.5rem)] w-full max-w-lg overflow-y-auto p-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6 [scrollbar-width:thin]"
         dir="rtl"
       >
-        <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <FolderKanban className="h-5 w-5 text-emerald-200 light:text-emerald-700" />
-            <div>
-              <h2 className="text-lg font-black text-white light:text-slate-950">افزودن پروژه</h2>
-              <p className="mt-1 hidden text-xs text-slate-400 sm:block light:text-slate-500">
-                ایجاد پروژه جدید برای این شرکت
-              </p>
-            </div>
+            <Building2 className="h-5 w-5 text-emerald-200 light:text-emerald-700" />
+            <h2 className="text-lg font-black text-white light:text-slate-950">ویرایش اطلاعات شرکت</h2>
           </div>
           <button
             aria-label="بستن"
@@ -391,61 +201,89 @@ function AddProjectModal({
           </button>
         </div>
 
-        <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit}>
-          <label className="block space-y-1.5 sm:space-y-2">
-            <span className="text-sm font-bold text-slate-200 light:text-slate-700">
-              نام پروژه <span className="text-rose-400">*</span>
-            </span>
-            <input
-              autoFocus
-              className={panelInputClasses}
-              onChange={(e) => updateField("name", e.target.value)}
-              placeholder="مثلاً پروژه ساختمانی نمونه"
-              required
-              value={form.name}
-            />
-          </label>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <label className="block space-y-1.5 sm:space-y-2">
-              <span className="text-sm font-bold text-slate-200 light:text-slate-700">کد پروژه</span>
+        {!canEdit ? (
+          <p className="mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400 light:border-slate-200 light:bg-slate-50 light:text-slate-600">
+            ویرایش مشخصات شرکت برای کارمند در رابط کاربری غیرفعال است.
+          </p>
+        ) : null}
+
+        <form className="space-y-3" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="space-y-1.5">
+              <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام شرکت</span>
               <input
                 className={panelInputClasses}
-                onChange={(e) => updateField("project_code", e.target.value)}
-                placeholder="اختیاری"
-                value={form.project_code}
+                disabled={!canEdit}
+                onChange={(e) => updateField("name", e.target.value)}
+                placeholder="نام شرکت"
+                readOnly={!canEdit}
+                required
+                value={form.name}
               />
             </label>
-            <label className="block space-y-1.5 sm:space-y-2">
-              <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره قرارداد</span>
+            <label className="space-y-1.5">
+              <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام حقوقی</span>
               <input
                 className={panelInputClasses}
-                onChange={(e) => updateField("contract_number", e.target.value)}
+                disabled={!canEdit}
+                onChange={(e) => updateField("legal_name", e.target.value)}
                 placeholder="اختیاری"
-                value={form.contract_number}
+                readOnly={!canEdit}
+                value={form.legal_name}
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره ثبت</span>
+              <input
+                className={panelInputClasses}
+                disabled={!canEdit}
+                inputMode="numeric"
+                onChange={(e) => updateField("registration_number", e.target.value)}
+                placeholder="اختیاری"
+                readOnly={!canEdit}
+                value={form.registration_number}
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه ملی</span>
+              <input
+                className={panelInputClasses}
+                disabled={!canEdit}
+                inputMode="numeric"
+                onChange={(e) => updateField("national_id", e.target.value)}
+                placeholder="اختیاری"
+                readOnly={!canEdit}
+                value={form.national_id}
+              />
+            </label>
+            <label className="space-y-1.5 sm:col-span-2">
+              <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه کوتاه شرکت</span>
+              <input
+                className={classNames(panelInputClasses, "text-left")}
+                dir="ltr"
+                disabled={!canEdit}
+                onChange={(e) => updateField("active_slug", e.target.value)}
+                placeholder="optional-company-slug"
+                readOnly={!canEdit}
+                value={form.active_slug}
               />
             </label>
           </div>
-          <label className="block space-y-1.5 sm:space-y-2">
-            <span className="text-sm font-bold text-slate-200 light:text-slate-700">کارفرما</span>
-            <input
-              className={panelInputClasses}
-              onChange={(e) => updateField("employer_name", e.target.value)}
-              placeholder="اختیاری"
-              value={form.employer_name}
-            />
-          </label>
-          <div className="sticky bottom-0 z-10 -mx-4 -mb-4 grid grid-cols-2 gap-2 border-t border-white/10 bg-slate-950/95 p-4 backdrop-blur-md sm:static sm:mx-0 sm:mb-0 sm:flex sm:items-center sm:justify-end sm:gap-3 sm:border-0 sm:bg-transparent sm:p-0 sm:pt-2 light:border-slate-200 light:bg-white/95 light:sm:bg-transparent">
+
+          <div className="grid grid-cols-2 gap-2 pt-1 sm:flex sm:justify-end sm:gap-3">
             <button
-              className="h-11 w-full rounded-lg border border-white/10 px-4 text-sm font-bold text-slate-300 transition hover:border-white/20 hover:text-white sm:w-auto sm:px-5 light:border-slate-200 light:text-slate-600 light:hover:text-slate-950"
+              className="h-11 rounded-lg border border-white/10 px-4 text-sm font-bold text-slate-300 transition hover:border-white/20 hover:text-white light:border-slate-200 light:text-slate-600 light:hover:text-slate-950"
               onClick={onClose}
               type="button"
             >
               انصراف
             </button>
-            <Button className="w-full sm:w-auto" disabled={isLoading || !form.name.trim()} type="submit">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderKanban className="h-4 w-4" />}
-              ایجاد پروژه
-            </Button>
+            {canEdit ? (
+              <Button className="w-full sm:w-auto" disabled={isSaving || !form.name.trim()} type="submit">
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                ذخیره
+              </Button>
+            ) : null}
           </div>
         </form>
       </GlassCard>
@@ -453,256 +291,116 @@ function AddProjectModal({
   );
 }
 
-function ProjectsPanel({
-  companyId,
-  error,
-  isLoading,
-  onAddProject,
-  onSelectProject,
-  projects
+function CompanySummaryPanel({
+  canEdit,
+  company,
+  roleLabel,
+  onEdit
 }: {
-  companyId: number;
-  error: string | null;
-  isLoading: boolean;
-  onAddProject: () => void;
-  onSelectProject: (project: Project) => void;
-  projects: Project[];
+  canEdit: boolean;
+  company: Company;
+  roleLabel: string;
+  onEdit: () => void;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
-      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 sm:gap-3 sm:pb-4 light:border-slate-200">
-        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-          <div className="hidden h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 sm:flex">
-            <FolderKanban className="h-5 w-5" />
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-5 [scrollbar-width:thin]">
+      <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/8 pb-3 light:border-slate-200">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-700">
+            <Building2 className="h-5 w-5" />
           </div>
-          <div className="min-w-0">
-            <h2 className="truncate text-base font-black text-white sm:text-lg light:text-slate-950">پروژه‌ها</h2>
-            <p className="mt-1 hidden text-xs text-slate-400 sm:block light:text-slate-500">
-              پروژه‌های ثبت‌شده این شرکت
-            </p>
+          <div>
+            <h2 className="text-sm font-black text-white light:text-slate-950">اطلاعات شرکت</h2>
+            <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">نقش شما: {roleLabel}</p>
           </div>
         </div>
-        <button className={classNames(linkButtonClasses, "shrink-0 px-3 sm:px-4")} onClick={onAddProject} type="button">
-          <CirclePlus className="h-4 w-4" />
-          افزودن پروژه
-        </button>
+        {canEdit ? (
+          <Button className="h-9 px-3 text-xs" onClick={onEdit} type="button" variant="secondary">
+            <Edit3 className="h-3.5 w-3.5" />
+            ویرایش
+          </Button>
+        ) : null}
       </div>
 
-      {isLoading ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center gap-3 py-10 text-sm font-bold text-slate-300 light:text-slate-600">
-          <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
-          در حال دریافت پروژه‌ها
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-4 text-sm leading-7 text-rose-100 light:text-rose-700">
-          {error}
-        </div>
-      ) : null}
-
-      {!isLoading && !error && projects.length === 0 ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center py-8 sm:min-h-72">
-          <div className="max-w-md text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200 sm:h-14 sm:w-14">
-              <FolderKanban className="h-6 w-6 sm:h-7 sm:w-7" />
-            </div>
-            <h3 className="mt-3 text-base font-black text-white sm:mt-4 sm:text-xl light:text-slate-950">
-              هنوز پروژه‌ای ثبت نشده است
-            </h3>
-            <p className="mt-3 hidden text-sm leading-7 text-slate-300 sm:block light:text-slate-600">
-              برای شروع یک پروژه بسازید. هر پروژه می‌تواند چندین صورت‌بها داشته باشد.
-            </p>
-            <button
-              className={classNames(linkButtonClasses, "mt-4")}
-              onClick={onAddProject}
-              type="button"
-            >
-              <CirclePlus className="h-4 w-4" />
-              ساخت پروژه
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {!isLoading && !error && projects.length > 0 ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          {projects.map((project) => (
-            <article
-              className="flex flex-col rounded-lg border border-white/10 bg-white/7 p-3 sm:p-4 light:border-slate-200 light:bg-[#f5fbf8]"
-              key={project.id}
-            >
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate text-base font-black text-white light:text-slate-950">
-                  {cleanDisplayText(project.name, "پروژه بدون نام")}
-                </h3>
-                {project.contract_number ? (
-                  <p className="mt-1 truncate text-xs text-slate-400 light:text-slate-500">
-                    شماره قرارداد: {project.contract_number}
-                  </p>
-                ) : null}
-                {project.employer_name ? (
-                  <p className="mt-0.5 truncate text-xs text-slate-400 light:text-slate-500">
-                    کارفرما: {project.employer_name}
-                  </p>
-                ) : null}
-              </div>
-              <div className="mt-3 flex gap-2 sm:mt-4 sm:flex-wrap">
-                <button
-                  className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-3 text-sm font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-slate-50 light:text-slate-800"
-                  onClick={() => onSelectProject(project)}
-                  type="button"
-                >
-                  <FileText className="h-4 w-4" />
-                  صورت‌بهاها
-                </button>
-                <Link
-                  aria-label={`افزودن صورت‌بها به ${cleanDisplayText(project.name, "پروژه بدون نام")}`}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-0 text-sm font-bold text-emerald-100 transition hover:bg-emerald-400/20 sm:w-auto sm:flex-1 sm:px-3 light:text-emerald-800"
-                  state={{ existingProject: project }}
-                  to={`/companies/${companyId}/cost-reports/new`}
-                >
-                  <CirclePlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">افزودن صورت‌بها</span>
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : null}
+      <dl>
+        <SummaryField label="نام شرکت" value={company.name} />
+        <SummaryField label="نام حقوقی" value={company.legal_name} />
+        <SummaryField label="شماره ثبت" value={company.registration_number} />
+        <SummaryField label="شناسه ملی" value={company.national_id} />
+        <SummaryField label="شناسه کوتاه" value={company.active_slug} />
+        <SummaryField label="وضعیت" value={company.is_active ? "فعال" : "غیرفعال"} />
+      </dl>
     </div>
   );
 }
 
-function ProjectDocumentsPanel({
-  companyId,
-  onBack,
-  project
+function ContextListSearch({
+  value,
+  onChange,
+  placeholder
 }: {
-  companyId: number;
-  onBack: () => void;
-  project: Project;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
 }) {
-  const { data, isLoading, error } = useListProjectFinancialDocumentsQuery(project.id);
-  const documents = getListResults<FinancialDocument>(
-    data as { results?: readonly FinancialDocument[] } | undefined
-  );
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-5 [scrollbar-color:rgba(148,163,184,.4)_transparent] [scrollbar-width:thin]">
-      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 sm:gap-3 sm:pb-4 light:border-slate-200">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <button
-            aria-label="بازگشت به پروژه‌ها"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-300 transition hover:border-white/20 hover:text-white sm:h-9 sm:w-9 light:border-slate-200 light:text-slate-600 light:hover:text-slate-950"
-            onClick={onBack}
-            type="button"
-          >
-            <ArrowRight className="h-4 w-4" />
-          </button>
-          <div className="min-w-0">
-            <h2 className="truncate text-base font-black text-white sm:text-lg light:text-slate-950">
-              {cleanDisplayText(project.name, "پروژه بدون نام")}
-            </h2>
-            <p className="mt-0.5 hidden text-xs text-slate-400 sm:block light:text-slate-500">صورت‌بهاهای این پروژه</p>
-          </div>
-        </div>
-        <Link
-          className={classNames(linkButtonClasses, "shrink-0 px-3 sm:px-4")}
-          state={{ existingProject: project }}
-          to={`/companies/${companyId}/cost-reports/new`}
+    <label className="relative block border-b border-white/8 px-2 py-2 light:border-slate-200">
+      <Search className="pointer-events-none absolute right-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+      <input
+        className="h-9 w-full rounded-lg border border-white/10 bg-slate-950/40 pr-9 pl-3 text-xs text-slate-100 outline-none placeholder:text-slate-500 focus:border-emerald-300/40 light:border-slate-200 light:bg-white light:text-slate-950"
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        value={value}
+      />
+    </label>
+  );
+}
+
+function MembersSubTabs({
+  activeTab,
+  onChange
+}: {
+  activeTab: MembersListTab;
+  onChange: (tab: MembersListTab) => void;
+}) {
+  return (
+    <div className="flex border-b border-white/8 light:border-slate-200">
+      {(
+        [
+          { id: "members" as const, label: "اعضا" },
+          { id: "invitations" as const, label: "دعوت‌ها" }
+        ] as const
+      ).map((tab) => (
+        <button
+          className={classNames(
+            "flex-1 px-2 py-2 text-xs font-bold transition",
+            activeTab === tab.id
+              ? "border-b-2 border-emerald-400 text-emerald-100 light:text-emerald-800"
+              : "text-slate-400 hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800"
+          )}
+          key={tab.id}
+          onClick={() => onChange(tab.id)}
+          type="button"
         >
-          <CirclePlus className="h-4 w-4" />
-          <span className="sm:hidden">افزودن</span>
-          <span className="hidden sm:inline">افزودن صورت‌بها</span>
-        </Link>
-      </div>
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
-      {isLoading ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center gap-3 py-10 text-sm font-bold text-slate-300 light:text-slate-600">
-          <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
-          در حال دریافت صورت‌بهاها
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-4 text-sm leading-7 text-rose-100 light:text-rose-700">
-          {getApiErrorMessage(error)}
-        </div>
-      ) : null}
-
-      {!isLoading && !error && documents.length === 0 ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center py-8 sm:min-h-72">
-          <div className="max-w-md text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-400/10 text-violet-200 sm:h-14 sm:w-14">
-              <FileText className="h-6 w-6 sm:h-7 sm:w-7" />
-            </div>
-            <h3 className="mt-3 text-base font-black text-white sm:mt-4 sm:text-xl light:text-slate-950">
-              هنوز صورت‌بهایی ثبت نشده است
-            </h3>
-            <p className="mt-3 hidden text-sm leading-7 text-slate-300 sm:block light:text-slate-600">
-              برای این پروژه یک صورت‌بها بسازید.
-            </p>
-            <Link
-              className={classNames(linkButtonClasses, "mt-4")}
-              state={{ existingProject: project }}
-              to={`/companies/${companyId}/cost-reports/new`}
-            >
-              <CirclePlus className="h-4 w-4" />
-              ساخت صورت‌بها
-            </Link>
-          </div>
-        </div>
-      ) : null}
-
-      {!isLoading && !error && documents.length > 0 ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          {documents.map((document) => (
-            <article
-              className="rounded-lg border border-white/10 bg-white/7 p-3 sm:p-4 light:border-slate-200 light:bg-[#f5fbf8]"
-              key={document.id}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="truncate text-base font-black text-white light:text-slate-950">
-                    {getDocumentTitle(document)}
-                  </h3>
-                  {document.document_number ? (
-                    <p className="mt-1 truncate text-xs text-slate-400 light:text-slate-500">
-                      شماره: {document.document_number}
-                    </p>
-                  ) : null}
-                </div>
-                <StatusBadge tone={document.status === "draft" ? "amber" : "emerald"}>
-                  {getDocumentStatusLabel(document.status)}
-                </StatusBadge>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:mt-4">
-                <div className="rounded-lg border border-white/10 bg-slate-950/25 p-2.5 sm:p-3 light:border-slate-200 light:bg-white">
-                  <span className="block text-slate-400 light:text-slate-500">ردیف‌ها</span>
-                  <span className="mt-1 block font-black text-slate-100 light:text-slate-900">
-                    {getDocumentLineCount(document)}
-                  </span>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-slate-950/25 p-2.5 sm:p-3 light:border-slate-200 light:bg-white">
-                  <span className="block text-slate-400 light:text-slate-500">جمع کل</span>
-                  <span className="mt-1 block font-black text-slate-100 light:text-slate-900">
-                    {formatMoneyAmount(getDocumentTotalAmount(document))}
-                  </span>
-                </div>
-              </div>
-              <Link
-                className={classNames(linkButtonClasses, "mt-3 w-full sm:mt-4")}
-                state={{ existingDocument: document, existingProject: project }}
-                to={`/companies/${companyId}/cost-reports/new`}
-              >
-                <Edit3 className="h-4 w-4" />
-                باز کردن / ویرایش
-              </Link>
-            </article>
-          ))}
-        </div>
-      ) : null}
+function DetailsSummary({
+  label,
+  value
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
+  if (!value?.trim()) return null;
+  return (
+    <div className="space-y-1 border-b border-white/8 py-2.5 last:border-0 light:border-slate-200">
+      <p className="text-[11px] font-bold text-slate-400 light:text-slate-500">{label}</p>
+      <p className="text-sm font-bold text-slate-100 light:text-slate-900">{value}</p>
     </div>
   );
 }
@@ -713,65 +411,178 @@ export function CompanyDashboardPage() {
   const navigate = useNavigate();
   const parsedCompanyId = Number(companyId);
   const hasValidCompanyId = Number.isInteger(parsedCompanyId) && parsedCompanyId > 0;
+  const isXl = useIsXlViewport();
+
   const { data: company, error, isLoading, refetch } = useRetrieveCompanyQuery(parsedCompanyId, {
     skip: !hasValidCompanyId
   });
   const hasDismissedOnboarding = useAppSelector((state) => state.ui.hasDismissedOnboarding);
   const authUser = useAppSelector((state) => state.auth.user);
-  const [activeSection, setActiveSection] = useState<DashboardSection>("messages");
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
-  const [seedFinancialDocumentAttachment, setSeedFinancialDocumentAttachment] =
-    useState<SeedFinancialDocumentAttachment | null>(null);
   const dispatch = useAppDispatch();
   const routeState = (location.state as DashboardRouteState | null) ?? null;
+  const { setSecondaryNav, setCompanyCtx } = useAppShell();
+
+  const [activeSection, setActiveSection] = useState<WorkspaceSection>("messages");
+  const [mobilePane, setMobilePane] = useState<MobilePane>("list");
+  const [membersListTab, setMembersListTab] = useState<MembersListTab>("members");
+  const [selectedMessageGroupId, setSelectedMessageGroupId] = useState<number | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+  const [isInviteMemberOpen, setIsInviteMemberOpen] = useState(false);
+  const [isCompanyEditOpen, setIsCompanyEditOpen] = useState(false);
+  const [isDetailsDrawerOpen, setIsDetailsDrawerOpen] = useState(false);
+  const [showInactiveMembers, setShowInactiveMembers] = useState(false);
+  const [listQuery, setListQuery] = useState("");
+  const [seedFinancialDocumentAttachment, setSeedFinancialDocumentAttachment] =
+    useState<SeedFinancialDocumentAttachment | null>(null);
+  const [openFinancialDocumentRequestId, setOpenFinancialDocumentRequestId] = useState(0);
+
   const {
     data: projects = [],
-    error: projectsError,
-    isLoading: isLoadingProjects
+    refetch: refetchProjects
   } = useListCompanyProjectsQuery(parsedCompanyId, { skip: !hasValidCompanyId });
   const { data: membersData } = useListCompanyMembersQuery(parsedCompanyId, {
     skip: !hasValidCompanyId
   });
+  const { data: groupsData, isLoading: isLoadingGroups } = useListCompanyGroupsQuery(parsedCompanyId, {
+    skip: !hasValidCompanyId
+  });
+  const { data: myInvitationsData } = useListMyCompanyInvitationsQuery(undefined, {
+    skip: !hasValidCompanyId
+  });
+
   const members = getListResults(membersData);
+  const groups = getListResults(groupsData);
   const myMembership = findCurrentMembership(members, authUser?.id);
   const myRole = myMembership?.is_active ? myMembership.role : null;
   const canEditCompany = canUpdateCompany(myRole);
-  const { setSecondaryNav, setCompanyCtx } = useAppShell();
+  const canInviteMembers = canManageMembers(myRole);
+  const companyName = cleanDisplayText(company?.name, "شرکت بدون نام");
+  const selectedMessageGroup = groups.find((group) => group.id === selectedMessageGroupId) ?? null;
+  const selectedMember = members.find((member) => member.id === selectedMemberId) ?? null;
+  const selectedMessageGroupKind = selectedMessageGroup
+    ? classifyCompanyGroup(selectedMessageGroup, projects)
+    : null;
+
+  const normalizedQuery = listQuery.trim().toLowerCase();
+
+  const companyPendingInvitations = useMemo(() => {
+    if (!company) return [];
+    return getListResults(myInvitationsData).filter(
+      (invitation) => invitation.status === "pending" && invitation.company_id === company.id
+    );
+  }, [company, myInvitationsData]);
+
+  const filteredGroups = useMemo(() => {
+    if (!normalizedQuery) return groups;
+    return groups.filter((group) => {
+      const title = resolveGroupDisplayName(group, projects).toLowerCase();
+      const kind = groupKindLabel(classifyCompanyGroup(group, projects));
+      return title.includes(normalizedQuery) || kind.includes(listQuery.trim());
+    });
+  }, [groups, normalizedQuery, projects, listQuery]);
+
+  const filteredMembers = useMemo(() => {
+    const visible = members.filter((member) => showInactiveMembers || member.is_active);
+    if (!normalizedQuery) return visible;
+    return visible.filter((member) => {
+      const haystack = [member.display_name, member.phone_number, member.title, getRoleLabel(member.role)]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [members, normalizedQuery, showInactiveMembers]);
+
+  const filteredInvitations = useMemo(() => {
+    if (!normalizedQuery) return companyPendingInvitations;
+    return companyPendingInvitations.filter((invitation) => {
+      const haystack = [
+        invitation.invited_user_phone_number,
+        invitation.display_name,
+        invitation.title,
+        getRoleLabel(invitation.proposed_role)
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [companyPendingInvitations, normalizedQuery]);
+
+  const sortedConversations = useMemo(
+    () => sortConversations(filteredGroups, projects),
+    [filteredGroups, projects]
+  );
+
+  const contextHeaderAction = useMemo(() => {
+    if (activeSection === "messages") {
+      return (
+        <ConversationCreateMenu
+          onCreateGroup={() => setIsCreateGroupOpen(true)}
+          onCreateProject={() => setIsAddProjectOpen(true)}
+        />
+      );
+    }
+    if (activeSection === "members" && canInviteMembers) {
+      return (
+        <Button className="h-8 px-2 text-xs" onClick={() => setIsInviteMemberOpen(true)} type="button" variant="secondary">
+          <UserPlus className="h-3.5 w-3.5" />
+          افزودن
+        </Button>
+      );
+    }
+    return null;
+  }, [activeSection, canInviteMembers]);
+
+  const searchPlaceholder = useMemo(() => {
+    if (activeSection === "members") {
+      return membersListTab === "invitations" ? "جستجوی دعوت…" : "جستجوی عضو…";
+    }
+    if (activeSection === "company") return "جستجو…";
+    return "جستجوی گفتگو…";
+  }, [activeSection, membersListTab]);
+
+  const detailsDrawerTitle = useMemo(() => {
+    if (activeSection === "members" && selectedMember) {
+      return selectedMember.display_name || selectedMember.phone_number;
+    }
+    return "جزئیات";
+  }, [activeSection, selectedMember]);
 
   useEffect(() => {
     if (!company) return;
 
-    const name = cleanDisplayText(company.name, "شرکت بدون نام");
-    setCompanyCtx({ id: company.id, name, isActive: company.is_active });
-
-    const navItems: SecondaryNavItem[] = companyNavItems.map((item) => {
-      const hasSection = "section" in item;
-      return {
-        id: item.id,
-        label: item.label,
-        icon: item.icon,
-        isActive: hasSection ? item.section === activeSection : false,
-        disabled: !hasSection,
-        onClick: hasSection ? () => setActiveSection(item.section as DashboardSection) : undefined
-      };
+    setCompanyCtx({
+      id: company.id,
+      name: companyName,
+      isActive: company.is_active,
+      workspaceActive: true
     });
-    setSecondaryNav(navItems);
+    setSecondaryNav(null);
 
     return () => {
       setSecondaryNav(null);
       setCompanyCtx(null);
     };
-  }, [company, activeSection, setSecondaryNav, setCompanyCtx]);
+  }, [company, companyName, setSecondaryNav, setCompanyCtx]);
 
   useEffect(() => {
-    if (!company || !routeState) {
-      return;
+    if (selectedMessageGroupId != null) return;
+    const ordered = sortConversations(groups, projects);
+    if (ordered[0]) {
+      setSelectedMessageGroupId(ordered[0].id);
     }
+  }, [groups, projects, selectedMessageGroupId]);
+
+  useEffect(() => {
+    if (!company || !routeState) return;
 
     if (routeState.pendingFinancialDocumentAttachment) {
       const pending = routeState.pendingFinancialDocumentAttachment;
       setActiveSection("messages");
+      setMobilePane("detail");
       setSeedFinancialDocumentAttachment({
         resourceId: pending.documentId,
         label: cleanDisplayText(pending.title, "صورت‌بها"),
@@ -783,14 +594,188 @@ export function CompanyDashboardPage() {
     }
 
     if (routeState.focusSection) {
-      setActiveSection(routeState.focusSection);
+      const legacySection = routeState.focusSection;
+      const section = normalizeFocusSection(legacySection);
+      setActiveSection(section);
+      setMobilePane(section === "company" ? "detail" : routeState.focusGroupId != null ? "detail" : "list");
+      if (routeState.focusGroupId != null) {
+        setSelectedMessageGroupId(routeState.focusGroupId);
+        setMobilePane("detail");
+      }
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [company, dispatch, location.pathname, navigate, routeState]);
 
+  function changeSection(section: WorkspaceSection) {
+    setActiveSection(section);
+    setListQuery("");
+    setMembersListTab("members");
+    setIsDetailsDrawerOpen(false);
+    setMobilePane(section === "company" ? "detail" : "list");
+  }
+
+  function openDetail() {
+    setMobilePane("detail");
+  }
+
+  function openDetailsDrawer() {
+    setIsDetailsDrawerOpen(true);
+  }
+
+  function renderDetailsDrawerContent() {
+    if (activeSection === "members" && selectedMember) {
+      return (
+        <>
+          <DetailsSummary label="نام" value={selectedMember.display_name} />
+          <DetailsSummary label="تلفن" value={selectedMember.phone_number} />
+          <DetailsSummary label="سمت" value={selectedMember.title} />
+          <DetailsSummary label="نقش" value={getRoleLabel(selectedMember.role)} />
+          <DetailsSummary label="وضعیت" value={selectedMember.is_active ? "فعال" : "غیرفعال"} />
+        </>
+      );
+    }
+
+    return <p className="text-xs text-slate-400 light:text-slate-500">موردی برای نمایش انتخاب نشده است.</p>;
+  }
+
+  function renderMessageGroupManagementSlot() {
+    if (!selectedMessageGroup || !company) return null;
+
+    if (selectedMessageGroupKind === "custom") {
+      return (
+        <GroupsSection
+          companyId={company.id}
+          hideCreateForm
+          hideList
+          selectedGroupId={selectedMessageGroup.id}
+        />
+      );
+    }
+
+    return null;
+  }
+
+  function renderContextListRows() {
+    if (activeSection === "company") {
+      return (
+        <>
+          <WorkspaceListRow
+            avatarIcon={Building2}
+            onClick={() => {
+              setMobilePane("detail");
+            }}
+            selected={mobilePane === "detail"}
+            title="خلاصه"
+          />
+          {canEditCompany ? (
+            <WorkspaceListRow
+              avatarIcon={Edit3}
+              onClick={() => setIsCompanyEditOpen(true)}
+              title="ویرایش"
+            />
+          ) : null}
+        </>
+      );
+    }
+
+    if (activeSection === "messages") {
+      if (isLoadingGroups) {
+        return (
+          <div className="flex items-center justify-center gap-2 p-6 text-xs font-bold text-slate-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            دریافت گفتگوها
+          </div>
+        );
+      }
+      if (sortedConversations.length === 0) {
+        return (
+          <p className="p-4 text-center text-xs text-slate-400 light:text-slate-500">گفتگویی برای نمایش نیست.</p>
+        );
+      }
+      return sortedConversations.map((group) => {
+        const kind = classifyCompanyGroup(group, projects);
+        return (
+          <WorkspaceListRow
+            avatarIcon={MessageCircle}
+            badge={
+              kind === "project" ? (
+                <StatusBadge className="px-2 py-0.5 text-[10px]" tone="violet">
+                  پروژه
+                </StatusBadge>
+              ) : undefined
+            }
+            key={group.id}
+            onClick={() => {
+              setSelectedMessageGroupId(group.id);
+              openDetail();
+            }}
+            selected={group.id === selectedMessageGroupId}
+            subtitle={!group.is_active ? "غیرفعال" : undefined}
+            title={resolveGroupDisplayName(group, projects)}
+          />
+        );
+      });
+    }
+
+    if (activeSection === "members") {
+      if (membersListTab === "invitations") {
+        if (filteredInvitations.length === 0) {
+          return (
+            <p className="p-4 text-center text-xs text-slate-400 light:text-slate-500">
+              دعوت در انتظاری برای این شرکت نیست.
+            </p>
+          );
+        }
+        return filteredInvitations.map((invitation) => (
+          <WorkspaceListRow
+            avatarIcon={Mail}
+            badge={
+              <StatusBadge className="px-2 py-0.5 text-[10px]" tone="amber">
+                {getRoleLabel(invitation.proposed_role)}
+              </StatusBadge>
+            }
+            key={invitation.id}
+            onClick={() => openDetail()}
+            subtitle={invitation.target_group_name || invitation.invited_user_phone_number}
+            title={invitation.company_name || invitation.display_name || "دعوت عضویت"}
+          />
+        ));
+      }
+
+      if (filteredMembers.length === 0) {
+        return (
+          <p className="p-4 text-center text-xs text-slate-400 light:text-slate-500">عضوی برای نمایش نیست.</p>
+        );
+      }
+      return filteredMembers.map((member) => (
+        <WorkspaceListRow
+          avatarIcon={Users}
+          badge={
+            <StatusBadge
+              className="px-2 py-0.5 text-[10px]"
+              tone={member.role === "owner" ? "emerald" : member.role === "admin" ? "amber" : "violet"}
+            >
+              {getRoleLabel(member.role)}
+            </StatusBadge>
+          }
+          key={member.id}
+          onClick={() => {
+            setSelectedMemberId(member.id);
+            openDetail();
+          }}
+          selected={member.id === selectedMemberId}
+          subtitle={member.phone_number}
+          title={member.display_name || member.phone_number}
+        />
+      ));
+    }
+
+    return null;
+  }
+
   if (!hasValidCompanyId) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-dvh w-full items-center justify-center px-4">
         <EmptyState
           action={
             <Link className={linkButtonClasses} to="/companies">
@@ -807,20 +792,18 @@ export function CompanyDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-        <GlassCard className="flex min-h-72 items-center justify-center p-8">
-          <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
-            <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
-            در حال دریافت داشبورد شرکت
-          </div>
-        </GlassCard>
+      <div className="flex h-dvh w-full items-center justify-center">
+        <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
+          <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
+          در حال دریافت فضای کار شرکت
+        </div>
       </div>
     );
   }
 
   if (error || !company) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-dvh w-full items-center justify-center px-4">
         <EmptyState
           action={
             <div className="flex flex-wrap justify-center gap-3">
@@ -840,57 +823,209 @@ export function CompanyDashboardPage() {
     );
   }
 
+  const showContextListOnMobile = mobilePane === "list";
+  const showMainOnMobile = mobilePane === "detail" || activeSection === "company";
+
   return (
-    <div className="relative mx-auto flex w-full max-w-full flex-col sm:px-6 sm:pb-2 sm:pt-5">
-      <GlassCard className="relative flex h-[calc(100dvh-7.75rem)] min-h-0 flex-col overflow-hidden p-0 sm:h-[calc(100dvh-153px)] lg:h-[calc(100dvh-97px)]">
-        <MobileDashboardTabs activeSection={activeSection} onChange={setActiveSection} />
-        {activeSection === "costReports" ? (
-          selectedProject !== null ? (
-            <ProjectDocumentsPanel
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-slate-950/35 light:bg-white/95">
+      <div className="flex min-h-0 flex-1 flex-row overflow-hidden">
+        <CompanyWorkspaceRail
+          activeSection={activeSection}
+          className="hidden lg:flex"
+          companyName={companyName}
+          onSectionChange={changeSection}
+        />
+
+        <aside
+          className={classNames(
+            "flex shrink-0 flex-col border-white/8 bg-slate-950/40 light:border-slate-200 light:bg-white/90 md:border-l",
+            "w-full md:w-[19rem] xl:w-[22rem]",
+            showContextListOnMobile ? "flex" : "hidden md:flex"
+          )}
+        >
+          <WorkspaceContextHeader action={contextHeaderAction} companyName={companyName} isActive={company.is_active}>
+            {activeSection === "members" ? (
+              <MembersSubTabs activeTab={membersListTab} onChange={setMembersListTab} />
+            ) : null}
+          </WorkspaceContextHeader>
+
+          {activeSection !== "company" ? (
+            <ContextListSearch onChange={setListQuery} placeholder={searchPlaceholder} value={listQuery} />
+          ) : null}
+
+          {activeSection === "members" && membersListTab === "members" ? (
+            <div className="flex items-center border-b border-white/8 px-3 py-2 light:border-slate-200">
+              <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 light:text-slate-500">
+                <input
+                  checked={showInactiveMembers}
+                  className="rounded border-white/20"
+                  onChange={(e) => setShowInactiveMembers(e.target.checked)}
+                  type="checkbox"
+                />
+                غیرفعال‌ها
+              </label>
+            </div>
+          ) : null}
+
+          <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]">{renderContextListRows()}</div>
+        </aside>
+
+        <main
+          className={classNames(
+            "flex min-h-0 min-w-0 flex-1 flex-col",
+            showMainOnMobile ? "flex" : "hidden md:flex"
+          )}
+        >
+          {mobilePane === "detail" && activeSection !== "company" ? (
+            <div className="flex items-center gap-2 border-b border-white/8 px-2 py-1.5 md:hidden light:border-slate-200">
+              <button
+                aria-label="بازگشت به فهرست"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/8 hover:text-white light:text-slate-600"
+                onClick={() => setMobilePane("list")}
+                type="button"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <span className="text-xs font-bold text-slate-400 light:text-slate-500">فهرست</span>
+            </div>
+          ) : null}
+
+          {activeSection === "messages" ? (
+            <MessagesSection
               companyId={company.id}
-              onBack={() => setSelectedProject(null)}
-              project={selectedProject}
+              hideGroupPicker
+              highlightAddAction={!hasDismissedOnboarding}
+              onOpenDetails={openDetailsDrawer}
+              onSeedFinancialDocumentConsumed={() => setSeedFinancialDocumentAttachment(null)}
+              onSelectedGroupIdChange={setSelectedMessageGroupId}
+              openFinancialDocumentRequestId={openFinancialDocumentRequestId}
+              seedFinancialDocumentAttachment={seedFinancialDocumentAttachment}
+              selectedGroupId={selectedMessageGroupId}
             />
-          ) : (
-            <ProjectsPanel
-              companyId={company.id}
-              error={projectsError ? getApiErrorMessage(projectsError) : null}
-              isLoading={isLoadingProjects}
-              onAddProject={() => setIsAddProjectOpen(true)}
-              onSelectProject={(project) => setSelectedProject(project)}
-              projects={projects}
+          ) : null}
+
+          {activeSection === "members" ? (
+            <>
+              <div
+                className={classNames(
+                  "min-h-0 flex-1 flex-col",
+                  membersListTab === "invitations" ? "hidden" : "flex"
+                )}
+              >
+                {selectedMemberId != null ? (
+                  <div className="flex shrink-0 justify-end border-b border-white/8 px-2 py-1 light:border-slate-200">
+                    <button
+                      aria-label="جزئیات عضو"
+                      className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
+                      onClick={openDetailsDrawer}
+                      type="button"
+                    >
+                      <Info className="h-4 w-4" />
+                      جزئیات
+                    </button>
+                  </div>
+                ) : null}
+                <MembersSection
+                  companyId={company.id}
+                  hideCreateForm
+                  hideList
+                  isInviteOpen={isInviteMemberOpen}
+                  onInviteOpenChange={setIsInviteMemberOpen}
+                  onSelectedMemberIdChange={setSelectedMemberId}
+                  onShowInactiveChange={setShowInactiveMembers}
+                  selectedMemberId={selectedMemberId}
+                  showInactive={showInactiveMembers}
+                />
+              </div>
+              {membersListTab === "invitations" ? (
+                <div className="min-h-0 flex-1 overflow-y-auto p-3 [scrollbar-width:thin]">
+                  <PendingInvitationsSection companyId={company.id} />
+                </div>
+              ) : null}
+            </>
+          ) : null}
+
+          {activeSection === "company" ? (
+            <CompanySummaryPanel
+              canEdit={canEditCompany}
+              company={company}
+              onEdit={() => setIsCompanyEditOpen(true)}
+              roleLabel={getRoleLabel(myRole)}
             />
-          )
-        ) : activeSection === "company" ? (
-          <CompanyInfoPanel
-            canEdit={canEditCompany}
-            company={company}
-            roleLabel={getRoleLabel(myRole)}
-          />
-        ) : activeSection === "members" ? (
-          <MembersSection companyId={company.id} />
-        ) : activeSection === "groups" ? (
-          <GroupsSection companyId={company.id} />
-        ) : (
-          <MessagesSection
+          ) : null}
+        </main>
+
+        {activeSection === "messages" ? (
+          <GroupInfoDrawer
             companyId={company.id}
-            highlightAddAction={!hasDismissedOnboarding}
-            onSeedFinancialDocumentConsumed={() => setSeedFinancialDocumentAttachment(null)}
-            seedFinancialDocumentAttachment={seedFinancialDocumentAttachment}
+            group={selectedMessageGroup}
+            managementSlot={renderMessageGroupManagementSlot()}
+            mode={isXl ? "inline" : "overlay"}
+            onAddFinancialDocument={() => {
+              setOpenFinancialDocumentRequestId((id) => id + 1);
+            }}
+            onClose={() => setIsDetailsDrawerOpen(false)}
+            open={isDetailsDrawerOpen}
+            projects={projects}
           />
+        ) : (
+          <WorkspaceDetailsDrawer
+            mode={isXl ? "inline" : "overlay"}
+            onClose={() => setIsDetailsDrawerOpen(false)}
+            open={isDetailsDrawerOpen}
+            title={detailsDrawerTitle}
+          >
+            {renderDetailsDrawerContent()}
+          </WorkspaceDetailsDrawer>
         )}
-      </GlassCard>
+      </div>
+
+      {isCreateGroupOpen ? (
+        <GroupsSection
+          companyId={company.id}
+          hideCreateForm
+          hideList
+          isCreateOpen
+          onCreateOpenChange={setIsCreateGroupOpen}
+          onSelectedGroupIdChange={(groupId) => {
+            if (groupId != null) {
+              setSelectedMessageGroupId(groupId);
+              setActiveSection("messages");
+              setMobilePane("detail");
+              setIsCreateGroupOpen(false);
+            }
+          }}
+          selectedGroupId={null}
+        />
+      ) : null}
+
+      <div className="shrink-0 lg:hidden [&_nav]:!flex">
+        <CompanyMobileSectionNav activeSection={activeSection} onSectionChange={changeSection} />
+      </div>
 
       {isAddProjectOpen ? (
-        <AddProjectModal
+        <CreateProjectSheet
           companyId={company.id}
           onClose={() => setIsAddProjectOpen(false)}
-          onSuccess={(newProject) => {
+          onSuccess={async (newProject) => {
             setIsAddProjectOpen(false);
-            setActiveSection("costReports");
-            setSelectedProject(newProject);
+            setActiveSection("messages");
+            let groupId: number | null = newProject.group_id ?? null;
+            if (groupId == null) {
+              const refreshed = await refetchProjects();
+              const match = refreshed.data?.find((project) => project.id === newProject.id);
+              groupId = match?.group_id ?? null;
+            }
+            if (groupId != null) {
+              setSelectedMessageGroupId(groupId);
+            }
+            setMobilePane("detail");
           }}
         />
+      ) : null}
+
+      {isCompanyEditOpen ? (
+        <CompanyEditModal canEdit={canEditCompany} company={company} onClose={() => setIsCompanyEditOpen(false)} />
       ) : null}
     </div>
   );

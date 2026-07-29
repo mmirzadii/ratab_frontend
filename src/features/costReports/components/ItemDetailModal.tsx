@@ -17,7 +17,6 @@ import {
   useRecalculateFinancialDocumentMutation
 } from "../../financialDocuments/financialDocumentApi";
 import {
-  OFFICIAL_LINE_TOKEN_COST,
   createLineIdempotencyKey,
   formatInsufficientBalanceMessage,
   isIdempotencyKeyReused,
@@ -1460,11 +1459,7 @@ function ItemDetailContent({
           <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-sm leading-7 text-amber-100 light:text-amber-800">
             {addLineDisabledReason}
           </p>
-        ) : (
-          <p className="rounded-lg border border-violet-300/20 bg-violet-400/10 p-3 text-xs leading-6 text-violet-100 light:border-violet-300 light:bg-violet-50 light:text-violet-900">
-            افزودن این ردیف رسمی فهرست‌بها {formatDecimal(String(OFFICIAL_LINE_TOKEN_COST))} توکن از کیف توکن شما کسر می‌کند. محاسبه، ویرایش، حذف و پیش‌نمایش رایگان است.
-          </p>
-        )}
+        ) : null}
 
         <CalculationSection
           calculation={calculation}

@@ -84,3 +84,21 @@ Replace the dashboard’s local React message list with backend-persisted **grou
 ## Stop point
 
 Phase 4 complete for review. Phase 5 not started. No commit/push performed.
+
+---
+
+## Post-v1 correction (2026-07-28) — message access vs group membership
+
+### Behavior change
+
+`MessagesSection` gates message list/bootstrap on **active group membership** and maps
+`Active membership in this group is required.` to Persian. When membership is denied, a link
+returns to `/companies` with `focusInvitations: true` so the user can accept a pending invitation.
+
+### Cache after invitation accept
+
+Accept invalidates `Company`, `CompanyInvitation`, `CompanyMember`, `CompanyGroup`, `GroupMessage`, and `Auth` tags so the accepted company and target group messages load without logout.
+
+Public company group (`عمومی` / `is_default`) and project groups (`project.group_id`) are labeled in the messages group picker using backend fields.
+
+

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { FileText, FolderKanban, Loader2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { FileText, FolderKanban, Loader2, Plus, Search, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { useAppDispatch } from "../../app/hooks";
 import { addToast } from "../ui/uiSlice";
@@ -8,12 +9,14 @@ import {
   useLazyListProjectFinancialDocumentsQuery
 } from "../financialDocuments/financialDocumentApi";
 import { type Project, useListCompanyProjectsQuery } from "../projects/projectApi";
+import { CreateProjectSheet } from "../projects/CreateProjectSheet";
 import { Button } from "../../shared/components/Button";
 import { EmptyState } from "../../shared/components/EmptyState";
 import { GlassCard } from "../../shared/components/GlassCard";
 import { getApiErrorMessage } from "../../shared/utils/apiError";
 import { getListResults } from "../../shared/utils/listResults";
 import { cleanDisplayText } from "../../shared/utils/formatters";
+import type { CostReportBuilderState } from "../costReports/types";
 
 export type SelectedFinancialDocumentAttachment = {
   resourceId: number;
@@ -22,34 +25,114 @@ export type SelectedFinancialDocumentAttachment = {
   projectName: string;
 };
 
-export function AttachFinancialDocumentModal({
+type Step = "select-project" | "browse-documents" | "create-project";
+type DocIntent = "browse" | "create";
+
+function formatDocumentStatus(status: string | null | undefined): string {
+  switch (status) {
+    case "draft":
+      return "پیش‌نویس";
+    case "calculated":
+      return "محاسبه‌شده";
+    case "locked":
+      return "قفل‌شده";
+    case "sent":
+      return "ارسال‌شده";
+    case "under_review":
+      return "در بررسی";
+    case "approved":
+      return "تأییدشده";
+    case "rejected":
+      return "ردشده";
+    case "archived":
+      return "بایگانی";
+    default:
+      return status ? String(status) : "";
+  }
+}
+
+function formatDocumentDate(value: string | null | undefined): string {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium" }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Single reusable financial-document attachment selector.
+ * Lists existing project documents directly; «افزودن صورت‌بها» starts creation.
+ * Project-linked chats lock the project; public/custom require explicit project selection.
+ */
+export function FinancialDocumentActionModal({
   companyId,
+  groupId,
+  lockedProject = null,
   onClose,
   onSelect
 }: {
   companyId: number;
+  groupId: number;
+  lockedProject?: Project | null;
   onClose: () => void;
   onSelect: (selection: SelectedFinancialDocumentAttachment) => void;
 }) {
   const dispatch = useAppDispatch();
-  const { data: projects = [], isLoading: isLoadingProjects, error: projectsError } =
-    useListCompanyProjectsQuery(companyId);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const navigate = useNavigate();
+  const {
+    data: projects = [],
+    isLoading: isLoadingProjects,
+    error: projectsError,
+    refetch: refetchProjects
+  } = useListCompanyProjectsQuery(companyId);
+  const projectLocked = lockedProject != null;
+  const [step, setStep] = useState<Step>(() =>
+    lockedProject ? "browse-documents" : "select-project"
+  );
+  const [docIntent, setDocIntent] = useState<DocIntent>("browse");
+  const [selectedProject, setSelectedProject] = useState<Project | null>(lockedProject);
+  const [projectQuery, setProjectQuery] = useState("");
   const [fetchDocuments, { data: documentsData, isFetching: isLoadingDocuments, error: documentsError }] =
     useLazyListProjectFinancialDocumentsQuery();
 
   const documents = getListResults(documentsData);
 
+  const filteredProjects = useMemo(() => {
+    const q = projectQuery.trim().toLowerCase();
+    if (!q) return projects;
+    return projects.filter((project) => {
+      const haystack = [project.name, project.project_code, project.contract_number, project.employer_name]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [projects, projectQuery]);
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        if (step === "create-project") {
+          setStep("select-project");
+          return;
+        }
+        onClose();
+      }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [onClose, step]);
 
   useEffect(() => {
-    if (!selectedProject) {
+    if (lockedProject) {
+      setSelectedProject(lockedProject);
+      setStep("browse-documents");
+    }
+  }, [lockedProject]);
+
+  useEffect(() => {
+    if (step !== "browse-documents" || !selectedProject) {
       return;
     }
     void fetchDocuments(selectedProject.id)
@@ -57,7 +140,7 @@ export function AttachFinancialDocumentModal({
       .catch((error) => {
         dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
       });
-  }, [dispatch, fetchDocuments, selectedProject]);
+  }, [dispatch, fetchDocuments, selectedProject, step]);
 
   function handlePick(document: FinancialDocument) {
     onSelect({
@@ -69,123 +152,283 @@ export function AttachFinancialDocumentModal({
     onClose();
   }
 
+  function openCreateWizard(project: Project) {
+    const state: CostReportBuilderState = {
+      existingProject: project,
+      returnToGroupId: groupId,
+      lockProject: projectLocked || Boolean(lockedProject)
+    };
+    onClose();
+    navigate(`/companies/${companyId}/cost-reports/new`, { state });
+  }
+
+  function continueWithProject(project: Project, intent: DocIntent) {
+    setSelectedProject(project);
+    if (intent === "create") {
+      openCreateWizard(project);
+      return;
+    }
+    setStep("browse-documents");
+  }
+
+  function handleAddFinancialDocument() {
+    setDocIntent("create");
+    if (selectedProject && (projectLocked || step === "browse-documents")) {
+      openCreateWizard(selectedProject);
+      return;
+    }
+    if (projectLocked && lockedProject) {
+      openCreateWizard(lockedProject);
+      return;
+    }
+    setStep("select-project");
+  }
+
+  function handleProjectCreated(project: Project) {
+    void refetchProjects();
+    continueWithProject(project, docIntent);
+  }
+
+  const headerProjectName = selectedProject
+    ? cleanDisplayText(selectedProject.name, "پروژه")
+    : projectLocked && lockedProject
+      ? cleanDisplayText(lockedProject.name, "پروژه")
+      : null;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-2 backdrop-blur-sm sm:items-center sm:p-4"
+      data-tour="financial-document-action-modal"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <GlassCard
-        className="max-h-[calc(100dvh-0.5rem)] w-full max-w-lg overflow-y-auto p-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6 [scrollbar-width:thin]"
+        className="flex max-h-[calc(100dvh-0.5rem)] w-full max-w-lg flex-col overflow-hidden p-0 sm:max-h-[calc(100dvh-2rem)]"
         dir="rtl"
       >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <FileText className="h-5 w-5 text-emerald-200 light:text-emerald-700" />
-            <div>
-              <h2 className="text-lg font-black text-white light:text-slate-950">پیوست صورت‌بها</h2>
-              <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
-                یک سند موجود را برای ارجاع در پیام انتخاب کنید.
-              </p>
-            </div>
+        {step === "create-project" ? (
+          <div className="overflow-y-auto p-4 sm:p-6 [scrollbar-width:thin]">
+            <CreateProjectSheet
+              companyId={companyId}
+              nested
+              onClose={() => setStep("select-project")}
+              onSuccess={handleProjectCreated}
+            />
           </div>
-          <button
-            aria-label="بستن"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200 sm:h-8 sm:w-8 light:border-slate-200 light:text-slate-500"
-            onClick={onClose}
-            type="button"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {isLoadingProjects ? (
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            در حال دریافت پروژه‌ها
-          </div>
-        ) : projectsError ? (
-          <EmptyState
-            description={getApiErrorMessage(projectsError)}
-            icon={<X className="h-7 w-7" />}
-            title="پروژه‌ها دریافت نشد"
-          />
-        ) : projects.length === 0 ? (
-          <EmptyState
-            description="ابتدا از بخش پروژه‌ها یک پروژه و صورت‌بها بسازید."
-            icon={<FolderKanban className="h-7 w-7" />}
-            title="پروژه‌ای وجود ندارد"
-          />
-        ) : selectedProject == null ? (
-          <ul className="space-y-2">
-            {projects.map((project) => (
-              <li key={project.id}>
+        ) : (
+          <>
+            <div
+              className="flex shrink-0 items-start justify-between gap-2 border-b border-white/8 px-3 py-3 sm:px-4 light:border-slate-200"
+              data-tour="financial-document-selector-header"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 shrink-0 text-emerald-200 light:text-emerald-700" />
+                  <h2 className="truncate text-base font-black text-white light:text-slate-950">
+                    صورت‌بهاها
+                  </h2>
+                </div>
+                {headerProjectName ? (
+                  <p className="mt-1 truncate text-[11px] text-slate-400 light:text-slate-500">
+                    {headerProjectName}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-400 light:text-slate-500">
+                    ابتدا یک پروژه انتخاب کنید
+                  </p>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
                 <button
-                  className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-slate-950/35 px-3 py-3 text-right transition hover:border-emerald-300/30 light:border-slate-200 light:bg-white"
-                  onClick={() => setSelectedProject(project)}
+                  className="flex h-8 items-center gap-1 rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-2 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-400/20 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
+                  data-tour="add-financial-document-action"
+                  onClick={handleAddFinancialDocument}
                   type="button"
                 >
-                  <FolderKanban className="h-4 w-4 text-violet-200 light:text-violet-700" />
-                  <span className="text-sm font-black text-white light:text-slate-950">
-                    {cleanDisplayText(project.name, "پروژه بدون نام")}
-                  </span>
+                  <Plus className="h-3.5 w-3.5" />
+                  افزودن صورت‌بها
                 </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-bold text-slate-200 light:text-slate-700">
-                {cleanDisplayText(selectedProject.name, "پروژه")}
-              </p>
-              <Button onClick={() => setSelectedProject(null)} type="button" variant="secondary">
-                تغییر پروژه
-              </Button>
-            </div>
-            {isLoadingDocuments ? (
-              <div className="flex items-center gap-2 text-sm text-slate-400">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                در حال دریافت صورت‌بهاها
+                <button
+                  aria-label="بستن"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200 light:border-slate-200 light:text-slate-500"
+                  onClick={onClose}
+                  type="button"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            ) : documentsError ? (
-              <EmptyState
-                description={getApiErrorMessage(documentsError)}
-                icon={<X className="h-7 w-7" />}
-                title="صورت‌بهاها دریافت نشد"
-              />
-            ) : documents.length === 0 ? (
-              <EmptyState
-                description="برای این پروژه هنوز صورت‌بهایی ثبت نشده است."
-                icon={<FileText className="h-7 w-7" />}
-                title="سندی یافت نشد"
-              />
-            ) : (
-              <ul className="space-y-2">
-                {documents.map((document) => (
-                  <li key={document.id}>
-                    <button
-                      className="flex w-full flex-col rounded-xl border border-white/10 bg-slate-950/35 px-3 py-3 text-right transition hover:border-emerald-300/30 light:border-slate-200 light:bg-white"
-                      onClick={() => handlePick(document)}
-                      type="button"
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 [scrollbar-width:thin]">
+              {step === "select-project" ? (
+                <div className="space-y-3" data-tour="financial-document-project-select">
+                  <p className="text-sm font-bold text-slate-200 light:text-slate-700">انتخاب پروژه</p>
+
+                  <Button
+                    className="w-full"
+                    data-tour="create-project-from-document-flow"
+                    onClick={() => setStep("create-project")}
+                    type="button"
+                  >
+                    <Plus className="h-4 w-4" />
+                    ایجاد پروژه جدید
+                  </Button>
+
+                  <label className="relative block">
+                    <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                    <input
+                      className="h-10 w-full rounded-lg border border-white/10 bg-slate-950/40 pr-9 pl-3 text-xs text-slate-100 outline-none placeholder:text-slate-500 focus:border-emerald-300/40 light:border-slate-200 light:bg-white light:text-slate-950"
+                      onChange={(e) => setProjectQuery(e.target.value)}
+                      placeholder="جستجوی پروژه…"
+                      value={projectQuery}
+                    />
+                  </label>
+
+                  {isLoadingProjects ? (
+                    <div className="flex items-center gap-2 py-6 text-sm text-slate-400">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      در حال دریافت پروژه‌ها
+                    </div>
+                  ) : projectsError ? (
+                    <EmptyState
+                      description={getApiErrorMessage(projectsError)}
+                      icon={<X className="h-7 w-7" />}
+                      title="پروژه‌ها دریافت نشد"
+                    />
+                  ) : filteredProjects.length === 0 ? (
+                    <EmptyState
+                      description="پروژه‌ای نیست. یک پروژه جدید بسازید."
+                      icon={<FolderKanban className="h-7 w-7" />}
+                      title="پروژه‌ای وجود ندارد"
+                    />
+                  ) : (
+                    <ul className="space-y-2">
+                      {filteredProjects.map((project) => (
+                        <li key={project.id}>
+                          <button
+                            className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-slate-950/35 px-3 py-3 text-right transition hover:border-emerald-300/30 light:border-slate-200 light:bg-white"
+                            onClick={() => continueWithProject(project, docIntent)}
+                            type="button"
+                          >
+                            <FolderKanban className="h-4 w-4 text-violet-200 light:text-violet-700" />
+                            <span className="text-sm font-black text-white light:text-slate-950">
+                              {cleanDisplayText(project.name, "پروژه بدون نام")}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
+
+              {step === "browse-documents" && selectedProject ? (
+                <div className="space-y-3" data-tour="financial-document-list">
+                  {!projectLocked ? (
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={() => {
+                          setDocIntent("browse");
+                          setStep("select-project");
+                        }}
+                        type="button"
+                        variant="secondary"
+                      >
+                        تغییر پروژه
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  {isLoadingDocuments ? (
+                    <div
+                      className="flex items-center justify-center gap-2 py-10 text-sm text-slate-400"
+                      data-tour="financial-document-list-loading"
                     >
-                      <span className="text-sm font-black text-white light:text-slate-950">
-                        {cleanDisplayText(document.title || document.report_title, "صورت‌بها")}
-                      </span>
-                      <span className="mt-1 text-xs text-slate-400 light:text-slate-500">
-                        {document.document_number
-                          ? `شماره: ${document.document_number}`
-                          : `وضعیت: ${document.status}`}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      در حال دریافت صورت‌بهاها
+                    </div>
+                  ) : documentsError ? (
+                    <EmptyState
+                      description={getApiErrorMessage(documentsError)}
+                      icon={<X className="h-7 w-7" />}
+                      title="صورت‌بهاها دریافت نشد"
+                    />
+                  ) : documents.length === 0 ? (
+                    <div
+                      className="space-y-3 py-8 text-center"
+                      data-tour="financial-document-list-empty"
+                    >
+                      <FileText className="mx-auto h-7 w-7 text-slate-500" />
+                      <p className="text-sm text-slate-300 light:text-slate-600">
+                        هنوز صورت‌بهایی برای این پروژه ساخته نشده است.
+                      </p>
+                      <Button
+                        data-tour="empty-list-add-financial-document"
+                        onClick={handleAddFinancialDocument}
+                        type="button"
+                        variant="secondary"
+                      >
+                        <Plus className="h-4 w-4" />
+                        افزودن صورت‌بها
+                      </Button>
+                    </div>
+                  ) : (
+                    <ul className="max-h-[min(28rem,55dvh)] space-y-2 overflow-y-auto [scrollbar-width:thin]">
+                      {documents.map((document) => {
+                        const statusLabel = formatDocumentStatus(document.status);
+                        const dateLabel = formatDocumentDate(
+                          document.document_date || document.updated_at || document.created_at
+                        );
+                        return (
+                          <li key={document.id}>
+                            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/35 px-3 py-2.5 light:border-slate-200 light:bg-white">
+                              <button
+                                className="min-w-0 flex-1 text-right transition hover:opacity-90"
+                                onClick={() => handlePick(document)}
+                                type="button"
+                              >
+                                <span className="block truncate text-sm font-black text-white light:text-slate-950">
+                                  {cleanDisplayText(
+                                    document.title || document.report_title,
+                                    "صورت‌بها"
+                                  )}
+                                </span>
+                                <span className="mt-0.5 block truncate text-[11px] text-slate-400 light:text-slate-500">
+                                  {[
+                                    document.document_number
+                                      ? `شماره ${document.document_number}`
+                                      : null,
+                                    statusLabel,
+                                    dateLabel
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </span>
+                              </button>
+                              <button
+                                className="shrink-0 rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-2.5 py-1.5 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-400/20 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
+                                data-tour="select-financial-document"
+                                onClick={() => handlePick(document)}
+                                type="button"
+                              >
+                                انتخاب
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </>
         )}
       </GlassCard>
     </div>
   );
 }
+
+/** @deprecated Prefer FinancialDocumentActionModal */
+export const AttachFinancialDocumentModal = FinancialDocumentActionModal;
