@@ -87,8 +87,7 @@ export function WalletSection() {
           <div>
             <h2 className="text-base font-black text-white light:text-slate-950 sm:text-lg">کیف توکن</h2>
             <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
-              ثبت هر ردیف رسمی فهرست‌بها ۵ توکن هزینه دارد. شارژ فعلاً توسط ادمین انجام می‌شود
-              (پرداخت آنلاین غیرفعال است).
+              موجودی و تراکنش‌های توکن
             </p>
           </div>
         </div>

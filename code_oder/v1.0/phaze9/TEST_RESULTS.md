@@ -1,4 +1,4 @@
-# Phase 9 Test Results — Selector & Drawer Refinement
+# Phase 9 Test Results — Mobile Financial-Document Selector Fix
 
 Date: 2026-07-29
 
@@ -7,25 +7,27 @@ Date: 2026-07-29
 | Check | Result |
 | --- | --- |
 | `npm run generate:api` | **Passed** |
-| `npm run validate:docs` | **Passed** — `CURRENT_BACKEND_CONTRACT_SYNCED` |
-| TypeScript (`tsc --noEmit` / `tsc -b` via build) | **Passed** |
-| `npm run lint` | **Passed** |
-| `npm run test:company-groups` | **Passed** — 15 tests |
-| `npm run test:auth-password` | **Passed** — 12 |
-| `npm run test:invitations` | **Passed** — 15 |
-| `npm run test:membership-access` | **Passed** — 11 |
-| Playwright E2E | **Not run** — no Playwright toolchain in repo |
-| Live browser QA | **Not run** — no authenticated Backend v1 session in agent environment |
+| TypeScript (`tsc -b`) | **Passed** |
+| `npm run test:company-groups` | **Passed** — 28 tests / 7 suites |
+| `npm run test:text-cleanup` | **Passed** — 26 tests / 6 suites |
+| `npm run test:company-permissions` | **Passed** — 12 tests |
+| `npm run test:project-selector` | **Passed** — 2 tests |
 | `npm run build` | **Passed** |
 
-## Focused assertions covered
+## New tests (mobile sheet + add-button)
 
-- Selector lists project documents directly; scrollable list region; header `افزودن صورت‌بها`
-- Old two-card selector labels/ids absent
-- Project lock / public project-select / create-project auto-continue preserved
-- Empty list add action shares the same add handler
-- Composer, empty-chat, and drawer open the same `FinancialDocumentActionModal` instance
-- Drawer tabs exactly: صورت‌بهاها / فایل‌ها / لینک‌ها / اعضا
-- Members tab uses `useListCompanyGroupMembersQuery`; stale cancel on group change
-- Authorized message-attachment paths; safe link attrs
-- No project-attachment action; Persian error mapping / no raw HTML (auth/membership suites)
+13 tests in `groupKinds.test.ts` → "mobile financial-document sheet and add-document behavior":
+
+1. Portal rendering via `createPortal` + `document.body`
+2. Full-screen mobile sheet (`h-dvh w-full`, `fixed inset-0`)
+3. Not positioned at bottom-left
+4. Background scroll locked
+5. Header actions visible with scrollable body
+6. Z-index sufficient (`z-[60]`)
+7. Validation message when no project selected
+8. Opens create-project when no projects exist
+9. Empty state has create-project button
+10. Linked project opens creation immediately
+11. Validation cleared on project selection
+12. Message draft preserved via `onSelect` callback
+13. Documents loaded after project selection

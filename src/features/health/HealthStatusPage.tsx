@@ -30,11 +30,10 @@ export function HealthStatusPage() {
                 </div>
                 <div className="space-y-2">
                   <h1 className="text-xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
-                    وضعیت اتصال فرانت‌اند به بک‌اند
+                    وضعیت اتصال
                   </h1>
                   <p className="hidden max-w-2xl text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
-                    این صفحه اتصال پایه را بررسی می‌کند: مسیر‌دهی React، استور Redux،
-                    RTK Query، تایپ‌های OpenAPI فعلی و فراخوانی سلامت بک‌اند از تنظیمات محیط.
+                    بررسی اتصال به سرویس و نمایش وضعیت پاسخ‌دهی.
                   </p>
                 </div>
               </div>
@@ -94,10 +93,6 @@ export function HealthStatusPage() {
               </div>
               <div>
                 <h2 className="text-base font-black text-white light:text-slate-950 sm:text-xl">سلامت سرویس</h2>
-                <p className="mt-2 hidden text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
-                  پاسخ این کارت مستقیم از RTK Query می‌آید و از تایپ `HealthResponse` تولیدشده
-                  از OpenAPI استفاده می‌کند.
-                </p>
               </div>
             </div>
 
@@ -111,7 +106,7 @@ export function HealthStatusPage() {
               </div>
             ) : (
               <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm leading-6 text-emerald-100 light:text-emerald-900 sm:p-4 sm:leading-7">
-                {isReady ? "بک‌اند پاسخ سلامت را برگرداند." : "در انتظار پاسخ بک‌اند هستیم."}
+                {isReady ? "سرویس متصل و فعال است." : "در انتظار پاسخ سرویس…"}
               </div>
             )}
           </div>

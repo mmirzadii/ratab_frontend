@@ -55,7 +55,7 @@ export function MessageAttachmentCard({
     if (!isSupportedComposeType) {
       dispatch(
         addToast({
-          message: "این نوع پیوست دیگر برای ایجاد پشتیبانی نمی‌شود و فقط به‌صورت فقط‌خواندنی نمایش داده می‌شود.",
+          message: "این نوع پیوست فقط قابل مشاهده است.",
           type: "info"
         })
       );
@@ -173,7 +173,7 @@ export function MessageAttachmentCard({
           </div>
         ) : (
           <p className="mt-2 text-xs font-bold text-slate-400 light:text-slate-500">
-            پیوست تاریخی — ایجاد پیوست پروژه در قرارداد فعلی پشتیبانی نمی‌شود.
+            این پیوست قابل بازیابی نیست.
           </p>
         )}
       </div>

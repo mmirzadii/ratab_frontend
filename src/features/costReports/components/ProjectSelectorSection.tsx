@@ -1,11 +1,19 @@
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Plus } from "lucide-react";
 
 import type { Project } from "../../projects/projectApi";
 import { useListCompanyProjectsQuery } from "../../projects/projectApi";
+import { CreateProjectSheet } from "../../projects/CreateProjectSheet";
+import { Button } from "../../../shared/components/Button";
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { cleanDisplayText } from "../../../shared/utils/formatters";
 import { inputClasses } from "../constants";
 
+/**
+ * Wizard project selection step.
+ * When unlocked, exposes compact «افزودن پروژه» that reuses CreateProjectSheet
+ * and auto-selects the newly created project.
+ */
 export function ProjectSelectorSection({
   companyId,
   isLocked,
@@ -17,10 +25,41 @@ export function ProjectSelectorSection({
   onSelect: (project: Project | null) => void;
   selectedProject: Project | null;
 }) {
-  const { data: projects = [], isLoading, error } = useListCompanyProjectsQuery(companyId);
+  const { data: projects = [], isLoading, error, refetch } = useListCompanyProjectsQuery(companyId);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  function handleCreated(project: Project) {
+    void refetch();
+    setIsCreateOpen(false);
+    onSelect(project);
+  }
 
   return (
-    <GlassCard className="p-3 sm:p-6">
+    <GlassCard className="p-3 sm:p-6" data-tour="wizard-project-selector">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-sm font-black text-white light:text-slate-950 sm:text-base">
+            انتخاب پروژه
+          </h2>
+          <p className="mt-0.5 text-[11px] text-slate-400 light:text-slate-500 sm:text-xs">
+            {isLocked
+              ? "پروژه از گفتگوی مرتبط قفل شده است."
+              : "یک پروژه موجود را انتخاب کنید یا پروژه جدید بسازید."}
+          </p>
+        </div>
+        {!isLocked ? (
+          <button
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-2.5 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-400/20 sm:h-8 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
+            data-tour="wizard-add-project-action"
+            onClick={() => setIsCreateOpen(true)}
+            type="button"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            افزودن پروژه
+          </button>
+        ) : null}
+      </div>
+
       {isLoading ? (
         <div className="flex items-center gap-2 text-sm text-slate-400 light:text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -31,14 +70,30 @@ export function ProjectSelectorSection({
           دریافت پروژه‌ها ناموفق بود. دوباره تلاش کنید.
         </p>
       ) : projects.length === 0 ? (
-        <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-sm leading-7 text-amber-100 light:text-amber-800">
-          هنوز پروژه‌ای برای این شرکت ثبت نشده است. ابتدا از داشبورد شرکت یک پروژه بسازید.
-        </p>
+        <div
+          className="space-y-3 rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 sm:p-4"
+          data-tour="wizard-project-empty"
+        >
+          <p className="text-sm leading-7 text-amber-100 light:text-amber-800">
+            هنوز پروژه‌ای برای این شرکت ثبت نشده است. یک پروژه جدید بسازید تا ادامه دهید.
+          </p>
+          {!isLocked ? (
+            <Button
+              data-tour="wizard-add-project-empty-action"
+              onClick={() => setIsCreateOpen(true)}
+              type="button"
+            >
+              <Plus className="h-4 w-4" />
+              افزودن پروژه
+            </Button>
+          ) : null}
+        </div>
       ) : (
         <div className="space-y-3 sm:space-y-4">
           <div>
             <select
               className={inputClasses}
+              data-tour="wizard-project-select"
               disabled={isLocked}
               onChange={(e) => {
                 const id = Number(e.target.value);
@@ -80,6 +135,14 @@ export function ProjectSelectorSection({
           ) : null}
         </div>
       )}
+
+      {isCreateOpen && !isLocked ? (
+        <CreateProjectSheet
+          companyId={companyId}
+          onClose={() => setIsCreateOpen(false)}
+          onSuccess={handleCreated}
+        />
+      ) : null}
     </GlassCard>
   );
 }

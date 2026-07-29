@@ -5,8 +5,20 @@ export type CompanyMember = components["schemas"]["CompanyMember"];
 export type CompanyMemberAddRequest = components["schemas"]["CompanyMemberAddRequest"];
 export type PaginatedCompanyMemberList = components["schemas"]["PaginatedCompanyMemberList"];
 export type PatchedCompanyMemberRoleRequest = components["schemas"]["PatchedCompanyMemberRoleRequest"];
+export type PatchedCompanyMemberSettingsRequest =
+  components["schemas"]["PatchedCompanyMemberSettingsRequest"];
 export type RoleEnum = components["schemas"]["RoleEnum"];
 export type MembershipActionResponse = components["schemas"]["MembershipActionResponse"];
+
+const memberCacheTags = (companyId: number, memberId: number) =>
+  [
+    { type: "CompanyMember" as const, id: `COMPANY-${companyId}` },
+    { type: "CompanyMember" as const, id: memberId },
+    { type: "Company" as const, id: companyId },
+    { type: "Company" as const, id: "LIST" },
+    { type: "CompanyInvitation" as const, id: "LIST" },
+    "Auth" as const
+  ];
 
 export const companyMembersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -18,6 +30,14 @@ export const companyMembersApi = baseApi.injectEndpoints({
           type: "CompanyMember" as const,
           id: member.id
         }))
+      ]
+    }),
+    /** Full member settings detail — prefer settings endpoint over compact list rows. */
+    retrieveCompanyMember: builder.query<CompanyMember, { companyId: number; memberId: number }>({
+      query: ({ memberId }) => `/api/company-members/${memberId}/settings/`,
+      providesTags: (_result, _error, { memberId, companyId }) => [
+        { type: "CompanyMember", id: memberId },
+        { type: "CompanyMember", id: `COMPANY-${companyId}` }
       ]
     }),
     addCompanyMember: builder.mutation<
@@ -50,6 +70,18 @@ export const companyMembersApi = baseApi.injectEndpoints({
         return tags;
       }
     }),
+    /** Atomic role + permission switches. */
+    updateCompanyMemberSettings: builder.mutation<
+      CompanyMember,
+      { companyId: number; memberId: number; body: PatchedCompanyMemberSettingsRequest }
+    >({
+      query: ({ memberId, body }) => ({
+        url: `/api/company-members/${memberId}/settings/`,
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: (_result, _error, { companyId, memberId }) => memberCacheTags(companyId, memberId)
+    }),
     updateCompanyMemberRole: builder.mutation<
       CompanyMember,
       { companyId: number; memberId: number; body: PatchedCompanyMemberRoleRequest }
@@ -59,10 +91,7 @@ export const companyMembersApi = baseApi.injectEndpoints({
         method: "PATCH",
         body
       }),
-      invalidatesTags: (_result, _error, { companyId, memberId }) => [
-        { type: "CompanyMember", id: `COMPANY-${companyId}` },
-        { type: "CompanyMember", id: memberId }
-      ]
+      invalidatesTags: (_result, _error, { companyId, memberId }) => memberCacheTags(companyId, memberId)
     }),
     deactivateCompanyMember: builder.mutation<
       CompanyMember,
@@ -96,7 +125,9 @@ export const companyMembersApi = baseApi.injectEndpoints({
 
 export const {
   useListCompanyMembersQuery,
+  useRetrieveCompanyMemberQuery,
   useAddCompanyMemberMutation,
+  useUpdateCompanyMemberSettingsMutation,
   useUpdateCompanyMemberRoleMutation,
   useDeactivateCompanyMemberMutation,
   useRemoveCompanyMemberMutation

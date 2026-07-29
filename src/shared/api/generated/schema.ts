@@ -319,6 +319,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companies/{id}/transfer-ownership/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Atomically transfer company ownership. Only the current owner may call this. The previous owner becomes admin. */
+        post: operations["companies_transfer_ownership_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/company-group-memberships/{id}/": {
         parameters: {
             query?: never;
@@ -369,6 +386,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/company-groups/{group_id}/shared-resources/files/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Paginated private files previously attached in this group's messages. Open/download through authorized attachment paths only. */
+        get: operations["company_groups_shared_resources_files_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-groups/{group_id}/shared-resources/financial-documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Paginated financial documents previously attached in this group's messages. Active group membership is required. */
+        get: operations["company_groups_shared_resources_financial_documents_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-groups/{group_id}/shared-resources/links/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Paginated HTTP/HTTPS links extracted from persisted message text. URLs are never fetched server-side. */
+        get: operations["company_groups_shared_resources_links_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/company-groups/{id}/": {
         parameters: {
             query?: never;
@@ -395,6 +463,24 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["company_groups_deactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-groups/{id}/financial-documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List selectable financial documents for the group conversation. Project-linked groups return only that project's documents. Public/custom groups require an explicit project_id. */
+        get: operations["company_groups_financial_documents_list"];
+        put?: never;
+        /** @description Create a financial document in the group conversation context, then attach it to a message with the normal message-attachment flow. Project-linked groups always create under the linked project. */
+        post: operations["company_groups_financial_documents_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -506,7 +592,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["company_members_retrieve"];
         put?: never;
         post?: never;
         delete: operations["company_members_destroy"];
@@ -545,6 +631,24 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["company_members_role_partial_update"];
+        trace?: never;
+    };
+    "/api/company-members/{id}/settings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Return the live member settings payload including role-scoped permission switches for the authenticated viewer. */
+        get: operations["company_members_settings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Atomically update a member's role and/or role-scoped permission switches. Owner cannot be edited here. Accepts permission_settings (preferred) or permissions. */
+        patch: operations["company_members_settings_partial_update"];
         trace?: never;
     };
     "/api/financial-document-exports/{id}/download/": {
@@ -1174,7 +1278,13 @@ export interface components {
             name: string;
             description?: string;
             readonly created_by_member_id: number;
+            readonly group_type: string;
+            readonly pin_priority: number;
             readonly is_default: boolean;
+            readonly project_id: number | null;
+            readonly project: {
+                [key: string]: unknown;
+            } | null;
             readonly is_active: boolean;
             /** Format: date-time */
             readonly created_at: string;
@@ -1222,6 +1332,18 @@ export interface components {
             readonly display_name: string;
             readonly title: string;
             readonly is_active: boolean;
+            readonly permission_settings: {
+                [key: string]: unknown;
+            };
+            readonly permissions: {
+                [key: string]: unknown;
+            };
+            readonly configurable_permissions: unknown[];
+            readonly permission_catalog: unknown[];
+            readonly can_edit_member: boolean;
+            readonly can_change_role: boolean;
+            readonly assignable_roles: unknown[];
+            readonly edit_denied_reason: string | null;
             readonly invited_by_member_id: number | null;
             /** Format: date-time */
             readonly joined_at: string | null;
@@ -1497,6 +1619,23 @@ export interface components {
          * @enum {string}
          */
         FinancialDocumentStatusEnum: "draft" | "calculated" | "locked" | "sent" | "under_review" | "approved" | "rejected" | "archived";
+        /** @description Create serializer for group context; project_id is explicit only for non-project groups. */
+        GroupFinancialDocumentCreateRequest: {
+            document_type?: components["schemas"]["DocumentTypeEnum"];
+            document_number?: string | null;
+            title: string;
+            report_title?: string;
+            /** Format: date */
+            document_date?: string | null;
+            /** Format: date */
+            period_start_on?: string | null;
+            /** Format: date */
+            period_end_on?: string | null;
+            pricebook_edition_id: number;
+            price_set_id: number;
+            coefficient_set_id?: number | null;
+            project_id?: number;
+        };
         GroupInvitationCreateRequest: {
             phone_number: string;
             role: components["schemas"]["RoleEnum"];
@@ -1598,6 +1737,9 @@ export interface components {
             readonly resets_at: string;
             readonly plan_code: string | null;
             readonly subscription_status: string;
+        };
+        OwnershipTransferRequest: {
+            member_id: number;
         };
         PaginatedCompanyGroupList: {
             /** @example 123 */
@@ -1832,6 +1974,30 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Project"][];
         };
+        PaginatedSharedFile: {
+            readonly count: number;
+            /** Format: uri */
+            readonly next: string | null;
+            /** Format: uri */
+            readonly previous: string | null;
+            readonly results: components["schemas"]["SharedFileResource"][];
+        };
+        PaginatedSharedFinancialDocument: {
+            readonly count: number;
+            /** Format: uri */
+            readonly next: string | null;
+            /** Format: uri */
+            readonly previous: string | null;
+            readonly results: components["schemas"]["SharedFinancialDocumentResource"][];
+        };
+        PaginatedSharedLink: {
+            readonly count: number;
+            /** Format: uri */
+            readonly next: string | null;
+            /** Format: uri */
+            readonly previous: string | null;
+            readonly results: components["schemas"]["SharedLinkResource"][];
+        };
         PaginatedTokenWalletTransaction: {
             readonly count: number;
             /** Format: uri */
@@ -1850,6 +2016,16 @@ export interface components {
         };
         PatchedCompanyMemberRoleRequest: {
             role?: components["schemas"]["RoleEnum"];
+        };
+        PatchedCompanyMemberSettingsRequest: {
+            role?: components["schemas"]["RoleEnum"];
+            permission_settings?: {
+                [key: string]: boolean;
+            };
+            /** @description Alias of permission_settings for compatibility. */
+            permissions?: {
+                [key: string]: boolean;
+            };
         };
         PatchedCompanyRequest: {
             name?: string;
@@ -2282,6 +2458,47 @@ export interface components {
         SessionAuthResponse: {
             readonly authenticated: boolean;
             readonly user: components["schemas"]["AppUser"];
+        };
+        SharedFileResource: {
+            readonly attachment_id: number;
+            readonly message_id: number;
+            /** Format: date-time */
+            readonly shared_at: string;
+            readonly sender_member_id: number;
+            readonly sender_display_name: string;
+            readonly resource_id: number | null;
+            readonly original_filename: string | null;
+            readonly content_type: string | null;
+            readonly byte_size: number | null;
+            readonly is_available: boolean;
+            readonly open_path: string;
+            readonly download_path: string;
+        };
+        SharedFinancialDocumentResource: {
+            readonly attachment_id: number;
+            readonly message_id: number;
+            /** Format: date-time */
+            readonly shared_at: string;
+            readonly sender_member_id: number;
+            readonly sender_display_name: string;
+            readonly resource_id: number | null;
+            readonly title: string | null;
+            readonly document_number: string | null;
+            readonly document_status: string | null;
+            readonly project_id: number | null;
+            readonly project_name: string | null;
+            readonly is_available: boolean;
+            readonly open_path: string;
+        };
+        SharedLinkResource: {
+            readonly message_id: number;
+            /** Format: date-time */
+            readonly shared_at: string;
+            readonly sender_member_id: number | null;
+            readonly sender_display_name: string;
+            /** Format: uri */
+            readonly url: string;
+            readonly scheme: string;
         };
         SignupCompleteRequest: {
             signup_ticket: string;
@@ -3194,6 +3411,34 @@ export interface operations {
             };
         };
     };
+    companies_transfer_ownership_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnershipTransferRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OwnershipTransferRequest"];
+                "multipart/form-data": components["schemas"]["OwnershipTransferRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyMember"];
+                };
+            };
+        };
+    };
     company_group_memberships_destroy: {
         parameters: {
             query?: never;
@@ -3293,6 +3538,69 @@ export interface operations {
             };
         };
     };
+    company_groups_shared_resources_files_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSharedFile"];
+                };
+            };
+        };
+    };
+    company_groups_shared_resources_financial_documents_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSharedFinancialDocument"];
+                };
+            };
+        };
+    };
+    company_groups_shared_resources_links_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSharedLink"];
+                };
+            };
+        };
+    };
     company_groups_retrieve: {
         parameters: {
             query?: never;
@@ -3361,6 +3669,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompanyGroup"];
+                };
+            };
+        };
+    };
+    company_groups_financial_documents_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+                /** @description Required for public/custom groups. Ignored for project-linked groups, which always use the linked project. */
+                project_id?: number;
+            };
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedFinancialDocumentList"];
+                };
+            };
+        };
+    };
+    company_groups_financial_documents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupFinancialDocumentCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GroupFinancialDocumentCreateRequest"];
+                "multipart/form-data": components["schemas"]["GroupFinancialDocumentCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialDocument"];
                 };
             };
         };
@@ -3575,6 +3938,28 @@ export interface operations {
             };
         };
     };
+    company_members_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company member را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyMember"];
+                };
+            };
+        };
+    };
     company_members_destroy: {
         parameters: {
             query?: never;
@@ -3633,6 +4018,56 @@ export interface operations {
                 "application/json": components["schemas"]["PatchedCompanyMemberRoleRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["PatchedCompanyMemberRoleRequest"];
                 "multipart/form-data": components["schemas"]["PatchedCompanyMemberRoleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyMember"];
+                };
+            };
+        };
+    };
+    company_members_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company member را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyMember"];
+                };
+            };
+        };
+    };
+    company_members_settings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company member را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCompanyMemberSettingsRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCompanyMemberSettingsRequest"];
+                "multipart/form-data": components["schemas"]["PatchedCompanyMemberSettingsRequest"];
             };
         };
         responses: {

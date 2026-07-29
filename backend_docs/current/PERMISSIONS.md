@@ -1,85 +1,61 @@
 # Permissions — backend-enforced matrix
 
 Backend version: `v1.0` cumulative. UI may hide actions; **security is enforced
-by the backend**. Knowing a raw numeric ID never grants access.
+by the backend**.
 
-Roles: `owner`, `admin`, `employee`.
+Roles: `owner` > `admin` > `employee`.
 
-Legend: **Y** = allowed when other preconditions hold · **N** = denied ·
-**—** = not applicable
+## Role-scoped configurable catalogs
 
-## Company workspace
+Source of truth: backend `apps/companies/permissions_catalog.py`.
 
-| Action | Anonymous | Auth non-member | Employee | Admin | Owner |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| List/create own companies | N | Y create / list own | Y | Y | Y |
-| View company detail | N | N | Y | Y | Y |
-| Update company / slug | N | N | N | Y | Y |
-| List members | N | N | Y | Y | Y |
-| Add member | N | N | N | employees only | any role |
-| Change member role | N | N | N | employees only | any role |
-| Deactivate / remove member | N | N | N | employees only | any (except last owner) |
-| Demote/remove last active owner | N | N | N | N | N |
-| View slug history | N | N | Y | Y | Y |
-| Access another company's data | N | N | N | N | N |
+### Employee configurable keys (defaults)
 
-## Groups
+| Key | Default | Label (FA) |
+| --- | :---: | --- |
+| `can_invite_employees` | true | افزودن کارمند جدید |
+| `can_create_projects` | true | ایجاد پروژه |
+| `can_update_projects` | true | ویرایش پروژه |
+| `can_create_custom_groups` | true | ایجاد گروه سفارشی |
+| `can_create_financial_documents` | true | ایجاد سند مالی |
+| `can_edit_unlocked_financial_documents` | true | ویرایش سند مالی قفل‌نشده |
+| `can_upload_private_files` | true | آپلود فایل خصوصی |
+| `can_attach_private_files` | true | پیوست فایل خصوصی |
+| `can_attach_financial_documents` | true | پیوست سند مالی |
 
-| Action | Employee non-member | Employee member/creator | Admin/Owner |
+### Admin configurable keys (defaults)
+
+Admin **inherits all Employee capabilities automatically**. Only Admin-specific
+keys are configurable:
+
+| Key | Default | Label (FA) |
+| --- | :---: | --- |
+| `can_add_admins` | **false** | افزودن مدیر جدید |
+| `can_manage_company_profile` | true | مدیریت اطلاعات عملیاتی شرکت |
+| `can_manage_invitations` | true | مدیریت دعوت‌نامه‌ها |
+| `can_deactivate_employees` | true | غیرفعال‌سازی یا حذف کارمند |
+| `can_manage_all_custom_groups` | true | مدیریت همه گروه‌های سفارشی |
+
+### Owner
+
+No configurable switches. Authority is implicit and complete.
+
+## Settings payload fields
+
+- `permission_settings` — stored/configurable switches (PATCH preferred field)
+- `permissions` — effective permissions (may include inherited Employee keys for Admin)
+- `configurable_permissions` / `permission_catalog` — Switch rows (`key`, `label_fa`, `type`, `default`, `value`)
+- `can_edit_member`, `can_change_role`, `assignable_roles`, `edit_denied_reason`
+
+Endpoints:
+
+- `GET /api/company-members/{id}/settings/`
+- `PATCH /api/company-members/{id}/settings/` with `role` and/or `permission_settings`
+
+## Actor → target matrix
+
+| Actor | Owner | Admin | Employee |
 | --- | :---: | :---: | :---: |
-| Create group | Y (becomes member) | Y | Y |
-| List groups | only groups they belong to | same | all active company groups |
-| Update / deactivate group | only if creator **and** still member | same | Y |
-| Add / remove group members | only if creator **and** still member | same | Y |
-
-## Messaging and attachments
-
-Stricter than group administration:
-
-| Action | Company admin not in group | Active group member | Non-member |
-| --- | :---: | :---: | :---: |
-| List/create messages | N | Y | N |
-| Open file attachment | N | Y | N |
-| Open financial-document attachment | N | Y | N |
-
-Active attachment types: `file`, `financial_document` only.
-
-## Projects, pricebooks, financial documents
-
-| Action | Active company member | Non-member / other company |
-| --- | :---: | :---: |
-| List/create projects in company | Y | N |
-| Browse pricebooks / calculate preview | Y (authenticated) | N if unauthenticated |
-| Create/edit financial docs/lines in company | Y | N |
-| Lock / preview / export metadata | Y | N |
-| Open export download | Y with document access | N |
-
-Locked documents reject mutating line operations (backend returns conflict /
-validation denial). Frontend should disable edit UI after lock, but must handle
-backend denial.
-
-## Private files
-
-| Action | Active member of file's company | Other company / anonymous |
-| --- | :---: | :---: |
-| Upload to company | Y | N |
-| Open / download | Y | N |
-
-Responses never expose storage keys, credentials, or permanent public URLs.
-
-## Wallet, subscription, quota, payments
-
-| Resource | Visibility |
-| --- | --- |
-| Token wallet / ledger | Authenticated user sees **own** wallet only |
-| Subscription / message quota | Authenticated user sees **own** status only |
-| Subscription plans list | Authenticated; active plans only |
-| Start payment order | Authenticated, but currently always `PAYMENTS_DISABLED` |
-| Grant tokens / activate subscription | **Admin/operator only** — not frontend APIs |
-
-## Cross-company and raw-ID rules
-
-- Company A users never read company B projects, documents, files, groups, or
-  messages.
-- Attachment open verifies message + group membership context.
-- Frontend must treat 403/404 as opaque access failures and must not probe IDs.
+| Owner | read-only / transfer | edit admin switches | edit employee switches |
+| Admin | no | no | yes; promote only if `can_add_admins` |
+| Employee | no | no | no |

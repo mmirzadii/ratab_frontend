@@ -787,6 +787,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedCompanySlugHistoryList'
           description: ''
+  /api/companies/{id}/transfer-ownership/:
+    post:
+      operationId: companies_transfer_ownership_create
+      description: Atomically transfer company ownership. Only the current owner may
+        call this. The previous owner becomes admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnershipTransferRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OwnershipTransferRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OwnershipTransferRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyMember'
+          description: ''
   /api/company-group-memberships/{id}/:
     delete:
       operationId: company_group_memberships_destroy
@@ -893,6 +929,75 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessageQuotaExceeded'
           description: ''
+  /api/company-groups/{group_id}/shared-resources/files/:
+    get:
+      operationId: company_groups_shared_resources_files_retrieve
+      description: Paginated private files previously attached in this group's messages.
+        Open/download through authorized attachment paths only.
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSharedFile'
+          description: ''
+  /api/company-groups/{group_id}/shared-resources/financial-documents/:
+    get:
+      operationId: company_groups_shared_resources_financial_documents_retrieve
+      description: Paginated financial documents previously attached in this group's
+        messages. Active group membership is required.
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSharedFinancialDocument'
+          description: ''
+  /api/company-groups/{group_id}/shared-resources/links/:
+    get:
+      operationId: company_groups_shared_resources_links_retrieve
+      description: Paginated HTTP/HTTPS links extracted from persisted message text.
+        URLs are never fetched server-side.
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSharedLink'
+          description: ''
   /api/company-groups/{id}/:
     get:
       operationId: company_groups_retrieve
@@ -968,6 +1073,79 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyGroup'
+          description: ''
+  /api/company-groups/{id}/financial-documents/:
+    get:
+      operationId: company_groups_financial_documents_list
+      description: List selectable financial documents for the group conversation.
+        Project-linked groups return only that project's documents. Public/custom
+        groups require an explicit project_id.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      - in: query
+        name: project_id
+        schema:
+          type: integer
+        description: Required for public/custom groups. Ignored for project-linked
+          groups, which always use the linked project.
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFinancialDocumentList'
+          description: ''
+    post:
+      operationId: company_groups_financial_documents_create
+      description: Create a financial document in the group conversation context,
+        then attach it to a message with the normal message-attachment flow. Project-linked
+        groups always create under the linked project.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      tags:
+      - company-groups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupFinancialDocumentCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GroupFinancialDocumentCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GroupFinancialDocumentCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocument'
           description: ''
   /api/company-groups/{id}/invitations/:
     get:
@@ -1198,6 +1376,27 @@ paths:
                 $ref: '#/components/schemas/MembershipActionResponse'
           description: ''
   /api/company-members/{id}/:
+    get:
+      operationId: company_members_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company member را شناسایی میکند.
+        required: true
+      tags:
+      - company-members
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyMember'
+          description: ''
     delete:
       operationId: company_members_destroy
       parameters:
@@ -1260,6 +1459,65 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/PatchedCompanyMemberRoleRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyMember'
+          description: ''
+  /api/company-members/{id}/settings/:
+    get:
+      operationId: company_members_settings_retrieve
+      description: Return the live member settings payload including role-scoped permission
+        switches for the authenticated viewer.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company member را شناسایی میکند.
+        required: true
+      tags:
+      - company-members
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyMember'
+          description: ''
+    patch:
+      operationId: company_members_settings_partial_update
+      description: Atomically update a member's role and/or role-scoped permission
+        switches. Owner cannot be edited here. Accepts permission_settings (preferred)
+        or permissions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company member را شناسایی میکند.
+        required: true
+      tags:
+      - company-members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyMemberSettingsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyMemberSettingsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyMemberSettingsRequest'
       security:
       - tokenAuth: []
       - cookieAuth: []
@@ -2463,8 +2721,23 @@ components:
         created_by_member_id:
           type: integer
           readOnly: true
+        group_type:
+          type: string
+          readOnly: true
+        pin_priority:
+          type: integer
+          readOnly: true
         is_default:
           type: boolean
+          readOnly: true
+        project_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        project:
+          type: object
+          additionalProperties: {}
+          nullable: true
           readOnly: true
         is_active:
           type: boolean
@@ -2481,10 +2754,14 @@ components:
       - company_id
       - created_at
       - created_by_member_id
+      - group_type
       - id
       - is_active
       - is_default
       - name
+      - pin_priority
+      - project
+      - project_id
       - updated_at
     CompanyGroupMemberAddRequest:
       type: object
@@ -2613,6 +2890,36 @@ components:
         is_active:
           type: boolean
           readOnly: true
+        permission_settings:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        permissions:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        configurable_permissions:
+          type: array
+          items: {}
+          readOnly: true
+        permission_catalog:
+          type: array
+          items: {}
+          readOnly: true
+        can_edit_member:
+          type: boolean
+          readOnly: true
+        can_change_role:
+          type: boolean
+          readOnly: true
+        assignable_roles:
+          type: array
+          items: {}
+          readOnly: true
+        edit_denied_reason:
+          type: string
+          nullable: true
+          readOnly: true
         invited_by_member_id:
           type: integer
           nullable: true
@@ -2631,14 +2938,22 @@ components:
           format: date-time
           readOnly: true
       required:
+      - assignable_roles
+      - can_change_role
+      - can_edit_member
       - company_id
+      - configurable_permissions
       - created_at
       - display_name
+      - edit_denied_reason
       - id
       - invited_by_member_id
       - is_active
       - joined_at
       - member_type
+      - permission_catalog
+      - permission_settings
+      - permissions
       - phone_number
       - role
       - title
@@ -3415,6 +3730,50 @@ components:
         * `approved` - Approved
         * `rejected` - Rejected
         * `archived` - Archived
+    GroupFinancialDocumentCreateRequest:
+      type: object
+      description: Create serializer for group context; project_id is explicit only
+        for non-project groups.
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        document_number:
+          type: string
+          nullable: true
+          maxLength: 80
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        report_title:
+          type: string
+          maxLength: 240
+        document_date:
+          type: string
+          format: date
+          nullable: true
+        period_start_on:
+          type: string
+          format: date
+          nullable: true
+        period_end_on:
+          type: string
+          format: date
+          nullable: true
+        pricebook_edition_id:
+          type: integer
+        price_set_id:
+          type: integer
+        coefficient_set_id:
+          type: integer
+          nullable: true
+        project_id:
+          type: integer
+          minimum: 1
+      required:
+      - price_set_id
+      - pricebook_edition_id
+      - title
     GroupInvitationCreateRequest:
       type: object
       properties:
@@ -3714,6 +4073,14 @@ components:
       - resets_at
       - subscription_status
       - used_today
+    OwnershipTransferRequest:
+      type: object
+      properties:
+        member_id:
+          type: integer
+          minimum: 1
+      required:
+      - member_id
     PaginatedCompanyGroupList:
       type: object
       required:
@@ -4085,6 +4452,84 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Project'
+    PaginatedSharedFile:
+      type: object
+      properties:
+        count:
+          type: integer
+          readOnly: true
+        next:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SharedFileResource'
+          readOnly: true
+      required:
+      - count
+      - next
+      - previous
+      - results
+    PaginatedSharedFinancialDocument:
+      type: object
+      properties:
+        count:
+          type: integer
+          readOnly: true
+        next:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SharedFinancialDocumentResource'
+          readOnly: true
+      required:
+      - count
+      - next
+      - previous
+      - results
+    PaginatedSharedLink:
+      type: object
+      properties:
+        count:
+          type: integer
+          readOnly: true
+        next:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SharedLinkResource'
+          readOnly: true
+      required:
+      - count
+      - next
+      - previous
+      - results
     PaginatedTokenWalletTransaction:
       type: object
       properties:
@@ -4140,6 +4585,20 @@ components:
       properties:
         role:
           $ref: '#/components/schemas/RoleEnum'
+    PatchedCompanyMemberSettingsRequest:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        permission_settings:
+          type: object
+          additionalProperties:
+            type: boolean
+        permissions:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Alias of permission_settings for compatibility.
     PatchedCompanyRequest:
       type: object
       properties:
@@ -5319,6 +5778,157 @@ components:
       required:
       - authenticated
       - user
+    SharedFileResource:
+      type: object
+      properties:
+        attachment_id:
+          type: integer
+          readOnly: true
+        message_id:
+          type: integer
+          readOnly: true
+        shared_at:
+          type: string
+          format: date-time
+          readOnly: true
+        sender_member_id:
+          type: integer
+          readOnly: true
+        sender_display_name:
+          type: string
+          readOnly: true
+        resource_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        original_filename:
+          type: string
+          readOnly: true
+          nullable: true
+        content_type:
+          type: string
+          readOnly: true
+          nullable: true
+        byte_size:
+          type: integer
+          readOnly: true
+          nullable: true
+        is_available:
+          type: boolean
+          readOnly: true
+        open_path:
+          type: string
+          readOnly: true
+        download_path:
+          type: string
+          readOnly: true
+      required:
+      - attachment_id
+      - byte_size
+      - content_type
+      - download_path
+      - is_available
+      - message_id
+      - open_path
+      - original_filename
+      - resource_id
+      - sender_display_name
+      - sender_member_id
+      - shared_at
+    SharedFinancialDocumentResource:
+      type: object
+      properties:
+        attachment_id:
+          type: integer
+          readOnly: true
+        message_id:
+          type: integer
+          readOnly: true
+        shared_at:
+          type: string
+          format: date-time
+          readOnly: true
+        sender_member_id:
+          type: integer
+          readOnly: true
+        sender_display_name:
+          type: string
+          readOnly: true
+        resource_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        title:
+          type: string
+          readOnly: true
+          nullable: true
+        document_number:
+          type: string
+          readOnly: true
+          nullable: true
+        document_status:
+          type: string
+          readOnly: true
+          nullable: true
+        project_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        project_name:
+          type: string
+          readOnly: true
+          nullable: true
+        is_available:
+          type: boolean
+          readOnly: true
+        open_path:
+          type: string
+          readOnly: true
+      required:
+      - attachment_id
+      - document_number
+      - document_status
+      - is_available
+      - message_id
+      - open_path
+      - project_id
+      - project_name
+      - resource_id
+      - sender_display_name
+      - sender_member_id
+      - shared_at
+      - title
+    SharedLinkResource:
+      type: object
+      properties:
+        message_id:
+          type: integer
+          readOnly: true
+        shared_at:
+          type: string
+          format: date-time
+          readOnly: true
+        sender_member_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        sender_display_name:
+          type: string
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        scheme:
+          type: string
+          readOnly: true
+      required:
+      - message_id
+      - scheme
+      - sender_display_name
+      - sender_member_id
+      - shared_at
+      - url
     SignupCompleteRequest:
       type: object
       properties:

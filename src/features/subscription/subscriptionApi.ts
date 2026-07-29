@@ -56,7 +56,7 @@ export function isPaymentsDisabled(
 export function formatPaymentsDisabledMessage(data?: PaymentsDisabled | null): string {
   return (
     data?.detail?.trim() ||
-    "پرداخت آنلاین در حال حاضر غیرفعال است. شارژ توکن و فعال‌سازی اشتراک فعلاً فقط توسط ادمین انجام می‌شود."
+    "پرداخت آنلاین در حال حاضر فعال نیست."
   );
 }
 

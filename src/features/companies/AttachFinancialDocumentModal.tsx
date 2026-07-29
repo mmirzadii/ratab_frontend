@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FileText, FolderKanban, Loader2, Plus, Search, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -164,6 +165,7 @@ export function FinancialDocumentActionModal({
 
   function continueWithProject(project: Project, intent: DocIntent) {
     setSelectedProject(project);
+    setValidationHint(null);
     if (intent === "create") {
       openCreateWizard(project);
       return;
@@ -171,14 +173,25 @@ export function FinancialDocumentActionModal({
     setStep("browse-documents");
   }
 
+  const [validationHint, setValidationHint] = useState<string | null>(null);
+
   function handleAddFinancialDocument() {
     setDocIntent("create");
+    setValidationHint(null);
     if (selectedProject && (projectLocked || step === "browse-documents")) {
       openCreateWizard(selectedProject);
       return;
     }
     if (projectLocked && lockedProject) {
       openCreateWizard(lockedProject);
+      return;
+    }
+    if (projects.length === 0 && !isLoadingProjects) {
+      setStep("create-project");
+      return;
+    }
+    if (!selectedProject && step === "select-project") {
+      setValidationHint("ابتدا یک پروژه انتخاب کنید.");
       return;
     }
     setStep("select-project");
@@ -195,16 +208,27 @@ export function FinancialDocumentActionModal({
       ? cleanDisplayText(lockedProject.name, "پروژه")
       : null;
 
-  return (
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  const sheet = (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-2 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[60] flex flex-col bg-black/60 backdrop-blur-sm md:items-center md:justify-center md:p-4"
       data-tour="financial-document-action-modal"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
+      ref={overlayRef}
     >
       <GlassCard
-        className="flex max-h-[calc(100dvh-0.5rem)] w-full max-w-lg flex-col overflow-hidden p-0 sm:max-h-[calc(100dvh-2rem)]"
+        className="flex h-dvh w-full flex-col overflow-hidden p-0 md:h-auto md:max-h-[calc(100dvh-2rem)] md:max-w-lg md:rounded-lg"
         dir="rtl"
       >
         {step === "create-project" ? (
@@ -265,16 +289,6 @@ export function FinancialDocumentActionModal({
                 <div className="space-y-3" data-tour="financial-document-project-select">
                   <p className="text-sm font-bold text-slate-200 light:text-slate-700">انتخاب پروژه</p>
 
-                  <Button
-                    className="w-full"
-                    data-tour="create-project-from-document-flow"
-                    onClick={() => setStep("create-project")}
-                    type="button"
-                  >
-                    <Plus className="h-4 w-4" />
-                    ایجاد پروژه جدید
-                  </Button>
-
                   <label className="relative block">
                     <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
                     <input
@@ -284,6 +298,12 @@ export function FinancialDocumentActionModal({
                       value={projectQuery}
                     />
                   </label>
+
+                  {validationHint ? (
+                    <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-100 light:border-amber-200 light:bg-amber-50 light:text-amber-800">
+                      {validationHint}
+                    </p>
+                  ) : null}
 
                   {isLoadingProjects ? (
                     <div className="flex items-center gap-2 py-6 text-sm text-slate-400">
@@ -297,11 +317,17 @@ export function FinancialDocumentActionModal({
                       title="پروژه‌ها دریافت نشد"
                     />
                   ) : filteredProjects.length === 0 ? (
-                    <EmptyState
-                      description="پروژه‌ای نیست. یک پروژه جدید بسازید."
-                      icon={<FolderKanban className="h-7 w-7" />}
-                      title="پروژه‌ای وجود ندارد"
-                    />
+                    <div className="space-y-3 py-6 text-center">
+                      <FolderKanban className="mx-auto h-7 w-7 text-slate-500" />
+                      <p className="text-sm text-slate-300 light:text-slate-600">پروژه‌ای وجود ندارد.</p>
+                      <Button
+                        onClick={() => setStep("create-project")}
+                        type="button"
+                      >
+                        <Plus className="h-4 w-4" />
+                        ایجاد پروژه جدید
+                      </Button>
+                    </div>
                   ) : (
                     <ul className="space-y-2">
                       {filteredProjects.map((project) => (
@@ -428,6 +454,8 @@ export function FinancialDocumentActionModal({
       </GlassCard>
     </div>
   );
+
+  return createPortal(sheet, document.body);
 }
 
 /** @deprecated Prefer FinancialDocumentActionModal */

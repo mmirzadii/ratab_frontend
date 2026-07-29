@@ -4,7 +4,6 @@ import {
   Building2,
   CheckCircle2,
   Edit3,
-  Info,
   Loader2,
   Mail,
   MessageCircle,
@@ -14,7 +13,7 @@ import {
   X,
   XCircle
 } from "lucide-react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { useAppShell } from "../app/appShellContext";
@@ -27,11 +26,15 @@ import {
 } from "../features/companies/companyApi";
 import { useListCompanyGroupsQuery } from "../features/companies/companyGroupsApi";
 import { useListMyCompanyInvitationsQuery } from "../features/companies/companyInvitationsApi";
-import { PendingInvitationsSection } from "../features/companies/PendingInvitationsSection";
 import { GroupInfoDrawer } from "../features/companies/GroupInfoDrawer";
 import { GroupsSection } from "../features/companies/GroupsSection";
 import { MembersSection } from "../features/companies/MembersSection";
-import { MessagesSection, type SeedFinancialDocumentAttachment } from "../features/companies/MessagesSection";
+import { MemberSettingsPane } from "../features/companies/MemberSettingsPane";
+import {
+  MessagesSection,
+  type SeedFinancialDocumentAttachment
+} from "../features/companies/MessagesSection";
+import { PendingInvitationsSection } from "../features/companies/PendingInvitationsSection";
 import {
   classifyCompanyGroup,
   groupKindLabel,
@@ -39,12 +42,12 @@ import {
   sortConversations
 } from "../features/companies/groupKinds";
 import {
-  canManageMembers,
+  assignableInviteRolesFor,
   canUpdateCompany,
   findCurrentMembership,
   getRoleLabel
 } from "../features/companies/companyPermissions";
-import { useListCompanyMembersQuery } from "../features/companies/companyMembersApi";
+import { useListCompanyMembersQuery, useRetrieveCompanyMemberQuery } from "../features/companies/companyMembersApi";
 import {
   CompanyMobileSectionNav,
   CompanyWorkspaceRail,
@@ -203,7 +206,7 @@ function CompanyEditModal({
 
         {!canEdit ? (
           <p className="mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400 light:border-slate-200 light:bg-slate-50 light:text-slate-600">
-            ویرایش مشخصات شرکت برای کارمند در رابط کاربری غیرفعال است.
+            ویرایش مشخصات شرکت برای شما غیرفعال است.
           </p>
         ) : null}
 
@@ -409,6 +412,7 @@ export function CompanyDashboardPage() {
   const { companyId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const parsedCompanyId = Number(companyId);
   const hasValidCompanyId = Number.isInteger(parsedCompanyId) && parsedCompanyId > 0;
   const isXl = useIsXlViewport();
@@ -426,7 +430,11 @@ export function CompanyDashboardPage() {
   const [mobilePane, setMobilePane] = useState<MobilePane>("list");
   const [membersListTab, setMembersListTab] = useState<MembersListTab>("members");
   const [selectedMessageGroupId, setSelectedMessageGroupId] = useState<number | null>(null);
-  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(() => {
+    const raw = new URLSearchParams(window.location.search).get("memberId");
+    const parsed = raw ? Number(raw) : NaN;
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  });
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [isInviteMemberOpen, setIsInviteMemberOpen] = useState(false);
@@ -434,6 +442,7 @@ export function CompanyDashboardPage() {
   const [isDetailsDrawerOpen, setIsDetailsDrawerOpen] = useState(false);
   const [showInactiveMembers, setShowInactiveMembers] = useState(false);
   const [listQuery, setListQuery] = useState("");
+  const [memberSettingsDirty, setMemberSettingsDirty] = useState(false);
   const [seedFinancialDocumentAttachment, setSeedFinancialDocumentAttachment] =
     useState<SeedFinancialDocumentAttachment | null>(null);
   const [openFinancialDocumentRequestId, setOpenFinancialDocumentRequestId] = useState(0);
@@ -456,8 +465,13 @@ export function CompanyDashboardPage() {
   const groups = getListResults(groupsData);
   const myMembership = findCurrentMembership(members, authUser?.id);
   const myRole = myMembership?.is_active ? myMembership.role : null;
+  const { data: myMemberDetail } = useRetrieveCompanyMemberQuery(
+    { companyId: parsedCompanyId, memberId: myMembership?.id ?? 0 },
+    { skip: !hasValidCompanyId || myMembership?.id == null }
+  );
+  const actorPermissions = myMemberDetail?.permissions ?? myMembership?.permissions ?? null;
   const canEditCompany = canUpdateCompany(myRole);
-  const canInviteMembers = canManageMembers(myRole);
+  const canInviteMembers = assignableInviteRolesFor(myRole, actorPermissions).length > 0;
   const companyName = cleanDisplayText(company?.name, "شرکت بدون نام");
   const selectedMessageGroup = groups.find((group) => group.id === selectedMessageGroupId) ?? null;
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? null;
@@ -552,6 +566,17 @@ export function CompanyDashboardPage() {
   }, [activeSection, selectedMember]);
 
   useEffect(() => {
+    if (activeSection !== "members") return;
+    const raw = searchParams.get("memberId");
+    const parsed = raw ? Number(raw) : NaN;
+    if (!Number.isInteger(parsed) || parsed <= 0) return;
+    if (selectedMemberId === parsed) return;
+    if (members.some((member) => member.id === parsed)) {
+      setSelectedMemberId(parsed);
+    }
+  }, [activeSection, members, searchParams, selectedMemberId]);
+
+  useEffect(() => {
     if (!company) return;
 
     setCompanyCtx({
@@ -612,6 +637,29 @@ export function CompanyDashboardPage() {
     setMembersListTab("members");
     setIsDetailsDrawerOpen(false);
     setMobilePane(section === "company" ? "detail" : "list");
+  }
+
+  function selectMember(memberId: number) {
+    if (
+      memberSettingsDirty &&
+      selectedMemberId != null &&
+      selectedMemberId !== memberId &&
+      !window.confirm("تغییرات ذخیره‌نشده از بین می‌روند. ادامه می‌دهید؟")
+    ) {
+      return;
+    }
+    setMemberSettingsDirty(false);
+    setSelectedMemberId(memberId);
+    setIsInviteMemberOpen(false);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("memberId", String(memberId));
+        return next;
+      },
+      { replace: true }
+    );
+    openDetail();
   }
 
   function openDetail() {
@@ -760,8 +808,7 @@ export function CompanyDashboardPage() {
           }
           key={member.id}
           onClick={() => {
-            setSelectedMemberId(member.id);
-            openDetail();
+            selectMember(member.id);
           }}
           selected={member.id === selectedMemberId}
           subtitle={member.phone_number}
@@ -911,31 +958,50 @@ export function CompanyDashboardPage() {
                   "min-h-0 flex-1 flex-col",
                   membersListTab === "invitations" ? "hidden" : "flex"
                 )}
+                data-testid="members-main-pane"
               >
-                {selectedMemberId != null ? (
-                  <div className="flex shrink-0 justify-end border-b border-white/8 px-2 py-1 light:border-slate-200">
-                    <button
-                      aria-label="جزئیات عضو"
-                      className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
-                      onClick={openDetailsDrawer}
-                      type="button"
-                    >
-                      <Info className="h-4 w-4" />
-                      جزئیات
-                    </button>
+                {isInviteMemberOpen ? (
+                  <MembersSection
+                    companyId={company.id}
+                    hideCreateForm
+                    hideList
+                    isInviteOpen={isInviteMemberOpen}
+                    onInviteOpenChange={setIsInviteMemberOpen}
+                    onSelectedMemberIdChange={(memberId) => {
+                      setSelectedMemberId(memberId);
+                      setMemberSettingsDirty(false);
+                      if (memberId != null) {
+                        setSearchParams(
+                          (prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.set("memberId", String(memberId));
+                            return next;
+                          },
+                          { replace: true }
+                        );
+                      }
+                    }}
+                    selectedMemberId={selectedMemberId}
+                  />
+                ) : selectedMember ? (
+                  <MemberSettingsPane
+                    actorPermissions={actorPermissions}
+                    actorRole={myRole}
+                    companyId={company.id}
+                    member={selectedMember}
+                    members={members}
+                    onBack={() => setMobilePane("list")}
+                    onDirtyChange={setMemberSettingsDirty}
+                  />
+                ) : (
+                  <div className="flex min-h-0 flex-1 items-center justify-center p-6">
+                    <EmptyState
+                      description="یک عضو را برای مشاهده جزئیات و تنظیمات انتخاب کنید."
+                      icon={<Users className="h-7 w-7" />}
+                      title="عضوی انتخاب نشده"
+                    />
                   </div>
-                ) : null}
-                <MembersSection
-                  companyId={company.id}
-                  hideCreateForm
-                  hideList
-                  isInviteOpen={isInviteMemberOpen}
-                  onInviteOpenChange={setIsInviteMemberOpen}
-                  onSelectedMemberIdChange={setSelectedMemberId}
-                  onShowInactiveChange={setShowInactiveMembers}
-                  selectedMemberId={selectedMemberId}
-                  showInactive={showInactiveMembers}
-                />
+                )}
               </div>
               {membersListTab === "invitations" ? (
                 <div className="min-h-0 flex-1 overflow-y-auto p-3 [scrollbar-width:thin]">

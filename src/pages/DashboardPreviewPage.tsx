@@ -20,7 +20,7 @@ import { containsLocalizedDigits, normalizeRowCode } from "../shared/utils/numbe
 const previewCards = [
   {
     title: "ورود توسعه",
-    description: "نشست فعلی با کوکی امن سرور ساخته می‌شود و با /api/auth/me/ بررسی می‌شود.",
+    description: "ورود امن با نشست و بازیابی خودکار حساب.",
     icon: Building2,
     tone: "emerald"
   },
@@ -32,7 +32,7 @@ const previewCards = [
   },
   {
     title: "فهرست‌بها ۱۴۰۴",
-    description: "مرور فصل‌ها و آیتم‌ها در فازهای بعدی به سرویس واقعی وصل می‌شود.",
+    description: "فصل‌ها، گروه‌ها و آیتم‌ها از فهرست‌بهای واقعی.",
     icon: ClipboardList,
     tone: "amber"
   }
@@ -63,9 +63,7 @@ export function DashboardPreviewPage() {
                 خوش آمدید، {displayName}
               </h1>
               <p className="text-sm leading-7 text-slate-300 light:text-slate-600">
-                این پوسته حالا پشت ورود توسعه محافظت می‌شود. هنوز شرکت، پروژه و صورت‌بها در
-                این فاز ساخته نمی‌شوند؛ فاز ۳ فقط نشست، خروج، هدر احراز هویت و مسیرهای محافظت‌شده
-                را آماده می‌کند.
+                نمای کلی امکانات فعلی سیستم.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -97,7 +95,7 @@ export function DashboardPreviewPage() {
         </GlassCard>
 
         <EmptyState
-          description="بعد از پیاده‌سازی شرکت‌ها، این بخش به پیام‌های شرکت و دکمه افزودن صورت‌بها تبدیل می‌شود."
+          description="وارد یک شرکت شوید تا فضای پیام‌ها فعال شود."
           icon={<MessageSquareText className="h-7 w-7" />}
           title="فضای پیام‌های شرکت هنوز فعال نیست"
         />
@@ -146,17 +144,13 @@ export function DashboardPreviewPage() {
         </GlassCard>
 
         <GlassCard className="p-5">
-          <h2 className="text-lg font-black text-white light:text-slate-950">مرز فاز ۳</h2>
+          <h2 className="text-lg font-black text-white light:text-slate-950">وضعیت فعلی</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <StatusBadge tone="emerald">ورود توسعه</StatusBadge>
             <StatusBadge tone="violet">مسیر محافظت‌شده</StatusBadge>
             <StatusBadge tone="amber">بدون رمز ساختگی</StatusBadge>
             <StatusBadge>بدون داده شرکت</StatusBadge>
           </div>
-          <p className="mt-5 text-sm leading-7 text-slate-300 light:text-slate-600">
-            رمز عبور، OTP، شرکت‌ها، پروژه‌ها و محاسبات مالی در این فاز شبیه‌سازی نشده‌اند. رفتار
-            فعلی دقیقا بر اساس نشست کوکی‌دار و auth/me بک‌اند توسعه است.
-          </p>
         </GlassCard>
       </section>
     </div>

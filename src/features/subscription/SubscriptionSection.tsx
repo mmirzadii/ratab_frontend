@@ -1,31 +1,18 @@
-import { useState } from "react";
-import { Ban, CreditCard, Loader2, MessageSquare, RefreshCw, Sparkles } from "lucide-react";
+import { Ban, Loader2, MessageSquare, RefreshCw, Sparkles } from "lucide-react";
 
-import { Button } from "../../shared/components/Button";
 import { GlassCard } from "../../shared/components/GlassCard";
 import { StatusBadge } from "../../shared/components/StatusBadge";
 import { classNames } from "../../shared/utils/classNames";
-import { getApiErrorMessage } from "../../shared/utils/apiError";
 import { formatMoneyAmount } from "../../shared/utils/formatters";
 import {
-  formatPaymentsDisabledMessage,
   formatQuotaResetsAt,
   formatQuotaUsageLabel,
   formatSubscriptionStatusLabel,
-  isPaymentsDisabled,
-  useCreatePaymentOrderMutation,
   useGetMessageQuotaQuery,
   useGetSubscriptionQuery,
   useListSubscriptionPlansQuery,
   type SubscriptionPlan
 } from "./subscriptionApi";
-
-/**
- * Documentation example from `backend_docs/current/API_USAGE_EXAMPLES.md` §11.
- * Used only to probe the disabled-payment boundary. Packages are not seeded
- * (KNOWN_LIMITATIONS); this is not a purchasable product code.
- */
-const PAYMENT_AVAILABILITY_PROBE_PACKAGE_CODE = "tokens-100";
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
@@ -89,41 +76,7 @@ export function SubscriptionSection() {
     isFetching: isFetchingQuota,
     refetch: refetchQuota
   } = useGetMessageQuotaQuery();
-  const [createPaymentOrder, paymentState] = useCreatePaymentOrderMutation();
-  const [paymentNotice, setPaymentNotice] = useState<{
-    tone: "amber" | "rose";
-    message: string;
-  } | null>(null);
-
   const isRefreshing = isFetchingSubscription || isFetchingPlans || isFetchingQuota;
-
-  async function handleCheckPaymentAvailability() {
-    setPaymentNotice(null);
-    try {
-      await createPaymentOrder({
-        package_code: PAYMENT_AVAILABILITY_PROBE_PACKAGE_CODE,
-        idempotency_key: `payment-probe-${Date.now()}`
-      }).unwrap();
-      // v1.0 contract: online payment is disabled; a 201 would be unexpected.
-      setPaymentNotice({
-        tone: "amber",
-        message:
-          "پاسخ غیرمنتظره از سرویس پرداخت دریافت شد. فعلاً شارژ و اشتراک فقط توسط ادمین فعال می‌شود."
-      });
-    } catch (error) {
-      if (isPaymentsDisabled(error)) {
-        setPaymentNotice({
-          tone: "amber",
-          message: formatPaymentsDisabledMessage(error.data)
-        });
-        return;
-      }
-      setPaymentNotice({
-        tone: "rose",
-        message: getApiErrorMessage(error)
-      });
-    }
-  }
 
   return (
     <GlassCard className="overflow-hidden p-0">
@@ -137,7 +90,7 @@ export function SubscriptionSection() {
               اشتراک و سهمیه پیام
             </h2>
             <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
-              وضعیت اشتراک، سقف روزانه پیام و محدودیت پرداخت آنلاین از بک‌اند خوانده می‌شود.
+              وضعیت اشتراک و سهمیه پیام
             </p>
           </div>
         </div>
@@ -193,7 +146,7 @@ export function SubscriptionSection() {
                 <dt>سقف مؤثر روزانه پیام</dt>
                 <dd className="font-bold text-slate-200 light:text-slate-700">
                   {subscription.effective_daily_message_limit == null
-                    ? "نامحدود (یا بدون سقف پیکربندی‌شده)"
+                    ? "بدون سقف روزانه"
                     : `${subscription.effective_daily_message_limit} پیام`}
                 </dd>
               </div>
@@ -228,8 +181,7 @@ export function SubscriptionSection() {
               </p>
               {quota.daily_limit == null ? (
                 <p className="mt-2 text-xs leading-5 text-slate-400 light:text-slate-500">
-                  سقف روزانه برای این حساب پیکربندی نشده است؛ استفاده همچنان ثبت می‌شود. عدد سقف را
-                  در فرانت اختراع نمی‌کنیم.
+                  بدون سقف روزانه
                 </p>
               ) : null}
             </div>
@@ -243,7 +195,7 @@ export function SubscriptionSection() {
 
         <div>
           <h3 className="mb-2 text-sm font-black text-slate-200 light:text-slate-800">
-            طرح‌های اشتراک (بک‌اند)
+            طرح‌های اشتراک
           </h3>
           {plansError ? (
             <p className="rounded-lg border border-rose-300/25 bg-rose-400/10 p-3 text-sm text-rose-100 light:text-rose-800">
@@ -257,56 +209,16 @@ export function SubscriptionSection() {
             </ul>
           ) : (
             <p className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-slate-400 light:border-slate-200 light:bg-slate-50 light:text-slate-500">
-              هنوز طرح اشتراکی از بک‌اند برنگشته است. تعریف طرح‌ها و سقف‌ها تصمیم مالک محصول است و در
-              فرانت اختراع نمی‌شود.
+              هنوز طرح اشتراکی تعریف نشده است.
             </p>
           )}
-          <p className="mt-2 text-xs leading-5 text-slate-500 light:text-slate-500">
-            خرید یا فعال‌سازی اشتراک از این صفحه انجام نمی‌شود؛ در نسخه فعلی فقط ادمین اشتراک را
-            فعال می‌کند.
-          </p>
         </div>
 
-        <div className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 light:border-amber-200 light:bg-amber-50">
-          <div className="flex items-start gap-2">
-            <Ban className="mt-0.5 h-4 w-4 shrink-0 text-amber-200 light:text-amber-700" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-black text-amber-100 light:text-amber-900">
-                پرداخت آنلاین غیرفعال است
-              </p>
-              <p className="mt-1 text-xs leading-5 text-amber-100/90 light:text-amber-800">
-                در نسخه فعلی درگاه بانکی متصل نیست. شارژ توکن و فعال‌سازی اشتراک فقط توسط ادمین
-                انجام می‌شود. فرانت مبلغ، تعداد توکن، یا وضعیت پرداخت را تعیین نمی‌کند.
-              </p>
-              <div className="mt-3">
-                <Button
-                  disabled={paymentState.isLoading}
-                  onClick={() => void handleCheckPaymentAvailability()}
-                  type="button"
-                  variant="secondary"
-                >
-                  {paymentState.isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <CreditCard className="h-4 w-4" />
-                  )}
-                  بررسی وضعیت پرداخت آنلاین
-                </Button>
-              </div>
-              {paymentNotice ? (
-                <p
-                  className={classNames(
-                    "mt-2 rounded-lg border px-3 py-2 text-xs font-bold leading-5",
-                    paymentNotice.tone === "amber"
-                      ? "border-amber-300/30 bg-black/10 text-amber-50 light:border-amber-300 light:bg-white/70 light:text-amber-900"
-                      : "border-rose-300/30 bg-black/10 text-rose-50 light:border-rose-300 light:bg-white/70 light:text-rose-800"
-                  )}
-                >
-                  {paymentNotice.message}
-                </p>
-              ) : null}
-            </div>
-          </div>
+        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 light:border-slate-200 light:bg-slate-50">
+          <Ban className="h-4 w-4 shrink-0 text-amber-300 light:text-amber-600" />
+          <p className="text-sm text-slate-300 light:text-slate-600">
+            پرداخت آنلاین در حال حاضر فعال نیست.
+          </p>
         </div>
       </div>
     </GlassCard>

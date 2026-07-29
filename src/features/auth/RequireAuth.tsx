@@ -31,10 +31,7 @@ export function RequireAuth({ children }: PropsWithChildren) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-ratab-night p-6 text-slate-100">
         <GlassCard className="max-w-sm p-6 text-center">
-          <p className="text-lg font-black">در حال بررسی نشست</p>
-          <p className="mt-2 text-sm leading-7 text-slate-300">
-            نشست فعلی از طریق کوکی امن سرور بازیابی می‌شود.
-          </p>
+          <p className="text-lg font-black">در حال بررسی نشست…</p>
         </GlassCard>
       </div>
     );

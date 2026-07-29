@@ -583,8 +583,20 @@ export function CostReportWizardPage() {
             {activeSection === "project" ? (
               <ProjectSelectorSection
                 companyId={parsedCompanyId}
-                isLocked={Boolean(builderState?.existingProject) || Boolean(builderState?.lockProject)}
-                onSelect={setCreatedProject}
+                isLocked={Boolean(builderState?.lockProject)}
+                onSelect={(project) => {
+                  setCreatedProject(project);
+                  if (project) {
+                    navigate(location.pathname, {
+                      replace: true,
+                      state: {
+                        ...(builderState ?? {}),
+                        existingProject: project,
+                        lockProject: Boolean(builderState?.lockProject)
+                      }
+                    });
+                  }
+                }}
                 selectedProject={createdProject}
               />
             ) : null}

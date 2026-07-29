@@ -36,7 +36,7 @@ Before changing code, read in this order:
 | 6 | ✅ | Wallet + 5-token official line-create + idempotency |
 | 7 | ✅ | Subscription, message quota, disabled payment UX |
 | 8 | ✅ | Final integration, cleanup, regression, handoff |
-| 9 | ✅ | Compact Telegram-inspired company workspace UX |
+| 9 | ✅ | Compact Telegram-inspired company workspace UX + text cleanup |
 
 ## Product snapshot
 
@@ -144,7 +144,7 @@ Company workspace is conversation-first when `companyCtx.workspaceActive` is set
 
 1. Narrow company icon rail (~68px, `lg+`) — **گفتگوها**, اعضا, اطلاعات شرکت (no permanent Projects/Groups nav).
 2. Conversation list (~304–352px): public `عمومی` pinned, then project-linked (با نشان `پروژه`), then custom; `+` menu for پروژه جدید / گروه جدید.
-3. Main chat pane with sticky composer: one **افزودن** menu (فایل | صورت‌بها); empty chat and drawer use **افزودن صورت‌بها** to open the same list-first financial-document selector; project-linked chats lock the project; public/custom require project selection with visible **ایجاد پروژه جدید**.
+3. Main chat pane with sticky composer: one **افزودن** menu (فایل | صورت‌بها); empty chat and drawer use **افزودن صورت‌بها** to open the same list-first financial-document selector; project-linked chats lock the project; public/custom require project selection with visible **ایجاد پروژه جدید**. Cost-report wizard Project Selection step also exposes compact **افزودن پروژه** (shared `CreateProjectSheet`) unless `lockProject` is set.
 4. Optional left info drawer (closed by default) with tabs صورت‌بهاها / فایل‌ها / لینک‌ها / اعضا; shared resources come from that group's messages; members from the group-members endpoint.
 5. Below `lg`: bottom section nav + mobile list↔detail.
 
@@ -163,6 +163,7 @@ Project/group creation and management remain available from the conversation UI 
 9. Health page schema path drift → Phase 8
 10. Excel OpenAPI-absent paths → Phase 8 isolated/unwired (not deleted)
 11. Multi-sidebar + dropdown-heavy company dashboard → Phase 9 compact master-detail workspace
+12. Verbose internal developer text in user-facing UI → Phase 9 text cleanup (compact, action-oriented)
 
 ## Behavior that must remain stable
 
@@ -173,10 +174,12 @@ Project/group creation and management remain available from the conversation UI 
 - Session cookie auth + CSRF
 - Exact 5-token official line charge (backend authority); idempotent retries
 - Quota/payment disable enforced by backend; UI is presentation only
+- Company member roles `owner` / `admin` / `employee` with labels مالک / مدیر / کارمند; **inline** member settings in the Members master-detail main pane (not a modal); no ordinary Owner assignment
 
 ## Known limitations
 
 - Cross-origin cookie/CORS must match the frontend origin for login/signup.
+- Member settings load `GET /api/company-members/{id}/settings/` and save via `PATCH` with `permission_settings`. Employee shows the full configurable catalog; Admin shows inherited Employee capabilities read-only plus Admin-only switches. See `backend_docs/current/PERMISSIONS.md`.
 - Accounts without passwords need admin password setup (backend).
 - No standalone company file **list** API.
 - Online payments disabled (`PAYMENTS_DISABLED`); admin activates tokens/subscriptions.
@@ -186,7 +189,7 @@ Project/group creation and management remain available from the conversation UI 
 - Backend PDF export may return conflict while blocked.
 - Excel import isolated/unwired (absent from OpenAPI).
 - Branding inconsistency (`ratab` vs `Metril`).
-- No automated frontend test suite; live E2E against a real backend is a deployment gate (see `phaze8/TEST_RESULTS.md`).
+- No automated frontend test suite beyond Node.js test runner; live E2E against a real backend is a deployment gate (see `phaze8/TEST_RESULTS.md`). Text cleanup tests in `src/features/ui/textCleanup.test.ts` guard against internal developer text reappearing in UI.
 - Company/group invitation UX is wired against current OpenAPI invitation endpoints (`/api/company-invitations/`, company/group invitation creates, accept/reject). Pending invitations are listed separately from active companies on `/companies`.
 - Live `GET /api/company-invitations/` may return a bare array; the frontend normalizes both array and paginated shapes.
 - Company creation refreshes groups so the backend `عمومی` public group (`is_default` / `public_group_id`) appears without a client-side create.

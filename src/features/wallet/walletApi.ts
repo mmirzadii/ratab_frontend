@@ -64,9 +64,9 @@ export function formatInsufficientBalanceMessage(data: TokenBillingError): strin
   const required = data.required_tokens?.trim();
   const available = data.available_tokens?.trim();
   if (required && available) {
-    return `موجودی توکن کافی نیست. موردنیاز: ${required} توکن، موجودی: ${available} توکن. شارژ فعلاً از طریق ادمین انجام می‌شود.`;
+    return `موجودی توکن کافی نیست. موردنیاز: ${required} توکن، موجودی: ${available} توکن.`;
   }
-  return "موجودی توکن برای ثبت این ردیف کافی نیست. شارژ فعلاً از طریق ادمین انجام می‌شود.";
+  return "موجودی توکن برای ثبت این ردیف کافی نیست.";
 }
 
 export function createLineIdempotencyKey(): string {

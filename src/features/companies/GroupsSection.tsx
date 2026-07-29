@@ -398,11 +398,11 @@ export function GroupsSection({
                 </p>
                 {!canManageActive ? (
                   <p className="mt-2 text-xs text-slate-400 light:text-slate-500">
-                    مدیریت این گروه برای نقش فعلی شما در رابط کاربری غیرفعال است. سرور مرجع نهایی دسترسی است.
+                    مدیریت این گروه برای شما غیرفعال است.
                   </p>
                 ) : activeKind !== "custom" ? (
                   <p className="mt-2 text-xs text-slate-400 light:text-slate-500">
-                    تغییر نام یا غیرفعال‌سازی گروه‌های عمومی/پروژه از این بخش پشتیبانی نمی‌شود.
+                    این گروه از این بخش قابل ویرایش نیست.
                   </p>
                 ) : null}
               </div>

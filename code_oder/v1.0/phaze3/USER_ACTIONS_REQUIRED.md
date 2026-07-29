@@ -1,29 +1,19 @@
-# Phase 3 — User Actions Required
+# Phase 3 User Actions Required — Member Roles & Permissions
 
-## Required for full multi-role verification
+## Full permission catalogs (synced 2026-07-29)
 
-1. Use a Backend v1.0 instance with session auth + CSRF already trusted for the Vite origin (Phase 2 local note: include `http://localhost:1000` in `CSRF_TRUSTED_ORIGINS` / `CORS_ALLOWED_ORIGINS` when Vite runs on port 1000).
-2. Manually verify owner / admin / employee paths listed in `TEST_RESULTS.md` against real users and memberships.
-3. Confirm adding a member requires that phone number to already exist as a backend user (per backend signup/login contract); the frontend does not invent invite/signup-on-add flows.
+Authority: backend `apps/companies/permissions_catalog.py` + live
+`GET/PATCH /api/company-members/{id}/settings/`.
 
-## Not required for code merge of Phase 3 frontend work
+Frontend renders **all** rows from `configurable_permissions` (no single-key
+subset). Admin does **not** re-edit inherited Employee switches.
 
-- No frontend secrets or env keys were added for Phase 3.
-- No backend code changes are required for the frontend compile/lint/build path.
-- No commit or push was made by the agent.
+Ownership-transfer UI in the member pane remains optional
+(`OWNERSHIP_TRANSFER_SUPPORTED = false` until the dedicated flow is wired in this page).
 
-## Blockers
+## Live QA
 
-No hard frontend blocker for Phase 3 compile/lint/build.
-
-Optional product/process gap: no automated frontend test suite yet, so role UX regressions rely on manual QA until a later phase adds tests.
-
----
-
-## Post-v1 — invitation workflow blocker
-
-**Resolved (same day):** invitation endpoints are present in the updated `backend_docs/current/OPENAPI.yaml`. Frontend now lists pending invitations on `/companies` and supports accept/reject.
-
-**Manual QA still recommended:** invite User B from Members, log in as B, confirm pending section appears, accept, enter company/messages without logout.
-
-
+1. Employee → section **اختیارات کارمند** with the full configurable Switch list.
+2. Admin → inherited Employee note + **اختیارات مدیر** only.
+3. Promote/demote warnings update the Switch catalog immediately.
+4. Save uses `permission_settings` for the draft role only.

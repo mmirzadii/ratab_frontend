@@ -577,7 +577,7 @@ export function MessagesSection({
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-4 sm:p-8">
         <EmptyState
-          description="برای پیام‌رسانی باید عضو حداقل یک گروه باشید. از بخش گروه‌ها یک گروه بسازید یا به گروهی اضافه شوید."
+          description="برای پیام‌رسانی باید عضو حداقل یک گروه باشید."
           icon={<Network className="h-7 w-7" />}
           title="گروهی برای پیام وجود ندارد"
         />

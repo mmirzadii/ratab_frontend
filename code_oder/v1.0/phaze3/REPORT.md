@@ -158,4 +158,25 @@ Earlier checked-in OpenAPI omitted invitation paths. The live Backend v1 schema 
 - Project create invalidates projects + groups + group members + messages for the new group.
 - Groups/messages UI labels public vs project vs custom using backend fields (not name-only).
 
+---
+
+## Post-v1 correction (2026-07-29) — member settings UX (contract-limited)
+
+### Shipped against `backend_docs/current/` (refreshed from live Backend v1.0 schema)
+
+- **Inline** `MemberSettingsPane` in the Members master-detail **main pane**
+- Detail load: `GET /api/company-members/{id}/settings/`
+- Atomic save: `PATCH .../settings/` with `{ role, permission_settings }`
+- Employee: full configurable catalog from `configurable_permissions` (9 keys incl. invite/project/group/document/file)
+- Admin: inherited Employee capabilities (read-only summary) + Admin-only switches (`can_add_admins` default off, plus profile/invites/deactivate/groups)
+- Role transitions replace catalogs immediately with promote/demote warnings
+- Save never submits inherited Employee keys for Admin
+- Empty Employee catalog → compact mismatch error (documented)
+
+
+### Still blocked
+
+Dedicated ownership-transfer endpoint remains absent (`OWNERSHIP_TRANSFER_SUPPORTED = false`).
+
+
 

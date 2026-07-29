@@ -160,8 +160,6 @@ describe("conversation-first navigation and composer contracts", () => {
     assert.match(modal, /lockedProject/);
     assert.match(modal, /returnToGroupId/);
     assert.match(modal, /lockProject/);
-    assert.match(modal, /ایجاد پروژه جدید/);
-    assert.match(modal, /data-tour="create-project-from-document-flow"/);
     assert.match(modal, /CreateProjectSheet/);
     assert.match(modal, /financial-document-project-select/);
     assert.match(modal, /projectLocked/);
@@ -216,5 +214,75 @@ describe("conversation-first navigation and composer contracts", () => {
     assert.equal(drawer.includes("صورت‌بهاهای پروژه"), false);
     assert.equal(drawer.includes("مدیریت صورت‌بهاها"), false);
     assert.equal(drawer.includes("پیوست صورت‌بها"), false);
+  });
+});
+
+describe("mobile financial-document sheet and add-document behavior", () => {
+  const modal = readFileSync(join(here, "AttachFinancialDocumentModal.tsx"), "utf8");
+
+  it("renders via portal to escape parent overflow/transform", () => {
+    assert.match(modal, /createPortal/);
+    assert.match(modal, /document\.body/);
+  });
+
+  it("uses full-screen sheet on mobile with fixed inset-0", () => {
+    assert.match(modal, /fixed inset-0/);
+    assert.match(modal, /h-dvh w-full/);
+    assert.match(modal, /md:max-w-lg/);
+    assert.match(modal, /md:h-auto/);
+  });
+
+  it("is not positioned at bottom-left with arbitrary offsets", () => {
+    assert.equal(modal.includes("bottom-0 left-0"), false);
+    assert.equal(modal.includes("items-end justify-start"), false);
+  });
+
+  it("locks background scroll while open", () => {
+    assert.match(modal, /document\.body\.style\.overflow\s*=\s*"hidden"/);
+  });
+
+  it("header actions remain visible with scrollable body", () => {
+    assert.match(modal, /shrink-0.*border-b/);
+    assert.match(modal, /min-h-0 flex-1 overflow-y-auto/);
+  });
+
+  it("z-index is high enough to overlay everything", () => {
+    assert.match(modal, /z-\[60\]/);
+  });
+
+  it("add-document shows validation when no project selected on select-project step", () => {
+    assert.match(modal, /ابتدا یک پروژه انتخاب کنید\./);
+    assert.match(modal, /validationHint/);
+  });
+
+  it("add-document opens create-project when no projects exist", () => {
+    assert.match(modal, /projects\.length === 0/);
+    assert.match(modal, /setStep\("create-project"\)/);
+  });
+
+  it("empty project state has create-project action button", () => {
+    assert.match(modal, /ایجاد پروژه جدید/);
+    assert.match(modal, /پروژه‌ای وجود ندارد/);
+  });
+
+  it("linked project group opens creation immediately", () => {
+    assert.match(modal, /selectedProject && \(projectLocked \|\| step === "browse-documents"\)/);
+    assert.match(modal, /openCreateWizard\(selectedProject\)/);
+  });
+
+  it("clears validation hint when project is selected", () => {
+    assert.match(modal, /setValidationHint\(null\)/);
+  });
+
+  it("preserves message draft via onSelect callback", () => {
+    assert.match(modal, /onSelect\(/);
+    assert.match(modal, /resourceId/);
+    assert.match(modal, /onClose\(\)/);
+  });
+
+  it("existing documents appear after selecting a project", () => {
+    assert.match(modal, /continueWithProject/);
+    assert.match(modal, /setStep\("browse-documents"\)/);
+    assert.match(modal, /fetchDocuments/);
   });
 });
