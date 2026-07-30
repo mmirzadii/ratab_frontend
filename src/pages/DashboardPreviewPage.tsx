@@ -59,10 +59,10 @@ export function DashboardPreviewPage() {
               نشست توسعه فعال
             </StatusBadge>
             <div className="space-y-3">
-              <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
+              <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl">
                 خوش آمدید، {displayName}
               </h1>
-              <p className="text-sm leading-7 text-slate-300 light:text-slate-600">
+              <p className="text-sm leading-7 text-ui-text-secondary">
                 نمای کلی امکانات فعلی سیستم.
               </p>
             </div>
@@ -84,7 +84,7 @@ export function DashboardPreviewPage() {
                 </Button>
               ) : null}
               <Link
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-4 text-sm font-bold text-slate-100 transition hover:border-violet-300/35 hover:bg-violet-400/15 light:border-slate-200 light:bg-white light:text-slate-800"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-4 text-sm font-bold text-ui-text-primary transition hover:border-ui-primary/35 hover:bg-ui-primary-soft"
                 to="/status"
               >
                 مشاهده مسیر سلامت
@@ -107,10 +107,10 @@ export function DashboardPreviewPage() {
           return (
             <GlassCard className="p-5" interactive key={card.title}>
               <StatusBadge tone={card.tone}>{card.title}</StatusBadge>
-              <div className="mt-5 flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-emerald-200 light:border-slate-200 light:bg-slate-50 light:text-emerald-700">
+              <div className="mt-5 flex h-12 w-12 items-center justify-center rounded-lg border border-ui-border-subtle bg-ui-surface-subtle text-ui-primary">
                 <Icon className="h-6 w-6" />
               </div>
-              <p className="mt-4 text-sm leading-7 text-slate-300 light:text-slate-600">
+              <p className="mt-4 text-sm leading-7 text-ui-text-secondary">
                 {card.description}
               </p>
             </GlassCard>
@@ -120,31 +120,31 @@ export function DashboardPreviewPage() {
 
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <GlassCard className="p-5">
-          <h2 className="text-lg font-black text-white light:text-slate-950">آماده‌سازی ورودی عددی</h2>
-          <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
+          <h2 className="text-lg font-black text-ui-text-primary">آماده‌سازی ورودی عددی</h2>
+          <p className="mt-2 text-sm leading-7 text-ui-text-secondary">
             ابزارهای مشترک، ارقام فارسی و عربی را بدون حذف صفرهای اول به ارقام لاتین تبدیل می‌کنند.
           </p>
-          <div className="mt-5 rounded-lg border border-white/10 bg-slate-950/45 p-4 light:border-slate-200 light:bg-white">
+          <div className="mt-5 rounded-lg border border-ui-border-subtle bg-ui-surface/45 p-4">
             <div className="grid gap-3 text-sm sm:grid-cols-2">
               <div>
-                <p className="text-slate-400 light:text-slate-500">کد نمونه</p>
-                <p className="mt-1 font-bold text-slate-100 light:text-slate-900">{sampleRowCode}</p>
+                <p className="text-ui-text-muted">کد نمونه</p>
+                <p className="mt-1 font-bold text-ui-text-primary">{sampleRowCode}</p>
               </div>
               <div>
-                <p className="text-slate-400 light:text-slate-500">آماده ارسال امن</p>
-                <p className="mt-1 font-bold text-slate-100 light:text-slate-900" dir="ltr">
+                <p className="text-ui-text-muted">آماده ارسال امن</p>
+                <p className="mt-1 font-bold text-ui-text-primary" dir="ltr">
                   {normalizeRowCode(sampleRowCode)}
                 </p>
               </div>
             </div>
-            <p className="mt-3 text-xs text-slate-400 light:text-slate-500">
+            <p className="mt-3 text-xs text-ui-text-muted">
               تشخیص رقم بومی: {containsLocalizedDigits(sampleRowCode) ? "فعال" : "غیرفعال"}
             </p>
           </div>
         </GlassCard>
 
         <GlassCard className="p-5">
-          <h2 className="text-lg font-black text-white light:text-slate-950">وضعیت فعلی</h2>
+          <h2 className="text-lg font-black text-ui-text-primary">وضعیت فعلی</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <StatusBadge tone="emerald">ورود توسعه</StatusBadge>
             <StatusBadge tone="violet">مسیر محافظت‌شده</StatusBadge>

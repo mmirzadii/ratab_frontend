@@ -130,7 +130,7 @@ export function MiniSpreadsheet({
 
   return (
     <div
-      className="overflow-auto rounded-lg border border-white/10 light:border-slate-200"
+      className="overflow-auto rounded-lg border border-ui-border-subtle"
       onKeyDown={handleContainerKeyDown}
       onPaste={handlePaste}
       ref={containerRef}
@@ -140,12 +140,12 @@ export function MiniSpreadsheet({
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr>
-            <th className="w-10 border-b border-l border-white/10 bg-slate-900/60 px-2 py-2 text-center text-xs text-slate-500 light:border-slate-200 light:bg-slate-100">
+            <th className="w-10 border-b border-l border-ui-border-subtle bg-ui-surface-subtle px-2 py-2 text-center text-xs text-ui-text-muted">
               #
             </th>
             {headers.map((header, c) => (
               <th
-                className="border-b border-l border-white/10 bg-slate-900/60 px-3 py-2 text-left text-xs font-bold text-slate-300 light:border-slate-200 light:bg-slate-100 light:text-slate-600"
+                className="border-b border-l border-ui-border-subtle bg-ui-surface-subtle px-3 py-2 text-left text-xs font-bold text-ui-text-secondary"
                 key={c}
               >
                 {header}
@@ -156,15 +156,15 @@ export function MiniSpreadsheet({
         <tbody>
           {value.map((_, r) => (
             <tr key={r}>
-              <td className="border-b border-l border-white/5 bg-slate-900/30 px-2 py-1 text-center text-xs text-slate-600 light:border-slate-100 light:bg-slate-50 light:text-slate-400">
+              <td className="border-b border-l border-ui-border-subtle bg-ui-surface-subtle px-2 py-1 text-center text-xs text-ui-text-muted">
                 {r + 1}
               </td>
               {Array.from({ length: colCount }, (__, c) => (
                 <td
                   className={classNames(
-                    "relative border-b border-l border-white/5 p-0 light:border-slate-100",
+                    "relative border-b border-l border-ui-border-subtle p-0",
                     isSelected(r, c)
-                      ? "outline outline-2 outline-emerald-400 outline-offset-[-2px]"
+                      ? "outline outline-2 outline-ui-primary outline-offset-[-2px]"
                       : ""
                   )}
                   key={c}
@@ -173,14 +173,14 @@ export function MiniSpreadsheet({
                 >
                   {isEditing(r, c) ? (
                     <input
-                      className="absolute inset-0 w-full bg-slate-800 px-2 text-sm text-slate-100 outline-none light:bg-white light:text-slate-900"
+                      className="absolute inset-0 w-full bg-ui-surface-elevated px-2 text-sm text-ui-text-primary outline-none"
                       onChange={(e) => setEditValue(e.target.value)}
                       onBlur={commitEdit}
                       ref={inputRef}
                       value={editValue}
                     />
                   ) : (
-                    <span className="block px-2 py-1.5 text-slate-200 light:text-slate-800">
+                    <span className="block px-2 py-1.5 text-ui-text-secondary">
                       {cellVal(r, c)}
                     </span>
                   )}

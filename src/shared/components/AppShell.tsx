@@ -17,8 +17,8 @@ export function AppShell() {
   const isCompanyWorkspace = Boolean(companyCtx?.workspaceActive) && !wizardCtx;
 
   return (
-    <div className="h-dvh min-h-0 overflow-hidden bg-ratab-night text-slate-100 transition-colors light:bg-slate-50 light:text-slate-950">
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_15%_15%,rgba(37,99,235,0.15),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(139,92,246,0.15),transparent_30%),linear-gradient(135deg,#05050a_0%,#0f172a_58%,#05050a_100%)] light:bg-none" />
+    <div className="h-dvh min-h-0 overflow-hidden bg-ui-canvas text-ui-text-primary transition-colors">
+      <div className="ui-app-atmosphere pointer-events-none fixed inset-0 z-0" />
 
       {!isCompanyWorkspace ? (
         <>

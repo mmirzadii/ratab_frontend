@@ -243,29 +243,29 @@ export function FinancialDocumentActionModal({
         ) : (
           <>
             <div
-              className="flex shrink-0 items-start justify-between gap-2 border-b border-white/8 px-3 py-3 sm:px-4 light:border-slate-200"
+              className="flex shrink-0 items-start justify-between gap-2 border-b border-ui-border-subtle px-3 py-3 sm:px-4"
               data-tour="financial-document-selector-header"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 shrink-0 text-emerald-200 light:text-emerald-700" />
-                  <h2 className="truncate text-base font-black text-white light:text-slate-950">
+                  <FileText className="h-4 w-4 shrink-0 text-ui-primary" />
+                  <h2 className="truncate text-base font-black text-ui-text-primary">
                     صورت‌بهاها
                   </h2>
                 </div>
                 {headerProjectName ? (
-                  <p className="mt-1 truncate text-[11px] text-slate-400 light:text-slate-500">
+                  <p className="mt-1 truncate text-[11px] text-ui-text-muted">
                     {headerProjectName}
                   </p>
                 ) : (
-                  <p className="mt-1 text-[11px] text-slate-400 light:text-slate-500">
+                  <p className="mt-1 text-[11px] text-ui-text-muted">
                     ابتدا یک پروژه انتخاب کنید
                   </p>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <button
-                  className="flex h-8 items-center gap-1 rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-2 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-400/20 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
+                  className="flex h-8 items-center gap-1 rounded-lg border border-ui-primary/25 bg-ui-primary-soft px-2.5 text-[11px] font-bold text-ui-primary transition hover:bg-ui-surface-selected"
                   data-tour="add-financial-document-action"
                   onClick={handleAddFinancialDocument}
                   type="button"
@@ -275,7 +275,7 @@ export function FinancialDocumentActionModal({
                 </button>
                 <button
                   aria-label="بستن"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200 light:border-slate-200 light:text-slate-500"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-ui-border-subtle text-ui-text-muted transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200"
                   onClick={onClose}
                   type="button"
                 >
@@ -287,12 +287,12 @@ export function FinancialDocumentActionModal({
             <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 [scrollbar-width:thin]">
               {step === "select-project" ? (
                 <div className="space-y-3" data-tour="financial-document-project-select">
-                  <p className="text-sm font-bold text-slate-200 light:text-slate-700">انتخاب پروژه</p>
+                  <p className="text-sm font-bold text-ui-text-secondary">انتخاب پروژه</p>
 
                   <label className="relative block">
-                    <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                    <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ui-text-muted" />
                     <input
-                      className="h-10 w-full rounded-lg border border-white/10 bg-slate-950/40 pr-9 pl-3 text-xs text-slate-100 outline-none placeholder:text-slate-500 focus:border-emerald-300/40 light:border-slate-200 light:bg-white light:text-slate-950"
+                      className="h-10 w-full rounded-lg border border-ui-border-subtle bg-ui-surface pr-9 pl-3 text-xs text-ui-text-primary outline-none placeholder:text-ui-text-muted focus:border-ui-primary/30"
                       onChange={(e) => setProjectQuery(e.target.value)}
                       placeholder="جستجوی پروژه…"
                       value={projectQuery}
@@ -300,13 +300,13 @@ export function FinancialDocumentActionModal({
                   </label>
 
                   {validationHint ? (
-                    <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-100 light:border-amber-200 light:bg-amber-50 light:text-amber-800">
+                    <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-100">
                       {validationHint}
                     </p>
                   ) : null}
 
                   {isLoadingProjects ? (
-                    <div className="flex items-center gap-2 py-6 text-sm text-slate-400">
+                    <div className="flex items-center gap-2 py-6 text-sm text-ui-text-muted">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       در حال دریافت پروژه‌ها
                     </div>
@@ -318,8 +318,8 @@ export function FinancialDocumentActionModal({
                     />
                   ) : filteredProjects.length === 0 ? (
                     <div className="space-y-3 py-6 text-center">
-                      <FolderKanban className="mx-auto h-7 w-7 text-slate-500" />
-                      <p className="text-sm text-slate-300 light:text-slate-600">پروژه‌ای وجود ندارد.</p>
+                      <FolderKanban className="mx-auto h-7 w-7 text-ui-text-muted" />
+                      <p className="text-sm text-ui-text-secondary">پروژه‌ای وجود ندارد.</p>
                       <Button
                         onClick={() => setStep("create-project")}
                         type="button"
@@ -333,12 +333,12 @@ export function FinancialDocumentActionModal({
                       {filteredProjects.map((project) => (
                         <li key={project.id}>
                           <button
-                            className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-slate-950/35 px-3 py-3 text-right transition hover:border-emerald-300/30 light:border-slate-200 light:bg-white"
+                            className="flex w-full items-center gap-3 rounded-xl border border-ui-border-subtle bg-ui-surface px-3 py-3 text-right transition hover:border-ui-primary/30"
                             onClick={() => continueWithProject(project, docIntent)}
                             type="button"
                           >
-                            <FolderKanban className="h-4 w-4 text-violet-200 light:text-violet-700" />
-                            <span className="text-sm font-black text-white light:text-slate-950">
+                            <FolderKanban className="h-4 w-4 text-ui-text-secondary" />
+                            <span className="text-sm font-black text-ui-text-primary">
                               {cleanDisplayText(project.name, "پروژه بدون نام")}
                             </span>
                           </button>
@@ -368,7 +368,7 @@ export function FinancialDocumentActionModal({
 
                   {isLoadingDocuments ? (
                     <div
-                      className="flex items-center justify-center gap-2 py-10 text-sm text-slate-400"
+                      className="flex items-center justify-center gap-2 py-10 text-sm text-ui-text-muted"
                       data-tour="financial-document-list-loading"
                     >
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -385,8 +385,8 @@ export function FinancialDocumentActionModal({
                       className="space-y-3 py-8 text-center"
                       data-tour="financial-document-list-empty"
                     >
-                      <FileText className="mx-auto h-7 w-7 text-slate-500" />
-                      <p className="text-sm text-slate-300 light:text-slate-600">
+                      <FileText className="mx-auto h-7 w-7 text-ui-text-muted" />
+                      <p className="text-sm text-ui-text-secondary">
                         هنوز صورت‌بهایی برای این پروژه ساخته نشده است.
                       </p>
                       <Button
@@ -408,19 +408,19 @@ export function FinancialDocumentActionModal({
                         );
                         return (
                           <li key={document.id}>
-                            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/35 px-3 py-2.5 light:border-slate-200 light:bg-white">
+                            <div className="flex items-center gap-2 rounded-xl border border-ui-border-subtle bg-ui-surface px-3 py-2.5">
                               <button
                                 className="min-w-0 flex-1 text-right transition hover:opacity-90"
                                 onClick={() => handlePick(document)}
                                 type="button"
                               >
-                                <span className="block truncate text-sm font-black text-white light:text-slate-950">
+                                <span className="block truncate text-sm font-black text-ui-text-primary">
                                   {cleanDisplayText(
                                     document.title || document.report_title,
                                     "صورت‌بها"
                                   )}
                                 </span>
-                                <span className="mt-0.5 block truncate text-[11px] text-slate-400 light:text-slate-500">
+                                <span className="mt-0.5 block truncate text-[11px] text-ui-text-muted">
                                   {[
                                     document.document_number
                                       ? `شماره ${document.document_number}`
@@ -433,7 +433,7 @@ export function FinancialDocumentActionModal({
                                 </span>
                               </button>
                               <button
-                                className="shrink-0 rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-2.5 py-1.5 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-400/20 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
+                                className="shrink-0 rounded-lg border border-ui-primary/30 bg-ui-primary-soft px-2.5 py-1.5 text-[11px] font-bold text-ui-primary transition hover:bg-ui-primary-soft"
                                 data-tour="select-financial-document"
                                 onClick={() => handlePick(document)}
                                 type="button"

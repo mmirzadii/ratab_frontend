@@ -2,7 +2,8 @@ import { baseApi } from "../../shared/api/baseApi";
 import type { components } from "../../shared/api/generated/schema";
 
 export type CompanyGroup = components["schemas"]["CompanyGroup"];
-export type CompanyGroupRequest = components["schemas"]["CompanyGroupRequest"];
+export type CompanyGroupCreateRequest = components["schemas"]["CompanyGroupCreateRequest"];
+export type CompanyGroupCreateResult = components["schemas"]["CompanyGroupCreateResult"];
 export type CompanyGroupMembership = components["schemas"]["CompanyGroupMembership"];
 export type CompanyGroupMemberAddRequest = components["schemas"]["CompanyGroupMemberAddRequest"];
 export type PaginatedCompanyGroupList = components["schemas"]["PaginatedCompanyGroupList"];
@@ -26,6 +27,7 @@ export const companyGroupsApi = baseApi.injectEndpoints({
         }
         return response as PaginatedCompanyGroupList;
       },
+      // Preserve backend activity order; do not re-sort client-side beyond public pin.
       providesTags: (result, _error, companyId) => [
         { type: "CompanyGroup", id: `COMPANY-${companyId}` },
         ...(result?.results ?? []).map((group) => ({
@@ -35,8 +37,8 @@ export const companyGroupsApi = baseApi.injectEndpoints({
       ]
     }),
     createCompanyGroup: builder.mutation<
-      CompanyGroup,
-      { companyId: number; body: CompanyGroupRequest }
+      CompanyGroupCreateResult,
+      { companyId: number; body: CompanyGroupCreateRequest }
     >({
       query: ({ companyId, body }) => ({
         url: `/api/companies/${companyId}/groups/`,
@@ -44,7 +46,8 @@ export const companyGroupsApi = baseApi.injectEndpoints({
         body
       }),
       invalidatesTags: (_result, _error, { companyId }) => [
-        { type: "CompanyGroup", id: `COMPANY-${companyId}` }
+        { type: "CompanyGroup", id: `COMPANY-${companyId}` },
+        { type: "CompanyInvitation", id: "LIST" }
       ]
     }),
     updateCompanyGroup: builder.mutation<
@@ -94,11 +97,15 @@ export const companyGroupsApi = baseApi.injectEndpoints({
         body
       }),
       invalidatesTags: (result, _error, { companyId, groupId }) => {
-        const tags: Array<{ type: "CompanyGroup" | "CompanyInvitation" | "Company" | "GroupMessage" | "Auth"; id?: string | number }> = [
+        const tags: Array<{
+          type: "CompanyGroup" | "CompanyInvitation" | "Company" | "GroupMessage" | "Auth";
+          id?: string | number;
+        }> = [
           { type: "CompanyGroup", id: `COMPANY-${companyId}` },
           { type: "CompanyGroup", id: `MEMBERS-${groupId}` },
           { type: "GroupMessage", id: `GROUP-${groupId}` },
-          { type: "CompanyInvitation", id: "LIST" }
+          { type: "CompanyInvitation", id: "LIST" },
+          { type: "CompanyInvitation", id: `GROUP-${groupId}` }
         ];
         if (result?.invitation?.id != null) {
           tags.push({ type: "CompanyInvitation", id: result.invitation.id });

@@ -8,6 +8,13 @@ export type PaymentOrder = components["schemas"]["PaymentOrder"];
 export type PaymentOrderCreateRequest = components["schemas"]["PaymentOrderCreateRequest"];
 export type PaymentsDisabled = components["schemas"]["PaymentsDisabled"];
 
+export {
+  countCurrentPlanCards,
+  formatSubscriptionStatusLabel,
+  getCurrentPlanCode,
+  isPlanMarkedCurrent
+} from "./subscriptionPlanUtils";
+
 export const subscriptionApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getSubscription: builder.query<UserSubscriptionStatus, void>({
@@ -27,7 +34,19 @@ export const subscriptionApi = baseApi.injectEndpoints({
         url: "/api/payments/orders/",
         method: "POST",
         body
-      })
+      }),
+      invalidatesTags: [
+        { type: "Subscription", id: "CURRENT" },
+        { type: "Subscription", id: "PLANS" },
+        { type: "MessageQuota", id: "STATUS" }
+      ],
+      async onQueryStarted(_body, { queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } catch {
+          // Keep existing query data; failed activation must not clear valid subscription/plans.
+        }
+      }
     })
   })
 });
@@ -54,10 +73,7 @@ export function isPaymentsDisabled(
 }
 
 export function formatPaymentsDisabledMessage(data?: PaymentsDisabled | null): string {
-  return (
-    data?.detail?.trim() ||
-    "پرداخت آنلاین در حال حاضر فعال نیست."
-  );
+  return data?.detail?.trim() || "پرداخت آنلاین در حال حاضر فعال نیست.";
 }
 
 export function formatQuotaUsageLabel(quota: MessageQuotaStatus): string {
@@ -81,13 +97,4 @@ export function formatQuotaResetsAt(resetsAt: string | undefined): string | null
   } catch {
     return resetsAt;
   }
-}
-
-export function formatSubscriptionStatusLabel(status: string | null | undefined): string {
-  const value = (status ?? "").trim().toLowerCase();
-  if (value === "active") return "فعال";
-  if (value === "expired") return "منقضی";
-  if (value === "cancelled" || value === "canceled") return "لغوشده";
-  if (value === "none" || value === "inactive" || value === "") return "بدون اشتراک";
-  return status ?? "نامشخص";
 }

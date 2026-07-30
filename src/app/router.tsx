@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { RequireAuth } from "../features/auth/RequireAuth";
+import { CreateCompanyGroupPanel } from "../features/companies/CreateCompanyGroupPanel";
 import { HealthStatusPage } from "../features/health/HealthStatusPage";
 import { AccountSettingsPage } from "../pages/AccountSettingsPage";
 import { CompanyCreatePage } from "../pages/CompanyCreatePage";
@@ -58,7 +59,13 @@ export const router = createBrowserRouter([
       },
       {
         path: "companies/:companyId",
-        element: <CompanyDashboardPage />
+        element: <CompanyDashboardPage />,
+        children: [
+          {
+            path: "groups/new",
+            element: <CreateCompanyGroupPanel />
+          }
+        ]
       },
       {
         path: "companies/:companyId/cost-reports/new",

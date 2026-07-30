@@ -9,7 +9,7 @@ export function HelpHint({ text, className }: { text: string; className?: string
     <span className={classNames("relative inline-flex", className)}>
       <button
         aria-label="راهنما"
-        className="flex h-4 w-4 items-center justify-center rounded-full text-slate-400 transition hover:text-slate-200 light:text-slate-400 light:hover:text-slate-600"
+        className="flex h-4 w-4 items-center justify-center rounded-full text-ui-text-muted transition hover:text-ui-text-primary"
         onBlur={() => setOpen(false)}
         onClick={() => setOpen((v) => !v)}
         onMouseEnter={() => setOpen(true)}
@@ -20,7 +20,7 @@ export function HelpHint({ text, className }: { text: string; className?: string
         <HelpCircle className="h-3.5 w-3.5" />
       </button>
       {open ? (
-        <span className="absolute bottom-full right-0 z-50 mb-1.5 w-56 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs leading-5 text-slate-200 shadow-lg light:border-slate-200 light:bg-white light:text-slate-700">
+        <span className="absolute bottom-full right-0 z-50 mb-1.5 w-56 rounded-lg border border-ui-border-default bg-ui-surface-elevated px-3 py-2 text-xs leading-5 text-ui-text-secondary shadow-ui">
           {text}
         </span>
       ) : null}

@@ -2,18 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/*
+  Metril Corporate Blue — semantic UI tokens.
+  Components consume --ui-* roles; theme values swap under [data-theme].
+*/
+
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
+
+  --brand-50: #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-800: #1e40af;
+  --brand-900: #1e3a8a;
+  --brand-950: #172554;
+  --brand-navy: #0b1f33;
+  --brand-cyan: #0ea5e9;
+  --brand-cyan-dark: #38bdf8;
+
+  --ui-canvas: #08111f;
+  --ui-surface: #0d1b2a;
+  --ui-surface-subtle: #111f33;
+  --ui-surface-elevated: #17263d;
+  --ui-surface-hover: #13233a;
+  --ui-surface-selected: #102a4c;
+
+  --ui-border-subtle: rgba(148, 163, 184, 0.16);
+  --ui-border-default: #24344d;
+  --ui-border-strong: #354866;
+
+  --ui-text-primary: #e8eef7;
+  --ui-text-secondary: #aab8cc;
+  --ui-text-muted: #8292aa;
+  --ui-text-inverse: #08111f;
+
+  --ui-primary: #60a5fa;
+  --ui-primary-hover: #93c5fd;
+  --ui-primary-active: #3b82f6;
+  --ui-primary-soft: #102a4c;
+  --ui-primary-foreground: #08111f;
+
+  --ui-focus-ring: #60a5fa;
+
+  --ui-success: #4ade80;
+  --ui-success-soft: rgba(74, 222, 128, 0.12);
+  --ui-warning: #fbbf24;
+  --ui-warning-soft: rgba(251, 191, 36, 0.12);
+  --ui-danger: #f87171;
+  --ui-danger-soft: rgba(248, 113, 113, 0.12);
+  --ui-info: #60a5fa;
+  --ui-info-soft: rgba(96, 165, 250, 0.12);
+
+  --ui-shadow: 0 10px 30px rgba(0, 0, 0, 0.24);
+  --ui-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.2);
+  --ui-overlay: rgba(8, 17, 31, 0.72);
+
+  --ui-token-accent: #d4a017;
+  --ui-token-accent-soft: rgba(212, 160, 23, 0.14);
+
+  background: var(--ui-canvas);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --ui-canvas: #f5f7fb;
+  --ui-surface: #ffffff;
+  --ui-surface-subtle: #f0f4f9;
+  --ui-surface-elevated: #e8eef6;
+  --ui-surface-hover: #eef3f9;
+  --ui-surface-selected: #e8f1ff;
+
+  --ui-border-subtle: rgba(15, 23, 42, 0.08);
+  --ui-border-default: #d8e1ec;
+  --ui-border-strong: #b8c5d6;
+
+  --ui-text-primary: #0f172a;
+  --ui-text-secondary: #475569;
+  --ui-text-muted: #64748b;
+  --ui-text-inverse: #ffffff;
+
+  --ui-primary: #2563eb;
+  --ui-primary-hover: #1d4ed8;
+  --ui-primary-active: #1e40af;
+  --ui-primary-soft: #dbeafe;
+  --ui-primary-foreground: #ffffff;
+
+  --ui-focus-ring: #60a5fa;
+
+  --ui-success: #15803d;
+  --ui-success-soft: rgba(21, 128, 61, 0.1);
+  --ui-warning: #b45309;
+  --ui-warning-soft: rgba(180, 83, 9, 0.1);
+  --ui-danger: #b91c1c;
+  --ui-danger-soft: rgba(185, 28, 28, 0.1);
+  --ui-info: #2563eb;
+  --ui-info-soft: rgba(37, 99, 235, 0.1);
+
+  --ui-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --ui-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --ui-overlay: rgba(15, 23, 42, 0.45);
+
+  --ui-token-accent: #b45309;
+  --ui-token-accent-soft: rgba(180, 83, 9, 0.1);
+
+  background: var(--ui-canvas);
+}
+
+:root {
   font-family: Vazirmatn, Inter, ui-sans-serif, system-ui, sans-serif;
-  background: #05050a;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-:root[data-theme="light"] {
-  color-scheme: light;
-  background: #eef7f4;
 }
 
 * {
@@ -31,39 +137,8 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
-}
-
-:root[data-theme="light"] body {
-  background:
-    radial-gradient(circle at 14% 10%, rgba(20, 184, 166, 0.12), transparent 30%),
-    radial-gradient(circle at 84% 18%, rgba(139, 92, 246, 0.08), transparent 28%),
-    linear-gradient(135deg, #eef7f4 0%, #f4f8f4 46%, #e8f3ef 100%);
-}
-
-:root[data-theme="light"] .light\:bg-white {
-  background-color: rgba(245, 251, 248, 0.9) !important;
-}
-
-:root[data-theme="light"] .light\:bg-white\/70 {
-  background-color: rgba(245, 251, 248, 0.74) !important;
-}
-
-:root[data-theme="light"] .light\:bg-white\/72,
-:root[data-theme="light"] .light\:bg-white\/75,
-:root[data-theme="light"] .light\:bg-white\/78,
-:root[data-theme="light"] .light\:bg-white\/80,
-:root[data-theme="light"] .light\:bg-white\/82,
-:root[data-theme="light"] .light\:bg-white\/95 {
-  background-color: rgba(245, 251, 248, 0.86) !important;
-}
-
-:root[data-theme="light"] .light\:bg-slate-50,
-:root[data-theme="light"] .light\:bg-slate-100 {
-  background-color: #eef6f2 !important;
-}
-
-:root[data-theme="light"] .light\:border-slate-200 {
-  border-color: rgba(100, 116, 139, 0.24) !important;
+  background: var(--ui-canvas);
+  color: var(--ui-text-primary);
 }
 
 #root {
@@ -84,6 +159,41 @@ button {
 }
 
 ::selection {
-  background: rgba(16, 185, 129, 0.95);
-  color: #020617;
+  background: color-mix(in srgb, var(--ui-primary) 55%, transparent);
+  color: var(--ui-text-inverse);
+}
+
+@layer components {
+  .ui-input {
+    @apply w-full rounded-lg border border-ui-border-default bg-ui-surface px-3 py-2.5 text-sm text-ui-text-primary outline-none transition;
+    @apply placeholder:text-ui-text-muted;
+    @apply focus:border-ui-primary focus:ring-2 focus:ring-ui-focus;
+    @apply disabled:cursor-not-allowed disabled:bg-ui-surface-subtle disabled:text-ui-text-muted;
+  }
+
+  .ui-panel {
+    @apply rounded-lg border border-ui-border-subtle bg-ui-surface shadow-ui;
+  }
+
+  .ui-panel-elevated {
+    @apply rounded-lg border border-ui-border-subtle bg-ui-surface-elevated shadow-ui;
+  }
+
+  .ui-divider {
+    @apply border-ui-border-subtle;
+  }
+
+  .ui-app-atmosphere {
+    background:
+      radial-gradient(
+        circle at 15% 12%,
+        color-mix(in srgb, var(--ui-primary) 10%, transparent),
+        transparent 36%
+      ),
+      radial-gradient(
+        circle at 82% 18%,
+        color-mix(in srgb, var(--brand-cyan) 6%, transparent),
+        transparent 32%
+      );
+  }
 }

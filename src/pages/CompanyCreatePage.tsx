@@ -31,7 +31,7 @@ const emptyForm: CompanyFormState = {
 };
 
 const inputClasses =
-  "h-12 w-full rounded-lg border border-white/10 bg-slate-950/45 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
+  "h-12 w-full rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-4 text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30 focus:bg-ui-surface/65";
 
 function buildPayload(form: CompanyFormState): CompanyRequest {
   const payload: CompanyRequest = { name: form.name.trim() };
@@ -83,7 +83,7 @@ function CompanyField({
 }: CompanyFieldProps) {
   return (
     <label className={classNames("min-w-0 space-y-2", className)}>
-      <span className="text-sm font-bold text-slate-200 light:text-slate-700">{label}</span>
+      <span className="text-sm font-bold text-ui-text-secondary">{label}</span>
       <input
         className={classNames(inputClasses, ltr && "text-left")}
         dir={ltr ? "ltr" : undefined}
@@ -135,15 +135,15 @@ export function CompanyCreatePage() {
           <div className="flex items-start gap-3">
             <button
               aria-label="بازگشت به لیست شرکت‌ها"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white light:border-slate-200 light:bg-slate-50 light:text-slate-600 light:hover:text-slate-900 sm:mt-1 sm:h-9 sm:w-9 sm:border-transparent sm:bg-transparent"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary transition hover:bg-ui-surface-hover hover:text-ui-text-primary sm:mt-1 sm:h-9 sm:w-9 sm:border-transparent sm:bg-transparent"
               onClick={() => navigate("/companies")}
               type="button"
             >
               <ArrowRight className="h-4 w-4" />
             </button>
             <div>
-              <h1 className="text-xl font-black text-white light:text-slate-950 sm:text-2xl">افزودن شرکت</h1>
-              <p className="mt-1 text-sm leading-6 text-slate-300 light:text-slate-600 sm:mt-2 sm:leading-7">
+              <h1 className="text-xl font-black text-ui-text-primary sm:text-2xl">افزودن شرکت</h1>
+              <p className="mt-1 text-sm leading-6 text-ui-text-secondary sm:mt-2 sm:leading-7">
                 فقط نام شرکت الزامی است. سایر اطلاعات را هر زمان لازم بود تکمیل کنید.
               </p>
             </div>
@@ -162,12 +162,12 @@ export function CompanyCreatePage() {
             <button
               aria-controls="optional-company-info"
               aria-expanded={isOptionalInfoOpen}
-              className="flex min-h-12 items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-bold text-slate-200 light:border-slate-200 light:bg-slate-50 sm:hidden"
+              className="flex min-h-12 items-center justify-between gap-3 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-4 text-sm font-bold text-ui-text-secondary sm:hidden"
               onClick={() => setIsOptionalInfoOpen((current) => !current)}
               type="button"
             >
               اطلاعات تکمیلی
-              <span className="flex items-center gap-2 text-xs font-medium text-slate-400 light:text-slate-500">
+              <span className="flex items-center gap-2 text-xs font-medium text-ui-text-muted">
                 اختیاری
                 <ChevronDown
                   className={classNames(
@@ -179,7 +179,7 @@ export function CompanyCreatePage() {
             </button>
             <div
               className={classNames(
-                "col-span-full grid-cols-2 gap-3 rounded-lg border border-white/10 bg-white/5 p-3 sm:contents sm:border-0 sm:bg-transparent sm:p-0 light:border-slate-200 light:bg-slate-50",
+                "col-span-full grid-cols-2 gap-3 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-3 sm:contents sm:border-0 sm:bg-transparent sm:p-0",
                 isOptionalInfoOpen ? "grid" : "hidden"
               )}
               id="optional-company-info"
@@ -221,7 +221,7 @@ export function CompanyCreatePage() {
           </div>
 
           {formError ? (
-            <div className="flex items-start gap-2 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+            <div className="flex items-start gap-2 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
               <XCircle className="mt-1 h-4 w-4 shrink-0" />
               {formError}
             </div>

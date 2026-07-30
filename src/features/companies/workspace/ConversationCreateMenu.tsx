@@ -40,7 +40,7 @@ export function ConversationCreateMenu({
         aria-haspopup="menu"
         aria-label="ایجاد پروژه یا گروه"
         className={classNames(
-          "flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-400/15 text-emerald-100 transition hover:bg-emerald-400/25 disabled:cursor-not-allowed disabled:opacity-45 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
+          "flex h-9 w-9 items-center justify-center rounded-xl border border-ui-primary/30 bg-ui-primary-soft text-ui-primary transition hover:bg-ui-primary-soft disabled:cursor-not-allowed disabled:opacity-45"
         )}
         data-tour="conversation-create-menu"
         disabled={disabled}
@@ -51,11 +51,11 @@ export function ConversationCreateMenu({
       </button>
       {open ? (
         <div
-          className="absolute left-0 top-11 z-30 w-52 overflow-hidden rounded-xl border border-white/10 bg-slate-950 py-1 shadow-2xl light:border-slate-200 light:bg-white"
+          className="absolute left-0 top-11 z-30 w-52 overflow-hidden rounded-xl border border-ui-border-subtle bg-ui-surface py-1 shadow-ui"
           role="menu"
         >
           <button
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-slate-100 transition hover:bg-emerald-400/10 light:text-slate-900 light:hover:bg-emerald-50"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-ui-text-primary transition hover:bg-ui-primary-soft focus-visible:bg-ui-surface-selected"
             data-tour="create-project-action"
             onClick={() => {
               setOpen(false);
@@ -64,11 +64,11 @@ export function ConversationCreateMenu({
             role="menuitem"
             type="button"
           >
-            <FolderKanban className="h-4 w-4 text-emerald-300 light:text-emerald-700" />
+            <FolderKanban className="h-4 w-4 text-ui-primary" />
             پروژه جدید
           </button>
           <button
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-slate-100 transition hover:bg-violet-400/10 light:text-slate-900 light:hover:bg-violet-50"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-ui-text-primary transition hover:bg-ui-primary-soft focus-visible:bg-ui-surface-selected"
             data-tour="create-group-action"
             onClick={() => {
               setOpen(false);
@@ -77,8 +77,8 @@ export function ConversationCreateMenu({
             role="menuitem"
             type="button"
           >
-            <Network className="h-4 w-4 text-violet-300 light:text-violet-700" />
-            گروه جدید
+            <Network className="h-4 w-4 text-ui-primary" />
+            ساخت گروه
           </button>
         </div>
       ) : null}

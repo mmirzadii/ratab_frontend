@@ -7,6 +7,14 @@ export type FinancialDocumentCreateRequest =
 export type FinancialDocumentLine = components["schemas"]["FinancialDocumentLine"];
 export type FinancialDocumentLineCreateRequest =
   components["schemas"]["FinancialDocumentLineCreateRequest"];
+export type OfficialCalculationRequest =
+  components["schemas"]["OfficialCalculationRequestRequest"];
+export type StarredCalculationRequest =
+  components["schemas"]["StarredCalculationRequestRequest"];
+export type CalculationBillingResult = components["schemas"]["CalculationBillingResult"];
+export type OfficialCalculationSession = components["schemas"]["OfficialCalculationSession"];
+export type OfficialCalculationSessionCreateRequest =
+  components["schemas"]["OfficialCalculationSessionCreateRequest"];
 export type PricebookFinancialDocumentLineCreatePayload =
   FinancialDocumentLineCreateRequest & {
     coefficient_set_id?: number | null;
@@ -23,9 +31,14 @@ export type StandaloneStarredFinancialDocumentLineCreatePayload =
     title_fa: string;
     unit: string;
   };
+export type ReceiptFinancialDocumentLineCreatePayload = {
+  calculation_receipt_id: number;
+  idempotency_key?: string;
+};
 export type FinancialDocumentLineCreatePayload =
   | PricebookFinancialDocumentLineCreatePayload
-  | StandaloneStarredFinancialDocumentLineCreatePayload;
+  | StandaloneStarredFinancialDocumentLineCreatePayload
+  | ReceiptFinancialDocumentLineCreatePayload;
 export type CreatedFinancialDocumentLine = FinancialDocumentLine & {
   /** True when the backend replayed an already-created line (HTTP 200 + Idempotent-Replayed header); no second charge occurred. */
   idempotent_replayed?: boolean;
@@ -116,15 +129,59 @@ export const financialDocumentApi = baseApi.injectEndpoints({
         const replayHeader = meta?.response?.headers.get("Idempotent-Replayed");
         return replayHeader === "true" ? { ...line, idempotent_replayed: true } : line;
       },
-      invalidatesTags: (result, _error, { documentId }) => [
-        { type: "FinancialDocument", id: documentId },
-        ...(result
-          ? ([
-              { type: "Wallet", id: "BALANCE" },
-              { type: "Wallet", id: "TRANSACTIONS" }
-            ] as const)
-          : [])
+      // Receipt-based create does not charge again; do not invalidate wallets here.
+      invalidatesTags: (_result, _error, { documentId }) => [
+        { type: "FinancialDocument", id: documentId }
       ]
+    }),
+    createOfficialCalculationSession: builder.mutation<
+      OfficialCalculationSession,
+      { documentId: number; body: OfficialCalculationSessionCreateRequest }
+    >({
+      query: ({ body, documentId }) => ({
+        url: `/api/financial-documents/${documentId}/official-calculation-sessions/`,
+        method: "POST",
+        body
+      })
+      // Opening a modal session is free (no calculation, no debit, no line); nothing to invalidate.
+    }),
+    createOfficialCalculation: builder.mutation<
+      CalculationBillingResult,
+      { documentId: number; body: OfficialCalculationRequest }
+    >({
+      query: ({ body, documentId }) => ({
+        url: `/api/financial-documents/${documentId}/official-calculations/`,
+        method: "POST",
+        body
+      }),
+      // Only the first successful calculation per session is billed; later recalcs in the
+      // same session return applied_cost "0" and must not trigger a wallet refetch.
+      invalidatesTags: (result) =>
+        result && Number(result.billing.applied_cost) > 0
+          ? [
+              { type: "Wallet", id: "BALANCE" },
+              { type: "Wallet", id: "TRANSACTIONS" },
+              { type: "CompanyWallet" }
+            ]
+          : []
+    }),
+    createStarredCalculation: builder.mutation<
+      CalculationBillingResult,
+      { documentId: number; body: StarredCalculationRequest }
+    >({
+      query: ({ body, documentId }) => ({
+        url: `/api/financial-documents/${documentId}/starred-calculations/`,
+        method: "POST",
+        body
+      }),
+      invalidatesTags: (result) =>
+        result
+          ? [
+              { type: "Wallet", id: "BALANCE" },
+              { type: "Wallet", id: "TRANSACTIONS" },
+              { type: "CompanyWallet" }
+            ]
+          : []
     }),
     updateFinancialDocumentLine: builder.mutation<
       FinancialDocumentLine,
@@ -237,7 +294,10 @@ export const financialDocumentApi = baseApi.injectEndpoints({
 export const {
   useCreateFinancialDocumentExportMutation,
   useCreateFinancialDocumentLineMutation,
+  useCreateOfficialCalculationMutation,
+  useCreateOfficialCalculationSessionMutation,
   useCreateProjectFinancialDocumentMutation,
+  useCreateStarredCalculationMutation,
   useCreateFinancialDocumentLinesBulkMutation,
   useDeleteFinancialDocumentLineMutation,
   useDownloadFinancialDocumentExportMutation,

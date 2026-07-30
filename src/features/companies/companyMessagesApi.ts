@@ -27,17 +27,25 @@ export const companyMessagesApi = baseApi.injectEndpoints({
     }),
     createGroupMessage: builder.mutation<
       GroupMessage,
-      { groupId: number; body: GroupMessageCreateRequest }
+      { groupId: number; companyId: number; body: GroupMessageCreateRequest }
     >({
       query: ({ groupId, body }) => ({
         url: `/api/company-groups/${groupId}/messages/`,
         method: "POST",
         body
       }),
-      invalidatesTags: (result, _error, { groupId }) => [
-        { type: "GroupMessage", id: `GROUP-${groupId}` },
-        ...(result ? ([{ type: "MessageQuota" as const, id: "STATUS" }] as const) : [])
-      ]
+      invalidatesTags: (result, error, { groupId, companyId }) => {
+        const tags: Array<{ type: "GroupMessage" | "MessageQuota" | "CompanyGroup"; id: string | number }> = [
+          { type: "GroupMessage", id: `GROUP-${groupId}` }
+        ];
+        // Only successful sends reorder the conversation list (backend last_activity_at).
+        if (!error && result) {
+          tags.push({ type: "MessageQuota", id: "STATUS" });
+          tags.push({ type: "CompanyGroup", id: `COMPANY-${companyId}` });
+          tags.push({ type: "CompanyGroup", id: groupId });
+        }
+        return tags;
+      }
     })
   })
 });

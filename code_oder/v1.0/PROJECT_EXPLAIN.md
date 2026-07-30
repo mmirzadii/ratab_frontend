@@ -1,6 +1,6 @@
 # Ratab Frontend Project Explain — v1.0 (Final)
 
-Last updated: 2026-07-28  
+Last updated: 2026-07-30  
 Active version file: `code_oder/active_version.txt` = `v1.0`  
 Backend contract: `backend_docs/current/BACKEND_VERSION` = `v1.0`  
 Package version: `package.json` = `1.0.0`
@@ -9,7 +9,7 @@ Documentation root note: the repository uses `code_oder` as the folder name. Do 
 
 ## Purpose
 
-Onboarding and handoff document for Frontend v1.0 after Phases 1–9. Phases 1–7 delivered contract sync, session auth, company workspace, messaging, files/attachments, wallet/5-token UX, and subscription/quota/disabled-payment UX. Phase 8 finalized regression, cleanup, and documentation. Phase 9 simplified the company workspace into a compact Telegram-inspired RTL master-detail layout without changing backend contracts.
+Onboarding and handoff document for Frontend v1.0 after Phases 1–9, including the calculation-based token policy correction (2026-07-30). Phases 1–7 delivered contract sync, session auth, company workspace, messaging, files/attachments, wallet foundations, and subscription/quota/disabled-payment UX. Phase 8 finalized regression, cleanup, and documentation. Phase 9 simplified the company workspace into a compact Telegram-inspired RTL master-detail layout. The 2026-07-30 correction replaces the obsolete 5-token official-line-create UX with backend-authoritative paid calculations, receipts, and company-wallet donation.
 
 Before changing code, read in this order:
 
@@ -33,10 +33,11 @@ Before changing code, read in this order:
 | 3 | ✅ | Company members, roles, groups |
 | 4 | ✅ | Persisted group messaging |
 | 5 | ✅ | Private files + message attachments |
-| 6 | ✅ | Wallet + 5-token official line-create + idempotency |
+| 6 | ✅ | Wallet foundations + (superseded) line-create billing; see 2026-07-30 calculation-billing correction |
 | 7 | ✅ | Subscription, message quota, disabled payment UX |
 | 8 | ✅ | Final integration, cleanup, regression, handoff |
 | 9 | ✅ | Compact Telegram-inspired company workspace UX + text cleanup |
+| — | ✅ | **2026-07-30 correction:** calculation-based token policy + company wallet |
 
 ## Product snapshot
 
@@ -45,9 +46,11 @@ Persian-first RTL construction cost-reporting app.
 1. Public landing → signup (`/signup`) or login (`/login`) with session cookies.
    Signup password step: mandatory ≥6 characters (blocking); live non-blocking weak-password yellow warning; signup-complete errors classified by field so password `400`s are not shown as invalid tickets.
 2. Protected company list / create.
-3. Company workspace (`/companies/:id`): compact section tabs + context list + main pane for messages, members, groups, projects, and company info.
-4. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Official pricebook line adds show the fixed 5-token cost and use idempotency keys.
-5. Account settings (`/settings`): wallet, subscription/quota, disabled-payment boundary.
+3. Company workspace (`/companies/:id`): compact section tabs + context list + main pane for messages, members, and company info. Custom/normal group create is routed at `/companies/:id/groups/new` (Telegram-like desktop side panel / mobile full page; two-step draft; atomic `member_ids` invitations). Group info is a Telegram-like side panel (overview/edit/add-members) without admin-form clutter.
+4. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Opening an official item modal creates one free backend calculation session; valid inputs auto-calculate after 500ms. The first successful calculation in that session may charge the backend official cost (default 2); later recalculations in the same open session are free. Add uses the latest receipt (`calculation_receipt_id`) with no second charge, or forces one immediate same-session calculation when the result is pending/stale. Insufficient combined balance is kept silent until the user clicks Add, then opens the shared purchase dialog → `/settings?tab=tokens`.
+5. Account settings (`/settings?tab=account|tokens|subscription`): circular avatar + prominent header token chip; summary = plan/quota/status only; Token tab = compact wallet metrics, server package cards / demo Buy when available, **اهدای توکن به شرکت** (shared modal), collapsible transaction history.
+
+Visual system: **Metril Corporate Blue** — semantic `--ui-*` tokens in `src/styles/index.css`, Tailwind `ui.*` aliases, shared components first. Light canvas is cool gray-blue (`#F5F7FB`); dark canvas navy (`#08111F`). Primary actions use brand blue (not emerald). See `docs/product_reference/v0.0/UI_THEME_NOTES.md`.
 
 Brand note: principles say `ratab / رتب`; many UI strings still say `Metril / متریل`. Do not introduce a third brand.
 
@@ -118,7 +121,7 @@ Tag types: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `F
 - Auth: csrf, signup/*, login, logout, me
 - Companies / members / groups / messages / files / message-attachments
 - Projects, pricebooks, coefficients, financial documents (CRUD/lines/recalculate/lock/preview/export)
-- Wallet: `/api/token-wallet/`, `/transactions/`; line creates send `idempotency_key` for official pricebook-backed lines
+- Wallet: `/api/token-wallet/`, `/transactions/`; company wallet `/api/companies/{id}/token-wallet/`; donations `GET|POST /api/companies/{id}/token-donations/` (shared `DonateTokensModal`); calculation endpoints send `idempotency_key`; demo purchase when commerce allows
 - Subscription: `/api/subscription/`, `/api/subscription-plans/`, `/api/message-quota/`, payments probe `/api/payments/orders/`
 
 ### Isolated / not part of active product surface
@@ -143,8 +146,8 @@ Tag types: `Auth`, `Coefficient`, `Company`, `CompanyGroup`, `CompanyMember`, `F
 Company workspace is conversation-first when `companyCtx.workspaceActive` is set:
 
 1. Narrow company icon rail (~68px, `lg+`) — **گفتگوها**, اعضا, اطلاعات شرکت (no permanent Projects/Groups nav).
-2. Conversation list (~304–352px): public `عمومی` pinned, then project-linked (با نشان `پروژه`), then custom; `+` menu for پروژه جدید / گروه جدید.
-3. Main chat pane with sticky composer: one **افزودن** menu (فایل | صورت‌بها); empty chat and drawer use **افزودن صورت‌بها** to open the same list-first financial-document selector; project-linked chats lock the project; public/custom require project selection with visible **ایجاد پروژه جدید**. Cost-report wizard Project Selection step also exposes compact **افزودن پروژه** (shared `CreateProjectSheet`) unless `lockProject` is set.
+2. Conversation list (~304–352px): public `عمومی` pinned first; remaining groups keep **backend** `last_activity_at` order (newest activity first; no client alphabetical/kind sort). `+` menu for پروژه جدید / گروه جدید. Successful message send / group or project create invalidates the company group list so the active chat moves without losing selection or draft.
+3. Main chat pane with sticky composer: Telegram-like auto-growing textarea (min ~44px, max ~160px / ~140px mobile via `scrollHeight`); Enter sends, Shift+Enter newline, IME-safe; one **افزودن** menu (فایل | صورت‌بها); empty chat and drawer use **افزودن صورت‌بها** to open the same list-first financial-document selector; project-linked chats lock the project; public/custom require project selection with visible **ایجاد پروژه جدید**. Cost-report wizard Project Selection step also exposes compact **افزودن پروژه** (shared `CreateProjectSheet`) unless `lockProject` is set.
 4. Optional left info drawer (closed by default) with tabs صورت‌بهاها / فایل‌ها / لینک‌ها / اعضا; shared resources come from that group's messages; members from the group-members endpoint.
 5. Below `lg`: bottom section nav + mobile list↔detail.
 
@@ -158,21 +161,23 @@ Project/group creation and management remain available from the conversation UI 
 4. Local-only company messages → persisted group messages
 5. Members/groups placeholders → real workspace UI
 6. No private files/attachments → Phase 5 contract
-7. No wallet / 5-token / idempotency → Phase 6
+7. No wallet / idempotency → Phase 6 (later corrected to calculation billing)
 8. No subscription / quota / disabled-payment UX → Phase 7
 9. Health page schema path drift → Phase 8
 10. Excel OpenAPI-absent paths → Phase 8 isolated/unwired (not deleted)
 11. Multi-sidebar + dropdown-heavy company dashboard → Phase 9 compact master-detail workspace
 12. Verbose internal developer text in user-facing UI → Phase 9 text cleanup (compact, action-oriented)
+13. Obsolete fixed 5-token official-line-create UX → 2026-07-30 calculation-based billing + company wallet
+14. Client alphabetical/kind conversation sorting → backend `last_activity_at` list order (public still pinned)
 
 ## Behavior that must remain stable
 
-- Pricebook browse; row codes as strings; calculate preview
-- Coefficient sets/values; backend-authoritative totals
-- Financial document create/edit/recalculate/lock; browser print/preview
+- Pricebook browse; row codes as strings; local input validation
+- Coefficient sets/values; backend-authoritative totals after paid calculation
+- Financial document create/edit/recalculate/lock; browser print/preview (uncharged)
 - RTL, responsive shell, dark/light theme
 - Session cookie auth + CSRF
-- Exact 5-token official line charge (backend authority); idempotent retries
+- Paid official/starred calculation with receipt-based Add (Add may fall back to one deliberate calculation when no fresh receipt); personal then company debit order; idempotent retries
 - Quota/payment disable enforced by backend; UI is presentation only
 - Company member roles `owner` / `admin` / `employee` with labels مالک / مدیر / کارمند; **inline** member settings in the Members master-detail main pane (not a modal); no ordinary Owner assignment
 
@@ -211,3 +216,29 @@ Project/group creation and management remain available from the conversation UI 
 4. Do not invent endpoints, fields, errors, or permissions.
 5. Do not commit/push automatically.
 6. Update this file when behavior, routes, APIs, or limitations change.
+
+## Correction (2026-07-30) — Local/Development demo token purchase
+
+- Packages and prices come from `GET /api/token-wallet/` → `token_packages` + `commerce`.
+- Buy is enabled only when `commerce.demo_purchase_available` is true (never from a frontend env flag alone).
+- Purchase uses `POST /api/payments/demo-purchase/` with `{package_code, idempotency_key}` only.
+- First success **201** and exact replay **200** + `Idempotent-Replayed` both refresh wallet/transactions via RTK tags; no local balance math.
+- Production remains disabled via backend `commerce` flags / `PAYMENTS_DISABLED` on real orders.
+
+## Correction (2026-07-30) — dual wallets + shared donation
+
+Two separate balances (never merged):
+
+| Balance | Source | Where shown | Increased by | Decreased by |
+| --- | --- | --- | --- | --- |
+| Personal | `GET /api/token-wallet/` | Global `TokenBalanceChip` (amber) | Purchases / grants | Calcs (first) + donations |
+| Company | `GET /api/companies/{id}/token-wallet/` | Company Settings + workspace `CompanyTokenBadge` (sky) | Member donations | Calcs (fallback after personal) |
+
+Shared modal: `src/shared/components/DonateTokensModal.tsx`
+
+- Title: `اهدای توکن به شرکت`
+- Company Settings: company locked/preselected; primary action `اهدای توکن` for every active member (`donation_allowed`)
+- Account Settings Token tab: active companies only; auto-preselect when exactly one; selector stays visible
+- Idempotent `POST .../token-donations/`; invalidates personal `Wallet:BALANCE` + `CompanyWallet:{id}`; toast on success; no optimistic math; no withdrawal
+
+Cache: personal wallet shared; company wallet keyed by company id (switch clears via skip/new key); calculation spend invalidates all `CompanyWallet` tags; purchase invalidates personal only.

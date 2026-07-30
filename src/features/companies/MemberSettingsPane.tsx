@@ -248,8 +248,8 @@ export function MemberSettingsPane({
   if (isLoadingDetail && !detail) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-8" data-tour="member-settings-loading">
-        <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
-          <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
+        <div className="flex items-center gap-3 text-sm font-bold text-ui-text-secondary">
+          <Loader2 className="h-5 w-5 animate-spin text-ui-primary" />
           در حال دریافت تنظیمات عضو
         </div>
       </div>
@@ -262,7 +262,7 @@ export function MemberSettingsPane({
         className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6"
         data-tour="member-settings-load-error"
       >
-        <p className="text-sm text-rose-200 light:text-rose-700">
+        <p className="text-sm text-rose-200">
           {formatMemberRoleError(detailError, "دریافت تنظیمات عضو ممکن نشد.")}
         </p>
         <Button onClick={() => void refetch()} type="button" variant="secondary">
@@ -281,7 +281,7 @@ export function MemberSettingsPane({
       <div className="mx-auto w-full max-w-3xl space-y-5 p-3 sm:p-5">
         {onBack ? (
           <button
-            className="flex h-10 items-center gap-1.5 rounded-lg px-1 text-xs font-bold text-slate-300 transition hover:bg-white/8 hover:text-white md:hidden light:text-slate-600"
+            className="flex h-10 items-center gap-1.5 rounded-lg px-1 text-xs font-bold text-ui-text-secondary transition hover:bg-ui-surface-subtle hover:text-ui-text-primary md:hidden"
             data-tour="member-settings-back"
             onClick={onBack}
             type="button"
@@ -291,20 +291,20 @@ export function MemberSettingsPane({
           </button>
         ) : null}
 
-        <header className="flex items-start gap-3 border-b border-white/8 pb-4 light:border-slate-200">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-sm font-black text-emerald-100 light:bg-emerald-100 light:text-emerald-800">
+        <header className="flex items-start gap-3 border-b border-ui-border-subtle pb-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ui-primary-soft text-sm font-black text-ui-primary">
             {memberInitials(displayName)}
           </span>
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-lg font-black text-white light:text-slate-950">{displayName}</h1>
+              <h1 className="truncate text-lg font-black text-ui-text-primary">{displayName}</h1>
               <StatusBadge tone={roleTone(member.role)}>{getRoleLabel(member.role)}</StatusBadge>
               <StatusBadge tone={member.is_active ? "emerald" : "slate"}>
                 {member.is_active ? "فعال" : "غیرفعال"}
               </StatusBadge>
-              {isFetchingDetail ? <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" /> : null}
+              {isFetchingDetail ? <Loader2 className="h-3.5 w-3.5 animate-spin text-ui-text-muted" /> : null}
             </div>
-            <p className="text-xs text-slate-400 light:text-slate-500" dir="ltr">
+            <p className="text-xs text-ui-text-muted" dir="ltr">
               {member.phone_number}
               {member.title ? ` · ${member.title}` : ""}
             </p>
@@ -313,14 +313,14 @@ export function MemberSettingsPane({
 
         {isOwnerTarget ? (
           <section
-            className="space-y-2 rounded-xl border border-emerald-300/20 bg-emerald-400/10 p-4"
+            className="space-y-2 rounded-xl border border-ui-primary/30 bg-ui-primary-soft p-4"
             data-tour="owner-read-only-settings"
           >
-            <div className="flex items-center gap-2 text-sm font-bold text-emerald-100 light:text-emerald-800">
+            <div className="flex items-center gap-2 text-sm font-bold text-ui-primary">
               <Shield className="h-4 w-4" />
               مالک شرکت
             </div>
-            <p className="text-xs leading-6 text-emerald-100/90 light:text-emerald-800">
+            <p className="text-xs leading-6 text-ui-primary/90">
               مالک دسترسی کامل دارد و از این بخش قابل تغییر نیست.
             </p>
           </section>
@@ -328,7 +328,7 @@ export function MemberSettingsPane({
 
         {isReadOnlyPeerAdmin ? (
           <section
-            className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs leading-6 text-slate-300 light:border-slate-200 light:bg-slate-50 light:text-slate-600"
+            className="rounded-xl border border-ui-border-subtle bg-ui-surface-subtle p-4 text-xs leading-6 text-ui-text-secondary"
             data-tour="admin-peer-read-only"
           >
             تنظیمات این مدیر برای شما فقط خواندنی است.
@@ -340,13 +340,13 @@ export function MemberSettingsPane({
             {showRoleSelector ? (
               <div className="space-y-1.5">
                 <label
-                  className="block text-sm font-bold text-slate-200 light:text-slate-700"
+                  className="block text-sm font-bold text-ui-text-secondary"
                   htmlFor="member-role-select"
                 >
                   نقش شرکت
                 </label>
                 <select
-                  className="h-11 w-full max-w-sm rounded-lg border border-white/10 bg-slate-950/45 px-3 text-sm font-bold text-slate-100 outline-none focus:border-emerald-300/45 light:border-slate-200 light:bg-white light:text-slate-950"
+                  className="h-11 w-full max-w-sm rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 text-sm font-bold text-ui-text-primary outline-none focus:border-ui-primary/30"
                   disabled={mutating}
                   id="member-role-select"
                   onChange={(event) =>
@@ -365,7 +365,7 @@ export function MemberSettingsPane({
 
             {confirmPromote ? (
               <p
-                className="rounded-lg border border-sky-300/25 bg-sky-400/10 p-3 text-xs leading-6 text-sky-100 light:border-sky-200 light:bg-sky-50 light:text-sky-800"
+                className="rounded-lg border border-sky-300/25 bg-sky-400/10 p-3 text-xs leading-6 text-sky-100"
                 data-tour="promote-to-admin-warning"
               >
                 با ارتقا به مدیر، اختیارات کارمند خودکار فعال می‌شوند.
@@ -374,7 +374,7 @@ export function MemberSettingsPane({
 
             {confirmDemote ? (
               <p
-                className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100 light:border-amber-200 light:bg-amber-50 light:text-amber-800"
+                className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100"
                 data-tour="demote-to-employee-warning"
               >
                 با تغییر به کارمند، مجوزهای ویژه مدیر حذف می‌شوند.
@@ -383,7 +383,7 @@ export function MemberSettingsPane({
 
             {catalogMismatch.mismatch ? (
               <div
-                className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100 light:border-amber-200 light:bg-amber-50 light:text-amber-800"
+                className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100"
                 data-tour="member-permission-catalog-mismatch"
               >
                 فهرست اختیارات نقش از سرور کامل دریافت نشد
@@ -399,19 +399,19 @@ export function MemberSettingsPane({
 
             {showAdminInherited ? (
               <section
-                className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-4 light:border-slate-200 light:bg-slate-50"
+                className="space-y-2 rounded-xl border border-ui-border-subtle bg-ui-surface-subtle p-4"
                 data-tour="admin-inherited-permissions"
               >
-                <p className="text-sm font-bold text-slate-100 light:text-slate-900">
+                <p className="text-sm font-bold text-ui-text-primary">
                   اختیارات موروثی کارمند
                 </p>
-                <p className="text-xs text-slate-400 light:text-slate-500">
+                <p className="text-xs text-ui-text-muted">
                   این مجوزها به‌صورت خودکار فعال هستند.
                 </p>
                 {inherited.length > 0 ? (
                   <div>
                     <button
-                      className="flex items-center gap-1.5 text-xs font-bold text-emerald-200 transition hover:text-emerald-100 light:text-emerald-700"
+                      className="flex items-center gap-1.5 text-xs font-bold text-ui-primary transition hover:text-ui-primary"
                       onClick={() => setInheritedOpen((open) => !open)}
                       type="button"
                     >
@@ -421,10 +421,10 @@ export function MemberSettingsPane({
                       مشاهده مجوزهای موروثی کارمند
                     </button>
                     {inheritedOpen ? (
-                      <ul className="mt-2 divide-y divide-white/8 rounded-lg border border-white/8 light:divide-slate-200 light:border-slate-200">
+                      <ul className="mt-2 divide-y divide-ui-border-subtle rounded-lg border border-ui-border-subtle">
                         {inherited.map((item) => (
                           <li
-                            className="px-3 py-2 text-xs font-bold text-slate-300 light:text-slate-600"
+                            className="px-3 py-2 text-xs font-bold text-ui-text-secondary"
                             key={item.key}
                           >
                             {item.label}
@@ -439,7 +439,7 @@ export function MemberSettingsPane({
 
             {showAdminEmptyConfigurable ? (
               <p
-                className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs leading-6 text-slate-300 light:border-slate-200 light:bg-slate-50 light:text-slate-600"
+                className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-3 text-xs leading-6 text-ui-text-secondary"
                 data-tour="admin-no-configurable-permissions"
               >
                 سوئیچ قابل تنظیم ویژه‌ای برای این مدیر موجود نیست.
@@ -448,21 +448,21 @@ export function MemberSettingsPane({
 
             {showPermissionSwitches ? (
               <div
-                className="overflow-hidden rounded-xl border border-white/10 light:border-slate-200"
+                className="overflow-hidden rounded-xl border border-ui-border-subtle"
                 data-tour="member-permission-switches"
               >
-                <div className="border-b border-white/8 px-3 py-2 text-xs font-bold text-slate-300 light:border-slate-200 light:text-slate-600">
+                <div className="border-b border-ui-border-subtle px-3 py-2 text-xs font-bold text-ui-text-secondary">
                   {permissionSectionTitle(draftRole)}
                 </div>
-                <ul className="divide-y divide-white/8 light:divide-slate-200">
+                <ul className="divide-y divide-ui-border-subtle">
                   {catalog.map((item) => {
                     const checked = draftPermissions[item.key] ?? item.value;
                     return (
                       <li className="flex items-center justify-between gap-3 px-3 py-3" key={item.key}>
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-white light:text-slate-950">{item.label}</p>
+                          <p className="text-sm font-bold text-ui-text-primary">{item.label}</p>
                           {item.description ? (
-                            <p className="mt-0.5 text-[11px] leading-5 text-slate-400 light:text-slate-500">
+                            <p className="mt-0.5 text-[11px] leading-5 text-ui-text-muted">
                               {item.description}
                             </p>
                           ) : null}
@@ -483,7 +483,7 @@ export function MemberSettingsPane({
             ) : null}
 
             {formError ? (
-              <p className="rounded-lg border border-rose-300/25 bg-rose-400/10 p-3 text-xs text-rose-100 light:text-rose-700">
+              <p className="rounded-lg border border-rose-300/25 bg-rose-400/10 p-3 text-xs text-rose-100">
                 {formError}
               </p>
             ) : null}
@@ -508,17 +508,17 @@ export function MemberSettingsPane({
         ) : null}
 
         {!isOwnerTarget && !editable && !isReadOnlyPeerAdmin && actorRole === "employee" ? (
-          <p className="text-xs leading-6 text-slate-400 light:text-slate-500">
+          <p className="text-xs leading-6 text-ui-text-muted">
             تنظیمات این عضو برای شما فقط خواندنی است.
           </p>
         ) : null}
 
         {removable ? (
           <section
-            className="space-y-2 border-t border-white/8 pt-4 light:border-slate-200"
+            className="space-y-2 border-t border-ui-border-subtle pt-4"
             data-tour="member-sensitive-actions"
           >
-            <h2 className="text-xs font-bold text-slate-400 light:text-slate-500">اقدامات حساس</h2>
+            <h2 className="text-xs font-bold text-ui-text-muted">اقدامات حساس</h2>
             <div className="flex flex-wrap gap-2">
               <Button
                 disabled={mutating}

@@ -12,7 +12,7 @@ export function ThemeToggle() {
   return (
     <IconButton
       aria-label="تغییر حالت روشن و تاریک"
-      className="border-white/10 bg-white/8 light:border-slate-200 light:bg-white light:text-slate-700"
+      className="border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary"
       onClick={() => dispatch(toggleTheme())}
     >
       {isDark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}

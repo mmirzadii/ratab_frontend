@@ -60,7 +60,7 @@ export function SignupPage() {
 
   if (status === "unknown") {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[#05050a] text-slate-100">
+      <main className="flex min-h-dvh items-center justify-center bg-ui-canvas text-ui-text-primary">
         <GlassCard className="max-w-sm p-6 text-center">
           <p className="text-lg font-black">در حال بررسی نشست</p>
         </GlassCard>
@@ -192,20 +192,20 @@ export function SignupPage() {
   }
 
   return (
-    <main className="relative min-h-dvh overflow-x-hidden overflow-y-auto bg-[#05050a] text-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(20,184,166,0.18),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(139,92,246,0.14),transparent_30%)]" />
+    <main className="relative min-h-dvh overflow-x-hidden overflow-y-auto bg-ui-canvas text-ui-text-primary">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,color-mix(in_srgb,var(--ui-primary)_18%,transparent),transparent_34%),radial-gradient(circle_at_82%_20%,color-mix(in_srgb,var(--brand-500)_14%,transparent),transparent_30%)]" />
 
       <div className="relative z-10 flex min-h-dvh items-center justify-center px-3 py-4 sm:px-4 sm:py-8">
         <div className="w-full max-w-md">
           <GlassCard className="w-full p-4 sm:p-8">
             <div className="mb-5 flex items-center justify-between gap-4 sm:mb-8">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-tr from-emerald-400 to-teal-300 text-lg font-black text-slate-950 shadow-emerald-soft sm:h-12 sm:w-12 sm:text-xl">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-tr from-brand-700 to-brand-500 text-lg font-black text-white shadow-brand-soft sm:h-12 sm:w-12 sm:text-xl">
                   م
                 </div>
                 <div>
                   <p className="text-lg font-black text-white sm:text-xl">ثبت‌نام</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-ui-text-muted">
                     {step === "phone" && "شماره تلفن"}
                     {step === "verify" && "کد تأیید"}
                     {step === "password" && "رمز عبور"}
@@ -218,14 +218,14 @@ export function SignupPage() {
             {step === "phone" ? (
               <form className="space-y-4 sm:space-y-5" onSubmit={handlePhoneStep}>
                 <div>
-                  <label className="text-base font-bold text-slate-200" htmlFor="signup-phone">
+                  <label className="text-base font-bold text-ui-text-secondary" htmlFor="signup-phone">
                     شماره تلفن
                   </label>
-                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2 focus-within:border-emerald-300/45">
-                    <Phone className="h-5 w-5 shrink-0 text-emerald-300" />
+                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 py-2 focus-within:border-ui-primary/30">
+                    <Phone className="h-5 w-5 shrink-0 text-ui-primary" />
                     <input
                       autoComplete="tel"
-                      className="h-10 min-w-0 flex-1 bg-transparent text-left text-base font-bold tracking-wide text-white outline-none placeholder:text-slate-500"
+                      className="h-10 min-w-0 flex-1 bg-transparent text-left text-base font-bold tracking-wide text-white outline-none placeholder:text-ui-text-muted"
                       dir="ltr"
                       id="signup-phone"
                       inputMode="tel"
@@ -254,14 +254,14 @@ export function SignupPage() {
                 </p>
 
                 <div>
-                  <label className="text-base font-bold text-slate-200" htmlFor="signup-code">
+                  <label className="text-base font-bold text-ui-text-secondary" htmlFor="signup-code">
                     کد تأیید
                   </label>
-                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2 focus-within:border-violet-300/45">
-                    <KeyRound className="h-5 w-5 shrink-0 text-violet-300" />
+                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 py-2 focus-within:border-ui-primary/30">
+                    <KeyRound className="h-5 w-5 shrink-0 text-ui-primary" />
                     <input
                       autoComplete="one-time-code"
-                      className="h-10 min-w-0 flex-1 bg-transparent text-left text-base font-bold tracking-wide text-white outline-none placeholder:text-slate-500"
+                      className="h-10 min-w-0 flex-1 bg-transparent text-left text-base font-bold tracking-wide text-white outline-none placeholder:text-ui-text-muted"
                       dir="ltr"
                       id="signup-code"
                       inputMode="numeric"
@@ -298,14 +298,14 @@ export function SignupPage() {
             {step === "password" ? (
               <form className="space-y-4 sm:space-y-5" onSubmit={handleCompleteStep}>
                 <div>
-                  <label className="text-base font-bold text-slate-200" htmlFor="signup-display-name">
+                  <label className="text-base font-bold text-ui-text-secondary" htmlFor="signup-display-name">
                     نام نمایشی (اختیاری)
                   </label>
-                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2 focus-within:border-emerald-300/45">
-                    <UserRound className="h-5 w-5 shrink-0 text-emerald-300" />
+                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 py-2 focus-within:border-ui-primary/30">
+                    <UserRound className="h-5 w-5 shrink-0 text-ui-primary" />
                     <input
                       autoComplete="nickname"
-                      className="h-10 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-slate-500"
+                      className="h-10 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-ui-text-muted"
                       id="signup-display-name"
                       maxLength={160}
                       onChange={(event) => setDisplayName(event.target.value)}
@@ -316,14 +316,14 @@ export function SignupPage() {
                 </div>
 
                 <div>
-                  <label className="text-base font-bold text-slate-200" htmlFor="signup-password">
+                  <label className="text-base font-bold text-ui-text-secondary" htmlFor="signup-password">
                     رمز عبور
                   </label>
-                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2 focus-within:border-violet-300/45">
-                    <LockKeyhole className="h-5 w-5 shrink-0 text-violet-300" />
+                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 py-2 focus-within:border-ui-primary/30">
+                    <LockKeyhole className="h-5 w-5 shrink-0 text-ui-primary" />
                     <input
                       autoComplete="new-password"
-                      className="h-10 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-slate-500"
+                      className="h-10 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-ui-text-muted"
                       dir="ltr"
                       id="signup-password"
                       onChange={(event) => {
@@ -347,14 +347,14 @@ export function SignupPage() {
                 </div>
 
                 <div>
-                  <label className="text-base font-bold text-slate-200" htmlFor="signup-password-confirm">
+                  <label className="text-base font-bold text-ui-text-secondary" htmlFor="signup-password-confirm">
                     تکرار رمز عبور
                   </label>
-                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2 focus-within:border-violet-300/45">
-                    <LockKeyhole className="h-5 w-5 shrink-0 text-violet-300" />
+                  <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 py-2 focus-within:border-ui-primary/30">
+                    <LockKeyhole className="h-5 w-5 shrink-0 text-ui-primary" />
                     <input
                       autoComplete="new-password"
-                      className="h-10 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-slate-500"
+                      className="h-10 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-ui-text-muted"
                       dir="ltr"
                       id="signup-password-confirm"
                       onChange={(event) => {
@@ -386,9 +386,9 @@ export function SignupPage() {
               </form>
             ) : null}
 
-            <p className="mt-5 text-center text-sm text-slate-400">
+            <p className="mt-5 text-center text-sm text-ui-text-muted">
               حساب دارید؟{" "}
-              <Link className="font-bold text-emerald-300 hover:text-emerald-200" to="/login">
+              <Link className="font-bold text-ui-primary hover:text-ui-primary" to="/login">
                 ورود
               </Link>
             </p>

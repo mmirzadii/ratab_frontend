@@ -14,8 +14,8 @@ export function IconButton({ active = false, children, className, ...props }: Ic
       className={classNames(
         "flex h-12 w-12 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-45",
         active
-          ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-200"
-          : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500 light:hover:text-slate-900",
+          ? "border-ui-primary/30 bg-ui-primary-soft text-ui-primary"
+          : "border-transparent text-ui-text-muted hover:border-ui-border-subtle hover:bg-ui-surface-hover hover:text-ui-text-primary",
         className
       )}
       type="button"

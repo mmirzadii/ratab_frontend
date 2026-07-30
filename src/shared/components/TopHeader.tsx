@@ -2,30 +2,11 @@ import { CircleHelp, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { userInitials } from "../../features/account/accountDisplay";
 import { performLogout } from "../../features/auth/logout";
 import { Button } from "./Button";
-import { StatusBadge } from "./StatusBadge";
-
-function getHeaderCopy(pathname: string) {
-  if (pathname === "/status") {
-    return {
-      title: "وضعیت سرویس",
-      description: "بررسی اتصال متریل به سرویس توسعه"
-    };
-  }
-
-  if (pathname === "/help") {
-    return {
-      title: "راهنمای متریل",
-      description: "پاسخ‌های کوتاه برای مسیرهای اصلی نسخه آزمایشی"
-    };
-  }
-
-  return {
-    title: "فضای کار متریل",
-    description: "شرکت، پروژه، صورت‌بها و فهرست‌بها در یک فضای کاری"
-  };
-}
+import { TokenBalanceChip } from "./TokenBalanceChip";
+import { getWorkspaceHeaderCopy } from "./workspaceHeaderCopy";
 
 export function TopHeader() {
   const dispatch = useAppDispatch();
@@ -33,7 +14,8 @@ export function TopHeader() {
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
   const status = useAppSelector((state) => state.auth.status);
-  const copy = getHeaderCopy(pathname);
+  const copy = getWorkspaceHeaderCopy(pathname);
+  const authenticated = status === "authenticated";
 
   async function handleLogout() {
     await performLogout(dispatch);
@@ -41,33 +23,46 @@ export function TopHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-20 border-b border-white/8 bg-slate-950/28 backdrop-blur-xl light:border-slate-200 light:bg-white/70">
+    <header
+      className="sticky top-0 z-20 hidden border-b border-ui-border-subtle bg-ui-surface lg:block"
+      data-tour="workspace-top-header"
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-2 sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-brand-600 to-brand-400 text-lg font-black text-white shadow-brand-soft sm:flex sm:h-11 sm:w-11 sm:text-xl">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-brand-700 to-brand-500 text-lg font-black text-white shadow-brand-soft sm:h-11 sm:w-11 sm:text-xl">
             M
           </div>
           <div className="min-w-0">
-            <p className="truncate text-base font-black leading-6 text-white light:text-slate-950 sm:text-lg">
+            <p className="truncate text-base font-black leading-6 text-ui-text-primary sm:text-lg">
               {copy.title}
             </p>
-            <p className="hidden truncate text-xs text-slate-400 light:text-slate-500 sm:block">{copy.description}</p>
+            <p className="hidden truncate text-xs text-ui-text-muted sm:block">{copy.description}</p>
           </div>
         </div>
 
-        <div className="hidden items-center gap-2 sm:flex">
-          {status === "authenticated" && user ? (
-            <StatusBadge tone="violet">{user.display_name || user.phone_number}</StatusBadge>
+        <div className="flex items-center gap-2">
+          {authenticated ? (
+            <div className="flex items-center gap-2" data-tour="header-identity-group">
+              <Link
+                aria-label="تنظیمات حساب — اطلاعات شخصی"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ui-primary/35 bg-ui-primary-soft text-sm font-black text-ui-primary transition hover:bg-ui-surface-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
+                title={user?.display_name || user?.phone_number || "حساب کاربری"}
+                to="/settings?tab=account"
+              >
+                {userInitials(user?.display_name || user?.phone_number)}
+              </Link>
+              <TokenBalanceChip />
+            </div>
           ) : null}
 
           <Link
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-3 text-sm font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-white light:text-slate-800"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-ui-border-default bg-ui-surface px-3 text-sm font-bold text-ui-text-primary transition hover:border-ui-primary/35 hover:bg-ui-primary-soft"
             to="/help"
           >
             <CircleHelp className="h-4 w-4" />
             راهنما
           </Link>
-          {status === "authenticated" ? (
+          {authenticated ? (
             <Button className="h-9 px-3" onClick={handleLogout} variant="ghost">
               <LogOut className="h-4 w-4" />
               خروج

@@ -20,12 +20,12 @@ Phase order:
 3. company members, roles, and groups — **completed 2026-07-28**
 4. persistent group messaging — **completed 2026-07-28**
 5. private files and attachments — **completed 2026-07-28**
-6. wallet and 5-token line-charge UX — **completed 2026-07-28**
+6. wallet foundations (later corrected to calculation-based billing) — **completed 2026-07-28**; **billing correction 2026-07-30**
 7. subscriptions, quota, and disabled payment UX — **completed 2026-07-28**
 8. final integration, regression, cleanup, and handoff — **completed 2026-07-28**
 9. Telegram-inspired company workspace UX simplification — **completed 2026-07-28**
 
-## Current baseline (after Phase 9 refinement)
+## Current baseline (after calculation-billing correction)
 
 - Frontend active version: `code_oder/active_version.txt` = `v1.0`
 - Package version: `package.json` = `1.0.0`
@@ -33,7 +33,7 @@ Phase order:
 - OpenAPI generation: `backend_docs/current/OPENAPI.yaml` → `src/shared/api/generated/schema.ts`
 - Browser auth: session cookies + CSRF (signup/login/logout/restore)
 - Workspace: conversation-first RTL shell (گفتگوها + اعضا + شرکت); project/group create via list `+`; composer **افزودن** (فایل | صورت‌بها); list-first صورت‌بها selector; drawer tabs صورت‌بهاها / فایل‌ها / لینک‌ها / اعضا
-- Billing UX: wallet, 5-token official line charge + idempotency, subscription/quota, disabled payment
+- Billing UX: personal + company wallets; paid explicit `محاسبه` (official/starred) with receipt-based Add; donation to company; costs from backend policy; subscription/quota; disabled payment
 - Handoff: root `README.md`, `PROJECT_EXPLAIN.md`, `phaze8/` + `phaze9/` reports
 
 See `PROJECT_EXPLAIN.md` and each `phazeN/REPORT.md` for details.

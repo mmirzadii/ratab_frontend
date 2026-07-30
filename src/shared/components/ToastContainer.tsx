@@ -6,9 +6,9 @@ import { removeToast, type Toast } from "../../features/ui/uiSlice";
 import { classNames } from "../utils/classNames";
 
 const toastColorClasses: Record<Toast["type"], string> = {
-  success: "bg-success-500/15 border-success-500/40 text-success-200 light:bg-success-50 light:border-success-400 light:text-success-800",
-  error:   "bg-danger-500/15 border-danger-500/40 text-danger-200 light:bg-danger-50 light:border-danger-400 light:text-danger-800",
-  info:    "bg-slate-700/60 border-white/10 text-slate-200 light:bg-white light:border-slate-200 light:text-slate-700"
+  success: "bg-ui-success-soft border-ui-success/40 text-ui-success",
+  error: "bg-ui-danger-soft border-ui-danger/40 text-ui-danger",
+  info: "bg-ui-surface-elevated border-ui-border-default text-ui-text-primary"
 };
 
 function ToastItem({ toast }: { toast: Toast }) {
@@ -22,7 +22,7 @@ function ToastItem({ toast }: { toast: Toast }) {
   return (
     <div
       className={classNames(
-        "flex min-w-[220px] max-w-xs items-start gap-3 rounded-xl border px-4 py-3 text-sm font-bold shadow-xl backdrop-blur-md",
+        "flex min-w-[220px] max-w-xs items-start gap-3 rounded-xl border px-4 py-3 text-sm font-bold shadow-ui backdrop-blur-md",
         toastColorClasses[toast.type]
       )}
       role="alert"
@@ -30,7 +30,7 @@ function ToastItem({ toast }: { toast: Toast }) {
       <span className="flex-1 leading-6">{toast.message}</span>
       <button
         aria-label="بستن"
-        className="mt-0.5 shrink-0 opacity-60 transition hover:opacity-100"
+        className="mt-0.5 shrink-0 text-ui-text-muted transition hover:text-ui-text-primary"
         onClick={() => dispatch(removeToast(toast.id))}
         type="button"
       >

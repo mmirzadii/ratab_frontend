@@ -58,11 +58,26 @@ X-CSRFToken: masked-csrf-token-example
 
 {
   "signup_ticket": "opaque-one-time-ticket",
-  "password": "ExamplePass123!",
-  "password_confirmation": "ExamplePass123!",
+  "password": "abcdef",
+  "password_confirmation": "abcdef",
   "display_name": "نمونه کاربر"
 }
 ```
+
+Backend password rule: minimum length **6**. Values such as `123456`, `abcdef`,
+or common-looking six-plus-character passwords are accepted and hashed. Extra
+strength UI is optional and non-blocking.
+
+Example field error when the password is too short:
+
+```json
+{"password": ["This password is too short. It must contain at least 6 characters."]}
+```
+
+That response is JSON attached to `password`. It is **not** an invalid-ticket
+error, and it does not consume the signup ticket.
+
+Successful completion response:
 
 ```json
 {
@@ -100,7 +115,7 @@ X-CSRFToken: masked-csrf-token-example
 
 Logout success: **204** empty body.
 
-## 4. Companies and groups
+## 4. Companies, invitations, and groups
 
 ```http
 GET /api/companies/
@@ -108,7 +123,295 @@ GET /api/companies/1/groups/
 GET /api/companies/1/members/
 ```
 
-Paginated lists use `{count, next, previous, results}` with page size 50.
+Company create returns `public_group_id` for the system `عمومی` group:
+
+```http
+POST /api/companies/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"name": "Example Co"}
+```
+
+```json
+{
+  "id": 1,
+  "name": "Example Co",
+  "public_group_id": 3,
+  "owner_member_id": 10,
+  "is_active": true
+}
+```
+
+Group list pins the public group first (`group_type`, `pin_priority`), then
+orders remaining conversations by `last_activity_at` (latest successful message,
+else group `created_at`):
+
+```http
+GET /api/companies/1/groups/
+```
+
+```json
+[
+  {
+    "id": 3,
+    "name": "عمومی",
+    "group_type": "public",
+    "pin_priority": 0,
+    "last_activity_at": "2026-07-29T10:00:00Z",
+    "is_default": true,
+    "project_id": null,
+    "project": null
+  },
+  {
+    "id": 9,
+    "name": "Site A",
+    "group_type": "project",
+    "pin_priority": 1,
+    "last_activity_at": "2026-07-29T12:30:00Z",
+    "project_id": 5,
+    "project": {"id": 5, "name": "Site A", "project_code": null, "status": "draft"}
+  }
+]
+```
+
+Project create (default includes all active company members in the linked group):
+
+```http
+POST /api/companies/1/projects/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"name": "Site A", "include_all_company_members_in_group": true}
+```
+
+```json
+{
+  "id": 5,
+  "company_id": 1,
+  "name": "Site A",
+  "group_id": 9,
+  "include_all_company_members_in_group": true,
+  "status": "draft"
+}
+```
+
+Omit `include_all_company_members_in_group` to get the same default (`true`).
+Pass `false` to add only the creator; do not send a membership list.
+
+### Custom/normal group create (atomic)
+
+Frontend collects name + selected active members, then submits once:
+
+```http
+POST /api/companies/1/groups/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{
+  "name": "Site Ops",
+  "description": "عملیات سایت",
+  "member_ids": [12, 15]
+}
+```
+
+```json
+{
+  "group": {
+    "id": 22,
+    "name": "Site Ops",
+    "description": "عملیات سایت",
+    "group_type": "custom",
+    "pin_priority": 2,
+    "is_default": false
+  },
+  "creator_membership": {"id": 40, "member_id": 10, "is_active": true},
+  "pending_invitation_count": 2,
+  "invitations": [
+    {"id": 31, "invited_user_id": 12, "target_group_id": 22, "status": "pending"}
+  ],
+  "skipped_already_member_ids": []
+}
+```
+
+Member picker (active only; optional search):
+
+```http
+GET /api/companies/1/members/?active_only=true&q=علی
+```
+
+Selected members are invited (pending); they must accept via
+`POST /api/company-invitations/{id}/accept/` before messaging access. The
+creator is always an active member and is never invited. Invalid `member_ids`
+reject the whole create (no partial group).
+
+Project-group financial documents (linked project is authoritative):
+
+```http
+GET /api/company-groups/9/financial-documents/
+POST /api/company-groups/9/financial-documents/
+Content-Type: application/json
+
+{"document_type": "cost_report", "title": "گزارش", "pricebook_edition_id": 1, "price_set_id": 2}
+```
+
+Then attach with the single message-attachment flow:
+
+```http
+POST /api/company-groups/9/messages/
+Content-Type: application/json
+
+{"attachments": [{"attachment_type": "financial_document", "resource_id": 40}]}
+```
+
+Public/custom groups require explicit `project_id` on the group FD endpoints.
+
+Shared resources (active members only, paginated):
+
+```http
+GET /api/company-groups/3/shared-resources/financial-documents/
+GET /api/company-groups/3/shared-resources/files/
+GET /api/company-groups/3/shared-resources/links/
+```
+
+Invite a registered non-member (pending invitation; no access yet):
+
+```http
+POST /api/companies/1/members/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"phone_number": "09120000002", "role": "employee", "group_id": 3}
+```
+
+```json
+{
+  "outcome": "invitation_pending",
+  "invitation": {
+    "id": 12,
+    "company_id": 1,
+    "target_group_id": 3,
+    "proposed_role": "employee",
+    "status": "pending"
+  },
+  "company_member": null,
+  "group_membership": null,
+  "company": {"id": 1, "name": "Example Co"},
+  "group": {"id": 3, "name": "عمومی"}
+}
+```
+
+Invitee pending list / accept:
+
+```http
+GET /api/company-invitations/
+```
+
+```json
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 12,
+      "company_id": 1,
+      "company_name": "Example Co",
+      "invited_user_id": 20,
+      "status": "pending",
+      "target_group_id": 3,
+      "proposed_role": "employee"
+    }
+  ]
+}
+```
+
+Compatibility aliases for the same pending list:
+
+- `GET /api/auth/me/invitations/`
+- `GET /api/me/invitations/`
+- `GET /api/membership-invitations/`
+
+```http
+POST /api/company-invitations/12/accept/
+```
+
+Acceptance returns `outcome: "invitation_accepted"` plus `company_member`,
+`group_membership`, `company`, and `group`. Rejection uses
+`POST /api/company-invitations/12/reject/` and creates no memberships.
+
+If the phone already belongs to an active company member, the same members POST
+adds them to the target group (`outcome: "group_membership_added"` or
+`already_group_member`) without creating an invitation.
+
+Paginated company lists use `{count, next, previous, results}` with page size 50.
+
+Ownership transfer (owner only; previous owner becomes admin):
+
+```http
+POST /api/companies/1/transfer-ownership/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"member_id": 22}
+```
+
+Member settings (GET returns live switches; PATCH persists role and/or
+`permission_settings`):
+
+```http
+GET /api/company-members/22/settings/
+```
+
+```http
+PATCH /api/company-members/22/settings/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"role": "admin", "permission_settings": {"can_add_admins": true}}
+```
+
+Member list/detail/settings rows include authorization and switch metadata:
+
+```json
+{
+  "role": "admin",
+  "permission_settings": {
+    "can_add_admins": false,
+    "can_manage_company_profile": true,
+    "can_manage_invitations": true,
+    "can_deactivate_employees": true,
+    "can_manage_all_custom_groups": true
+  },
+  "inherited_permissions": {
+    "can_invite_employees": true,
+    "can_create_projects": true
+  },
+  "effective_permissions": {
+    "can_invite_employees": true,
+    "can_add_admins": false
+  },
+  "configurable_permissions": [
+    {
+      "key": "can_add_admins",
+      "label_fa": "افزودن مدیر جدید",
+      "type": "boolean",
+      "default": false,
+      "value": false
+    }
+  ],
+  "can_edit_member": true,
+  "can_change_role": true,
+  "assignable_roles": ["admin", "employee"],
+  "edit_denied_reason": null
+}
+```
+
+Owner rows return empty `permission_settings` / `configurable_permissions`,
+`can_edit_member: false`, `assignable_roles: []`, and
+`edit_denied_reason: "owner_not_editable"`. Admin settings never expose Employee
+keys as editable switches; those appear under `inherited_permissions` /
+`effective_permissions` only.
 
 ## 5. Message create and quota exceeded
 
@@ -120,16 +423,21 @@ X-CSRFToken: masked-csrf-token-example
 {"text": "سلام، سند پیوست شد", "attachments": []}
 ```
 
-Quota exceeded example:
+Allowed attachment types: `file`, `financial_document` only. Sending
+`attachment_type: "project"` returns **400** (`project_attachment_disabled`).
+
+Quota exceeded example (user has no paid subscription, so the effective plan
+is the Bronze fallback):
 
 ```json
 {
   "code": "MESSAGE_QUOTA_EXCEEDED",
   "detail": "The daily message limit for this account is reached.",
-  "used_today": "2",
-  "daily_limit": "2",
+  "used_today": "20",
+  "daily_limit": "20",
   "quota_date": "2026-07-28",
-  "resets_at": "2026-07-29T00:00:00+03:30"
+  "resets_at": "2026-07-29T00:00:00+03:30",
+  "effective_plan_code": "bronze"
 }
 ```
 
@@ -151,19 +459,117 @@ GET /api/storage-files/42/download/
 
 Binary response with attachment disposition. No public URL field.
 
-## 7. Pricebook calculation preview (no charge)
+## 7. Official calculation billing → receipt → free line create
+
+Official items keep automatic calculation. Tokens are charged once per open
+item modal session (first successful calculation), not once per changed
+payload. Opening the modal is free.
 
 ```http
-POST /api/pricebook-items/100/calculate/
+POST /api/financial-documents/7/official-calculation-sessions/
 Content-Type: application/json
 X-CSRFToken: masked-csrf-token-example
 
-{"inputs": {"quantity": "1"}}
+{
+  "pricebook_item_id": 100
+}
 ```
 
-Does not debit the wallet.
+Success: HTTP **201**, no debit.
 
-## 8. Official financial-document line create (5-token charge)
+```json
+{
+  "calculation_session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "document_id": 7,
+  "pricebook_item_id": 100,
+  "company_id": 1,
+  "is_paid": false,
+  "expires_at": "2026-07-30T13:00:00+03:30",
+  "official_calculation_cost": "2"
+}
+```
+
+`idempotency_key` is **required** on each calculation request. After the user
+enters a complete valid input set, the frontend should auto-send calculation
+(after debounce) with the session id from above.
+
+```http
+POST /api/financial-documents/7/official-calculations/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{
+  "calculation_session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "pricebook_item_id": 100,
+  "quantity": "1",
+  "idempotency_key": "calc-7-100-20260730-a1"
+}
+```
+
+Success (first success in the session): HTTP **201**, applied_cost **2**.
+
+```json
+{
+  "result": {"unit_price": "120000", "total": "120000"},
+  "receipt": {
+    "id": 501,
+    "calculation_type": "official",
+    "document_id": 7,
+    "company_id": 1,
+    "pricebook_item_id": 100,
+    "session_id": 12,
+    "applied_cost": "2",
+    "personal_debit": "2",
+    "company_debit": "0",
+    "line_id": null,
+    "idempotency_key": "calc-7-100-20260730-a1",
+    "created_at": "2026-07-30T09:00:00+03:30"
+  },
+  "billing": {"applied_cost": "2", "personal_debit": "2", "company_debit": "0"},
+  "personal_balance": "10",
+  "company_balance": "0",
+  "replayed": false,
+  "calculation_session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+```
+
+Later successful recalculations in the **same** open session (new
+`idempotency_key`, changed quantity/inputs) return applied_cost **0** and a
+new latest receipt — no second debit. Exact replay of the same key + payload:
+HTTP **200**, `replayed: true`, same `receipt.id`. Closing the modal and
+opening again requires a new session; the first success may charge again.
+
+The equivalent standalone starred-calculation endpoint is
+`POST /api/financial-documents/7/starred-calculations/` with
+`{"quantity", "unit_price", "description", "unit", "idempotency_key"}` and
+defaults to **1** token per successful starred calculation (no modal session).
+
+`POST /api/pricebook-items/100/calculate/` bills the same official session rule
+and requires `financial_document_id` + `calculation_session_id` +
+`idempotency_key`.
+
+Now materialize the line from the **latest** paid receipt — **free**:
+
+```http
+POST /api/financial-documents/7/lines/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{
+  "calculation_receipt_id": 501,
+  "idempotency_key": "line-from-receipt-501"
+}
+```
+
+Success: HTTP **201** line payload. Wallet balance is **unchanged** by this
+call. Stale (superseded) receipts return **400**. Exact replay of the same
+`calculation_receipt_id` returns the original line with HTTP **200** and header
+`Idempotent-Replayed: true`.
+
+### Add without a fresh receipt (fallback)
+
+The Add button may remain clickable when no fresh receipt exists. Send the
+same official calculation inputs plus a required `idempotency_key`:
 
 ```http
 POST /api/financial-documents/7/lines/
@@ -173,23 +579,130 @@ X-CSRFToken: masked-csrf-token-example
 {
   "pricebook_item_id": 100,
   "quantity": "1",
-  "idempotency_key": "line-create-7-100-20260728-a1"
+  "idempotency_key": "add-fallback-7-100-a1"
 }
 ```
 
-Success: HTTP **201** line payload. Wallet decreases by exactly **5** tokens.
+Behavior:
 
-Exact replay of the same key + same payload: HTTP **200** and header
-`Idempotent-Replayed: true` (no second debit).
+- sufficient balance → open/reuse session, at most one official debit
+  (default 2 for that session), receipt, then free line create (HTTP **201**);
+- insufficient balance → HTTP **402** `INSUFFICIENT_COMBINED_TOKEN_BALANCE`
+  (includes `calculation_session_id` when a session exists), no usable
+  result/receipt/line/debit;
+- invalid/incomplete inputs → structured **400** validation errors (not 402);
+- exact retry of the same key + payload → original line, HTTP **200**, no
+  second debit.
 
-## 9. Insufficient balance
+Prefer calc-then-`calculation_receipt_id` when the UI already holds a fresh
+latest receipt. Standalone starred lines without any pricebook item may still be
+created directly with `manual_unit_price` and no receipt.
+
+## 8. Company wallet, donations, and wallet summaries
+
+```http
+GET /api/token-wallet/
+```
 
 ```json
 {
-  "code": "INSUFFICIENT_TOKEN_BALANCE",
-  "detail": "The token wallet does not have enough balance.",
-  "required_tokens": "5",
-  "available_tokens": "0"
+  "balance": "13",
+  "official_calculation_cost": "2",
+  "starred_calculation_cost": "1",
+  "token_packages": [],
+  "commerce": {
+    "demo_purchase_available": false,
+    "online_payments_enabled": false,
+    "purchasing_disabled": true,
+    "mode": "disabled"
+  },
+  "created_at": "2026-07-01T00:00:00+03:30",
+  "updated_at": "2026-07-30T09:00:00+03:30"
+}
+```
+
+New accounts receive `new_account_initial_grant` tokens (default **12**) once,
+at signup. The `13` above is illustrative — e.g. after demo/admin credit and
+spend from the 12-token starting grant.
+
+```http
+GET /api/companies/1/token-wallet/
+```
+
+```json
+{
+  "company_id": 1,
+  "company_name": "Example Co",
+  "balance": "40",
+  "is_active_member": true,
+  "donation_allowed": true,
+  "personal_balance": "13",
+  "official_calculation_cost": "2",
+  "starred_calculation_cost": "1",
+  "fallback_available": true,
+  "updated_at": "2026-07-30T09:00:00+03:30"
+}
+```
+
+Donate personal tokens into the company wallet:
+
+```http
+POST /api/companies/1/token-donations/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"amount": "10", "idempotency_key": "donate-1-2026-07-30-a1"}
+```
+
+```json
+{
+  "donation": {
+    "id": 8,
+    "company_id": 1,
+    "donor_user_id": 10,
+    "donor_member_id": 3,
+    "amount": "10",
+    "idempotency_key": "donate-1-2026-07-30-a1",
+    "created_at": "2026-07-30T09:05:00+03:30"
+  },
+  "personal_balance": "3",
+  "company_balance": "50"
+}
+```
+
+HTTP **201**; exact replay → **200** + `Idempotent-Replayed: true`. Donation
+history (`GET /api/companies/1/token-donations/`): owners/admins see all;
+other members see their own donations.
+
+## 9. Insufficient balance
+
+Calculation billing (personal + company combined):
+
+```json
+{
+  "code": "INSUFFICIENT_COMBINED_TOKEN_BALANCE",
+  "detail": "Neither the personal wallet nor the company wallet has enough combined balance for this calculation.",
+  "required_tokens": "2",
+  "personal_balance": "0",
+  "company_balance": "1",
+  "total_available": "1",
+  "calculation_type": "official",
+  "official_calculation_cost": "2",
+  "company_id": 1
+}
+```
+```
+
+HTTP **402**.
+
+Donation (personal only — donations never draw from the company wallet):
+
+```json
+{
+  "code": "INSUFFICIENT_PERSONAL_TOKEN_BALANCE",
+  "detail": "The personal token wallet does not have enough balance.",
+  "required_tokens": "10",
+  "available_tokens": "3"
 }
 ```
 
@@ -197,10 +710,125 @@ HTTP **402**.
 
 ## 10. Subscription and quota reads
 
+Every user has exactly one effective plan: a valid paid subscription, or
+Bronze as the free fallback (no `UserSubscription` row required).
+
 ```http
 GET /api/subscription/
+```
+
+No paid subscription — Bronze is effective:
+
+```json
+{
+  "has_active_subscription": false,
+  "has_paid_subscription": false,
+  "effective_plan_code": "bronze",
+  "effective_plan_title_fa": "برنزی",
+  "is_free_fallback": true,
+  "plan_code": "bronze",
+  "plan_title_fa": "برنزی",
+  "status": "free_fallback",
+  "starts_at": null,
+  "ends_at": null,
+  "effective_daily_message_limit": 20,
+  "effective_max_attachment_bytes": 10485760
+}
+```
+
+With an active paid Silver subscription:
+
+```json
+{
+  "has_active_subscription": true,
+  "has_paid_subscription": true,
+  "effective_plan_code": "silver",
+  "effective_plan_title_fa": "نقره‌ای",
+  "is_free_fallback": false,
+  "plan_code": "silver",
+  "plan_title_fa": "نقره‌ای",
+  "status": "active",
+  "starts_at": "2026-07-01T00:00:00+03:30",
+  "ends_at": "2026-07-31T00:00:00+03:30",
+  "effective_daily_message_limit": 500,
+  "effective_max_attachment_bytes": 52428800
+}
+```
+
+```http
 GET /api/message-quota/
+```
+
+```json
+{
+  "quota_date": "2026-07-30",
+  "used_today": 3,
+  "daily_limit": 20,
+  "remaining": 17,
+  "resets_at": "2026-07-31T00:00:00+03:30",
+  "plan_code": "bronze",
+  "subscription_status": "free_fallback"
+}
+```
+
+```http
 GET /api/subscription-plans/
+```
+
+Catalog rows always include bronze + silver + gold together. Exactly one row
+has `is_current: true` (here, Bronze, because there is no paid subscription):
+
+```json
+[
+  {
+    "code": "bronze",
+    "title_fa": "برنزی",
+    "daily_message_limit": 20,
+    "max_attachment_bytes_per_message": 10485760,
+    "duration_days": 36500,
+    "price_amount": "0.0000",
+    "currency": "IRR",
+    "display_order": 10,
+    "is_available": true,
+    "is_current": true,
+    "is_free_fallback": true,
+    "can_activate": false
+  },
+  {
+    "code": "silver",
+    "title_fa": "نقره‌ای",
+    "daily_message_limit": 500,
+    "max_attachment_bytes_per_message": 52428800,
+    "duration_days": 30,
+    "price_amount": "299000.0000",
+    "currency": "IRR",
+    "display_order": 20,
+    "is_available": true,
+    "is_current": false,
+    "is_free_fallback": false,
+    "can_activate": true
+  },
+  {
+    "code": "gold",
+    "title_fa": "طلایی",
+    "daily_message_limit": null,
+    "max_attachment_bytes_per_message": null,
+    "duration_days": 30,
+    "price_amount": "0.0000",
+    "currency": "IRR",
+    "display_order": 30,
+    "is_available": false,
+    "is_current": false,
+    "is_free_fallback": false,
+    "can_activate": false
+  }
+]
+```
+
+Gold is `is_available: false` (unavailable) and therefore never `can_activate`
+or `is_current`, regardless of subscription state.
+
+```http
 GET /api/token-wallet/
 ```
 
@@ -222,3 +850,67 @@ X-CSRFToken: masked-csrf-token-example
 ```
 
 HTTP **503**. Do not send amount, token count, status, or success flags.
+
+## 12. Demo token purchase (Local/Development only)
+
+Read packages and capability from the wallet first:
+
+```http
+GET /api/token-wallet/
+```
+
+```json
+{
+  "balance": "0",
+  "official_calculation_cost": "2",
+  "starred_calculation_cost": "1",
+  "token_packages": [
+    {
+      "code": "tokens_5",
+      "title_fa": "بسته ۵ توکنی",
+      "token_amount": "5",
+      "price_amount": "499000.0000",
+      "currency": "IRR",
+      "display_order": 10,
+      "is_active": true
+    }
+  ],
+  "commerce": {
+    "demo_purchase_available": true,
+    "online_payments_enabled": false,
+    "purchasing_disabled": false,
+    "mode": "demo"
+  }
+}
+```
+
+When `commerce.demo_purchase_available` is true:
+
+```http
+POST /api/payments/demo-purchase/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"package_code": "tokens_5", "idempotency_key": "buy-tokens5-1"}
+```
+
+```json
+{
+  "order": {
+    "id": 12,
+    "status": "fulfilled",
+    "package_code_snapshot": "tokens_5",
+    "token_amount_snapshot": "5",
+    "price_amount_snapshot": "499000.0000",
+    "currency_snapshot": "IRR",
+    "provider": "demo",
+    "fulfilled_at": "2026-07-30T10:00:00+03:30",
+    "created_at": "2026-07-30T10:00:00+03:30"
+  },
+  "wallet_balance": "5"
+}
+```
+
+HTTP **201** on first success. Exact replay → **200** +
+`Idempotent-Replayed: true` (no second credit). Same key with another package
+→ **409** `IDEMPOTENCY_KEY_REUSED`. Never invent balance in the UI.

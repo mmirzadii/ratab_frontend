@@ -29,7 +29,7 @@ import {
 } from "./membershipAccess";
 
 const panelInputClasses =
-  "h-11 w-full rounded-lg border border-white/10 bg-slate-950/45 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 sm:h-12 sm:px-4 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
+  "h-11 w-full rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30 focus:bg-ui-surface/65 sm:h-12 sm:px-4";
 
 function roleTone(role: string): "emerald" | "amber" | "violet" | "slate" {
   if (role === "owner") return "emerald";
@@ -155,8 +155,8 @@ export function MembersSection({
   if (isLoading) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-        <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
-          <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
+        <div className="flex items-center gap-3 text-sm font-bold text-ui-text-secondary">
+          <Loader2 className="h-5 w-5 animate-spin text-ui-primary" />
           در حال دریافت اعضای شرکت
         </div>
       </div>
@@ -185,9 +185,9 @@ export function MembersSection({
       {!hideCreateForm || inviteOpen ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-black text-white light:text-slate-950">اعضای شرکت</h2>
+            <h2 className="text-base font-black text-ui-text-primary">اعضای شرکت</h2>
             {actorRole ? (
-              <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">
+              <p className="mt-0.5 text-xs text-ui-text-muted">
                 نقش شما: {getRoleLabel(actorRole)}
               </p>
             ) : null}
@@ -200,10 +200,10 @@ export function MembersSection({
               </Button>
             ) : null}
             {!hideList ? (
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-400 light:text-slate-500">
+              <label className="flex items-center gap-2 text-xs font-bold text-ui-text-muted">
                 <input
                   checked={showInactive}
-                  className="h-4 w-4 accent-emerald-400"
+                  className="h-4 w-4 accent-ui-primary"
                   onChange={(event) => setShowInactive(event.target.checked)}
                   type="checkbox"
                 />
@@ -215,18 +215,18 @@ export function MembersSection({
       ) : null}
 
       {!canManage && !hideList ? (
-        <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400 light:border-slate-200 light:bg-slate-50 light:text-slate-500">
+        <p className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-3 py-2 text-xs text-ui-text-muted">
           مدیریت اعضا فقط برای مالک و مدیر فعال است.
         </p>
       ) : null}
 
       {inviteOpen && canInvite ? (
         <div
-          className="rounded-xl border border-white/10 bg-slate-950/35 p-3 sm:p-4 light:border-slate-200 light:bg-white"
+          className="rounded-xl border border-ui-border-subtle bg-ui-surface p-3 sm:p-4"
           data-tour="invite-member-form"
         >
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h3 className="text-sm font-black text-white light:text-slate-950">دعوت عضو جدید</h3>
+            <h3 className="text-sm font-black text-ui-text-primary">دعوت عضو جدید</h3>
             <Button onClick={() => setInviteOpen(false)} type="button" variant="secondary">
               بستن
             </Button>
@@ -234,7 +234,7 @@ export function MembersSection({
           <form className="space-y-3" onSubmit={(event) => void handleAdd(event)}>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="space-y-1.5">
-                <span className="text-sm font-bold text-slate-200 light:text-slate-700">
+                <span className="text-sm font-bold text-ui-text-secondary">
                   شماره موبایل <span className="text-rose-400">*</span>
                 </span>
                 <input
@@ -248,7 +248,7 @@ export function MembersSection({
                 />
               </label>
               <label className="space-y-1.5">
-                <span className="text-sm font-bold text-slate-200 light:text-slate-700">نقش پیشنهادی</span>
+                <span className="text-sm font-bold text-ui-text-secondary">نقش پیشنهادی</span>
                 <select
                   className={panelInputClasses}
                   onChange={(e) => setRole(e.target.value as RoleEnum)}
@@ -262,7 +262,7 @@ export function MembersSection({
                 </select>
               </label>
               <label className="space-y-1.5 sm:col-span-2">
-                <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام نمایشی</span>
+                <span className="text-sm font-bold text-ui-text-secondary">نام نمایشی</span>
                 <input
                   className={panelInputClasses}
                   onChange={(e) => setDisplayName(e.target.value)}
@@ -271,7 +271,7 @@ export function MembersSection({
                 />
               </label>
               <label className="space-y-1.5 sm:col-span-2">
-                <span className="text-sm font-bold text-slate-200 light:text-slate-700">سمت</span>
+                <span className="text-sm font-bold text-ui-text-secondary">سمت</span>
                 <input
                   className={panelInputClasses}
                   onChange={(e) => setTitle(e.target.value)}
@@ -299,18 +299,18 @@ export function MembersSection({
           {visibleMembers.map((member) => (
             <li key={member.id}>
               <button
-                className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-right transition light:bg-white ${
-                  selectedMemberId === member.id
-                    ? "border-emerald-300/35 bg-emerald-400/10 light:border-emerald-200 light:bg-emerald-50"
-                    : "border-white/10 bg-slate-950/35 light:border-slate-200"
-                }`}
+                className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-right transition ${
+ selectedMemberId === member.id
+ ? "border-ui-primary/35 bg-ui-primary-soft"
+ : "border-ui-border-subtle bg-ui-surface "
+ }`}
                 data-tour="company-member-row"
                 onClick={() => setSelectedMemberId(member.id)}
                 type="button"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-black text-white light:text-slate-950">
+                    <p className="truncate text-sm font-black text-ui-text-primary">
                       {member.display_name || member.phone_number}
                     </p>
                     <StatusBadge tone={roleTone(member.role)}>{getRoleLabel(member.role)}</StatusBadge>
@@ -319,7 +319,7 @@ export function MembersSection({
                       <StatusBadge tone="brand">شما</StatusBadge>
                     ) : null}
                   </div>
-                  <p className="mt-0.5 truncate text-[11px] text-slate-400 light:text-slate-500" dir="ltr">
+                  <p className="mt-0.5 truncate text-[11px] text-ui-text-muted" dir="ltr">
                     {member.phone_number}
                   </p>
                 </div>

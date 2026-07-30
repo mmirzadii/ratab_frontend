@@ -116,7 +116,7 @@ export const initialCoefficientValueForm: CoefficientValueFormState = {
 };
 
 export const inputClasses =
-  "h-12 w-full rounded-lg border border-white/10 bg-slate-950/45 px-4 text-base sm:text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
+  "h-12 w-full rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-4 text-base sm:text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30 focus:bg-ui-surface/65";
 
 export const textareaClasses =
-  "min-h-24 w-full resize-y rounded-lg border border-white/10 bg-slate-950/45 px-4 py-3 text-base sm:text-sm leading-7 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
+  "min-h-24 w-full resize-y rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-4 py-3 text-base sm:text-sm leading-7 text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30 focus:bg-ui-surface/65";

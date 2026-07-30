@@ -125,25 +125,25 @@ export function MessageAttachmentCard({
   }
 
   return (
-    <div className="mt-3 flex items-start gap-3 rounded-lg border border-white/10 bg-slate-950/35 p-3 light:border-slate-200 light:bg-white">
+    <div className="mt-3 flex items-start gap-3 rounded-lg border border-ui-border-subtle bg-ui-surface p-3">
       {isFile ? (
-        <Paperclip className="mt-0.5 h-5 w-5 shrink-0 text-emerald-200 light:text-emerald-700" />
+        <Paperclip className="mt-0.5 h-5 w-5 shrink-0 text-ui-primary" />
       ) : (
-        <FileText className="mt-0.5 h-5 w-5 shrink-0 text-emerald-200 light:text-emerald-700" />
+        <FileText className="mt-0.5 h-5 w-5 shrink-0 text-ui-primary" />
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-black text-white light:text-slate-950">{title}</p>
+        <p className="truncate text-sm font-black text-ui-text-primary">{title}</p>
         {metaParts.length > 0 ? (
-          <p className="mt-1 truncate text-xs text-slate-400 light:text-slate-500">{metaParts.join(" · ")}</p>
+          <p className="mt-1 truncate text-xs text-ui-text-muted">{metaParts.join(" · ")}</p>
         ) : null}
         {!attachment.is_available ? (
-          <p className="mt-2 text-xs font-bold text-amber-200 light:text-amber-700">
+          <p className="mt-2 text-xs font-bold text-amber-200">
             منبع پیوست در دسترس نیست.
           </p>
         ) : isSupportedComposeType ? (
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/8 px-3 text-xs font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 disabled:opacity-45 light:border-slate-200 light:bg-slate-50 light:text-slate-800"
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-ui-border-default bg-ui-surface px-3 text-xs font-bold text-ui-text-primary transition hover:border-ui-primary/35 hover:bg-ui-primary-soft disabled:opacity-45"
               disabled={busyAction != null}
               onClick={() => void handleOpen()}
               type="button"
@@ -157,7 +157,7 @@ export function MessageAttachmentCard({
             </button>
             {isFile ? (
               <button
-                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/8 px-3 text-xs font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 disabled:opacity-45 light:border-slate-200 light:bg-slate-50 light:text-slate-800"
+                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-ui-border-default bg-ui-surface px-3 text-xs font-bold text-ui-text-primary transition hover:border-ui-primary/35 hover:bg-ui-primary-soft disabled:opacity-45"
                 disabled={busyAction != null}
                 onClick={() => void handleDownload()}
                 type="button"
@@ -172,7 +172,7 @@ export function MessageAttachmentCard({
             ) : null}
           </div>
         ) : (
-          <p className="mt-2 text-xs font-bold text-slate-400 light:text-slate-500">
+          <p className="mt-2 text-xs font-bold text-ui-text-muted">
             این پیوست قابل بازیابی نیست.
           </p>
         )}

@@ -1,77 +1,176 @@
 import { baseApi } from "../../shared/api/baseApi";
 import type { components } from "../../shared/api/generated/schema";
+import type { DemoPurchaseResult } from "./walletPurchase";
 
 export type TokenWallet = components["schemas"]["TokenWallet"];
 export type TokenWalletTransaction = components["schemas"]["TokenWalletTransaction"];
 export type PaginatedTokenWalletTransaction =
   components["schemas"]["PaginatedTokenWalletTransaction"];
 export type TransactionTypeEnum = components["schemas"]["TransactionTypeEnum"];
-export type TokenBillingError = components["schemas"]["TokenBillingError"];
+export type CompanyTokenWallet = components["schemas"]["CompanyTokenWallet"];
+export type CompanyTokenDonation = components["schemas"]["CompanyTokenDonation"];
+export type CompanyTokenDonationCreateRequest =
+  components["schemas"]["CompanyTokenDonationCreateRequest"];
+export type CompanyTokenDonationResult = components["schemas"]["CompanyTokenDonationResult"];
+export type CalculationBillingReceipt = components["schemas"]["CalculationBillingReceipt"];
+export type CalculationBillingResult = components["schemas"]["CalculationBillingResult"];
+export type PaginatedCompanyTokenDonationList =
+  components["schemas"]["PaginatedCompanyTokenDonationList"];
+export type TokenPackage = components["schemas"]["TokenPackage"];
+export type CommerceCapabilities = components["schemas"]["CommerceCapabilities"];
+export type DemoPurchaseRequest = components["schemas"]["DemoPurchaseRequest"];
+export type DemoPurchaseResponse = components["schemas"]["DemoPurchaseResponse"];
 
-/** UI copy only. The backend is the sole authority for the actual charge. */
-export const OFFICIAL_LINE_TOKEN_COST = 5;
+export type DonationMutationResult = CompanyTokenDonationResult & {
+  idempotent_replayed?: boolean;
+};
+
+export type {
+  CalculationBillingSummary,
+  CombinedTokenBillingError,
+  TokenBillingError
+} from "./walletBilling";
+
+export {
+  createCalculationIdempotencyKey,
+  createDonationIdempotencyKey,
+  createIdempotencyKey,
+  createLineIdempotencyKey,
+  formatBillingBreakdown,
+  formatCalculationCostLabel,
+  formatInsufficientBalanceMessage,
+  getCombinedInsufficientBalance,
+  isIdempotencyKeyReused,
+  isInsufficientCombinedTokenBalance,
+  isInsufficientTokenBalance,
+  isWholePositiveTokenAmount
+} from "./walletBilling";
+
+export {
+  DONATION_SUCCESS_TOAST,
+  DONATION_TRANSFER_NOTICE,
+  formatCompanyTokenBadgeLabel,
+  formatDonationError,
+  isCompanyMembershipRequired,
+  isDonationNetworkFailure,
+  isInsufficientPersonalTokenBalance,
+  isInvalidTokenAmount,
+  normalizeDonationAmount,
+  parseDonationAmount,
+  validateDonationForm,
+  type DonationFormValidation
+} from "./walletDonation";
+
+export {
+  buildDemoPurchaseBody,
+  createPurchaseIdempotencyKey,
+  formatDemoPurchaseError,
+  isDemoCommerceDisabled,
+  isDemoCommerceMode,
+  isDemoPurchaseAvailable,
+  isPurchaseIdempotencyConflict,
+  isTokenPackageUnavailable,
+  sortTokenPackages,
+  type DemoPurchaseResult
+} from "./walletPurchase";
+
+export {
+  formatSignedTokenAmount,
+  getTransactionTitle,
+  getTransactionTypeLabel,
+  isTokenCreditAmount
+} from "./walletTransactionLabels";
 
 export const walletApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getTokenWallet: builder.query<TokenWallet, void>({
       query: () => "/api/token-wallet/",
-      providesTags: [{ type: "Wallet", id: "BALANCE" }]
+      providesTags: [
+        { type: "Wallet", id: "BALANCE" },
+        { type: "Wallet", id: "POLICY" }
+      ]
     }),
-    listTokenWalletTransactions: builder.query<PaginatedTokenWalletTransaction, void>({
-      query: () => "/api/token-wallet/transactions/",
+    listTokenWalletTransactions: builder.query<
+      PaginatedTokenWalletTransaction,
+      { page?: number } | void
+    >({
+      query: (arg) => ({
+        url: "/api/token-wallet/transactions/",
+        params: arg?.page && arg.page > 1 ? { page: arg.page } : undefined
+      }),
       providesTags: [{ type: "Wallet", id: "TRANSACTIONS" }]
+    }),
+    createDemoPurchase: builder.mutation<DemoPurchaseResult, DemoPurchaseRequest>({
+      query: (body) => ({
+        url: "/api/payments/demo-purchase/",
+        method: "POST",
+        body
+      }),
+      transformResponse: (response: DemoPurchaseResponse, meta) => {
+        const replayHeader = meta?.response?.headers.get("Idempotent-Replayed");
+        return {
+          ...response,
+          idempotent_replayed: replayHeader === "true"
+        };
+      },
+      invalidatesTags: (result, error) =>
+        !error && result
+          ? [
+              { type: "Wallet", id: "BALANCE" },
+              { type: "Wallet", id: "TRANSACTIONS" },
+              { type: "Wallet", id: "POLICY" }
+            ]
+          : []
+    }),
+    getCompanyTokenWallet: builder.query<CompanyTokenWallet, number>({
+      query: (companyId) => `/api/companies/${companyId}/token-wallet/`,
+      providesTags: (_result, _error, companyId) => [
+        { type: "CompanyWallet", id: companyId },
+        { type: "Wallet", id: "POLICY" }
+      ]
+    }),
+    listCompanyTokenDonations: builder.query<PaginatedCompanyTokenDonationList, number>({
+      query: (companyId) => `/api/companies/${companyId}/token-donations/`,
+      providesTags: (_result, _error, companyId) => [
+        { type: "CompanyWallet", id: `donations-${companyId}` }
+      ]
+    }),
+    donateTokensToCompany: builder.mutation<
+      DonationMutationResult,
+      { companyId: number; body: CompanyTokenDonationCreateRequest }
+    >({
+      query: ({ body, companyId }) => ({
+        url: `/api/companies/${companyId}/token-donations/`,
+        method: "POST",
+        body
+      }),
+      transformResponse: (response: CompanyTokenDonationResult, meta) => {
+        const replayHeader = meta?.response?.headers.get("Idempotent-Replayed");
+        return {
+          ...response,
+          idempotent_replayed: replayHeader === "true"
+        };
+      },
+      invalidatesTags: (_result, error, { companyId }) =>
+        error
+          ? []
+          : [
+              { type: "Wallet", id: "BALANCE" },
+              { type: "Wallet", id: "TRANSACTIONS" },
+              { type: "CompanyWallet", id: companyId },
+              { type: "CompanyWallet", id: `donations-${companyId}` }
+            ]
     })
   })
 });
 
-export const { useGetTokenWalletQuery, useListTokenWalletTransactionsQuery } = walletApi;
-
-export function getTransactionTypeLabel(type: TransactionTypeEnum | string): string {
-  if (type === "initial_grant") return "اعتبار اولیه";
-  if (type === "manual_grant") return "شارژ توسط ادمین";
-  if (type === "pricebook_line_usage") return "ثبت ردیف فهرست‌بها";
-  if (type === "token_package_purchase") return "خرید بسته توکن";
-  return type;
-}
-
-function billingErrorOf(error: unknown): { status: number; data: TokenBillingError } | null {
-  if (typeof error !== "object" || !error || !("status" in error) || !("data" in error)) {
-    return null;
-  }
-  const status = (error as { status?: unknown }).status;
-  const data = (error as { data?: unknown }).data;
-  if (typeof status !== "number" || typeof data !== "object" || !data || !("code" in data)) {
-    return null;
-  }
-  return { status, data: data as TokenBillingError };
-}
-
-export function isInsufficientTokenBalance(
-  error: unknown
-): error is { status: 402; data: TokenBillingError } {
-  const parsed = billingErrorOf(error);
-  return parsed?.status === 402 && parsed.data.code === "INSUFFICIENT_TOKEN_BALANCE";
-}
-
-export function isIdempotencyKeyReused(
-  error: unknown
-): error is { status: 409; data: TokenBillingError } {
-  const parsed = billingErrorOf(error);
-  return parsed?.status === 409 && parsed.data.code === "IDEMPOTENCY_KEY_REUSED";
-}
-
-export function formatInsufficientBalanceMessage(data: TokenBillingError): string {
-  const required = data.required_tokens?.trim();
-  const available = data.available_tokens?.trim();
-  if (required && available) {
-    return `موجودی توکن کافی نیست. موردنیاز: ${required} توکن، موجودی: ${available} توکن.`;
-  }
-  return "موجودی توکن برای ثبت این ردیف کافی نیست.";
-}
-
-export function createLineIdempotencyKey(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `line-${crypto.randomUUID()}`;
-  }
-  return `line-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
+export const {
+  useCreateDemoPurchaseMutation,
+  useDonateTokensToCompanyMutation,
+  useGetCompanyTokenWalletQuery,
+  useGetTokenWalletQuery,
+  useLazyGetCompanyTokenWalletQuery,
+  useLazyGetTokenWalletQuery,
+  useListCompanyTokenDonationsQuery,
+  useListTokenWalletTransactionsQuery
+} = walletApi;

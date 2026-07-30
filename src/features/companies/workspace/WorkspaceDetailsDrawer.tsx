@@ -31,13 +31,13 @@ export function WorkspaceDetailsDrawer({
     return (
       <aside
         aria-label={title}
-        className="flex w-[22rem] shrink-0 flex-col border-l border-white/10 bg-slate-950/50 light:border-slate-200 light:bg-white/95 xl:w-[24rem]"
+        className="flex w-[22rem] shrink-0 flex-col border-l border-ui-border-subtle bg-ui-surface/50 xl:w-[24rem]"
       >
-        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-white/8 px-3 light:border-slate-200">
-          <h2 className="truncate text-sm font-black text-white light:text-slate-950">{title}</h2>
+        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-ui-border-subtle px-3">
+          <h2 className="truncate text-sm font-black text-ui-text-primary">{title}</h2>
           <button
             aria-label="بستن جزئیات"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
             onClick={onClose}
             type="button"
           >
@@ -50,18 +50,18 @@ export function WorkspaceDetailsDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-start bg-slate-950/55 backdrop-blur-sm" dir="rtl">
+    <div className="fixed inset-0 z-40 flex justify-start bg-ui-surface backdrop-blur-sm" dir="rtl">
       <button aria-label="بستن جزئیات" className="flex-1 cursor-default" onClick={onClose} type="button" />
       <aside
         className={classNames(
-          "flex h-full w-[min(24rem,92vw)] flex-col border-r border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white"
+          "flex h-full w-[min(24rem,92vw)] flex-col border-r border-ui-border-subtle bg-ui-surface shadow-ui"
         )}
       >
-        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-white/8 px-3 light:border-slate-200">
-          <h2 className="truncate text-sm font-black text-white light:text-slate-950">{title}</h2>
+        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-ui-border-subtle px-3">
+          <h2 className="truncate text-sm font-black text-ui-text-primary">{title}</h2>
           <button
             aria-label="بستن جزئیات"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/8 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
             onClick={onClose}
             type="button"
           >

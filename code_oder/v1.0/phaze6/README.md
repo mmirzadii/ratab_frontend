@@ -7,7 +7,9 @@ Backend contract: `backend_docs/current/` (`BACKEND_VERSION` = `v1.0`)
 
 ## Goal
 
-Integrate wallet visibility and the approved 5-token charge experience for official pricebook-backed line creation, without moving any billing authority to the client.
+Integrate wallet visibility and charged calculation operations for cost reports, without moving billing authority to the client.
+
+Current policy (after 2026-07-30 correction): explicit paid `محاسبه`, receipt-based Add, company wallet donation. The original Phase 6 fixed 5-token line-create UX is obsolete.
 
 ## Delivered
 

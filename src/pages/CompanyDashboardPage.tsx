@@ -13,7 +13,7 @@ import {
   X,
   XCircle
 } from "lucide-react";
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Outlet, useLocation, useMatch, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { useAppShell } from "../app/appShellContext";
@@ -27,7 +27,6 @@ import {
 import { useListCompanyGroupsQuery } from "../features/companies/companyGroupsApi";
 import { useListMyCompanyInvitationsQuery } from "../features/companies/companyInvitationsApi";
 import { GroupInfoDrawer } from "../features/companies/GroupInfoDrawer";
-import { GroupsSection } from "../features/companies/GroupsSection";
 import { MembersSection } from "../features/companies/MembersSection";
 import { MemberSettingsPane } from "../features/companies/MemberSettingsPane";
 import {
@@ -63,6 +62,7 @@ import { WorkspaceDetailsDrawer } from "../features/companies/workspace/Workspac
 import { useListCompanyProjectsQuery } from "../features/projects/projectApi";
 import { CreateProjectSheet } from "../features/projects/CreateProjectSheet";
 import { Button } from "../shared/components/Button";
+import { CompanyWalletSection } from "../shared/components/CompanyWalletSection";
 import { EmptyState } from "../shared/components/EmptyState";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
@@ -94,7 +94,7 @@ function normalizeFocusSection(focus?: string): WorkspaceSection {
 }
 
 const panelInputClasses =
-  "h-11 w-full rounded-lg border border-white/10 bg-slate-950/45 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 sm:h-12 sm:px-4 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
+  "h-11 w-full rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30 focus:bg-ui-surface/65 sm:h-12 sm:px-4";
 
 function useIsXlViewport() {
   const [isXl, setIsXl] = useState(() =>
@@ -115,9 +115,9 @@ function useIsXlViewport() {
 function SummaryField({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value?.trim()) return null;
   return (
-    <div className="border-b border-white/6 py-2.5 last:border-0 light:border-slate-100">
-      <dt className="text-[11px] font-bold text-slate-400 light:text-slate-500">{label}</dt>
-      <dd className="mt-0.5 text-sm font-bold text-slate-100 light:text-slate-900">{value}</dd>
+    <div className="border-b border-ui-border-subtle py-2.5 last:border-0">
+      <dt className="text-[11px] font-bold text-ui-text-muted">{label}</dt>
+      <dd className="mt-0.5 text-sm font-bold text-ui-text-primary">{value}</dd>
     </div>
   );
 }
@@ -191,12 +191,12 @@ function CompanyEditModal({
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Building2 className="h-5 w-5 text-emerald-200 light:text-emerald-700" />
-            <h2 className="text-lg font-black text-white light:text-slate-950">ویرایش اطلاعات شرکت</h2>
+            <Building2 className="h-5 w-5 text-ui-primary" />
+            <h2 className="text-lg font-black text-ui-text-primary">ویرایش اطلاعات شرکت</h2>
           </div>
           <button
             aria-label="بستن"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200 sm:h-8 sm:w-8 light:border-slate-200 light:text-slate-500"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-ui-border-subtle text-ui-text-muted transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200 sm:h-8 sm:w-8"
             onClick={onClose}
             type="button"
           >
@@ -205,7 +205,7 @@ function CompanyEditModal({
         </div>
 
         {!canEdit ? (
-          <p className="mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400 light:border-slate-200 light:bg-slate-50 light:text-slate-600">
+          <p className="mb-3 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-3 py-2 text-xs text-ui-text-muted">
             ویرایش مشخصات شرکت برای شما غیرفعال است.
           </p>
         ) : null}
@@ -213,7 +213,7 @@ function CompanyEditModal({
         <form className="space-y-3" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="space-y-1.5">
-              <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام شرکت</span>
+              <span className="text-sm font-bold text-ui-text-secondary">نام شرکت</span>
               <input
                 className={panelInputClasses}
                 disabled={!canEdit}
@@ -225,7 +225,7 @@ function CompanyEditModal({
               />
             </label>
             <label className="space-y-1.5">
-              <span className="text-sm font-bold text-slate-200 light:text-slate-700">نام حقوقی</span>
+              <span className="text-sm font-bold text-ui-text-secondary">نام حقوقی</span>
               <input
                 className={panelInputClasses}
                 disabled={!canEdit}
@@ -236,7 +236,7 @@ function CompanyEditModal({
               />
             </label>
             <label className="space-y-1.5">
-              <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره ثبت</span>
+              <span className="text-sm font-bold text-ui-text-secondary">شماره ثبت</span>
               <input
                 className={panelInputClasses}
                 disabled={!canEdit}
@@ -248,7 +248,7 @@ function CompanyEditModal({
               />
             </label>
             <label className="space-y-1.5">
-              <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه ملی</span>
+              <span className="text-sm font-bold text-ui-text-secondary">شناسه ملی</span>
               <input
                 className={panelInputClasses}
                 disabled={!canEdit}
@@ -260,7 +260,7 @@ function CompanyEditModal({
               />
             </label>
             <label className="space-y-1.5 sm:col-span-2">
-              <span className="text-sm font-bold text-slate-200 light:text-slate-700">شناسه کوتاه شرکت</span>
+              <span className="text-sm font-bold text-ui-text-secondary">شناسه کوتاه شرکت</span>
               <input
                 className={classNames(panelInputClasses, "text-left")}
                 dir="ltr"
@@ -275,7 +275,7 @@ function CompanyEditModal({
 
           <div className="grid grid-cols-2 gap-2 pt-1 sm:flex sm:justify-end sm:gap-3">
             <button
-              className="h-11 rounded-lg border border-white/10 px-4 text-sm font-bold text-slate-300 transition hover:border-white/20 hover:text-white light:border-slate-200 light:text-slate-600 light:hover:text-slate-950"
+              className="h-11 rounded-lg border border-ui-border-subtle px-4 text-sm font-bold text-ui-text-secondary transition hover:border-ui-border-default hover:text-ui-text-primary"
               onClick={onClose}
               type="button"
             >
@@ -307,14 +307,14 @@ function CompanySummaryPanel({
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-5 [scrollbar-width:thin]">
-      <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/8 pb-3 light:border-slate-200">
+      <div className="mb-3 flex items-center justify-between gap-3 border-b border-ui-border-subtle pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-700">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-ui-primary/20 bg-ui-primary-soft text-ui-primary">
             <Building2 className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-sm font-black text-white light:text-slate-950">اطلاعات شرکت</h2>
-            <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">نقش شما: {roleLabel}</p>
+            <h2 className="text-sm font-black text-ui-text-primary">اطلاعات شرکت</h2>
+            <p className="mt-0.5 text-xs text-ui-text-muted">نقش شما: {roleLabel}</p>
           </div>
         </div>
         {canEdit ? (
@@ -333,6 +333,8 @@ function CompanySummaryPanel({
         <SummaryField label="شناسه کوتاه" value={company.active_slug} />
         <SummaryField label="وضعیت" value={company.is_active ? "فعال" : "غیرفعال"} />
       </dl>
+
+      <CompanyWalletSection companyId={company.id} companyName={company.name} />
     </div>
   );
 }
@@ -347,10 +349,10 @@ function ContextListSearch({
   placeholder: string;
 }) {
   return (
-    <label className="relative block border-b border-white/8 px-2 py-2 light:border-slate-200">
-      <Search className="pointer-events-none absolute right-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+    <label className="relative block border-b border-ui-border-subtle px-2 py-2">
+      <Search className="pointer-events-none absolute right-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ui-text-muted" />
       <input
-        className="h-9 w-full rounded-lg border border-white/10 bg-slate-950/40 pr-9 pl-3 text-xs text-slate-100 outline-none placeholder:text-slate-500 focus:border-emerald-300/40 light:border-slate-200 light:bg-white light:text-slate-950"
+        className="h-9 w-full rounded-lg border border-ui-border-subtle bg-ui-surface pr-9 pl-3 text-xs text-ui-text-primary outline-none placeholder:text-ui-text-muted focus:border-ui-primary/30"
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         value={value}
@@ -367,7 +369,7 @@ function MembersSubTabs({
   onChange: (tab: MembersListTab) => void;
 }) {
   return (
-    <div className="flex border-b border-white/8 light:border-slate-200">
+    <div className="flex border-b border-ui-border-subtle">
       {(
         [
           { id: "members" as const, label: "اعضا" },
@@ -378,8 +380,8 @@ function MembersSubTabs({
           className={classNames(
             "flex-1 px-2 py-2 text-xs font-bold transition",
             activeTab === tab.id
-              ? "border-b-2 border-emerald-400 text-emerald-100 light:text-emerald-800"
-              : "text-slate-400 hover:text-slate-200 light:text-slate-500 light:hover:text-slate-800"
+              ? "border-b-2 border-ui-primary text-ui-primary"
+              : "text-ui-text-muted hover:text-ui-text-secondary"
           )}
           key={tab.id}
           onClick={() => onChange(tab.id)}
@@ -401,9 +403,9 @@ function DetailsSummary({
 }) {
   if (!value?.trim()) return null;
   return (
-    <div className="space-y-1 border-b border-white/8 py-2.5 last:border-0 light:border-slate-200">
-      <p className="text-[11px] font-bold text-slate-400 light:text-slate-500">{label}</p>
-      <p className="text-sm font-bold text-slate-100 light:text-slate-900">{value}</p>
+    <div className="space-y-1 border-b border-ui-border-subtle py-2.5 last:border-0">
+      <p className="text-[11px] font-bold text-ui-text-muted">{label}</p>
+      <p className="text-sm font-bold text-ui-text-primary">{value}</p>
     </div>
   );
 }
@@ -436,10 +438,10 @@ export function CompanyDashboardPage() {
     return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
   });
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
-  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [isInviteMemberOpen, setIsInviteMemberOpen] = useState(false);
   const [isCompanyEditOpen, setIsCompanyEditOpen] = useState(false);
   const [isDetailsDrawerOpen, setIsDetailsDrawerOpen] = useState(false);
+  const isCreateGroupRoute = Boolean(useMatch("/companies/:companyId/groups/new"));
   const [showInactiveMembers, setShowInactiveMembers] = useState(false);
   const [listQuery, setListQuery] = useState("");
   const [memberSettingsDirty, setMemberSettingsDirty] = useState(false);
@@ -455,7 +457,9 @@ export function CompanyDashboardPage() {
     skip: !hasValidCompanyId
   });
   const { data: groupsData, isLoading: isLoadingGroups } = useListCompanyGroupsQuery(parsedCompanyId, {
-    skip: !hasValidCompanyId
+    skip: !hasValidCompanyId,
+    refetchOnFocus: true,
+    refetchOnReconnect: true
   });
   const { data: myInvitationsData } = useListMyCompanyInvitationsQuery(undefined, {
     skip: !hasValidCompanyId
@@ -475,9 +479,6 @@ export function CompanyDashboardPage() {
   const companyName = cleanDisplayText(company?.name, "شرکت بدون نام");
   const selectedMessageGroup = groups.find((group) => group.id === selectedMessageGroupId) ?? null;
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? null;
-  const selectedMessageGroupKind = selectedMessageGroup
-    ? classifyCompanyGroup(selectedMessageGroup, projects)
-    : null;
 
   const normalizedQuery = listQuery.trim().toLowerCase();
 
@@ -526,15 +527,15 @@ export function CompanyDashboardPage() {
   }, [companyPendingInvitations, normalizedQuery]);
 
   const sortedConversations = useMemo(
-    () => sortConversations(filteredGroups, projects),
-    [filteredGroups, projects]
+    () => sortConversations(filteredGroups),
+    [filteredGroups]
   );
 
   const contextHeaderAction = useMemo(() => {
     if (activeSection === "messages") {
       return (
         <ConversationCreateMenu
-          onCreateGroup={() => setIsCreateGroupOpen(true)}
+          onCreateGroup={() => navigate(`/companies/${companyId}/groups/new`)}
           onCreateProject={() => setIsAddProjectOpen(true)}
         />
       );
@@ -548,7 +549,7 @@ export function CompanyDashboardPage() {
       );
     }
     return null;
-  }, [activeSection, canInviteMembers]);
+  }, [activeSection, canInviteMembers, companyId, navigate]);
 
   const searchPlaceholder = useMemo(() => {
     if (activeSection === "members") {
@@ -595,11 +596,11 @@ export function CompanyDashboardPage() {
 
   useEffect(() => {
     if (selectedMessageGroupId != null) return;
-    const ordered = sortConversations(groups, projects);
+    const ordered = sortConversations(groups);
     if (ordered[0]) {
       setSelectedMessageGroupId(ordered[0].id);
     }
-  }, [groups, projects, selectedMessageGroupId]);
+  }, [groups, selectedMessageGroupId]);
 
   useEffect(() => {
     if (!company || !routeState) return;
@@ -683,24 +684,7 @@ export function CompanyDashboardPage() {
       );
     }
 
-    return <p className="text-xs text-slate-400 light:text-slate-500">موردی برای نمایش انتخاب نشده است.</p>;
-  }
-
-  function renderMessageGroupManagementSlot() {
-    if (!selectedMessageGroup || !company) return null;
-
-    if (selectedMessageGroupKind === "custom") {
-      return (
-        <GroupsSection
-          companyId={company.id}
-          hideCreateForm
-          hideList
-          selectedGroupId={selectedMessageGroup.id}
-        />
-      );
-    }
-
-    return null;
+    return <p className="text-xs text-ui-text-muted">موردی برای نمایش انتخاب نشده است.</p>;
   }
 
   function renderContextListRows() {
@@ -729,7 +713,7 @@ export function CompanyDashboardPage() {
     if (activeSection === "messages") {
       if (isLoadingGroups) {
         return (
-          <div className="flex items-center justify-center gap-2 p-6 text-xs font-bold text-slate-400">
+          <div className="flex items-center justify-center gap-2 p-6 text-xs font-bold text-ui-text-muted">
             <Loader2 className="h-4 w-4 animate-spin" />
             دریافت گفتگوها
           </div>
@@ -737,7 +721,7 @@ export function CompanyDashboardPage() {
       }
       if (sortedConversations.length === 0) {
         return (
-          <p className="p-4 text-center text-xs text-slate-400 light:text-slate-500">گفتگویی برای نمایش نیست.</p>
+          <p className="p-4 text-center text-xs text-ui-text-muted">گفتگویی برای نمایش نیست.</p>
         );
       }
       return sortedConversations.map((group) => {
@@ -769,7 +753,7 @@ export function CompanyDashboardPage() {
       if (membersListTab === "invitations") {
         if (filteredInvitations.length === 0) {
           return (
-            <p className="p-4 text-center text-xs text-slate-400 light:text-slate-500">
+            <p className="p-4 text-center text-xs text-ui-text-muted">
               دعوت در انتظاری برای این شرکت نیست.
             </p>
           );
@@ -792,7 +776,7 @@ export function CompanyDashboardPage() {
 
       if (filteredMembers.length === 0) {
         return (
-          <p className="p-4 text-center text-xs text-slate-400 light:text-slate-500">عضوی برای نمایش نیست.</p>
+          <p className="p-4 text-center text-xs text-ui-text-muted">عضوی برای نمایش نیست.</p>
         );
       }
       return filteredMembers.map((member) => (
@@ -840,8 +824,8 @@ export function CompanyDashboardPage() {
   if (isLoading) {
     return (
       <div className="flex h-dvh w-full items-center justify-center">
-        <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
-          <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
+        <div className="flex items-center gap-3 text-sm font-bold text-ui-text-secondary">
+          <Loader2 className="h-5 w-5 animate-spin text-ui-primary" />
           در حال دریافت فضای کار شرکت
         </div>
       </div>
@@ -870,11 +854,11 @@ export function CompanyDashboardPage() {
     );
   }
 
-  const showContextListOnMobile = mobilePane === "list";
-  const showMainOnMobile = mobilePane === "detail" || activeSection === "company";
+  const showContextListOnMobile = mobilePane === "list" && !isCreateGroupRoute;
+  const showMainOnMobile = !isCreateGroupRoute && (mobilePane === "detail" || activeSection === "company");
 
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden bg-slate-950/35 light:bg-white/95">
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-ui-surface">
       <div className="flex min-h-0 flex-1 flex-row overflow-hidden">
         <CompanyWorkspaceRail
           activeSection={activeSection}
@@ -885,12 +869,17 @@ export function CompanyDashboardPage() {
 
         <aside
           className={classNames(
-            "flex shrink-0 flex-col border-white/8 bg-slate-950/40 light:border-slate-200 light:bg-white/90 md:border-l",
+            "flex shrink-0 flex-col border-ui-border-subtle bg-ui-surface md:border-l",
             "w-full md:w-[19rem] xl:w-[22rem]",
             showContextListOnMobile ? "flex" : "hidden md:flex"
           )}
         >
-          <WorkspaceContextHeader action={contextHeaderAction} companyName={companyName} isActive={company.is_active}>
+          <WorkspaceContextHeader
+            action={contextHeaderAction}
+            companyId={company.id}
+            companyName={companyName}
+            isActive={company.is_active}
+          >
             {activeSection === "members" ? (
               <MembersSubTabs activeTab={membersListTab} onChange={setMembersListTab} />
             ) : null}
@@ -901,11 +890,11 @@ export function CompanyDashboardPage() {
           ) : null}
 
           {activeSection === "members" && membersListTab === "members" ? (
-            <div className="flex items-center border-b border-white/8 px-3 py-2 light:border-slate-200">
-              <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 light:text-slate-500">
+            <div className="flex items-center border-b border-ui-border-subtle px-3 py-2">
+              <label className="flex items-center gap-1.5 text-[11px] font-bold text-ui-text-muted">
                 <input
                   checked={showInactiveMembers}
-                  className="rounded border-white/20"
+                  className="rounded border-ui-border-default"
                   onChange={(e) => setShowInactiveMembers(e.target.checked)}
                   type="checkbox"
                 />
@@ -924,16 +913,16 @@ export function CompanyDashboardPage() {
           )}
         >
           {mobilePane === "detail" && activeSection !== "company" ? (
-            <div className="flex items-center gap-2 border-b border-white/8 px-2 py-1.5 md:hidden light:border-slate-200">
+            <div className="flex items-center gap-2 border-b border-ui-border-subtle px-2 py-1.5 md:hidden">
               <button
                 aria-label="بازگشت به فهرست"
-                className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/8 hover:text-white light:text-slate-600"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-ui-text-secondary transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
                 onClick={() => setMobilePane("list")}
                 type="button"
               >
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <span className="text-xs font-bold text-slate-400 light:text-slate-500">فهرست</span>
+              <span className="text-xs font-bold text-ui-text-muted">فهرست</span>
             </div>
           ) : null}
 
@@ -1021,11 +1010,23 @@ export function CompanyDashboardPage() {
           ) : null}
         </main>
 
+        {isCreateGroupRoute ? (
+          <aside
+            aria-label="ساخت گروه"
+            className={classNames(
+              "flex min-h-0 w-full flex-col border-ui-border-subtle bg-ui-surface",
+              "md:w-[26rem] md:max-w-[30rem] md:shrink-0 md:border-r"
+            )}
+            data-testid="create-group-route-panel"
+          >
+            <Outlet />
+          </aside>
+        ) : null}
+
         {activeSection === "messages" ? (
           <GroupInfoDrawer
             companyId={company.id}
             group={selectedMessageGroup}
-            managementSlot={renderMessageGroupManagementSlot()}
             mode={isXl ? "inline" : "overlay"}
             onAddFinancialDocument={() => {
               setOpenFinancialDocumentRequestId((id) => id + 1);
@@ -1046,28 +1047,11 @@ export function CompanyDashboardPage() {
         )}
       </div>
 
-      {isCreateGroupOpen ? (
-        <GroupsSection
-          companyId={company.id}
-          hideCreateForm
-          hideList
-          isCreateOpen
-          onCreateOpenChange={setIsCreateGroupOpen}
-          onSelectedGroupIdChange={(groupId) => {
-            if (groupId != null) {
-              setSelectedMessageGroupId(groupId);
-              setActiveSection("messages");
-              setMobilePane("detail");
-              setIsCreateGroupOpen(false);
-            }
-          }}
-          selectedGroupId={null}
-        />
+      {!isCreateGroupRoute ? (
+        <div className="shrink-0 lg:hidden [&_nav]:!flex">
+          <CompanyMobileSectionNav activeSection={activeSection} onSectionChange={changeSection} />
+        </div>
       ) : null}
-
-      <div className="shrink-0 lg:hidden [&_nav]:!flex">
-        <CompanyMobileSectionNav activeSection={activeSection} onSectionChange={changeSection} />
-      </div>
 
       {isAddProjectOpen ? (
         <CreateProjectSheet

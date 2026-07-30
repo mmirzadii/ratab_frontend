@@ -237,25 +237,26 @@ export function GuidedTour() {
   return (
     <>
       {/* Full-screen overlay — the box-shadow on the highlight creates the dimming */}
-      <div className="pointer-events-none fixed inset-0 z-[45] bg-slate-950/60" />
+      <div className="pointer-events-none fixed inset-0 z-[45] bg-ui-overlay" />
 
       {/* Spotlight highlight around the target element */}
       {highlightRect ? (
         <div
-          className="pointer-events-none fixed z-[46] rounded-xl border-2 border-emerald-400/90"
+          className="pointer-events-none fixed z-[46] rounded-xl border-2 border-ui-primary/90"
           style={{
             top: highlightRect.top - PADDING,
             left: highlightRect.left - PADDING,
             width: highlightRect.width + PADDING * 2,
             height: highlightRect.height + PADDING * 2,
-            boxShadow: "0 0 0 9999px rgba(2,6,23,0.0), 0 0 28px rgba(16,185,129,0.45)"
+            boxShadow:
+              "0 0 0 9999px rgba(2,6,23,0.0), 0 0 28px color-mix(in srgb, var(--ui-primary) 45%, transparent)"
           }}
         />
       ) : null}
 
       {/* Tour card */}
       <div
-        className="fixed z-[47] w-[min(360px,calc(100vw-2rem))] rounded-2xl border border-emerald-500/30 bg-slate-900/90 p-5 shadow-2xl backdrop-blur-xl"
+        className="fixed z-[47] w-[min(360px,calc(100vw-2rem))] rounded-2xl border border-ui-primary/30 bg-ui-surface-elevated/90 p-5 shadow-ui backdrop-blur-xl"
         style={
           cardPos
             ? { top: cardPos.top, left: cardPos.left }
@@ -265,14 +266,14 @@ export function GuidedTour() {
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <p className="text-xs font-bold text-emerald-400">
+            <p className="text-xs font-bold text-ui-primary">
               {stepIndex + 1} از {activeTour.steps.length}
             </p>
             <h3 className="text-base font-black text-white">{step.title}</h3>
           </div>
           <button
             aria-label="بستن راهنما"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/8 hover:text-white"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
             onClick={dismiss}
             type="button"
           >
@@ -281,7 +282,7 @@ export function GuidedTour() {
         </div>
 
         {/* Body */}
-        <p className="mt-3 text-sm leading-7 text-slate-400">{step.body}</p>
+        <p className="mt-3 text-sm leading-7 text-ui-text-muted">{step.body}</p>
 
         {/* Navigation */}
         <div className="mt-5 flex items-center justify-between gap-3">
@@ -292,8 +293,8 @@ export function GuidedTour() {
                 aria-label={`مرحله ${index + 1}`}
                 className={`h-2 rounded-full transition-all ${
                   index === stepIndex
-                    ? "w-6 bg-emerald-400"
-                    : "w-2 bg-white/20 hover:bg-white/35"
+                    ? "w-6 bg-ui-primary"
+                    : "w-2 bg-ui-border-subtle hover:bg-ui-border-default"
                 }`}
                 key={index}
                 onClick={() => setStepIndex(index)}
@@ -306,7 +307,7 @@ export function GuidedTour() {
           <div className="flex items-center gap-2">
             {stepIndex > 0 ? (
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-slate-300 transition hover:bg-white/14 hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-ui-surface-subtle text-ui-text-secondary transition hover:bg-ui-surface-hover hover:text-ui-text-primary"
                 onClick={goPrev}
                 type="button"
               >
@@ -314,7 +315,7 @@ export function GuidedTour() {
               </button>
             ) : null}
             <button
-              className="flex h-9 items-center gap-2 rounded-xl bg-emerald-500 px-4 text-sm font-black text-slate-950 transition hover:bg-emerald-400"
+              className="flex h-9 items-center gap-2 rounded-xl bg-ui-primary px-4 text-sm font-black text-ui-primary-foreground transition hover:bg-ui-primary-hover"
               onClick={goNext}
               type="button"
             >

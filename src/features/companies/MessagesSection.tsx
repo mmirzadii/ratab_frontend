@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Ban,
   FileText,
@@ -25,6 +25,10 @@ import {
   FinancialDocumentActionModal,
   type SelectedFinancialDocumentAttachment
 } from "./AttachFinancialDocumentModal";
+import {
+  applyComposerTextareaAutoResize,
+  shouldSendOnEnterKey
+} from "./composerTextarea";
 import { useUploadCompanyFileMutation } from "./companyFilesApi";
 import { useListCompanyGroupsQuery, useListCompanyGroupMembersQuery } from "./companyGroupsApi";
 import { useListCompanyMembersQuery } from "./companyMembersApi";
@@ -41,7 +45,8 @@ import {
   classifyCompanyGroup,
   findLinkedProject,
   groupKindLabel,
-  resolveGroupDisplayName
+  resolveGroupDisplayName,
+  sortConversations
 } from "./groupKinds";
 import { MessageAttachmentCard } from "./MessageAttachmentCard";
 import {
@@ -137,6 +142,7 @@ export function MessagesSection({
   const listRef = useRef<HTMLDivElement | null>(null);
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
 
   const {
@@ -144,14 +150,19 @@ export function MessagesSection({
     error: groupsError,
     isLoading: isLoadingGroups,
     refetch: refetchGroups
-  } = useListCompanyGroupsQuery(companyId);
+  } = useListCompanyGroupsQuery(companyId, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true
+  });
   const { data: membersData } = useListCompanyMembersQuery(companyId);
   const { data: projects = [] } = useListCompanyProjectsQuery(companyId);
   const members = getListResults(membersData);
   const myMembership = findCurrentMembership(members, authUser?.id);
   const myMemberId = myMembership?.is_active ? myMembership.id : null;
 
-  const groups = getListResults(groupsData).filter((group) => group.is_active);
+  const groups = sortConversations(
+    getListResults(groupsData).filter((group) => group.is_active)
+  );
   const [internalGroupId, setInternalGroupId] = useState<number | null>(null);
   const selectedGroupId = controlledGroupId !== undefined ? controlledGroupId : internalGroupId;
   const setSelectedGroupId = (groupId: number) => {
@@ -222,6 +233,10 @@ export function MessagesSection({
     !isSending &&
     !isUploading &&
     (Boolean(messageText.trim()) || pendingAttachments.length > 0);
+
+  useLayoutEffect(() => {
+    applyComposerTextareaAutoResize(textareaRef.current);
+  }, [messageText, pendingAttachments.length, effectiveGroupId, canCompose]);
 
   useEffect(() => {
     if (!quotaBlockedHint || !messageQuota) {
@@ -518,6 +533,7 @@ export function MessagesSection({
     try {
       const created = await createMessage({
         groupId: effectiveGroupId,
+        companyId,
         body
       }).unwrap();
       setMessageText("");
@@ -548,8 +564,8 @@ export function MessagesSection({
   if (isLoadingGroups) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-        <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
-          <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
+        <div className="flex items-center gap-3 text-sm font-bold text-ui-text-secondary">
+          <Loader2 className="h-5 w-5 animate-spin text-ui-primary" />
           در حال دریافت گروه‌ها برای پیام‌رسانی
         </div>
       </div>
@@ -587,8 +603,8 @@ export function MessagesSection({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-transparent">
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-white/8 px-3 light:border-slate-200">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/8 text-slate-300 light:bg-slate-100 light:text-slate-600">
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-ui-border-subtle px-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ui-surface-subtle text-ui-text-secondary">
           <Network className="h-4 w-4" />
         </span>
         <button
@@ -596,13 +612,13 @@ export function MessagesSection({
           onClick={onOpenDetails}
           type="button"
         >
-          <p className="truncate text-sm font-black text-white light:text-slate-950">
+          <p className="truncate text-sm font-black text-ui-text-primary">
             {activeGroup
               ? resolveGroupDisplayName(activeGroup, projects)
               : "گروهی انتخاب نشده"}
           </p>
           {activeGroup ? (
-            <p className="truncate text-[11px] text-slate-400 light:text-slate-500">
+            <p className="truncate text-[11px] text-ui-text-muted">
               {groupKindLabel(classifyCompanyGroup(activeGroup, projects))}
             </p>
           ) : null}
@@ -610,7 +626,7 @@ export function MessagesSection({
         {!hideGroupPicker ? (
           <select
             aria-label="گروه فعال"
-            className="h-9 max-w-[11rem] rounded-lg border border-white/10 bg-slate-950/45 px-2 text-xs font-bold text-slate-100 outline-none sm:max-w-xs light:border-slate-200 light:bg-white light:text-slate-900"
+            className="h-9 max-w-[11rem] rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-2 text-xs font-bold text-ui-text-primary outline-none sm:max-w-xs"
             onChange={(event) => setSelectedGroupId(Number(event.target.value))}
             value={effectiveGroupId ?? ""}
           >
@@ -624,7 +640,7 @@ export function MessagesSection({
         {onOpenDetails ? (
           <button
             aria-label="جزئیات گروه"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
             onClick={onOpenDetails}
             type="button"
           >
@@ -644,8 +660,8 @@ export function MessagesSection({
               <Link
                 className={classNames(
                   "inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold transition",
-                  "border border-white/10 bg-white/8 text-slate-100 hover:border-white/20 hover:bg-white/12",
-                  "light:border-slate-200 light:bg-white light:text-slate-800 light:hover:bg-slate-50"
+                  "border border-ui-border-subtle bg-ui-surface-subtle text-ui-text-primary hover:border-ui-border-default hover:bg-ui-surface-hover",
+                  "   "
                 )}
                 state={{ focusInvitations: true }}
                 to="/companies"
@@ -663,8 +679,8 @@ export function MessagesSection({
             title="عضویت فعال گروه لازم است"
           />
         ) : isBootstrapping ? (
-          <div className="flex flex-1 items-center justify-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
-            <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
+          <div className="flex flex-1 items-center justify-center gap-3 text-sm font-bold text-ui-text-secondary">
+            <Loader2 className="h-5 w-5 animate-spin text-ui-primary" />
             در حال دریافت پیام‌ها
           </div>
         ) : loadError ? (
@@ -706,9 +722,9 @@ export function MessagesSection({
                 data-tour="empty-chat-state"
               >
                 <div className="mx-auto max-w-[16rem] space-y-3 text-center">
-                  <MessageCircle className="mx-auto h-6 w-6 text-slate-500" />
-                  <p className="text-sm font-black text-white light:text-slate-950">هنوز پیامی نیست</p>
-                  <p className="text-xs leading-5 text-slate-400 light:text-slate-500">
+                  <MessageCircle className="mx-auto h-6 w-6 text-ui-text-muted" />
+                  <p className="text-sm font-black text-ui-text-primary">هنوز پیامی نیست</p>
+                  <p className="text-xs leading-5 text-ui-text-muted">
                     اولین پیام را بفرستید یا یک صورت‌بها اضافه کنید.
                   </p>
                   <Button
@@ -743,12 +759,12 @@ export function MessagesSection({
                       className={classNames(
                         "max-w-[72%] rounded-2xl px-3 py-2 text-sm leading-6",
                         isMine
-                          ? "rounded-br-md bg-emerald-500/20 text-slate-50 light:bg-emerald-100 light:text-slate-900"
-                          : "rounded-bl-md bg-white/10 text-slate-100 light:bg-slate-100 light:text-slate-900"
+                          ? "rounded-br-md bg-ui-primary text-slate-50"
+                          : "rounded-bl-md bg-white/10 text-ui-text-primary"
                       )}
                     >
                       {!isMine && !sameSender ? (
-                        <p className="mb-0.5 text-[11px] font-bold text-emerald-200/90 light:text-emerald-700">
+                        <p className="mb-0.5 text-[11px] font-bold text-ui-primary/90">
                           {message.sender_display_name || "عضو"}
                         </p>
                       ) : null}
@@ -766,8 +782,8 @@ export function MessagesSection({
                         className={classNames(
                           "mt-1 text-[10px] font-bold",
                           isMine
-                            ? "text-emerald-100/70 light:text-emerald-800/70"
-                            : "text-slate-400 light:text-slate-500"
+                            ? "text-ui-primary/70 /70"
+                            : "text-ui-text-muted"
                         )}
                       >
                         {formatMessageTime(message.created_at)}
@@ -782,18 +798,18 @@ export function MessagesSection({
       </div>
 
       <div
-        className="shrink-0 border-t border-white/8 bg-slate-950/70 px-2 py-2 backdrop-blur-md light:border-slate-200 light:bg-white/95"
+        className="shrink-0 border-t border-ui-border-subtle bg-ui-overlay px-2 py-2 backdrop-blur-md"
         data-tour="message-input-area"
       >
         {quotaBlockedHint ? (
-          <p className="mb-1.5 rounded-lg border border-amber-300/25 bg-amber-400/10 px-2.5 py-1.5 text-[11px] font-bold text-amber-100 light:border-amber-200 light:bg-amber-50 light:text-amber-800">
+          <p className="mb-1.5 rounded-lg border border-amber-300/25 bg-amber-400/10 px-2.5 py-1.5 text-[11px] font-bold text-amber-100">
             {quotaBlockedHint}
           </p>
         ) : messageQuota &&
           messageQuota.daily_limit != null &&
           messageQuota.remaining != null &&
           messageQuota.remaining <= 3 ? (
-          <p className="mb-1.5 text-[11px] font-bold text-slate-400 light:text-slate-500">
+          <p className="mb-1.5 text-[11px] font-bold text-ui-text-muted">
             {formatQuotaUsageLabel(messageQuota)}
             {messageQuota.remaining <= 0 ? " — سقف امروز پر است." : ""}
           </p>
@@ -803,7 +819,7 @@ export function MessagesSection({
           <ul className="mb-1.5 space-y-1">
             {pendingAttachments.map((attachment) => (
               <li
-                className="flex items-center justify-between gap-2 rounded-lg bg-emerald-400/10 px-2 py-1.5 text-xs text-emerald-100 light:text-emerald-800"
+                className="flex items-center justify-between gap-2 rounded-lg bg-ui-primary-soft px-2 py-1.5 text-xs text-ui-primary"
                 key={attachment.key}
               >
                 <div className="flex min-w-0 items-center gap-2">
@@ -816,7 +832,7 @@ export function MessagesSection({
                 </div>
                 <button
                   aria-label="حذف پیوست"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/8 light:text-slate-600"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ui-text-secondary transition hover:bg-ui-surface-subtle"
                   onClick={() =>
                     setPendingAttachments((current) =>
                       current.filter((item) => item.key !== attachment.key)
@@ -847,9 +863,9 @@ export function MessagesSection({
                 aria-haspopup="menu"
                 aria-label="افزودن"
                 className={classNames(
-                  "flex h-11 items-center gap-1.5 rounded-xl px-2.5 text-xs font-black text-emerald-200 transition hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-45 light:text-emerald-700",
+                  "mb-0 flex h-11 shrink-0 items-center gap-1.5 self-end rounded-xl px-2.5 text-xs font-black text-ui-primary transition hover:bg-ui-primary-soft disabled:cursor-not-allowed disabled:opacity-45 ",
                   highlightAddAction && "ring-2 ring-emerald-200/40",
-                  isAddMenuOpen && "bg-emerald-400/15"
+                  isAddMenuOpen && "bg-ui-primary-soft"
                 )}
                 data-tour="composer-add-action"
                 disabled={!canCompose || isUploading}
@@ -866,12 +882,12 @@ export function MessagesSection({
 
               {isAddMenuOpen ? (
                 <div
-                  className="absolute bottom-[calc(100%+0.4rem)] right-0 z-20 min-w-[11rem] overflow-hidden rounded-xl border border-white/10 bg-slate-950/95 py-1 shadow-xl backdrop-blur-md light:border-slate-200 light:bg-white"
+                  className="absolute bottom-[calc(100%+0.4rem)] right-0 z-20 min-w-[11rem] overflow-hidden rounded-xl border border-ui-border-subtle bg-ui-surface py-1 shadow-xl backdrop-blur-md"
                   data-tour="composer-add-menu"
                   role="menu"
                 >
                   <button
-                    className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-slate-100 transition hover:bg-white/8 light:text-slate-900 light:hover:bg-slate-100"
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-ui-text-primary transition hover:bg-ui-surface-subtle"
                     data-tour="composer-add-file"
                     disabled={isUploading}
                     onClick={() => {
@@ -881,18 +897,18 @@ export function MessagesSection({
                     role="menuitem"
                     type="button"
                   >
-                    <Paperclip className="h-4 w-4 text-emerald-200 light:text-emerald-700" />
+                    <Paperclip className="h-4 w-4 text-ui-primary" />
                     فایل
                   </button>
                   <button
-                    className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-slate-100 transition hover:bg-white/8 light:text-slate-900 light:hover:bg-slate-100"
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-right text-sm font-bold text-ui-text-primary transition hover:bg-ui-surface-subtle"
                     data-tour="composer-add-financial-document"
                     disabled={effectiveGroupId == null}
                     onClick={openFinancialDocumentFlow}
                     role="menuitem"
                     type="button"
                   >
-                    <FileText className="h-4 w-4 text-violet-200 light:text-violet-700" />
+                    <FileText className="h-4 w-4 text-ui-text-secondary" />
                     صورت‌بها
                   </button>
                 </div>
@@ -900,25 +916,31 @@ export function MessagesSection({
             </div>
 
             <textarea
-              className="max-h-28 min-h-11 flex-1 resize-none overflow-y-auto rounded-xl border-0 bg-white/8 px-3 py-2.5 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-500 focus:bg-white/10 light:bg-slate-100 light:text-slate-950 light:focus:bg-slate-50"
+              aria-label="متن پیام"
+              className="min-h-11 w-full min-w-0 flex-1 resize-none rounded-xl border-0 bg-ui-surface-subtle px-3 py-2.5 text-sm leading-6 text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:bg-ui-surface-hover focus-visible:ring-2 focus-visible:ring-ui-focus"
               disabled={!canCompose}
-              onChange={(event) => setMessageText(event.target.value)}
+              onChange={(event) => {
+                setMessageText(event.target.value);
+                applyComposerTextareaAutoResize(event.currentTarget);
+              }}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  const form = event.currentTarget.form;
-                  if (form && canSend) {
-                    form.requestSubmit();
-                  }
+                if (!shouldSendOnEnterKey(event)) {
+                  return;
+                }
+                event.preventDefault();
+                const form = event.currentTarget.form;
+                if (form && canSend) {
+                  form.requestSubmit();
                 }
               }}
               placeholder={activeGroup ? "پیام…" : "ابتدا یک گروه انتخاب کنید"}
+              ref={textareaRef}
               rows={1}
               value={messageText}
             />
             <button
               aria-label="ارسال"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/90 text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45"
+              className="mb-0 flex h-11 w-11 shrink-0 items-center justify-center self-end rounded-xl bg-ui-primary text-ui-primary-foreground transition hover:bg-ui-primary-hover disabled:cursor-not-allowed disabled:opacity-45"
               disabled={!canSend}
               type="submit"
             >
@@ -928,10 +950,10 @@ export function MessagesSection({
         </form>
 
         {loadError && !membershipDenied ? (
-          <p className="mt-1.5 text-[11px] text-slate-400 light:text-slate-500">
+          <p className="mt-1.5 text-[11px] text-ui-text-muted">
             ارسال تا رفع خطای بارگذاری غیرفعال است.{" "}
             <button
-              className="font-bold text-emerald-200 underline light:text-emerald-700"
+              className="font-bold text-ui-primary underline"
               onClick={() => setReloadToken((token) => token + 1)}
               type="button"
             >

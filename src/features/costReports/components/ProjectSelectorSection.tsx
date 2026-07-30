@@ -38,10 +38,10 @@ export function ProjectSelectorSection({
     <GlassCard className="p-3 sm:p-6" data-tour="wizard-project-selector">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-black text-white light:text-slate-950 sm:text-base">
+          <h2 className="text-sm font-black text-ui-text-primary sm:text-base">
             انتخاب پروژه
           </h2>
-          <p className="mt-0.5 text-[11px] text-slate-400 light:text-slate-500 sm:text-xs">
+          <p className="mt-0.5 text-[11px] text-ui-text-muted sm:text-xs">
             {isLocked
               ? "پروژه از گفتگوی مرتبط قفل شده است."
               : "یک پروژه موجود را انتخاب کنید یا پروژه جدید بسازید."}
@@ -49,7 +49,7 @@ export function ProjectSelectorSection({
         </div>
         {!isLocked ? (
           <button
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-2.5 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-400/20 sm:h-8 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-ui-primary/25 bg-ui-primary-soft px-2.5 text-[11px] font-bold text-ui-primary transition hover:bg-ui-surface-selected"
             data-tour="wizard-add-project-action"
             onClick={() => setIsCreateOpen(true)}
             type="button"
@@ -61,12 +61,12 @@ export function ProjectSelectorSection({
       </div>
 
       {isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-slate-400 light:text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-ui-text-muted">
           <Loader2 className="h-4 w-4 animate-spin" />
           در حال دریافت پروژه‌ها
         </div>
       ) : error ? (
-        <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+        <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
           دریافت پروژه‌ها ناموفق بود. دوباره تلاش کنید.
         </p>
       ) : projects.length === 0 ? (
@@ -74,7 +74,7 @@ export function ProjectSelectorSection({
           className="space-y-3 rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 sm:p-4"
           data-tour="wizard-project-empty"
         >
-          <p className="text-sm leading-7 text-amber-100 light:text-amber-800">
+          <p className="text-sm leading-7 text-amber-100">
             هنوز پروژه‌ای برای این شرکت ثبت نشده است. یک پروژه جدید بسازید تا ادامه دهید.
           </p>
           {!isLocked ? (
@@ -109,18 +109,18 @@ export function ProjectSelectorSection({
               ))}
             </select>
             {isLocked ? (
-              <p className="mt-2 text-xs text-slate-400 light:text-slate-500">
+              <p className="mt-2 text-xs text-ui-text-muted">
                 این صورت‌بها به پروژه انتخاب‌شده متصل است و قابل تغییر نیست.
               </p>
             ) : null}
           </div>
 
           {selectedProject ? (
-            <div className="rounded-lg border border-violet-300/20 bg-violet-400/10 p-3 sm:p-4">
-              <p className="hidden text-sm font-bold text-violet-100 light:text-violet-800 sm:block">
+            <div className="rounded-lg border border-ui-primary/30 bg-ui-primary-soft p-3 sm:p-4">
+              <p className="hidden text-sm font-bold text-ui-primary sm:block">
                 {cleanDisplayText(selectedProject.name, "پروژه بدون نام")}
               </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 light:text-slate-500 sm:mt-1 sm:block">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ui-text-muted sm:mt-1 sm:block">
                 {selectedProject.contract_number ? (
                   <p>شماره قرارداد: {selectedProject.contract_number}</p>
                 ) : null}

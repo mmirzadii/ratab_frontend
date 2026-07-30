@@ -41,36 +41,36 @@ export function ReviewStep({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-black text-white light:text-slate-950">
+        <h3 className="text-lg font-black text-ui-text-primary">
           بررسی ردیف‌ها ({lines.length} ردیف)
         </h3>
-        <p className="mt-1 text-sm leading-7 text-slate-300 light:text-slate-600">
+        <p className="mt-1 text-sm leading-7 text-ui-text-secondary">
           مقادیر را بررسی کنید و سپس به صورت‌بها اضافه کنید.
         </p>
       </div>
 
-      <div className="max-h-[50vh] space-y-2 overflow-y-auto [scrollbar-color:rgba(16,185,129,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]">
+      <div className="max-h-[50vh] space-y-2 overflow-y-auto [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.25)] [scrollbar-width:thin]">
         {lines.map((line, index) => (
           <GlassCard className="p-3" key={index}>
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-slate-100 light:text-slate-900">
+                <p className="truncate text-sm font-bold text-ui-text-primary">
                   {line.planItem.description_fa || "آیتم"}
                 </p>
-                <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-400 light:text-slate-500">
+                <div className="mt-1 flex flex-wrap gap-2 text-xs text-ui-text-muted">
                   {line.planItem.row_codes.map((code) => (
-                    <span className="font-mono text-emerald-200 light:text-emerald-700" key={code}>
+                    <span className="font-mono text-ui-primary" key={code}>
                       {code}
                     </span>
                   ))}
                   <span>{line.planItem.unit_fa}</span>
                 </div>
                 {line.error ? (
-                  <p className="mt-1 text-xs text-rose-300 light:text-rose-700">{line.error}</p>
+                  <p className="mt-1 text-xs text-rose-300">{line.error}</p>
                 ) : null}
               </div>
               <label className="flex shrink-0 items-center gap-1.5 text-xs">
-                <span className="text-slate-400">مقدار</span>
+                <span className="text-ui-text-muted">مقدار</span>
                 <input
                   className={classNames(inputClasses, "w-20 text-left text-sm")}
                   dir="ltr"
@@ -85,20 +85,20 @@ export function ReviewStep({
       </div>
 
       {hasAnyError ? (
-        <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+        <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
           برخی ردیف‌ها خطا دارند. مقادیر را اصلاح کنید و دوباره ارسال کنید.
         </p>
       ) : null}
 
       {submitError ? (
-        <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+        <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
           {submitError}
         </p>
       ) : null}
 
       <button
         className={classNames(
-          "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 py-3 text-base font-bold text-white transition hover:bg-emerald-400 disabled:opacity-50 light:bg-emerald-600",
+          "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-ui-primary py-3 text-base font-bold text-ui-primary-foreground transition hover:bg-ui-primary-hover disabled:opacity-50",
           submitClassName
         )}
         disabled={isSubmitting || lines.length === 0}

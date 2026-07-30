@@ -72,12 +72,23 @@ export type PricebookItemDetail = Omit<GeneratedPricebookItemDetail, "footnotes"
 export type PricebookItemInputSpec = components["schemas"]["PricebookItemInputSpec"];
 export type PricebookItemRowDetail = components["schemas"]["PricebookItemRowDetail"];
 export type PricebookCalculateInputRequest =
-  components["schemas"]["PricebookCalculateInputRequest"];
-export type PricebookCalculateInputPayload = PricebookCalculateInputRequest & {
+  components["schemas"]["OfficialCalculationRequestRequest"];
+/** Local calculation input used to build official billed calculation requests. */
+export type PricebookCalculateInputPayload = {
+  coefficient_set_id?: number | null;
   custom_prices?: Record<string, string>;
+  footnotes?: Record<string, unknown> | null;
+  manual_unit_price?: string | null;
+  pricebook_row_id?: number | null;
+  quantity?: string;
+  selected_row_id?: number | null;
+  values?: string[];
 };
-export type PricebookCalculateResponse = components["schemas"]["PricebookCalculateResponse"];
-export type PricebookRowBreakdown = components["schemas"]["PricebookRowBreakdown"];
+export type {
+  AppliedCoefficient,
+  PricebookCalculateResponse,
+  PricebookRowBreakdown
+} from "../costReports/calculationTypes";
 export type ManualPriceValidationError = components["schemas"]["ManualPriceValidationError"];
 export type PaginatedPricebookList = components["schemas"]["PaginatedPricebookList"];
 export type PaginatedPricebookEditionList =
@@ -93,11 +104,6 @@ export type ListPricebookItemsArgs = {
   chapterId?: number;
   groupId?: number;
   q?: string;
-};
-
-export type CalculatePricebookItemArgs = {
-  itemId: number;
-  body: PricebookCalculateInputPayload;
 };
 
 type ListResponse<T> = { results?: readonly T[] } | readonly T[] | T;
@@ -185,22 +191,11 @@ export const pricebookApi = baseApi.injectEndpoints({
     retrievePricebookItem: builder.query<PricebookItemDetail, number>({
       query: (itemId) => `/api/pricebook-items/${itemId}/`,
       providesTags: (_result, _error, itemId) => [{ type: "Pricebook", id: `item-${itemId}` }]
-    }),
-    calculatePricebookItem: builder.mutation<
-      PricebookCalculateResponse,
-      CalculatePricebookItemArgs
-    >({
-      query: ({ body, itemId }) => ({
-        url: `/api/pricebook-items/${itemId}/calculate/`,
-        method: "POST",
-        body
-      })
     })
   })
 });
 
 export const {
-  useCalculatePricebookItemMutation,
   useListPricebookChaptersQuery,
   useListPricebookEditionsQuery,
   useListPricebookEditionsForFamiliesQuery,

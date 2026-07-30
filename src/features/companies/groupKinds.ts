@@ -40,22 +40,25 @@ export function findLinkedProject<T extends Pick<Project, "group_id">>(
   return projects.find((project) => project.group_id === group.id) ?? null;
 }
 
-/** Conversation list order: public pinned, then project-linked, then custom. */
-export function sortConversations<T extends Pick<CompanyGroup, "id" | "is_default" | "name">>(
-  groups: readonly T[],
-  projects: readonly Pick<Project, "group_id" | "name">[] = []
-): T[] {
-  const buckets: Record<GroupKind, T[]> = { public: [], project: [], custom: [] };
-  for (const group of groups) {
-    buckets[classifyCompanyGroup(group, projects)].push(group);
+/** Preserve backend conversation-list order (activity-based).
+ * Public group stays first via is_default / group_type / pin_priority.
+ * Do not sort alphabetically, by project name, or by group kind. */
+export function sortConversations<
+  T extends Pick<CompanyGroup, "id" | "is_default" | "group_type" | "pin_priority">
+>(groups: readonly T[]): T[] {
+  if (groups.length <= 1) {
+    return [...groups];
   }
-  const byName = (a: T, b: T) =>
-    resolveGroupDisplayName(a, projects).localeCompare(resolveGroupDisplayName(b, projects), "fa");
-  return [
-    ...buckets.public.sort(byName),
-    ...buckets.project.sort(byName),
-    ...buckets.custom.sort(byName)
-  ];
+
+  const list = [...groups];
+  const publicIndex = list.findIndex(
+    (group) => group.is_default || group.group_type === "public" || group.pin_priority === 0
+  );
+  if (publicIndex > 0) {
+    const [publicGroup] = list.splice(publicIndex, 1);
+    list.unshift(publicGroup);
+  }
+  return list;
 }
 
 export function extractHttpLinksFromText(text: string): string[] {

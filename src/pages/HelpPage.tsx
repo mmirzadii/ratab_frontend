@@ -106,10 +106,10 @@ export function HelpPage() {
               </StatusBadge>
             </div>
             <div>
-              <h1 className="text-xl font-black leading-tight text-white light:text-slate-950 sm:text-3xl">
+              <h1 className="text-xl font-black leading-tight text-ui-text-primary sm:text-3xl">
                 راهنمای سریع فضای کار
               </h1>
-              <p className="mt-2 hidden max-w-2xl text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
+              <p className="mt-2 hidden max-w-2xl text-sm leading-7 text-ui-text-secondary sm:block">
                 نکات کلیدی برای کار با متریل.
               </p>
             </div>
@@ -125,7 +125,7 @@ export function HelpPage() {
               <span className="hidden sm:inline">شروع دوباره راهنما</span>
             </Button>
             <Link
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-2 text-xs font-bold text-slate-100 transition hover:border-emerald-300/35 hover:bg-emerald-400/15 light:border-slate-200 light:bg-[#f5fbf8] light:text-slate-800 sm:w-auto sm:px-4 sm:text-sm"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-2 text-xs font-bold text-ui-text-primary transition hover:border-ui-primary/35 hover:bg-ui-primary-soft sm:w-auto sm:px-4 sm:text-sm"
               to="/companies"
             >
               <span className="sm:hidden">شرکت‌ها</span>
@@ -148,21 +148,21 @@ export function HelpPage() {
                 onClick={() => setExpandedSection(isExpanded ? null : index)}
                 type="button"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 light:text-emerald-700">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-ui-primary/30 bg-ui-primary-soft text-ui-primary">
                   <Icon className="h-4 w-4" />
                 </span>
-                <span className="min-w-0 flex-1 text-sm font-black text-white light:text-slate-950">
+                <span className="min-w-0 flex-1 text-sm font-black text-ui-text-primary">
                   {section.title}
                 </span>
                 <ChevronDown
                   className={classNames(
-                    "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+                    "h-4 w-4 shrink-0 text-ui-text-muted transition-transform",
                     isExpanded && "rotate-180"
                   )}
                 />
               </button>
               {isExpanded ? (
-                <p className="border-t border-white/10 px-4 py-3 text-sm leading-7 text-slate-300 light:border-slate-200 light:text-slate-600">
+                <p className="border-t border-ui-border-subtle px-4 py-3 text-sm leading-7 text-ui-text-secondary">
                   {section.body}
                 </p>
               ) : null}
@@ -177,14 +177,14 @@ export function HelpPage() {
           return (
             <GlassCard className="p-5" interactive key={section.title}>
               <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-200 light:text-emerald-700">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-ui-primary/30 bg-ui-primary-soft text-ui-primary">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-white light:text-slate-950">
+                  <h2 className="text-lg font-black text-ui-text-primary">
                     {section.title}
                   </h2>
-                  <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
+                  <p className="mt-2 text-sm leading-7 text-ui-text-secondary">
                     {section.body}
                   </p>
                 </div>

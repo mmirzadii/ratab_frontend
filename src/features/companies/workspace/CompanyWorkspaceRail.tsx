@@ -53,14 +53,14 @@ export function CompanyWorkspaceRail({
     <aside
       aria-label="ناوبری فضای کار شرکت"
       className={classNames(
-        "flex w-[4.25rem] shrink-0 flex-col items-center border-l border-white/10 bg-slate-950/70 py-3 backdrop-blur-xl light:border-slate-200 light:bg-white/90",
+        "flex w-[4.25rem] shrink-0 flex-col items-center border-l border-ui-border-subtle bg-ui-overlay py-3 backdrop-blur-xl",
         className
       )}
     >
       <Tooltip label={`${companyName} — بازگشت به شرکت‌ها`}>
         <Link
           aria-label="بازگشت به فهرست شرکت‌ها"
-          className="mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-400/15 text-sm font-black text-emerald-100 transition hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
+          className="mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-ui-primary/30 bg-ui-primary-soft text-sm font-black text-ui-primary transition hover:bg-ui-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
           to="/companies"
         >
           {initial}
@@ -77,10 +77,10 @@ export function CompanyWorkspaceRail({
                 aria-current={selected ? "page" : undefined}
                 aria-label={item.label}
                 className={classNames(
-                  "flex h-11 w-11 items-center justify-center rounded-xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50",
+                  "flex h-11 w-11 items-center justify-center rounded-xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus",
                   selected
-                    ? "border-emerald-300/35 bg-emerald-400/15 text-emerald-100 light:border-emerald-200 light:bg-emerald-50 light:text-emerald-800"
-                    : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500 light:hover:bg-slate-100 light:hover:text-slate-900"
+                    ? "border-ui-primary/35 bg-ui-primary-soft text-ui-primary"
+                    : "border-transparent text-ui-text-muted hover:border-ui-border-subtle hover:bg-ui-surface-subtle hover:text-ui-text-primary"
                 )}
                 onClick={() => onSectionChange(item.id)}
                 type="button"
@@ -92,12 +92,12 @@ export function CompanyWorkspaceRail({
         })}
       </nav>
 
-      <div className="mt-2 flex flex-col items-center gap-2 border-t border-white/8 pt-3 light:border-slate-200">
+      <div className="mt-2 flex flex-col items-center gap-2 border-t border-ui-border-subtle pt-3">
         <Tooltip label="تنظیمات حساب">
           <Link
             aria-label="تنظیمات حساب"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 light:text-slate-500 light:hover:text-slate-900"
-            to="/settings"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-ui-text-muted transition hover:border-ui-border-subtle hover:bg-ui-surface-subtle hover:text-ui-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
+            to="/settings?tab=account"
           >
             <Settings className="h-4 w-4" />
           </Link>
@@ -105,7 +105,7 @@ export function CompanyWorkspaceRail({
         <Tooltip label="خروج از حساب">
           <button
             aria-label="خروج از حساب"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 light:text-slate-500 light:hover:text-slate-900"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-ui-text-muted transition hover:border-ui-border-subtle hover:bg-ui-surface-subtle hover:text-ui-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
             onClick={() => void handleLogout()}
             type="button"
           >
@@ -116,7 +116,7 @@ export function CompanyWorkspaceRail({
         <Tooltip label="بازگشت به شرکت‌ها">
           <Link
             aria-label="بازگشت به شرکت‌ها"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 light:text-slate-500"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-ui-text-muted transition hover:border-ui-border-subtle hover:bg-ui-surface-subtle hover:text-ui-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
             to="/companies"
           >
             <ArrowRight className="h-4 w-4" />
@@ -137,7 +137,7 @@ export function CompanyMobileSectionNav({
   return (
     <nav
       aria-label="بخش‌های شرکت"
-      className="flex shrink-0 gap-0.5 border-t border-white/10 bg-slate-950/80 px-1 py-1 backdrop-blur-md light:border-slate-200 light:bg-white/95 lg:hidden"
+      className="flex shrink-0 gap-0.5 border-t border-ui-border-subtle bg-ui-surface/80 px-1 py-1 backdrop-blur-md lg:hidden"
     >
       {sectionItems.map((item) => {
         const Icon = item.icon;
@@ -148,8 +148,8 @@ export function CompanyMobileSectionNav({
             className={classNames(
               "flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[10px] font-bold transition",
               selected
-                ? "bg-emerald-400/15 text-emerald-100 light:bg-emerald-50 light:text-emerald-800"
-                : "text-slate-400 hover:bg-white/5 light:text-slate-500"
+                ? "bg-ui-primary-soft text-ui-primary"
+                : "text-ui-text-muted hover:bg-ui-surface-subtle "
             )}
             key={item.id}
             onClick={() => onSectionChange(item.id)}

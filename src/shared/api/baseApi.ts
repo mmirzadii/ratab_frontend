@@ -143,6 +143,7 @@ export const baseApi = createApi({
     "CompanyGroup",
     "CompanyInvitation",
     "CompanyMember",
+    "CompanyWallet",
     "FinancialDocument",
     "GroupMessage",
     "Health",

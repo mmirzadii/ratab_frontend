@@ -24,7 +24,7 @@ export function BuilderSectionNav({
   return (
     <GlassCard className="p-2 lg:p-3" dir="rtl">
       <div className="mb-3 hidden px-2 lg:block">
-        <p className="text-xs font-bold text-slate-400 light:text-slate-500">مراحل ساخت صورت‌بها</p>
+        <p className="text-xs font-bold text-ui-text-muted">مراحل ساخت صورت‌بها</p>
       </div>
       <nav className="grid grid-cols-5 gap-1 lg:flex lg:flex-col lg:gap-2">
         {builderSections.map((section) => {
@@ -37,13 +37,13 @@ export function BuilderSectionNav({
           return (
             <button
               className={classNames(
-                "group flex min-w-0 flex-col items-center gap-1 rounded-lg border px-1 py-1.5 text-center transition motion-safe:duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 lg:flex-row lg:gap-2 lg:p-2 lg:text-right",
+                "group flex min-w-0 flex-col items-center gap-1 rounded-lg border px-1 py-1.5 text-center transition motion-safe:duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus lg:flex-row lg:gap-2 lg:p-2 lg:text-right",
                 isActive
-                  ? "border-success-300/55 bg-success-400/12 text-white shadow-md shadow-success-950/20 light:border-success-400/60 light:bg-success-50 light:text-slate-950"
+                  ? "border-ui-primary/55 bg-ui-primary-soft text-ui-primary shadow-md shadow-brand-soft/20"
                   : isDone
-                    ? "border-white/10 bg-white/5 text-slate-400 hover:border-white/18 hover:bg-white/8 light:border-slate-200 light:bg-white light:text-slate-500"
-                    : "border-white/10 bg-white/6 text-slate-300 hover:border-white/20 hover:bg-white/10 light:border-slate-200 light:bg-white light:text-slate-700",
-                !enabled && "cursor-not-allowed opacity-40 hover:border-white/10 hover:bg-white/6"
+                    ? "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-muted hover:border-ui-border-default hover:bg-ui-surface-subtle"
+                    : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary hover:border-ui-border-default hover:bg-ui-surface-hover",
+                !enabled && "cursor-not-allowed opacity-40 hover:border-ui-border-subtle hover:bg-ui-surface-subtle"
               )}
               disabled={!enabled}
               key={section.id}
@@ -55,10 +55,10 @@ export function BuilderSectionNav({
                 className={classNames(
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-black transition motion-safe:duration-150 lg:h-9 lg:w-9",
                   isActive
-                    ? "border-success-400/60 bg-success-500 text-white light:border-success-500 light:bg-success-500 light:text-white"
+                    ? "border-ui-primary/60 bg-ui-primary text-ui-primary-foreground"
                     : isDone
-                      ? "border-success-300/30 bg-success-400/12 text-success-300 light:border-success-300/50 light:bg-success-50 light:text-success-600"
-                      : "border-white/10 bg-slate-950/30 text-slate-400 light:border-slate-200 light:bg-slate-50 light:text-slate-500"
+                      ? "border-ui-success/30 bg-ui-success-soft text-ui-success"
+                      : "border-ui-border-subtle bg-ui-surface/30 text-ui-text-muted"
                 )}
               >
                 {isDone && !isActive ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
@@ -68,7 +68,7 @@ export function BuilderSectionNav({
                   <span className="hidden lg:inline lg:me-1">{section.number}</span>
                   {section.id === "pricebook" ? "فهرست" : section.shortLabel}
                 </span>
-                <span className="hidden text-[11px] leading-5 text-slate-400 light:text-slate-500 sm:block lg:block">
+                <span className="hidden text-[11px] leading-5 text-ui-text-muted sm:block lg:block">
                   {section.description}
                 </span>
               </span>
@@ -77,7 +77,7 @@ export function BuilderSectionNav({
         })}
       </nav>
       {activeSectionConfig ? (
-        <p className="mt-2 truncate px-1 text-center text-[11px] font-bold text-slate-300 light:text-slate-600 lg:hidden">
+        <p className="mt-2 truncate px-1 text-center text-[11px] font-bold text-ui-text-secondary lg:hidden">
           مرحله {activeSectionIndex + 1} از {builderSections.length}: {activeSectionConfig.shortLabel}
         </p>
       ) : null}

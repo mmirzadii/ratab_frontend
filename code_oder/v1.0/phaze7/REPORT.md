@@ -55,4 +55,25 @@ Contract: `backend_docs/current/` (`OPENAPI.yaml`, `FRONTEND_HANDOFF.md`, `ERROR
 
 ## Preserved behavior
 
-- Phase 1–6: session/CSRF, companies, members/groups, messaging + attachments, wallet + 5-token line charge/idempotency, calculation/lock/preview/export unchanged (`tsc`, lint, build pass).
+- Phase 1–6: session/CSRF, companies, members/groups, messaging + attachments, wallet + idempotent charged operations, calculation/lock/preview/export unchanged (`tsc`, lint, build pass).
+
+---
+
+## Correction (2026-07-30) — single current plan in catalog
+
+**Cause of apparent two-active plans:** catalog listed Bronze and Silver equally; FE had no `is_current` usage (stale OpenAPI). Summary used `has_active_subscription`, which is false for Bronze free fallback, so the effective plan was unclear while both catalog rows looked “live.”
+
+**Fix:**
+
+- Synced OpenAPI: `effective_plan_code`, plan `is_current` / `is_available` / `is_free_fallback` / `can_activate`
+- SOT: `GET /api/subscription/` → `effective_plan_code`
+- Exactly one catalog `فعال` badge: `plan.code === effective_plan_code`
+- Never treat `is_available` as current
+- Bronze remains listed when Silver is current, without a second `فعال`
+## Correction (2026-07-30) � account settings subscription UX
+
+`/settings?tab=subscription` uses an effective-plan summary and a responsive plan card grid. Exactly one `????` from `effective_plan_code`. Prices shown as ?????; plan codes hidden from primary UI.
+
+## Correction (2026-07-30) � demo purchase vs disabled online payment
+
+Online `POST /api/payments/orders/` remains `PAYMENTS_DISABLED`. Local/Dev instant Buy is a separate demo endpoint gated by wallet `commerce.demo_purchase_available`. UX shows concise `???? ?????? ????? ???? ????.` when purchasing is unavailable.

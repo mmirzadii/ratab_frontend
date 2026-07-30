@@ -49,7 +49,7 @@ export function CompanyListPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-6 pt-3 sm:gap-5 sm:px-6 sm:pb-10 sm:pt-5 lg:px-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-2.5 px-3 pb-6 pt-2 sm:gap-5 sm:px-6 sm:pb-10 sm:pt-5 lg:px-8">
       <GlassCard className="relative overflow-hidden p-3 sm:p-6">
         <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-l from-transparent via-emerald-300/70 to-transparent" />
         <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -61,10 +61,10 @@ export function CompanyListPage() {
               </StatusBadge>
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <h1 className="text-xl font-black leading-tight text-white sm:text-4xl light:text-slate-950">
+              <h1 className="text-xl font-black leading-tight text-white sm:text-4xl">
                 شرکت‌های شما
               </h1>
-              <p className="hidden text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
+              <p className="hidden text-sm leading-7 text-ui-text-secondary sm:block">
                 شرکت‌های فعال و دعوت‌های در انتظار تأیید به‌صورت جداگانه نمایش داده می‌شوند.
               </p>
             </div>
@@ -100,8 +100,8 @@ export function CompanyListPage() {
 
       {isLoading ? (
         <GlassCard className="flex min-h-32 items-center justify-center p-5 sm:min-h-48 sm:p-8">
-          <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
-            <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
+          <div className="flex items-center gap-3 text-sm font-bold text-ui-text-secondary">
+            <Loader2 className="h-5 w-5 animate-spin text-ui-primary" />
             در حال دریافت شرکت‌ها
           </div>
         </GlassCard>
@@ -144,7 +144,7 @@ export function CompanyListPage() {
       {!isLoading && !error && companies.length > 0 ? (
         <section className="space-y-2.5 sm:space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-black text-white light:text-slate-950 sm:text-lg">
+            <h2 className="text-sm font-black text-ui-text-primary sm:text-lg">
               {companyCount} شرکت فعال قابل دسترس
             </h2>
             {data?.next ? (
@@ -162,19 +162,19 @@ export function CompanyListPage() {
                         {company.is_active ? "فعال" : "غیرفعال"}
                       </StatusBadge>
                       <div>
-                        <h3 className="truncate text-base font-black text-white light:text-slate-950 sm:text-lg">
+                        <h3 className="truncate text-base font-black text-ui-text-primary sm:text-lg">
                           {company.name}
                         </h3>
                         {company.legal_name ? (
-                          <p className="mt-1 truncate text-sm text-slate-300 light:text-slate-600">
+                          <p className="mt-1 truncate text-sm text-ui-text-secondary">
                             {company.legal_name}
                           </p>
                         ) : null}
                       </div>
                     </div>
-                    <ArrowLeft className="mt-2 h-5 w-5 shrink-0 text-emerald-200" />
+                    <ArrowLeft className="mt-2 h-5 w-5 shrink-0 text-ui-primary" />
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 light:text-slate-500 sm:mt-4 sm:grid sm:gap-2">
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ui-text-muted sm:mt-4 sm:grid sm:gap-2">
                     {company.national_id ? <p>شناسه ملی: {company.national_id}</p> : null}
                     {company.registration_number ? <p>شماره ثبت: {company.registration_number}</p> : null}
                   </div>

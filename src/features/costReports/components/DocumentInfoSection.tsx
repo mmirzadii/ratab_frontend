@@ -100,13 +100,13 @@ export function DocumentInfoSection({
         <button
           aria-controls="optional-document-info"
           aria-expanded={isOptionalInfoOpen}
-          className="mt-3 flex min-h-11 w-full items-center justify-between rounded-lg border border-white/10 bg-white/[0.035] px-3 text-sm font-bold text-slate-200 light:border-slate-200 light:bg-slate-50 light:text-slate-700 sm:hidden"
+          className="mt-3 flex min-h-11 w-full items-center justify-between rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-3 text-sm font-bold text-ui-text-secondary sm:hidden"
           onClick={() => setIsOptionalInfoOpen((current) => !current)}
           type="button"
         >
           <span className="flex items-center gap-2">
             اطلاعات تکمیلی
-            <span className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] font-medium text-slate-400 light:bg-slate-200 light:text-slate-500">
+            <span className="rounded-full bg-ui-surface-subtle px-2 py-0.5 text-[11px] font-medium text-ui-text-muted">
               اختیاری
             </span>
           </span>
@@ -165,20 +165,20 @@ export function DocumentInfoSection({
         </div>
 
         {pricebooksError || editionsError ? (
-          <div className="mt-4 rounded-lg border border-rose-300/25 bg-rose-500/10 p-4 text-sm leading-7 text-rose-100 light:text-rose-700">
+          <div className="mt-4 rounded-lg border border-rose-300/25 bg-rose-500/10 p-4 text-sm leading-7 text-rose-100">
             دریافت فهرست‌بهای فعال با خطا روبه‌رو شد. لطفاً اتصال به سرویس را بررسی کنید و
             دوباره تلاش کنید.
           </div>
         ) : null}
 
         {!isLoadingPricebooks && !pricebooksError && families.length === 0 ? (
-          <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100 light:text-amber-800">
+          <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
             هنوز فهرست‌بهایی برای مرور در دسترس نیست.
           </div>
         ) : null}
 
         {selectedEdition && !selectedActivePriceSet ? (
-          <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100 light:text-amber-800">
+          <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
             برای این سال هنوز مجموعه قیمت فعال ثبت نشده است.
           </div>
         ) : null}
@@ -186,7 +186,7 @@ export function DocumentInfoSection({
       </GlassCard>
 
       {formError ? (
-        <div className="flex items-start gap-2 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+        <div className="flex items-start gap-2 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
           <XCircle className="mt-1 h-4 w-4 shrink-0" />
           {formError}
         </div>

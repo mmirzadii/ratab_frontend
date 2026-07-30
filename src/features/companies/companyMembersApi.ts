@@ -20,17 +20,51 @@ const memberCacheTags = (companyId: number, memberId: number) =>
     "Auth" as const
   ];
 
+export type ListCompanyMembersArg =
+  | number
+  | {
+      companyId: number;
+      activeOnly?: boolean;
+      q?: string;
+    };
+
+function resolveListCompanyMembersArg(arg: ListCompanyMembersArg): {
+  companyId: number;
+  activeOnly?: boolean;
+  q?: string;
+} {
+  if (typeof arg === "number") {
+    return { companyId: arg };
+  }
+  return arg;
+}
+
 export const companyMembersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    listCompanyMembers: builder.query<PaginatedCompanyMemberList, number>({
-      query: (companyId) => `/api/companies/${companyId}/members/`,
-      providesTags: (result, _error, companyId) => [
-        { type: "CompanyMember", id: `COMPANY-${companyId}` },
-        ...(result?.results ?? []).map((member) => ({
-          type: "CompanyMember" as const,
-          id: member.id
-        }))
-      ]
+    listCompanyMembers: builder.query<PaginatedCompanyMemberList, ListCompanyMembersArg>({
+      query: (arg) => {
+        const { companyId, activeOnly, q } = resolveListCompanyMembersArg(arg);
+        const params = new URLSearchParams();
+        if (activeOnly) params.set("active_only", "true");
+        const trimmed = q?.trim();
+        if (trimmed) params.set("q", trimmed);
+        const qs = params.toString();
+        return `/api/companies/${companyId}/members/${qs ? `?${qs}` : ""}`;
+      },
+      serializeQueryArgs: ({ queryArgs }) => {
+        const { companyId, activeOnly, q } = resolveListCompanyMembersArg(queryArgs);
+        return `${companyId}|${activeOnly ? 1 : 0}|${(q ?? "").trim()}`;
+      },
+      providesTags: (result, _error, arg) => {
+        const { companyId } = resolveListCompanyMembersArg(arg);
+        return [
+          { type: "CompanyMember", id: `COMPANY-${companyId}` },
+          ...(result?.results ?? []).map((member) => ({
+            type: "CompanyMember" as const,
+            id: member.id
+          }))
+        ];
+      }
     }),
     /** Full member settings detail — prefer settings endpoint over compact list rows. */
     retrieveCompanyMember: builder.query<CompanyMember, { companyId: number; memberId: number }>({

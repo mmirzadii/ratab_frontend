@@ -68,6 +68,23 @@ This is **local-development-only**. Dev and production settings reject that mode
 The frontend must still collect and submit a verification code field; do not
 remove the verification step from UX.
 
+## Password policy (backend)
+
+- Backend mandatory rule: **minimum length 6**.
+- Passwords shorter than 6 characters are rejected on signup complete as a
+  field error on `password` (HTTP 400 JSON).
+- Any password with 6+ characters is accepted by the backend, including
+  numeric-only, letter-only, common, or similar-to-user values.
+- Extra strength guidance (warnings, meters, suggestions) is **frontend UX
+  only** and must not block account creation.
+- A stronger production policy may be approved later by operators; do not invent
+  a stricter backend rule now.
+- Passwords are hashed with Django's password hasher; never stored or returned
+  in plaintext.
+
+Password validation failure does **not** consume a still-valid signup ticket
+and must not be presented as an invalid-ticket error.
+
 ## Explicitly forbidden for the current frontend
 
 Do **not**:
@@ -88,6 +105,7 @@ compatibility, but the **current frontend contract is session cookies + CSRF**.
 | Not logged in | 401 | Redirect to login; clear client auth state |
 | CSRF missing/invalid | 403 | Refresh CSRF (`/api/auth/csrf/`) and retry once |
 | Wrong phone/password | 401 | Show generic invalid-credentials message |
+| Password shorter than 6 characters | 400 | Show field error on `password`; keep signup ticket |
 | Forbidden resource | 403 | Show access denied; do not retry as another user |
 | Signup challenge/ticket invalid/expired | 400 | Restart signup from start |
 

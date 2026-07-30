@@ -13,31 +13,67 @@ export default {
         "30": "7.5rem"
       },
       colors: {
+        // Legacy aliases kept only where still referenced; prefer ui-* tokens.
         ratab: {
-          night: "#05050a",
-          panel: "#0f172a",
+          night: "var(--ui-canvas)",
+          panel: "var(--ui-surface)",
           emerald: "#10b981",
           teal: "#14b8a6",
           violet: "#8b5cf6",
           amber: "#f59e0b"
         },
-        // Brand — deep navy/blue: trust, structure, identity
         brand: {
-          50:  "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
-          800: "#1e40af",
-          900: "#1e3a8a",
-          950: "#172554"
+          50: "var(--brand-50)",
+          100: "var(--brand-100)",
+          200: "var(--brand-200)",
+          300: "var(--brand-300)",
+          400: "var(--brand-400)",
+          500: "var(--brand-500)",
+          600: "var(--brand-600)",
+          700: "var(--brand-700)",
+          800: "var(--brand-800)",
+          900: "var(--brand-900)",
+          950: "var(--brand-950)",
+          navy: "var(--brand-navy)",
+          cyan: "var(--brand-cyan)",
+          "cyan-dark": "var(--brand-cyan-dark)"
         },
-        // Success — emerald: positive, growth, primary CTAs
+        // Semantic UI surface / text / action tokens (theme-aware)
+        ui: {
+          canvas: "var(--ui-canvas)",
+          surface: "var(--ui-surface)",
+          "surface-subtle": "var(--ui-surface-subtle)",
+          "surface-elevated": "var(--ui-surface-elevated)",
+          "surface-hover": "var(--ui-surface-hover)",
+          "surface-selected": "var(--ui-surface-selected)",
+          "border-subtle": "var(--ui-border-subtle)",
+          "border-default": "var(--ui-border-default)",
+          "border-strong": "var(--ui-border-strong)",
+          "text-primary": "var(--ui-text-primary)",
+          "text-secondary": "var(--ui-text-secondary)",
+          "text-muted": "var(--ui-text-muted)",
+          "text-inverse": "var(--ui-text-inverse)",
+          primary: "var(--ui-primary)",
+          "primary-hover": "var(--ui-primary-hover)",
+          "primary-active": "var(--ui-primary-active)",
+          "primary-soft": "var(--ui-primary-soft)",
+          "primary-foreground": "var(--ui-primary-foreground)",
+          focus: "var(--ui-focus-ring)",
+          success: "var(--ui-success)",
+          "success-soft": "var(--ui-success-soft)",
+          warning: "var(--ui-warning)",
+          "warning-soft": "var(--ui-warning-soft)",
+          danger: "var(--ui-danger)",
+          "danger-soft": "var(--ui-danger-soft)",
+          info: "var(--ui-info)",
+          "info-soft": "var(--ui-info-soft)",
+          token: "var(--ui-token-accent)",
+          "token-soft": "var(--ui-token-accent-soft)",
+          overlay: "var(--ui-overlay)"
+        },
+        // Semantic state scales (kept for success/warning/danger soft surfaces)
         success: {
-          50:  "#ecfdf5",
+          50: "#ecfdf5",
           100: "#d1fae5",
           200: "#a7f3d0",
           300: "#6ee7b7",
@@ -49,9 +85,8 @@ export default {
           900: "#064e3b",
           950: "#022c22"
         },
-        // Warning — amber: draft, caution
         warning: {
-          50:  "#fffbeb",
+          50: "#fffbeb",
           100: "#fef3c7",
           200: "#fde68a",
           300: "#fcd34d",
@@ -63,9 +98,8 @@ export default {
           900: "#78350f",
           950: "#451a03"
         },
-        // Danger — red: errors, destructive actions only
         danger: {
-          50:  "#fef2f2",
+          50: "#fef2f2",
           100: "#fee2e2",
           200: "#fecaca",
           300: "#fca5a5",
@@ -79,9 +113,15 @@ export default {
         }
       },
       boxShadow: {
-        "emerald-soft": "0 0 34px rgba(16, 185, 129, 0.18)",
-        "brand-soft":   "0 0 34px rgba(37, 99, 235, 0.22)",
-        "violet-soft":  "0 0 30px rgba(139, 92, 246, 0.16)"
+        ui: "var(--ui-shadow)",
+        "ui-sm": "var(--ui-shadow-sm)",
+        "brand-soft": "0 8px 24px color-mix(in srgb, var(--ui-primary) 22%, transparent)",
+        // Legacy names remapped away from emerald/violet glow
+        "emerald-soft": "var(--ui-shadow-sm)",
+        "violet-soft": "var(--ui-shadow-sm)"
+      },
+      ringColor: {
+        ui: "var(--ui-focus-ring)"
       }
     }
   },

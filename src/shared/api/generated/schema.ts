@@ -247,6 +247,7 @@ export interface paths {
         };
         get: operations["companies_groups_list"];
         put?: never;
+        /** @description Create a custom/normal company group. Accepts name, optional description, and optional member_ids of active company members. The creator becomes an active group member immediately; selected members receive pending group invitations (no message access until accept). Public and project group types cannot be created here. */
         post: operations["companies_groups_create"];
         delete?: never;
         options?: never;
@@ -311,6 +312,41 @@ export interface paths {
             cookie?: never;
         };
         get: operations["companies_slug_history_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companies/{id}/token-donations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List token donations to this company. Owners and admins see all donations; other active members see only their own. */
+        get: operations["companies_token_donations_list"];
+        put?: never;
+        /** @description Donate tokens from the caller's personal wallet into this company's wallet. Returns the donation plus updated personal and company balances. Exact replay returns 200 with Idempotent-Replayed: true. */
+        post: operations["companies_token_donations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companies/{id}/token-wallet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Lightweight company token-wallet summary for Company Settings, the company header badge, and the donation modal. Returns the company balance, whether the caller is an active member who may donate, the caller's personal balance, and current calculation costs. Does not load the full ledger. */
+        get: operations["companies_token_wallet_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -725,6 +761,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Create a document line. Preferred path: pass calculation_receipt_id from a prior paid official/starred calculation (free; no second debit). Add-without-receipt fallback: pass pricebook_item_id plus calculation inputs and idempotency_key — the server runs the same official calculation billing once, then creates the line from that receipt. */
         post: operations["financial_documents_lines_create"];
         delete?: never;
         options?: never;
@@ -742,6 +779,40 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["financial_documents_lock_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/financial-documents/{id}/official-calculation-sessions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Open a free official calculation modal session for one pricebook item on this document. Opening does not calculate, debit tokens, or create a line. Pass the returned calculation_session_id to official-calculations / pricebook calculate. */
+        post: operations["financial_documents_official_calculation_sessions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/financial-documents/{id}/official-calculations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run an official pricebook calculation inside a modal session. The first successful calculation in the session debits the personal wallet then the company wallet; later successful recalculations in the same open session are free. Returns a receipt; pass its id as calculation_receipt_id to POST .../lines/. */
+        post: operations["financial_documents_official_calculations_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -775,6 +846,23 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["financial_documents_recalculate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/financial-documents/{id}/starred-calculations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Price and bill a standalone starred calculation against this document, debiting the personal wallet then the company wallet. Returns a calculation billing receipt; pass its id as calculation_receipt_id to POST .../lines/ to materialize the line. */
+        post: operations["financial_documents_starred_calculations_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -923,10 +1011,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Return the authenticated user's daily message usage, effective limit, and reset time. A null limit means no daily limit is configured for this account. */
+        /** @description Return the authenticated user's daily message usage, effective limit from the single effective plan, and reset time. A null limit means unlimited for that plan. */
         get: operations["message_quota_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/demo-purchase/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Local/Development instant token-package purchase. Requires DEMO_COMMERCE_ENABLED=true. Loads price and token amount from the server-managed TokenPackage, creates an audited PaymentOrder with provider=demo, credits the personal wallet through the immutable ledger, and returns the order plus new balance. Never a bank-verified payment. Frontend must not credit tokens locally. Exact replay returns 200 with Idempotent-Replayed: true. */
+        post: operations["payments_demo_purchase_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1023,6 +1128,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Price an official pricebook calculation inside a modal session. Requires financial_document_id, calculation_session_id, and idempotency_key. The first successful calculation in the session is charged (personal then company wallet); later successful recalculations in the same open session are free. Pass the returned receipt id as calculation_receipt_id to POST /api/financial-documents/{id}/lines/ to materialize the line. */
         post: operations["pricebook_items_calculate_create"];
         delete?: never;
         options?: never;
@@ -1151,7 +1257,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Return the authenticated user's current subscription. Subscriptions are activated by an administrator while online payment is disabled. */
+        /** @description Return the authenticated user's single effective plan. A paid UserSubscription is used when valid; otherwise Bronze is the free fallback without creating a subscription row. */
         get: operations["subscription_retrieve"];
         put?: never;
         post?: never;
@@ -1168,7 +1274,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List active backend-owned subscription plans. Plan limits, durations, and prices are defined by the backend only. */
+        /** @description List subscription plan catalog rows. ``is_available`` is catalog availability; exactly one row has ``is_current=true`` for the authenticated user (paid plan or free Bronze fallback). ``is_free_fallback`` marks Bronze. ``can_activate`` is true only for paid available plans that are not already current. */
         get: operations["subscription_plans_list"];
         put?: never;
         post?: never;
@@ -1185,7 +1291,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Return the authenticated user's token wallet. The API is read-only; clients cannot set balances or create grants. */
+        /** @description Return the authenticated user's token wallet balance, active server-managed token packages (prices and amounts), current admin-managed official/starred calculation costs, and commerce capability flags (demo purchase available vs purchasing disabled). Read-only; clients cannot set balances or invent package prices. Works even when demo purchasing is disabled. */
         get: operations["token_wallet_retrieve"];
         put?: never;
         post?: never;
@@ -1233,30 +1339,86 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
-        AppliedCoefficient: {
-            coefficient_value_id: number;
-            coefficient_key: string;
-            key?: string;
-            label_fa: string;
-            title_fa?: string;
-            scope: string;
-            multiplier: string;
-            value?: string;
-            factor?: string;
-            target_id?: number | null;
-            priority_source?: string;
-            row_id?: number;
-            row_code?: string;
-            amount_before: string;
-            amount_after: string;
-            effect_amount: string;
-        };
         /**
          * @description * `file` - File
          *     * `financial_document` - Financial document
          * @enum {string}
          */
         AttachmentTypeEnum: "file" | "financial_document";
+        CalculationBillingReceipt: {
+            readonly id: number;
+            readonly calculation_type: components["schemas"]["CalculationTypeEnum"];
+            readonly document_id: number;
+            readonly company_id: number;
+            readonly pricebook_item_id: number | null;
+            readonly session_id: number | null;
+            /** Format: decimal */
+            readonly applied_cost: string;
+            /** Format: decimal */
+            readonly personal_debit: string;
+            /** Format: decimal */
+            readonly company_debit: string;
+            readonly line_id: number | null;
+            readonly idempotency_key: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /** @description Response shape for official/starred calculation billing endpoints. */
+        CalculationBillingResult: {
+            result: unknown;
+            receipt: components["schemas"]["CalculationBillingReceipt"];
+            billing: components["schemas"]["CalculationBillingSummary"];
+            /** Format: decimal */
+            personal_balance: string;
+            /** Format: decimal */
+            company_balance: string;
+            /** @default false */
+            replayed: boolean;
+            /** Format: uuid */
+            calculation_session_id?: string | null;
+            session_already_paid?: boolean | null;
+        };
+        CalculationBillingSummary: {
+            /** Format: decimal */
+            applied_cost: string;
+            /** Format: decimal */
+            personal_debit: string;
+            /** Format: decimal */
+            company_debit: string;
+        };
+        /**
+         * @description * `official` - Official pricebook calculation
+         *     * `starred` - Standalone starred calculation
+         * @enum {string}
+         */
+        CalculationTypeEnum: "official" | "starred";
+        /** @description Documents ``InsufficientCombinedTokenBalance`` (personal + company). */
+        CombinedTokenBillingError: {
+            code: string;
+            detail: string;
+            /** Format: decimal */
+            required_tokens: string;
+            /** Format: decimal */
+            personal_balance: string;
+            /** Format: decimal */
+            company_balance: string;
+            /** Format: decimal */
+            total_available: string;
+            calculation_type: string;
+            company_id?: number;
+            /** Format: uuid */
+            calculation_session_id?: string;
+            /** Format: decimal */
+            official_calculation_cost?: string;
+            /** Format: decimal */
+            starred_calculation_cost?: string;
+        };
+        CommerceCapabilities: {
+            demo_purchase_available: boolean;
+            online_payments_enabled: boolean;
+            purchasing_disabled: boolean;
+            mode: string;
+        };
         Company: {
             readonly id: number;
             name: string;
@@ -1280,6 +1442,7 @@ export interface components {
             readonly created_by_member_id: number;
             readonly group_type: string;
             readonly pin_priority: number;
+            readonly last_activity_at: string;
             readonly is_default: boolean;
             readonly project_id: number | null;
             readonly project: {
@@ -1290,6 +1453,21 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        /** @description Safe fields for POST /api/companies/{id}/groups/ (custom groups only). */
+        CompanyGroupCreateRequest: {
+            name: string;
+            /** @default  */
+            description: string;
+            /** @description Active company member IDs to invite into the new custom group. The creator is always an active member and is never invited. */
+            member_ids?: number[];
+        };
+        CompanyGroupCreateResult: {
+            group: components["schemas"]["CompanyGroup"];
+            creator_membership: components["schemas"]["CompanyGroupMembership"];
+            pending_invitation_count: number;
+            invitations: components["schemas"]["CompanyMembershipInvitation"][];
+            skipped_already_member_ids?: number[];
         };
         CompanyGroupMemberAddRequest: {
             member_id: number;
@@ -1310,10 +1488,6 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
-        };
-        CompanyGroupRequest: {
-            name: string;
-            description?: string;
         };
         CompanyInvitationCreateRequest: {
             phone_number: string;
@@ -1336,6 +1510,12 @@ export interface components {
                 [key: string]: unknown;
             };
             readonly permissions: {
+                [key: string]: unknown;
+            };
+            readonly effective_permissions: {
+                [key: string]: unknown;
+            };
+            readonly inherited_permissions: {
                 [key: string]: unknown;
             };
             readonly configurable_permissions: unknown[];
@@ -1405,8 +1585,71 @@ export interface components {
             /** Format: date-time */
             readonly deactivated_at: string | null;
         };
+        CompanyTokenDonation: {
+            readonly id: number;
+            readonly company_id: number;
+            readonly donor_user_id: number;
+            readonly donor_member_id: number;
+            /** Format: decimal */
+            readonly amount: string;
+            readonly idempotency_key: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        CompanyTokenDonationCreateRequest: {
+            /** Format: decimal */
+            amount: string;
+            /** @description Optional retry key for exact-once donation creation. */
+            idempotency_key?: string;
+        };
+        /** @description Donation mutation response with updated personal and company balances. */
+        CompanyTokenDonationResult: {
+            donation: components["schemas"]["CompanyTokenDonation"];
+            /** Format: decimal */
+            personal_balance: string;
+            /** Format: decimal */
+            company_balance: string;
+        };
+        CompanyTokenWallet: {
+            company_id: number;
+            company_name: string;
+            /** Format: decimal */
+            balance: string;
+            is_active_member: boolean;
+            donation_allowed: boolean;
+            /** Format: decimal */
+            personal_balance: string;
+            /** Format: decimal */
+            official_calculation_cost: string;
+            /** Format: decimal */
+            starred_calculation_cost: string;
+            /** @description True when the company wallet balance is greater than zero. */
+            fallback_available: boolean;
+            /** Format: date-time */
+            updated_at: string;
+        };
         CsrfTokenResponse: {
             readonly csrf_token: string;
+        };
+        /**
+         * @description * `IRR` - Iranian rial
+         * @enum {string}
+         */
+        CurrencyEnum: "IRR";
+        DemoCommerceDisabled: {
+            readonly code: string;
+            readonly detail: string;
+        };
+        /** @description Demo purchase accepts only package identity and a retry key. */
+        DemoPurchaseRequest: {
+            package_code: string;
+            /** @description Required retry key for exact-once demo purchase. */
+            idempotency_key: string;
+        };
+        DemoPurchaseResponse: {
+            readonly order: components["schemas"]["PaymentOrder"];
+            /** Format: decimal */
+            readonly wallet_balance: string;
         };
         DevLoginRequest: {
             phone_number: string;
@@ -1578,14 +1821,16 @@ export interface components {
             readonly source_coefficient_value_id: number;
         };
         FinancialDocumentLineCreateRequest: {
-            /** @description Optional retry key for exact-once creation and charging of an official pricebook-backed line. */
+            /** @description Required for official Add-without-receipt (pricebook_item_id without calculation_receipt_id). Also used as the calculation billing retry key. Optional for receipt-backed line creation. */
             idempotency_key?: string;
             pricebook_item_id?: number | null;
+            /** @description Id of a paid calculation billing receipt (from the official/starred calculation endpoints). When provided, the line is created directly from the receipt and no other calculation fields are read. */
+            calculation_receipt_id?: number | null;
             /** @description Optional line-level coefficient set. Omit to use the document default; null disables coefficients. */
             coefficient_set_id?: number | null;
             line_source?: components["schemas"]["LineSourceEnum"];
             /** Format: decimal */
-            quantity: string;
+            quantity?: string | null;
             /** Format: decimal */
             manual_unit_price?: string | null;
             /** @description Optional per-row custom unit prices keyed by six-digit row_code. */
@@ -1726,6 +1971,7 @@ export interface components {
             readonly quota_date: string;
             /** Format: date-time */
             readonly resets_at: string;
+            readonly effective_plan_code: string | null;
         };
         MessageQuotaStatus: {
             /** Format: date */
@@ -1737,6 +1983,53 @@ export interface components {
             readonly resets_at: string;
             readonly plan_code: string | null;
             readonly subscription_status: string;
+        };
+        /**
+         * @description Request body for POST .../official-calculations/. Mirrors the pricebook
+         *     item calculate inputs plus the required document-scoped billing fields.
+         */
+        OfficialCalculationRequestRequest: {
+            /**
+             * Format: uuid
+             * @description Server-issued modal calculation session id from POST .../official-calculation-sessions/. First successful calculation in the session is billed; later ones are free.
+             */
+            calculation_session_id: string;
+            /** @description Required retry key for exact-once official calculation billing. */
+            idempotency_key: string;
+            pricebook_item_id: number;
+            coefficient_set_id?: number | null;
+            /** Format: decimal */
+            quantity?: string;
+            /** @description Indexed input values for v2 items. Supersedes quantity when provided. */
+            values?: string[];
+            /** Format: decimal */
+            manual_unit_price?: string | null;
+            /** @description Optional per-row custom unit prices keyed by six-digit row_code. */
+            custom_prices?: {
+                [key: string]: string;
+            };
+            pricebook_row_id?: number | null;
+            /** @description Row selection for itemized items. */
+            selected_row_id?: number | null;
+            /** @description Map of footnote_code to bool — applied checkboxes for this calculation. */
+            footnotes?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        OfficialCalculationSession: {
+            /** Format: uuid */
+            calculation_session_id: string;
+            document_id: number;
+            pricebook_item_id: number;
+            company_id: number;
+            is_paid: boolean;
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: decimal */
+            official_calculation_cost: string;
+        };
+        OfficialCalculationSessionCreateRequest: {
+            pricebook_item_id: number;
         };
         OwnershipTransferRequest: {
             member_id: number;
@@ -1830,6 +2123,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["CompanySlugHistory"][];
+        };
+        PaginatedCompanyTokenDonationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["CompanyTokenDonation"][];
         };
         PaginatedFinancialDocumentList: {
             /** @example 123 */
@@ -2086,6 +2394,9 @@ export interface components {
             /** Format: decimal */
             readonly price_amount_snapshot: string;
             readonly currency_snapshot: string;
+            readonly provider: string;
+            /** Format: date-time */
+            readonly fulfilled_at: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -2120,6 +2431,15 @@ export interface components {
             readonly is_active: boolean;
         };
         PricebookCalculateInputRequest: {
+            /** @description Required. Official calculations are billed against this document (personal wallet, then company wallet). */
+            financial_document_id: number;
+            /**
+             * Format: uuid
+             * @description Server-issued modal calculation session id. First successful calculation in the session is billed; later ones are free.
+             */
+            calculation_session_id: string;
+            /** @description Required retry key for exact-once official calculation billing. */
+            idempotency_key: string;
             /** Format: decimal */
             quantity?: string;
             /** @description Indexed list of input values (v2 items). Supersedes quantity when provided. */
@@ -2138,54 +2458,6 @@ export interface components {
             footnotes?: {
                 [key: string]: unknown;
             } | null;
-        };
-        PricebookCalculateResponse: {
-            item_id: number;
-            item_key: string;
-            row_id: number;
-            row_code: string;
-            quantity: string;
-            unit: string;
-            unit_price: string | null;
-            currency_code: string;
-            base_amount: string;
-            coefficient_amount: string;
-            total_amount: string;
-            applied_coefficients: components["schemas"]["AppliedCoefficient"][];
-            price_source: string;
-            manual_unit_price: string | null;
-            custom_price_row_codes?: string[];
-            requires_manual_unit_price: boolean;
-            calculate_message: string;
-            rows_breakdown: components["schemas"]["PricebookRowBreakdown"][];
-            calculation_input: components["schemas"]["PricebookCalculationInputSnapshotWithManual"];
-            calculation_output: components["schemas"]["PricebookCalculationOutput"];
-        };
-        PricebookCalculationInputSnapshotWithManual: {
-            quantity: string;
-            values?: string[];
-            selected_row_id?: number | null;
-            selected_row_code?: string | null;
-            coefficient_set_id: number | null;
-            manual_unit_price: string | null;
-            custom_prices?: {
-                [key: string]: string;
-            };
-            custom_price_row_codes?: string[];
-            footnotes?: {
-                [key: string]: unknown;
-            } | null;
-        };
-        PricebookCalculationOutput: {
-            base_amount: string;
-            coefficient_amount: string;
-            total_amount: string;
-            applied_coefficients: components["schemas"]["AppliedCoefficient"][];
-            formula: string;
-            price_source: string;
-            selected_row_code?: string | null;
-            custom_price_row_codes?: string[];
-            rows_breakdown?: components["schemas"]["PricebookRowBreakdown"][];
         };
         PricebookChapter: {
             readonly id: number;
@@ -2282,24 +2554,6 @@ export interface components {
             max_value: string | null;
             selection_rule: string;
             requires_manual_unit_price: boolean;
-        };
-        PricebookRowBreakdown: {
-            row_id: number;
-            row_code: string;
-            title_fa: string;
-            description_fa: string;
-            unit: string;
-            unit_price: string | null;
-            currency_code: string;
-            quantity: string;
-            total: string;
-            price_source?: string;
-            coefficient_multiplier?: string;
-            coefficient_amount?: string;
-            total_after_coefficients?: string;
-            applied_coefficients?: {
-                [key: string]: unknown;
-            }[];
         };
         PricebookSelectInputItem: {
             short_name_fa: string;
@@ -2526,15 +2780,40 @@ export interface components {
             readonly signup_ticket: string;
             readonly expires_in_seconds: number;
         };
+        /** @description Request body for POST .../starred-calculations/ (standalone starred line). */
+        StarredCalculationRequestRequest: {
+            /** @description Required retry key for exact-once starred calculation billing. */
+            idempotency_key: string;
+            /** Format: decimal */
+            quantity: string;
+            /** Format: decimal */
+            unit_price: string;
+            description: string;
+            unit: string;
+            coefficient_set_id?: number | null;
+        };
+        /**
+         * @description Catalog plan with explicit availability / current / fallback flags.
+         *
+         *     ``is_active`` on the model means catalog availability. Frontend-facing
+         *     responses expose that as ``is_available`` so it is never confused with the
+         *     user's current effective plan.
+         */
         SubscriptionPlan: {
             readonly code: string;
             readonly title_fa: string;
             readonly description_fa: string;
             readonly daily_message_limit: number | null;
+            readonly max_attachment_bytes_per_message: number | null;
             readonly duration_days: number;
             /** Format: decimal */
             readonly price_amount: string;
             readonly currency: string;
+            readonly display_order: number;
+            readonly is_available: boolean;
+            readonly is_current: boolean;
+            readonly is_free_fallback: boolean;
+            readonly can_activate: boolean;
         };
         TokenBillingError: {
             code: string;
@@ -2544,13 +2823,37 @@ export interface components {
             /** Format: decimal */
             available_tokens?: string;
         };
+        TokenPackage: {
+            readonly code: string;
+            readonly title_fa: string;
+            /** Format: decimal */
+            readonly token_amount: string;
+            /** Format: decimal */
+            readonly price_amount: string;
+            readonly currency: components["schemas"]["CurrencyEnum"];
+            readonly display_order: number;
+            readonly is_active: boolean;
+        };
+        /**
+         * @description Renders ``TokenWalletService.get_wallet_summary`` output.
+         *
+         *     Includes the current admin-managed billing policy costs, active token
+         *     packages, and commerce capability flags so clients never guess prices or
+         *     whether demo purchase is available from their own environment.
+         */
         TokenWallet: {
             /** Format: decimal */
-            readonly balance: string;
+            balance: string;
+            /** Format: decimal */
+            official_calculation_cost: string;
+            /** Format: decimal */
+            starred_calculation_cost: string;
+            token_packages: components["schemas"]["TokenPackage"][];
+            commerce: components["schemas"]["CommerceCapabilities"];
             /** Format: date-time */
-            readonly created_at: string;
+            created_at: string;
             /** Format: date-time */
-            readonly updated_at: string;
+            updated_at: string;
         };
         TokenWalletTransaction: {
             readonly id: number;
@@ -2573,9 +2876,12 @@ export interface components {
          *     * `manual_grant` - Manual grant
          *     * `pricebook_line_usage` - Pricebook line usage
          *     * `token_package_purchase` - Token package purchase
+         *     * `calculation_usage` - Calculation usage
+         *     * `company_donation_debit` - Company donation debit
+         *     * `demo_package_credit` - Demo package credit
          * @enum {string}
          */
-        TransactionTypeEnum: "initial_grant" | "manual_grant" | "pricebook_line_usage" | "token_package_purchase";
+        TransactionTypeEnum: "initial_grant" | "manual_grant" | "pricebook_line_usage" | "token_package_purchase" | "calculation_usage" | "company_donation_debit" | "demo_package_credit";
         /**
          * @description * `pending` - Pending
          *     * `ready` - Ready
@@ -2583,8 +2889,20 @@ export interface components {
          * @enum {string}
          */
         UploadStatusEnum: "pending" | "ready" | "failed";
+        /**
+         * @description One effective plan for the authenticated user.
+         *
+         *     ``has_active_subscription`` / ``has_paid_subscription`` mean a stored paid
+         *     UserSubscription row is currently valid. The free Bronze fallback is never
+         *     a paid subscription row; it appears via ``is_free_fallback`` and
+         *     ``effective_plan_code``.
+         */
         UserSubscriptionStatus: {
             readonly has_active_subscription: boolean;
+            readonly has_paid_subscription: boolean;
+            readonly effective_plan_code: string | null;
+            readonly effective_plan_title_fa: string | null;
+            readonly is_free_fallback: boolean;
             readonly plan_code: string | null;
             readonly plan_title_fa: string | null;
             readonly status: string;
@@ -2593,6 +2911,7 @@ export interface components {
             /** Format: date-time */
             readonly ends_at: string | null;
             readonly effective_daily_message_limit: number | null;
+            readonly effective_max_attachment_bytes: number | null;
         };
     };
     responses: never;
@@ -3195,9 +3514,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CompanyGroupRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["CompanyGroupRequest"];
-                "multipart/form-data": components["schemas"]["CompanyGroupRequest"];
+                "application/json": components["schemas"]["CompanyGroupCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CompanyGroupCreateRequest"];
+                "multipart/form-data": components["schemas"]["CompanyGroupCreateRequest"];
             };
         };
         responses: {
@@ -3206,7 +3525,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CompanyGroup"];
+                    "application/json": components["schemas"]["CompanyGroupCreateResult"];
                 };
             };
         };
@@ -3275,8 +3594,12 @@ export interface operations {
     companies_members_list: {
         parameters: {
             query?: {
+                /** @description When true, return only active company members (picker-safe). Employees always receive active members only. */
+                active_only?: boolean;
                 /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
                 page?: number;
+                /** @description Search active/listed members by display name, title, or phone. */
+                q?: string;
             };
             header?: never;
             path: {
@@ -3407,6 +3730,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedCompanySlugHistoryList"];
+                };
+            };
+        };
+    };
+    companies_token_donations_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCompanyTokenDonationList"];
+                };
+            };
+        };
+    };
+    companies_token_donations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyTokenDonationCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CompanyTokenDonationCreateRequest"];
+                "multipart/form-data": components["schemas"]["CompanyTokenDonationCreateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyTokenDonationResult"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyTokenDonationResult"];
+                };
+            };
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenBillingError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenBillingError"];
+                };
+            };
+        };
+    };
+    companies_token_wallet_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyTokenWallet"];
                 };
             };
         };
@@ -4243,7 +4665,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["FinancialDocumentLineCreateRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["FinancialDocumentLineCreateRequest"];
@@ -4282,7 +4704,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TokenBillingError"];
+                    "application/json": components["schemas"]["CombinedTokenBillingError"];
                 };
             };
             409: {
@@ -4313,6 +4735,87 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinancialDocument"];
+                };
+            };
+        };
+    };
+    financial_documents_official_calculation_sessions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این financial document را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfficialCalculationSessionCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OfficialCalculationSessionCreateRequest"];
+                "multipart/form-data": components["schemas"]["OfficialCalculationSessionCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficialCalculationSession"];
+                };
+            };
+        };
+    };
+    financial_documents_official_calculations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این financial document را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfficialCalculationRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OfficialCalculationRequestRequest"];
+                "multipart/form-data": components["schemas"]["OfficialCalculationRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent replay of an already-billed calculation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalculationBillingResult"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalculationBillingResult"];
+                };
+            };
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CombinedTokenBillingError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenBillingError"];
                 };
             };
         };
@@ -4357,6 +4860,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinancialDocument"];
+                };
+            };
+        };
+    };
+    financial_documents_starred_calculations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این financial document را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StarredCalculationRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StarredCalculationRequestRequest"];
+                "multipart/form-data": components["schemas"]["StarredCalculationRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent replay of an already-billed calculation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalculationBillingResult"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalculationBillingResult"];
+                };
+            };
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CombinedTokenBillingError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenBillingError"];
                 };
             };
         };
@@ -4574,6 +5130,47 @@ export interface operations {
             };
         };
     };
+    payments_demo_purchase_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoPurchaseRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DemoPurchaseRequest"];
+                "multipart/form-data": components["schemas"]["DemoPurchaseRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoPurchaseResponse"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoPurchaseResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoCommerceDisabled"];
+                };
+            };
+        };
+    };
     payments_orders_create: {
         parameters: {
             query?: never;
@@ -4715,7 +5312,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": components["schemas"]["PricebookCalculateInputRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["PricebookCalculateInputRequest"];
@@ -4723,12 +5320,21 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Idempotent replay of an already-billed calculation. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PricebookCalculateResponse"];
+                    "application/json": components["schemas"]["CalculationBillingResult"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalculationBillingResult"];
                 };
             };
             /** @description Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true. Multi-row items return requires_row_selection=true when pricebook_row_id is not provided. */
@@ -4738,6 +5344,22 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ManualPriceValidationError"];
+                };
+            };
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CombinedTokenBillingError"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenBillingError"];
                 };
             };
         };

@@ -59,12 +59,14 @@ The v1 browser flow uses server-side sessions and CSRF.
 
 ## Billing and quota
 
-- A successfully created official pricebook-backed financial-document line costs exactly 5 tokens.
+- Official and starred calculations are paid operations; costs come from the backend wallet/billing-policy response (`official_calculation_cost`, `starred_calculation_cost`).
+- Opening an item, editing inputs, browsing, preview, and print are free.
+- Explicit `محاسبه` bills once and returns a calculation receipt; Add materializes the line from `calculation_receipt_id` with no second charge.
+- Debit order is personal wallet first, then company wallet. Do not invent costs or merge personal and company balances into one number.
 - The frontend never chooses or calculates the charge.
-- Use the backend idempotency contract for charged line creation and safe retries.
-- Do not present browsing, previews, failures, edits, deletes, recalculation, export, or standalone starred lines as charged.
+- Use the backend idempotency contract for paid calculations, receipt-based line creation, donations, and safe retries.
 - Do not build a client-side wallet ledger or fake payment success.
-- Online payment remains disabled in v1.0.
+- Online payment remains disabled in v1.0 unless the synced contract documents an enabled path.
 
 ## Phase files and reports
 

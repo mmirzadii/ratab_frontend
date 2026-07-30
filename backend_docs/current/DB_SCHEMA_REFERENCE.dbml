@@ -9,7 +9,11 @@
 // This snapshot documents the domain schema present after all v0.0
 // migrations plus additive v1.0 authentication, workspace, private
 // files, messaging, token wallet, subscription/quota, and payment
-// boundary migrations. Django framework-owned tables are omitted.
+// boundary migrations, plus the calculation-based token billing
+// migration (token_billing_policies, company_token_wallets,
+// company_token_wallet_transactions, company_token_donations,
+// calculation_billing_receipts, token_billing_policy_audit_events).
+// Django framework-owned tables are omitted.
 // ============================================================
 
 Enum member_type {
@@ -21,6 +25,13 @@ Enum company_role {
   owner
   admin
   employee
+}
+
+Enum invitation_status {
+  pending
+  accepted
+  rejected
+  cancelled
 }
 
 Enum project_status {
@@ -110,6 +121,20 @@ Enum token_transaction_type {
   manual_grant
   pricebook_line_usage
   token_package_purchase
+  calculation_usage
+  company_donation_debit
+  demo_package_credit
+}
+
+Enum company_token_transaction_type {
+  donation_credit
+  calculation_debit
+  manual_grant
+}
+
+Enum calculation_type {
+  official
+  starred
 }
 
 Enum subscription_status {
@@ -120,6 +145,7 @@ Enum subscription_status {
 
 Enum subscription_source {
   manual_admin
+  demo_commerce
 }
 
 Enum subscription_event_type {
@@ -205,6 +231,7 @@ Table company_members {
   display_name varchar(160)
   title varchar(120)
   is_active boolean [not null, default: true]
+  permission_settings json [not null, default: '{}', note: 'Role-scoped stored switches only. Employee catalog or Admin-only catalog. Admin inherits Employee capabilities without storing Employee keys.']
   invited_by_member_id bigint
   joined_at timestamp
   created_at timestamp [not null, default: `now()`]
@@ -213,6 +240,22 @@ Table company_members {
   indexes {
     (company_id, user_id, member_type) [unique]
     (company_id, role)
+    company_id [unique, note: 'Partial uniq_active_internal_owner_per_company: member_type=internal AND role=owner AND is_active=true']
+  }
+}
+
+Table company_member_audit_events {
+  id bigint [pk, increment]
+  company_id bigint [not null]
+  event_type varchar(40) [not null, note: 'ownership_transfer | role_change | permission_change | member_settings_change']
+  actor_member_id bigint
+  target_member_id bigint
+  previous_payload json
+  new_payload json
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (company_id, event_type, created_at)
   }
 }
 
@@ -236,19 +279,24 @@ Table company_slug_history {
 Table company_groups {
   id bigint [pk, increment]
   company_id bigint [not null]
-  name varchar(160) [not null]
+  name varchar(240) [not null]
   description text
   created_by_member_id bigint
-  is_default boolean [not null, default: false]
+  group_type varchar(20) [not null, default: 'custom', note: 'public | project | custom']
+  is_default boolean [not null, default: false, note: 'True for system public group; prefer group_type=public']
   is_active boolean [not null, default: true]
   created_at timestamp [not null, default: `now()`]
   updated_at timestamp [not null, default: `now()`]
 
   indexes {
     (company_id, is_active)
+    (company_id, group_type, is_active)
     (company_id, name) [unique, note: 'Partial: is_active = true']
     company_id [unique, note: 'Partial: is_active = true and is_default = true']
+    company_id [unique, note: 'Partial: is_active = true and group_type = public']
   }
+
+  Note: 'Public and project groups are system-managed. Project relation is projects.group_id OneToOne. Custom groups are created via POST /api/companies/{id}/groups/ with optional member_ids that create pending invitations.'
 }
 
 Table company_group_memberships {
@@ -266,6 +314,30 @@ Table company_group_memberships {
     (group_id, is_active)
     (member_id, is_active)
   }
+}
+
+Table company_membership_invitations {
+  id bigint [pk, increment]
+  company_id bigint [not null]
+  invited_user_id bigint [not null]
+  invited_by_member_id bigint [not null]
+  target_group_id bigint [not null]
+  proposed_role company_role [not null]
+  display_name varchar(160)
+  title varchar(120)
+  status invitation_status [not null, default: 'pending']
+  responded_at timestamp
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (invited_user_id, status)
+    (company_id, status)
+    (target_group_id, status)
+    (company_id, invited_user_id, target_group_id) [unique, note: 'Partial: status = pending']
+  }
+
+  Note: 'Pending invitations grant no company/group/message/file access. Used for both company onboarding (non-members) and custom-group joins (already-active members selected at group create). Acceptance activates company membership when needed and the target group membership atomically.'
 }
 
 Table group_messages {
@@ -289,7 +361,7 @@ Table message_attachments {
   financial_document_id bigint
   created_at timestamptz [not null]
 
-  Note: 'References an existing file or document; content and financial snapshots are never copied. The target may become null after target deletion and is then reported unavailable.'
+  Note: 'New attachments may only use file or financial_document. project is not an allowed create type; historical rows are preserved if present. References existing file/document targets; never copies content.'
 
   indexes {
     (message_id, attachment_type)
@@ -302,6 +374,7 @@ Table projects {
   id bigint [pk, increment]
   company_id bigint [not null]
   created_by_member_id bigint [not null]
+  group_id bigint [unique, note: 'One-to-one linked company group; required after create']
   project_code varchar(80)
   name varchar(240) [not null]
   contract_number varchar(120)
@@ -314,12 +387,15 @@ Table projects {
   starts_on date
   ends_on date
   description text
+  include_all_company_members_in_group boolean [not null, default: true]
   created_at timestamp [not null, default: `now()`]
   updated_at timestamp [not null, default: `now()`]
 
   indexes {
     (company_id, project_code) [unique]
   }
+
+  Note: 'Project create is atomic with its linked group. include_all_company_members_in_group controls current + future auto-join behavior.'
 }
 
 Table storage_files {
@@ -711,7 +787,153 @@ Table pricebook_usage_logs {
     (document_id, created_at)
   }
 
-  Note: 'token_cost > 0; line may become null after an audited line deletion'
+  Note: 'HISTORICAL/LEGACY: rows from the superseded fixed 5-token official
+  line-create charge. No new rows are written by current billing code;
+  current official/starred charges write calculation_billing_receipts
+  instead. token_cost > 0; line may become null after an audited line
+  deletion. Kept for historical ledger continuity.'
+}
+
+Table token_billing_policies {
+  id bigint [pk, increment]
+  official_calculation_cost decimal(20,0) [not null, default: 2]
+  starred_calculation_cost decimal(20,0) [not null, default: 1]
+  new_account_initial_grant decimal(20,0) [not null, default: 12]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  Note: 'Effectively a singleton (BillingPolicyService.get_policy lazily
+  creates the one row if missing). Admin-editable via Django admin only;
+  every change is recorded in token_billing_policy_audit_events. All three
+  costs/grant are >= 0.'
+}
+
+Table token_billing_policy_audit_events {
+  id bigint [pk, increment]
+  policy_id bigint [not null]
+  actor_user_id bigint
+  field_name varchar(64) [not null]
+  old_value decimal(20,0) [not null]
+  new_value decimal(20,0) [not null]
+  created_at timestamp [not null, default: `now()`]
+
+  Note: 'Append-only audit trail of TokenBillingPolicy field changes, written
+  by BillingPolicyService.update_policy.'
+}
+
+Table company_token_wallets {
+  id bigint [pk, increment]
+  company_id bigint [not null, unique]
+  balance decimal(20,0) [not null, default: 0]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  Note: 'One wallet per company; balance >= 0. Used only as a fallback funding
+  source for calculation charges once a member personal wallet is exhausted.
+  Funded only by donations (or manual admin grant); no company->user
+  withdrawal path exists.'
+}
+
+Table company_token_wallet_transactions {
+  id bigint [pk, increment]
+  wallet_id bigint [not null]
+  transaction_type company_token_transaction_type [not null]
+  amount decimal(20,0) [not null]
+  balance_after decimal(20,0) [not null]
+  actor_user_id bigint
+  reason varchar(240) [not null]
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (wallet_id, created_at)
+  }
+
+  Note: 'append-only; amount != 0; balance_after >= 0'
+}
+
+Table company_token_donations {
+  id bigint [pk, increment]
+  company_id bigint [not null]
+  donor_user_id bigint [not null]
+  donor_member_id bigint [not null]
+  amount decimal(20,0) [not null]
+  personal_ledger_id bigint [not null, unique]
+  company_ledger_id bigint [not null, unique]
+  idempotency_key varchar(128) [not null]
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (donor_user_id, company_id, idempotency_key) [unique]
+  }
+
+  Note: 'amount > 0. Records a single atomic transfer of tokens from a member
+  personal wallet (personal_ledger, company_donation_debit) into their
+  company wallet (company_ledger, donation_credit). Any active internal
+  company member may donate; there is no reverse withdrawal.'
+}
+
+Table official_calculation_sessions {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  user_id bigint [not null]
+  company_id bigint [not null]
+  member_id bigint [not null]
+  document_id bigint [not null]
+  pricebook_item_id bigint [not null]
+  is_paid boolean [not null, default: false]
+  applied_cost decimal(20,0) [not null, default: 0]
+  first_receipt_id bigint
+  latest_receipt_id bigint
+  expires_at timestamp [not null]
+  closed_at timestamp
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (user_id, document_id, pricebook_item_id, created_at)
+    (expires_at)
+  }
+
+  Note: 'Server-issued official item modal session. Opening is free.
+  First successful authoritative calculation marks is_paid and charges
+  applied_cost (personal then company). Later successful recalculations in
+  the same open session are free and update latest_receipt_id. Reopening the
+  modal requires a new session. applied_cost >= 0.'
+}
+
+Table calculation_billing_receipts {
+  id bigint [pk, increment]
+  calculation_type calculation_type [not null]
+  session_id bigint
+  user_id bigint [not null]
+  company_id bigint [not null]
+  member_id bigint [not null]
+  document_id bigint [not null]
+  pricebook_item_id bigint
+  input_snapshot_json jsonb [not null]
+  result_snapshot_json jsonb [not null]
+  payload_fingerprint varchar(64) [not null]
+  applied_cost decimal(20,0) [not null]
+  personal_debit decimal(20,0) [not null, default: 0]
+  company_debit decimal(20,0) [not null, default: 0]
+  personal_ledger_id bigint
+  company_ledger_id bigint
+  line_id bigint [unique]
+  idempotency_key varchar(128) [not null]
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (user_id, idempotency_key) [unique]
+    (document_id, created_at)
+    (company_id, created_at)
+  }
+
+  Note: 'Charge/receipt record for official/starred calculations. Official
+  receipts may link to official_calculation_sessions; first success in an
+  unpaid session charges, later same-session successes may have applied_cost
+  0. line_id is filled once via ReceiptLineService from the session latest
+  receipt; that step never charges. Stale (non-latest) session receipts cannot
+  create lines. applied_cost/personal_debit/company_debit >= 0.'
 }
 
 Table subscription_plans {
@@ -720,10 +942,12 @@ Table subscription_plans {
   title_fa varchar(160) [not null]
   description_fa text [not null]
   daily_message_limit integer
+  max_attachment_bytes_per_message bigint
   duration_days integer [not null]
   price_amount decimal(18,4) [not null, default: 0]
   currency varchar(8) [not null, default: 'IRR']
   is_active boolean [not null, default: true]
+  display_order integer [not null, default: 0]
   created_at timestamp [not null, default: `now()`]
   updated_at timestamp [not null, default: `now()`]
 
@@ -731,7 +955,13 @@ Table subscription_plans {
     (is_active, code)
   }
 
-  Note: 'duration_days > 0; price_amount >= 0; null daily_message_limit means unlimited'
+  Note: 'duration_days > 0; price_amount >= 0; null daily_message_limit or
+  null max_attachment_bytes_per_message means unlimited. Seeded rows: bronze
+  (free fallback, is_active=true), silver (paid, is_active=true), gold
+  (is_active=false, unavailable). is_active is catalog availability only —
+  the API exposes it as is_available and separately reports is_current /
+  is_free_fallback / can_activate per requesting user. Ordered by
+  display_order then code.'
 }
 
 Table user_subscriptions {
@@ -741,6 +971,7 @@ Table user_subscriptions {
   status subscription_status [not null, default: 'active']
   plan_code_snapshot varchar(40) [not null]
   daily_message_limit_snapshot integer
+  max_attachment_bytes_snapshot bigint
   starts_at timestamp [not null]
   ends_at timestamp [not null]
   source subscription_source [not null, default: 'manual_admin']
@@ -756,7 +987,10 @@ Table user_subscriptions {
     (status, ends_at)
   }
 
-  Note: 'ends_at > starts_at; at most one active subscription per user'
+  Note: 'ends_at > starts_at; at most one active subscription per user. Only
+  a valid paid subscription row here is ever "effective"; the free Bronze
+  fallback never gets a row — the effective plan resolves to the Bronze
+  catalog row directly when no row exists here.'
 }
 
 Table user_subscription_events {
@@ -800,6 +1034,7 @@ Table token_packages {
   price_amount decimal(18,4) [not null]
   currency token_package_currency [not null, default: 'IRR']
   is_active boolean [not null, default: true]
+  display_order integer [not null, default: 0]
   created_at timestamp [not null, default: `now()`]
   updated_at timestamp [not null, default: `now()`]
 
@@ -807,7 +1042,10 @@ Table token_packages {
     (is_active, code)
   }
 
-  Note: 'token_amount > 0; price_amount >= 0; the only source of payable values'
+  Note: 'token_amount > 0; price_amount >= 0; the only source of payable
+  values. Ordered by display_order then code. Real online purchase remains
+  disabled; Local/Development may fulfill via demo provider without
+  re-reading package price at credit time.'
 }
 
 Table payment_orders {
@@ -846,6 +1084,9 @@ Ref: companies.owner_member_id > company_members.id
 Ref: company_members.company_id > companies.id
 Ref: company_members.user_id > app_users.id
 Ref: company_members.invited_by_member_id > company_members.id
+Ref: company_member_audit_events.company_id > companies.id
+Ref: company_member_audit_events.actor_member_id > company_members.id
+Ref: company_member_audit_events.target_member_id > company_members.id
 Ref: company_slug_history.company_id > companies.id
 Ref: company_slug_history.changed_by_member_id > company_members.id
 Ref: company_groups.company_id > companies.id
@@ -853,6 +1094,10 @@ Ref: company_groups.created_by_member_id > company_members.id
 Ref: company_group_memberships.group_id > company_groups.id
 Ref: company_group_memberships.member_id > company_members.id
 Ref: company_group_memberships.added_by_member_id > company_members.id
+Ref: company_membership_invitations.company_id > companies.id
+Ref: company_membership_invitations.invited_user_id > app_users.id
+Ref: company_membership_invitations.invited_by_member_id > company_members.id
+Ref: company_membership_invitations.target_group_id > company_groups.id
 Ref: group_messages.group_id > company_groups.id
 Ref: group_messages.sender_member_id > company_members.id
 Ref: message_attachments.message_id > group_messages.id
@@ -860,6 +1105,7 @@ Ref: message_attachments.storage_file_id > storage_files.id
 Ref: message_attachments.financial_document_id > financial_documents.id
 Ref: projects.company_id > companies.id
 Ref: projects.created_by_member_id > company_members.id
+Ref: projects.group_id > company_groups.id
 Ref: storage_files.company_id > companies.id
 Ref: storage_files.uploaded_by_member_id > company_members.id
 Ref: pricebook_editions.pricebook_id > pricebooks.id
@@ -911,6 +1157,32 @@ Ref: pricebook_usage_logs.line_id > financial_document_lines.id
 Ref: pricebook_usage_logs.pricebook_item_id > pricebook_logical_items.id
 Ref: pricebook_usage_logs.pricebook_row_id > pricebook_rows.id
 Ref: pricebook_usage_logs.ledger_transaction_id > token_wallet_transactions.id
+Ref: token_billing_policy_audit_events.policy_id > token_billing_policies.id
+Ref: token_billing_policy_audit_events.actor_user_id > app_users.id
+Ref: company_token_wallets.company_id > companies.id
+Ref: company_token_wallet_transactions.wallet_id > company_token_wallets.id
+Ref: company_token_wallet_transactions.actor_user_id > app_users.id
+Ref: company_token_donations.company_id > companies.id
+Ref: company_token_donations.donor_user_id > app_users.id
+Ref: company_token_donations.donor_member_id > company_members.id
+Ref: company_token_donations.personal_ledger_id > token_wallet_transactions.id
+Ref: company_token_donations.company_ledger_id > company_token_wallet_transactions.id
+Ref: calculation_billing_receipts.user_id > app_users.id
+Ref: calculation_billing_receipts.company_id > companies.id
+Ref: calculation_billing_receipts.member_id > company_members.id
+Ref: calculation_billing_receipts.document_id > financial_documents.id
+Ref: calculation_billing_receipts.pricebook_item_id > pricebook_logical_items.id
+Ref: calculation_billing_receipts.personal_ledger_id > token_wallet_transactions.id
+Ref: calculation_billing_receipts.company_ledger_id > company_token_wallet_transactions.id
+Ref: calculation_billing_receipts.line_id > financial_document_lines.id
+Ref: calculation_billing_receipts.session_id > official_calculation_sessions.id
+Ref: official_calculation_sessions.user_id > app_users.id
+Ref: official_calculation_sessions.company_id > companies.id
+Ref: official_calculation_sessions.member_id > company_members.id
+Ref: official_calculation_sessions.document_id > financial_documents.id
+Ref: official_calculation_sessions.pricebook_item_id > pricebook_logical_items.id
+Ref: official_calculation_sessions.first_receipt_id > calculation_billing_receipts.id
+Ref: official_calculation_sessions.latest_receipt_id > calculation_billing_receipts.id
 Ref: user_subscriptions.user_id > app_users.id
 Ref: user_subscriptions.plan_id > subscription_plans.id
 Ref: user_subscriptions.activated_by_user_id > app_users.id

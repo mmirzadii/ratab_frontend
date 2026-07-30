@@ -8,8 +8,7 @@ import { PrimaryNavContent } from "./PrimaryNavContent";
 type Props = { open: boolean; onClose: () => void };
 
 export function MobileDrawer({ open, onClose }: Props) {
-  const { secondaryNav, secondaryNavVariant } = useAppShell();
-  const isViolet = secondaryNavVariant === "violet";
+  const { secondaryNav } = useAppShell();
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
 
@@ -36,26 +35,33 @@ export function MobileDrawer({ open, onClose }: Props) {
   if (!mounted) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex" dir="ltr">
-      {/* Sliding panels — slides in from LEFT */}
+    <div className="fixed inset-0 z-50 flex" data-testid="mobile-nav-drawer" dir="ltr">
       <div
         className={classNames(
-          "flex transition-transform duration-200 ease-out",
+          "flex max-w-[92vw] transition-transform duration-200 ease-out",
           visible ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Primary panel */}
-        <div className="flex w-14 flex-col items-center border-r border-white/10 bg-slate-950/92 py-4 backdrop-blur-xl light:border-slate-200 light:bg-white/95">
-          <PrimaryNavContent />
+        <div className="flex w-64 flex-col border-r border-ui-border-subtle bg-ui-surface px-3 py-4 shadow-ui">
+          <div className="mb-2 flex items-center justify-end">
+            <button
+              aria-label="بستن منو"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-transparent text-ui-text-muted transition hover:border-ui-border-subtle hover:bg-ui-surface-hover hover:text-ui-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
+              onClick={onClose}
+              type="button"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <PrimaryNavContent onNavigate={onClose} variant="drawer" />
         </div>
 
-        {/* Secondary panel */}
         {secondaryNav ? (
-          <div className="flex w-56 flex-col border-r border-white/10 bg-slate-950/88 backdrop-blur-xl light:border-slate-200 light:bg-white/92">
-            <div className="flex items-center justify-end border-b border-white/10 px-3 py-3 light:border-slate-200">
+          <div className="flex w-56 flex-col border-r border-ui-border-subtle bg-ui-surface-subtle">
+            <div className="flex items-center justify-end border-b border-ui-border-subtle px-3 py-3">
               <button
-                aria-label="بستن منو"
-                className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 light:text-slate-500 light:hover:text-slate-900"
+                aria-label="بستن منوی فرعی"
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent text-ui-text-muted transition hover:border-ui-border-subtle hover:bg-ui-surface-hover hover:text-ui-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
                 onClick={onClose}
                 type="button"
               >
@@ -69,16 +75,12 @@ export function MobileDrawer({ open, onClose }: Props) {
                 return (
                   <button
                     className={classNames(
-                      "flex h-11 w-full items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60",
+                      "flex h-11 w-full items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus",
                       item.isActive
-                        ? isViolet
-                          ? "border-violet-300/30 bg-violet-400/15 text-violet-100 light:text-violet-800"
-                          : "border-brand-300/30 bg-brand-400/15 text-brand-100 light:text-brand-800"
+                        ? "border-ui-primary/30 bg-ui-primary-soft text-ui-primary"
                         : item.disabled
-                          ? "cursor-not-allowed border-transparent text-slate-500 opacity-65 light:text-slate-400"
-                          : isViolet
-                            ? "border-transparent text-slate-400 hover:border-violet-300/30 hover:bg-violet-400/10 hover:text-violet-100 light:text-slate-600 light:hover:text-violet-800"
-                            : "border-transparent text-slate-400 hover:border-brand-300/30 hover:bg-brand-400/10 hover:text-brand-100 light:text-slate-600 light:hover:text-brand-800"
+                          ? "cursor-not-allowed border-transparent text-ui-text-muted opacity-65"
+                          : "border-transparent text-ui-text-muted hover:border-ui-primary/30 hover:bg-ui-primary-soft hover:text-ui-primary"
                     )}
                     disabled={item.disabled}
                     key={item.id}
@@ -99,11 +101,7 @@ export function MobileDrawer({ open, onClose }: Props) {
         ) : null}
       </div>
 
-      {/* Backdrop */}
-      <div
-        className="flex-1 bg-slate-950/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="flex-1 bg-ui-overlay backdrop-blur-sm" onClick={onClose} />
     </div>
   );
 }

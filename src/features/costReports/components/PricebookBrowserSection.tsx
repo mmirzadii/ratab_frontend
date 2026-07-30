@@ -124,8 +124,8 @@ export function PricebookBrowserSection({
           className={classNames(
             "rounded-full border px-2.5 py-1 text-xs font-bold transition",
             activeChapterFilter === filter.id
-              ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-              : "border-white/10 bg-white/7 text-slate-300 hover:border-white/20 light:border-slate-200 light:bg-white light:text-slate-600"
+              ? "border-ui-primary/40 bg-ui-primary-soft text-ui-primary"
+              : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary hover:border-ui-border-default"
           )}
           key={filter.id}
           onClick={() => onChapterFilterChange(filter.id)}
@@ -141,18 +141,18 @@ export function PricebookBrowserSection({
   const chapterListContent = (
     <>
       {isLoadingChapters ? (
-        <div className="flex items-center gap-2 py-2 text-sm text-slate-400">
+        <div className="flex items-center gap-2 py-2 text-sm text-ui-text-muted">
           <Loader2 className="h-4 w-4 animate-spin" />
           دریافت فصل‌ها
         </div>
       ) : null}
       {chaptersError ? (
-        <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+        <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
           دریافت فصل‌ها ناموفق بود.
         </div>
       ) : null}
       {!isLoadingChapters && !chaptersError && filteredChapters.length === 0 ? (
-        <div className="rounded-lg border border-white/10 bg-white/7 p-3 text-sm leading-7 text-slate-400 light:border-slate-200 light:bg-white light:text-slate-500">
+        <div className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-3 text-sm leading-7 text-ui-text-muted">
           فصلی پیدا نشد.
         </div>
       ) : null}
@@ -161,17 +161,17 @@ export function PricebookBrowserSection({
           className={classNames(
             "w-full rounded-lg border p-2.5 text-right transition",
             selectedChapterId === chapter.id
-              ? "border-emerald-300/35 bg-emerald-400/15"
-              : "border-white/10 bg-white/7 hover:border-white/20 light:border-slate-200 light:bg-white"
+              ? "border-ui-primary/35 bg-ui-primary-soft"
+              : "border-ui-border-subtle bg-ui-surface-subtle hover:border-ui-border-default"
           )}
           key={chapter.id}
           onClick={() => handleChapterSelect(chapter)}
           type="button"
         >
-          <p className="font-mono text-xs text-emerald-200 light:text-emerald-700">
+          <p className="font-mono text-xs text-ui-primary">
             {chapter.chapter_code}
           </p>
-          <p className="mt-0.5 text-sm font-bold text-slate-100 light:text-slate-900">
+          <p className="mt-0.5 text-sm font-bold text-ui-text-primary">
             {chapter.title_fa}
           </p>
         </button>
@@ -186,8 +186,8 @@ export function PricebookBrowserSection({
         className={classNames(
           "rounded-full border px-2.5 py-1 text-sm font-bold transition",
           selectedGroupId === null
-            ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-            : "border-white/10 bg-white/7 text-slate-300 hover:border-white/20 light:border-slate-200 light:bg-white light:text-slate-600"
+            ? "border-ui-primary/40 bg-ui-primary-soft text-ui-primary"
+            : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary hover:border-ui-border-default"
         )}
         onClick={() => onGroupSelect(null)}
         type="button"
@@ -195,13 +195,13 @@ export function PricebookBrowserSection({
         همه گروه‌ها
       </button>
       {isLoadingGroups ? (
-        <span className="inline-flex items-center gap-1.5 text-sm text-slate-400">
+        <span className="inline-flex items-center gap-1.5 text-sm text-ui-text-muted">
           <Loader2 className="h-3 w-3 animate-spin" />
           دریافت گروه‌ها
         </span>
       ) : null}
       {groupsError ? (
-        <span className="text-sm font-bold text-rose-200 light:text-rose-700">
+        <span className="text-sm font-bold text-rose-200">
           دریافت گروه‌ها ناموفق بود.
         </span>
       ) : null}
@@ -210,8 +210,8 @@ export function PricebookBrowserSection({
           className={classNames(
             "rounded-full border px-2.5 py-1 text-sm font-bold transition",
             selectedGroupId === group.id
-              ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-              : "border-white/10 bg-white/7 text-slate-300 hover:border-white/20 light:border-slate-200 light:bg-white light:text-slate-600"
+              ? "border-ui-primary/40 bg-ui-primary-soft text-ui-primary"
+              : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary hover:border-ui-border-default"
           )}
           key={group.id}
           onClick={() => onGroupSelect(group.id)}
@@ -227,18 +227,18 @@ export function PricebookBrowserSection({
   const itemRows = (
     <>
       {itemsError ? (
-        <div className="p-6 text-center text-sm leading-7 text-rose-100 light:text-rose-700">
+        <div className="p-6 text-center text-sm leading-7 text-rose-100">
           دریافت آیتم‌ها ناموفق بود.
         </div>
       ) : null}
       {items.length === 0 && !isFetchingItems && !itemsError ? (
-        <div className="p-6 text-center text-sm text-slate-400 light:text-slate-500">
+        <div className="p-6 text-center text-sm text-ui-text-muted">
           آیتمی پیدا نشد.
         </div>
       ) : null}
       {items.map((item: PricebookItemList, index) => (
         <button
-          className="w-full min-w-0 px-3 py-2.5 text-right transition hover:bg-white/7 light:hover:bg-slate-50 sm:py-3"
+          className="w-full min-w-0 px-3 py-2.5 text-right transition hover:bg-ui-surface-subtle sm:py-3"
           data-tour={index === 0 ? "pricebook-item" : undefined}
           key={item.id}
           onClick={() => onItemSelect(item.id)}
@@ -247,33 +247,33 @@ export function PricebookBrowserSection({
           {/* Mobile */}
           <div className="flex items-center justify-between gap-2 md:hidden">
             <div className="min-w-0 flex-1">
-              <p className="overflow-hidden text-sm font-bold text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] light:text-slate-900">
+              <p className="overflow-hidden text-sm font-bold text-ui-text-primary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                 {item.short_name_fa}
               </p>
-              <p className="mt-0.5 font-mono text-xs text-emerald-200 light:text-emerald-700">
+              <p className="mt-0.5 font-mono text-xs text-ui-primary">
                 {item.item_key}
               </p>
             </div>
             <div className="shrink-0 text-left">
-              <p className="text-sm font-bold text-slate-300 light:text-slate-600">
+              <p className="text-sm font-bold text-ui-text-secondary">
                 {formatMoneyAmount(item.unit_price)}
               </p>
-              <p className="mt-0.5 text-xs text-slate-400 light:text-slate-500">{item.unit}</p>
+              <p className="mt-0.5 text-xs text-ui-text-muted">{item.unit}</p>
             </div>
           </div>
           {/* Desktop */}
           <div className="hidden gap-3 md:grid md:grid-cols-[110px_1fr_80px_110px]">
-            <span className="font-mono text-sm text-emerald-200 light:text-emerald-700">
+            <span className="font-mono text-sm text-ui-primary">
               {item.item_key}
             </span>
             <span
-              className="overflow-hidden text-sm font-bold text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] light:text-slate-900"
+              className="overflow-hidden text-sm font-bold text-ui-text-primary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
               title={item.short_name_fa}
             >
               {item.short_name_fa}
             </span>
-            <span className="text-sm text-slate-300 light:text-slate-600">{item.unit}</span>
-            <span className="text-sm text-slate-300 light:text-slate-600">
+            <span className="text-sm text-ui-text-secondary">{item.unit}</span>
+            <span className="text-sm text-ui-text-secondary">
               {formatMoneyAmount(item.unit_price)}
             </span>
           </div>
@@ -299,12 +299,12 @@ export function PricebookBrowserSection({
         {/* Chapters card — fills remaining, internally scrollable */}
         <GlassCard className="flex min-h-0 flex-1 flex-col p-3">
           <div className="flex shrink-0 items-center gap-2">
-            <BookOpen className="h-4 w-4 text-emerald-200" />
-            <h2 className="text-sm font-black text-white light:text-slate-950">فصل‌ها</h2>
+            <BookOpen className="h-4 w-4 text-ui-primary" />
+            <h2 className="text-sm font-black text-ui-text-primary">فصل‌ها</h2>
           </div>
           <div className="mt-2.5 shrink-0">{chapterFilterPills}</div>
           <div
-            className="mt-2.5 flex-1 min-h-0 space-y-1.5 overflow-y-auto pr-0.5 [scrollbar-color:rgba(16,185,129,0.5)_rgba(15,23,42,0.2)] [scrollbar-width:thin]"
+            className="mt-2.5 flex-1 min-h-0 space-y-1.5 overflow-y-auto pr-0.5 [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.2)] [scrollbar-width:thin]"
             data-tour="chapter-list"
           >
             {chapterListContent}
@@ -318,8 +318,8 @@ export function PricebookBrowserSection({
         onMouseDown={handleDragStart}
         title="برای تغییر اندازه بکشید"
       >
-        <div className="h-full w-px bg-white/8 transition-colors group-hover:bg-emerald-400/40 light:bg-slate-200 light:group-hover:bg-emerald-400/50" />
-        <div className="absolute top-1/2 -translate-y-1/2 h-10 w-2 rounded-full bg-white/10 transition-all group-hover:bg-emerald-400/25 group-active:bg-emerald-400/40" />
+        <div className="h-full w-px bg-ui-surface-subtle transition-colors group-hover:bg-ui-primary/40" />
+        <div className="absolute top-1/2 -translate-y-1/2 h-10 w-2 rounded-full bg-white/10 transition-all group-hover:bg-ui-primary/25 group-active:bg-ui-primary/40" />
       </div>
 
       {/* ── LEFT column: items ─────────────────────────────────────────── */}
@@ -331,7 +331,7 @@ export function PricebookBrowserSection({
         >
           {/* Title row */}
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-            <h2 className="truncate text-sm font-black text-white light:text-slate-950">
+            <h2 className="truncate text-sm font-black text-ui-text-primary">
               {selectedChapter ? selectedChapter.title_fa : "یک فصل را انتخاب کنید"}
             </h2>
             {selectedChapter ? (
@@ -342,14 +342,14 @@ export function PricebookBrowserSection({
           {selectedChapter ? (
             <>
               {/* Group pills — fills available height, internally scrollable */}
-              <div className="mt-2.5 flex-1 min-h-0 overflow-y-auto [scrollbar-color:rgba(16,185,129,0.4)_transparent] [scrollbar-width:thin]">
+              <div className="mt-2.5 flex-1 min-h-0 overflow-y-auto [scrollbar-color:rgba(96,165,250,0.45)_transparent] [scrollbar-width:thin]">
                 {groupPillsContent}
               </div>
               {/* Search — sticks to bottom */}
-              <label className="mt-2.5 shrink-0 flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-slate-950/45 px-3 text-slate-400 light:border-slate-200 light:bg-white">
+              <label className="mt-2.5 shrink-0 flex h-9 items-center gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 text-ui-text-muted">
                 <Search className="h-3.5 w-3.5 shrink-0" />
                 <input
-                  className="h-full flex-1 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500 light:text-slate-950"
+                  className="h-full flex-1 bg-transparent text-sm text-ui-text-primary outline-none placeholder:text-ui-text-muted"
                   onChange={(event) => onSearchTermChange(event.target.value)}
                   placeholder="جستجو در آیتم‌ها یا کد ردیف"
                   value={searchTerm}
@@ -367,22 +367,22 @@ export function PricebookBrowserSection({
             onMouseDown={handleVerticalDragStart}
             title="برای تغییر اندازه بکشید"
           >
-            <div className="h-px w-full bg-white/8 transition-colors group-hover:bg-emerald-400/40 light:bg-slate-200 light:group-hover:bg-emerald-400/50" />
-            <div className="absolute left-1/2 h-2 w-10 -translate-x-1/2 rounded-full bg-white/10 transition-all group-hover:bg-emerald-400/25 group-active:bg-emerald-400/40" />
+            <div className="h-px w-full bg-ui-surface-subtle transition-colors group-hover:bg-ui-primary/40" />
+            <div className="absolute left-1/2 h-2 w-10 -translate-x-1/2 rounded-full bg-white/10 transition-all group-hover:bg-ui-primary/25 group-active:bg-ui-primary/40" />
           </div>
 
           {/* Items list — fills remaining height, internal scroll */}
           <GlassCard className="flex min-h-0 flex-1 flex-col p-0">
-            <div className="shrink-0 border-b border-white/10 px-4 py-2.5 light:border-slate-200">
+            <div className="shrink-0 border-b border-ui-border-subtle px-4 py-2.5">
               <div className="flex items-center gap-2">
-                <Layers3 className="h-4 w-4 text-emerald-200" />
-                <h3 className="text-sm font-black text-white light:text-slate-950">آیتم‌ها</h3>
+                <Layers3 className="h-4 w-4 text-ui-primary" />
+                <h3 className="text-sm font-black text-ui-text-primary">آیتم‌ها</h3>
                 {isFetchingItems ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-200" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-ui-primary" />
                 ) : null}
               </div>
             </div>
-            <div className="flex-1 min-h-0 divide-y divide-white/10 overflow-y-auto [scrollbar-color:rgba(16,185,129,0.5)_rgba(15,23,42,0.2)] [scrollbar-width:thin] light:divide-slate-200">
+            <div className="flex-1 min-h-0 divide-y divide-ui-border-subtle overflow-y-auto [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.2)] [scrollbar-width:thin]">
               {itemRows}
             </div>
           </GlassCard>
@@ -412,22 +412,22 @@ export function PricebookBrowserSection({
         // ── Chapters pane ──────────────────────────────────────────────
         <>
           {/* Header */}
-          <div className="flex shrink-0 items-center border-b border-white/10 px-4 py-3 light:border-slate-200">
+          <div className="flex shrink-0 items-center border-b border-ui-border-subtle px-4 py-3">
             <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-emerald-200" />
-              <h2 className="text-sm font-black text-white light:text-slate-950">فصل‌ها</h2>
+              <BookOpen className="h-4 w-4 text-ui-primary" />
+              <h2 className="text-sm font-black text-ui-text-primary">فصل‌ها</h2>
             </div>
           </div>
 
           {/* Chapter filter pills — single-row horizontal scroll */}
-          <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-white/10 px-3 py-2.5 [scrollbar-width:none] light:border-slate-200">
+          <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-ui-border-subtle px-3 py-2.5 [scrollbar-width:none]">
             {chapterFilters.map((filter) => (
               <button
                 className={classNames(
                   "shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold transition",
                   activeChapterFilter === filter.id
-                    ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-                    : "border-white/10 bg-white/7 text-slate-300 hover:border-white/20 light:border-slate-200 light:bg-white light:text-slate-600"
+                    ? "border-ui-primary/40 bg-ui-primary-soft text-ui-primary"
+                    : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary hover:border-ui-border-default"
                 )}
                 key={filter.id}
                 onClick={() => onChapterFilterChange(filter.id)}
@@ -440,7 +440,7 @@ export function PricebookBrowserSection({
 
           {/* Chapter list — fills remaining, scrollable */}
           <div
-            className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-3 [scrollbar-color:rgba(16,185,129,0.5)_rgba(15,23,42,0.2)] [scrollbar-width:thin]"
+            className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-3 [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.2)] [scrollbar-width:thin]"
             data-tour="chapter-list"
           >
             {chapterListContent}
@@ -450,10 +450,10 @@ export function PricebookBrowserSection({
         // ── Items pane ─────────────────────────────────────────────────
         <>
           {/* Header: back + title + badge + search toggle */}
-          <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-3 py-2.5 light:border-slate-200">
+          <div className="flex shrink-0 items-center gap-2 border-b border-ui-border-subtle px-3 py-2.5">
             <button
               aria-label="بازگشت به فصل‌ها"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-transparent text-ui-text-muted transition hover:border-ui-border-subtle hover:bg-ui-surface-subtle hover:text-ui-text-primary"
               onClick={() => {
                 setMobileView("chapters");
                 setMobileSearchOpen(false);
@@ -464,11 +464,11 @@ export function PricebookBrowserSection({
               <ArrowRight className="h-4 w-4" />
             </button>
             {mobileSearchOpen && selectedChapter ? (
-              <label className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-emerald-300/35 bg-slate-950/45 px-2 text-slate-400 light:border-emerald-300 light:bg-white">
-                <Search className="h-3.5 w-3.5 shrink-0 text-emerald-300 light:text-emerald-600" />
+              <label className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-ui-primary/30 bg-ui-surface/45 px-2 text-ui-text-muted">
+                <Search className="h-3.5 w-3.5 shrink-0 text-ui-primary" />
                 <input
                   autoFocus
-                  className="h-full min-w-0 flex-1 bg-transparent text-xs text-slate-100 outline-none placeholder:text-slate-500 light:text-slate-950"
+                  className="h-full min-w-0 flex-1 bg-transparent text-xs text-ui-text-primary outline-none placeholder:text-ui-text-muted"
                   onChange={(event) => onSearchTermChange(event.target.value)}
                   placeholder="جستجو در آیتم‌ها یا کد ردیف"
                   value={searchTerm}
@@ -476,7 +476,7 @@ export function PricebookBrowserSection({
                 {searchTerm ? (
                   <button
                     aria-label="پاک کردن جستجو"
-                    className="text-base leading-none text-slate-400 transition hover:text-white light:hover:text-slate-950"
+                    className="text-base leading-none text-ui-text-muted transition hover:text-ui-text-primary"
                     onClick={() => onSearchTermChange("")}
                     type="button"
                   >
@@ -486,7 +486,7 @@ export function PricebookBrowserSection({
               </label>
             ) : (
               <>
-                <h2 className="min-w-0 flex-1 truncate text-sm font-black text-white light:text-slate-950">
+                <h2 className="min-w-0 flex-1 truncate text-sm font-black text-ui-text-primary">
                   {selectedChapter?.title_fa ?? "یک فصل انتخاب کنید"}
                 </h2>
                 {selectedChapter ? (
@@ -500,8 +500,8 @@ export function PricebookBrowserSection({
                 className={classNames(
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition",
                   mobileSearchOpen || searchTerm
-                    ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-200"
-                    : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/8 hover:text-white light:text-slate-500"
+                    ? "border-ui-primary/40 bg-ui-primary-soft text-ui-primary"
+                    : "border-transparent text-ui-text-muted hover:border-ui-border-subtle hover:bg-ui-surface-subtle hover:text-ui-text-primary "
                 )}
                 onClick={() => setMobileSearchOpen((v) => !v)}
                 type="button"
@@ -513,13 +513,13 @@ export function PricebookBrowserSection({
 
           {/* Group filter pills — single-row horizontal scroll */}
           {selectedChapter ? (
-            <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-white/10 px-3 py-2 [scrollbar-width:none] light:border-slate-200">
+            <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-ui-border-subtle px-3 py-2 [scrollbar-width:none]">
               <button
                 className={classNames(
                   "shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold transition",
                   selectedGroupId === null
-                    ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-                    : "border-white/10 bg-white/7 text-slate-300 hover:border-white/20 light:border-slate-200 light:bg-white light:text-slate-600"
+                    ? "border-ui-primary/40 bg-ui-primary-soft text-ui-primary"
+                    : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary hover:border-ui-border-default"
                 )}
                 onClick={() => onGroupSelect(null)}
                 type="button"
@@ -528,11 +528,11 @@ export function PricebookBrowserSection({
               </button>
               {isLoadingGroups ? (
                 <span className="inline-flex shrink-0 items-center">
-                  <Loader2 className="h-3 w-3 animate-spin text-slate-400" />
+                  <Loader2 className="h-3 w-3 animate-spin text-ui-text-muted" />
                 </span>
               ) : null}
               {groupsError ? (
-                <span className="shrink-0 text-xs font-bold text-rose-200 light:text-rose-700">
+                <span className="shrink-0 text-xs font-bold text-rose-200">
                   خطا
                 </span>
               ) : null}
@@ -541,8 +541,8 @@ export function PricebookBrowserSection({
                   className={classNames(
                     "shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold transition",
                     selectedGroupId === group.id
-                      ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-                      : "border-white/10 bg-white/7 text-slate-300 hover:border-white/20 light:border-slate-200 light:bg-white light:text-slate-600"
+                      ? "border-ui-primary/40 bg-ui-primary-soft text-ui-primary"
+                      : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary hover:border-ui-border-default"
                   )}
                   key={group.id}
                   onClick={() => onGroupSelect(group.id)}
@@ -556,17 +556,17 @@ export function PricebookBrowserSection({
 
           {/* Summary slot — above the items list */}
           {summarySlot && selectedChapter ? (
-            <div className="shrink-0 border-b border-white/10 light:border-slate-200">
+            <div className="shrink-0 border-b border-ui-border-subtle">
               {summarySlot}
             </div>
           ) : null}
 
           {/* Items list — fills remaining height */}
           {selectedChapter ? (
-            <div className="relative min-h-0 flex-1 divide-y divide-white/10 overflow-y-auto [scrollbar-color:rgba(16,185,129,0.5)_rgba(15,23,42,0.2)] [scrollbar-width:thin] light:divide-slate-200">
+            <div className="relative min-h-0 flex-1 divide-y divide-ui-border-subtle overflow-y-auto [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.2)] [scrollbar-width:thin]">
               {isFetchingItems ? (
                 <div className="pointer-events-none sticky top-0 z-10 flex h-0 justify-center">
-                  <span className="mt-2 rounded-full border border-emerald-300/25 bg-slate-950/90 p-1.5 text-emerald-200 shadow-lg light:bg-white">
+                  <span className="mt-2 rounded-full border border-ui-primary/30 bg-ui-surface/90 p-1.5 text-ui-primary shadow-lg">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   </span>
                 </div>
@@ -576,12 +576,12 @@ export function PricebookBrowserSection({
           ) : (
             <div className="flex flex-1 items-center justify-center p-6">
               <div className="text-center">
-                <BookOpen className="mx-auto h-10 w-10 text-slate-600 light:text-slate-400" />
-                <p className="mt-3 text-sm leading-7 text-slate-400 light:text-slate-500">
+                <BookOpen className="mx-auto h-10 w-10 text-slate-600" />
+                <p className="mt-3 text-sm leading-7 text-ui-text-muted">
                   یک فصل را از منوی فصل‌ها انتخاب کنید
                 </p>
                 <button
-                  className="mt-3 flex items-center gap-1.5 mx-auto rounded-lg border border-white/10 bg-white/7 px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:border-white/20 hover:text-white light:border-slate-200 light:bg-white light:text-slate-600"
+                  className="mt-3 flex items-center gap-1.5 mx-auto rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-3 py-1.5 text-xs font-bold text-ui-text-secondary transition hover:border-ui-border-default hover:text-ui-text-primary"
                   onClick={() => setMobileView("chapters")}
                   type="button"
                 >

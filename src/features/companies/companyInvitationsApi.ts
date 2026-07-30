@@ -101,7 +101,23 @@ export const companyInvitationsApi = baseApi.injectEndpoints({
       invalidatesTags: (result, _error, { companyId, groupId }) => [
         ...tagsFromMembershipAction(result),
         { type: "CompanyMember", id: `COMPANY-${companyId}` },
-        { type: "CompanyGroup", id: `MEMBERS-${groupId}` }
+        { type: "CompanyGroup", id: `MEMBERS-${groupId}` },
+        { type: "CompanyInvitation", id: `GROUP-${groupId}` }
+      ]
+    }),
+    listCompanyGroupInvitations: builder.query<
+      PaginatedCompanyMembershipInvitationList,
+      number
+    >({
+      query: (groupId) => `/api/company-groups/${groupId}/invitations/`,
+      transformResponse: (response: unknown) => normalizeInvitationList(response),
+      providesTags: (result, _error, groupId) => [
+        { type: "CompanyInvitation", id: `GROUP-${groupId}` },
+        { type: "CompanyInvitation", id: "LIST" },
+        ...(result?.results ?? []).map((invitation) => ({
+          type: "CompanyInvitation" as const,
+          id: invitation.id
+        }))
       ]
     }),
     acceptCompanyInvitation: builder.mutation<MembershipActionResponse, number>({
@@ -129,6 +145,7 @@ export const {
   useListMyCompanyInvitationsQuery,
   useCreateCompanyInvitationMutation,
   useCreateGroupInvitationMutation,
+  useListCompanyGroupInvitationsQuery,
   useAcceptCompanyInvitationMutation,
   useRejectCompanyInvitationMutation
 } = companyInvitationsApi;

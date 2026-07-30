@@ -117,7 +117,8 @@ describe("wallet section is concise", () => {
 
   it("no long explanation about token charging", () => {
     assert.ok(!wallet.includes("شارژ فعلاً توسط ادمین"));
-    assert.ok(!wallet.includes("پرداخت آنلاین غیرفعال"));
+    assert.ok(!wallet.includes("۵ توکن"));
+    assert.ok(!wallet.includes("5 توکن"));
   });
 });
 

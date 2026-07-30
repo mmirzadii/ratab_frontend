@@ -10,7 +10,7 @@ import { GlassCard } from "../../shared/components/GlassCard";
 import { getApiErrorMessage } from "../../shared/utils/apiError";
 
 const panelInputClasses =
-  "h-11 w-full rounded-lg border border-white/10 bg-slate-950/45 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 focus:bg-slate-950/65 sm:h-12 sm:px-4 light:border-slate-200 light:bg-white light:text-slate-950 light:placeholder:text-slate-400";
+  "h-11 w-full rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30 focus:bg-ui-surface/65 sm:h-12 sm:px-4";
 
 /** Focused project-creation sheet reused by conversation create and financial-document flow. */
 export function CreateProjectSheet({
@@ -72,12 +72,12 @@ export function CreateProjectSheet({
     <div className={nested ? "space-y-3" : undefined} data-tour="create-project-sheet">
       <div className="mb-1 flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <FolderKanban className="h-5 w-5 text-emerald-200 light:text-emerald-700" />
-          <h2 className="text-lg font-black text-white light:text-slate-950">ایجاد پروژه جدید</h2>
+          <FolderKanban className="h-5 w-5 text-ui-primary" />
+          <h2 className="text-lg font-black text-ui-text-primary">ایجاد پروژه جدید</h2>
         </div>
         <button
           aria-label="بستن"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-400 transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200 sm:h-8 sm:w-8 light:border-slate-200 light:text-slate-500"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-ui-border-subtle text-ui-text-muted transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200 sm:h-8 sm:w-8"
           onClick={onClose}
           type="button"
         >
@@ -87,7 +87,7 @@ export function CreateProjectSheet({
 
       <form className="space-y-3" onSubmit={handleSubmit}>
         <label className="block space-y-1.5">
-          <span className="text-sm font-bold text-slate-200 light:text-slate-700">
+          <span className="text-sm font-bold text-ui-text-secondary">
             نام پروژه <span className="text-rose-400">*</span>
           </span>
           <input
@@ -101,7 +101,7 @@ export function CreateProjectSheet({
         </label>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="block space-y-1.5">
-            <span className="text-sm font-bold text-slate-200 light:text-slate-700">کد پروژه</span>
+            <span className="text-sm font-bold text-ui-text-secondary">کد پروژه</span>
             <input
               className={panelInputClasses}
               onChange={(e) => updateField("project_code", e.target.value)}
@@ -110,7 +110,7 @@ export function CreateProjectSheet({
             />
           </label>
           <label className="block space-y-1.5">
-            <span className="text-sm font-bold text-slate-200 light:text-slate-700">شماره قرارداد</span>
+            <span className="text-sm font-bold text-ui-text-secondary">شماره قرارداد</span>
             <input
               className={panelInputClasses}
               onChange={(e) => updateField("contract_number", e.target.value)}
@@ -120,7 +120,7 @@ export function CreateProjectSheet({
           </label>
         </div>
         <label className="block space-y-1.5">
-          <span className="text-sm font-bold text-slate-200 light:text-slate-700">کارفرما</span>
+          <span className="text-sm font-bold text-ui-text-secondary">کارفرما</span>
           <input
             className={panelInputClasses}
             onChange={(e) => updateField("employer_name", e.target.value)}
@@ -128,18 +128,18 @@ export function CreateProjectSheet({
             value={form.employer_name}
           />
         </label>
-        <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/35 p-3 light:border-slate-200 light:bg-slate-50">
+        <label className="flex items-start gap-3 rounded-xl border border-ui-border-subtle bg-ui-surface p-3">
           <input
             checked={includeAllCompanyMembersInGroup}
-            className="mt-1 h-4 w-4 accent-emerald-400"
+            className="mt-1 h-4 w-4 accent-ui-primary"
             onChange={(event) => setIncludeAllCompanyMembersInGroup(event.target.checked)}
             type="checkbox"
           />
           <span className="space-y-1">
-            <span className="block text-sm font-bold text-slate-100 light:text-slate-900">
+            <span className="block text-sm font-bold text-ui-text-primary">
               همه اعضای شرکت عضو گروه این پروژه شوند
             </span>
-            <span className="block text-xs leading-6 text-slate-400 light:text-slate-500">
+            <span className="block text-xs leading-6 text-ui-text-muted">
               با برداشتن این گزینه، در ابتدا فقط شما عضو گروه پروژه خواهید بود.
             </span>
           </span>

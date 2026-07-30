@@ -15,9 +15,9 @@ export function Field({
 }) {
   return (
     <label className={classNames("space-y-1.5 sm:space-y-2", className)}>
-      <span className="text-sm font-bold text-slate-200 light:text-slate-700">
+      <span className="text-sm font-bold text-ui-text-secondary">
         {label}
-        {required ? <span className="text-emerald-300"> *</span> : null}
+        {required ? <span className="text-ui-primary"> *</span> : null}
       </span>
       {children}
     </label>

@@ -15,10 +15,10 @@ export function ProjectInfoSection({
   return (
     <GlassCard className="p-5 sm:p-6">
       <div className="mb-5 flex items-start gap-3">
-        <FolderKanban className="mt-1 h-5 w-5 text-emerald-200" />
+        <FolderKanban className="mt-1 h-5 w-5 text-ui-primary" />
         <div>
-          <h2 className="text-xl font-black text-white light:text-slate-950">اطلاعات پروژه</h2>
-          <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
+          <h2 className="text-xl font-black text-ui-text-primary">اطلاعات پروژه</h2>
+          <p className="mt-2 text-sm leading-7 text-ui-text-secondary">
             سال پایه به صورت پیش‌فرض ۱۴۰۴ است و برای این صورت‌بها استفاده می‌شود.
           </p>
         </div>

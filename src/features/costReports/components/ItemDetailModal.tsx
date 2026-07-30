@@ -5,7 +5,6 @@ import { Check, Loader2, Pencil, RotateCcw, Send, Trash2, X, XCircle } from "luc
 import type { ProjectCoefficientSet } from "../../coefficients/coefficientApi";
 import type { FinancialDocument } from "../../financialDocuments/financialDocumentApi";
 import {
-  useCalculatePricebookItemMutation,
   useRetrievePricebookItemQuery,
   type PricebookCalculateInputPayload,
   type PricebookCalculateResponse,
@@ -14,20 +13,30 @@ import {
 import {
   type FinancialDocumentLineCreatePayload,
   useCreateFinancialDocumentLineMutation,
+  useCreateOfficialCalculationMutation,
+  useCreateOfficialCalculationSessionMutation,
   useRecalculateFinancialDocumentMutation
 } from "../../financialDocuments/financialDocumentApi";
 import {
+  type CalculationBillingSummary,
+  type CombinedTokenBillingError,
+  createCalculationIdempotencyKey,
   createLineIdempotencyKey,
-  formatInsufficientBalanceMessage,
+  formatBillingBreakdown,
+  formatCalculationCostLabel,
+  getCombinedInsufficientBalance,
   isIdempotencyKeyReused,
-  isInsufficientTokenBalance
+  isInsufficientCombinedTokenBalance,
+  useGetTokenWalletQuery
 } from "../../wallet/walletApi";
 import { Button } from "../../../shared/components/Button";
 import { EmptyState } from "../../../shared/components/EmptyState";
+import { InsufficientTokenModal } from "../../../shared/components/InsufficientTokenModal";
 import { cleanDisplayText, formatDecimal, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { getApiErrorMessage } from "../../../shared/utils/apiError";
 import { classNames } from "../../../shared/utils/classNames";
 import { inputClasses } from "../constants";
+import { isOfficialCalculationResult } from "../calculationTypes";
 import {
   classifyPricebookItem,
   buildFootnotesPayload,
@@ -84,41 +93,41 @@ function AddedRowsView({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-lg font-black text-white light:text-slate-950">
+        <h3 className="text-lg font-black text-ui-text-primary">
           ردیف‌های اضافه‌شده
         </h3>
-        <p className="mt-1 text-sm leading-7 text-slate-300 light:text-slate-600">
+        <p className="mt-1 text-sm leading-7 text-ui-text-secondary">
           {hasMultipleRows
             ? "ردیف‌ها با موفقیت به صورت‌بها اضافه شدند."
             : "ردیف با موفقیت به صورت‌بها اضافه شد."}
         </p>
         {hasMultipleRows ? (
-          <p className="mt-1 text-xs font-bold text-emerald-200 light:text-emerald-700">
+          <p className="mt-1 text-xs font-bold text-ui-primary">
             {formatDecimal(displayRowCount)} ردیف اضافه شد
           </p>
         ) : null}
       </div>
       <div className="space-y-2">
         {localLines.length === 0 ? (
-          <p className="text-center text-sm text-slate-400 light:text-slate-500">
+          <p className="text-center text-sm text-ui-text-muted">
             هنوز ردیفی اضافه نشده است.
           </p>
         ) : null}
         {displayGroups.map(({ line, rows }) => (
           <div
-            className="rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50"
+            className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-4"
             key={line.id}
           >
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
                 <p
-                  className="truncate text-base font-bold text-slate-100 light:text-slate-900"
+                  className="truncate text-base font-bold text-ui-text-primary"
                   title={cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
                 >
                   {cleanDisplayText(line.description_snapshot, "شرح ثبت نشده")}
                 </p>
                 {rows.length > 1 ? (
-                  <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+                  <p className="mt-1 text-xs text-ui-text-muted">
                     {formatDecimal(rows.length)} ردیف محاسبه‌شده
                   </p>
                 ) : null}
@@ -126,7 +135,7 @@ function AddedRowsView({
               <div className="flex shrink-0 gap-1">
                 <button
                   aria-label="ویرایش"
-                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-emerald-500/10 hover:text-emerald-400"
+                  className="rounded-lg p-1.5 text-ui-text-muted transition hover:bg-ui-primary-soft hover:text-ui-primary"
                   onClick={() => onToast("ویرایش در نسخه بعدی")}
                   title="ویرایش"
                   type="button"
@@ -135,7 +144,7 @@ function AddedRowsView({
                 </button>
                 <button
                   aria-label="حذف"
-                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-400"
+                  className="rounded-lg p-1.5 text-ui-text-muted transition hover:bg-rose-500/10 hover:text-rose-400"
                   onClick={() =>
                     setLocalLines((current) => current.filter((item) => item.id !== line.id))
                   }
@@ -150,25 +159,25 @@ function AddedRowsView({
             <div className="mt-3 space-y-2">
               {rows.map((row, index) => (
                 <div
-                  className="grid gap-2 rounded-lg border border-white/10 bg-slate-950/25 p-3 text-sm light:border-slate-200 light:bg-white sm:grid-cols-[6rem_1fr_7rem_8rem] sm:items-center"
+                  className="grid gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface/25 p-3 text-sm sm:grid-cols-[6rem_1fr_7rem_8rem] sm:items-center"
                   key={`${row.parentLineId}-${row.rowCode ?? "row"}-${index}`}
                 >
-                  <span className="font-mono font-bold text-emerald-200 light:text-emerald-700">
+                  <span className="font-mono font-bold text-ui-primary">
                     {row.rowCode ?? "—"}
                   </span>
                   <span
-                    className="min-w-0 truncate text-slate-100 light:text-slate-900"
+                    className="min-w-0 truncate text-ui-text-primary"
                     title={cleanDisplayText(row.title, "شرح ثبت نشده")}
                   >
                     {cleanDisplayText(row.title, "شرح ثبت نشده")}
                   </span>
-                  <span className="text-slate-400 light:text-slate-500">
+                  <span className="text-ui-text-muted">
                     {formatDecimal(row.quantity)} {cleanDisplayText(row.unit, "")}
                   </span>
-                  <span className="font-bold text-slate-200 light:text-slate-800">
+                  <span className="font-bold text-ui-text-secondary">
                     {formatMoneyAmount(row.total)}
                   </span>
-                  <span className="text-xs text-slate-500 light:text-slate-500 sm:col-start-4">
+                  <span className="text-xs text-ui-text-muted sm:col-start-4">
                     {row.isStarredPrice ? "★ ستاره‌دار · " : "قیمت رسمی · "}
                     بهای واحد: {hasPositiveMoneyValue(row.unitPrice) ? formatMoneyAmount(row.unitPrice) : "-"}
                   </span>
@@ -179,7 +188,7 @@ function AddedRowsView({
         ))}
       </div>
       <button
-        className="w-full rounded-lg border border-white/10 bg-white/8 py-3 text-base font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-800"
+        className="w-full rounded-lg border border-ui-border-subtle bg-ui-surface-subtle py-3 text-base font-bold text-ui-text-secondary transition hover:bg-ui-surface-hover"
         onClick={onClose}
         type="button"
       >
@@ -194,6 +203,18 @@ type CalculationStatus = "waiting" | "stale" | "calculating" | "ready" | "error"
 type BuildCalculationPayloadResult =
   | { body: PricebookCalculateInputPayload; key: string; ok: true }
   | { message: string; ok: false };
+
+type CalculationReceipt = {
+  billing: CalculationBillingSummary;
+  id: number;
+  payloadKey: string;
+};
+
+type CalculationExecutionResult =
+  | { ok: true; receipt: CalculationReceipt }
+  | { ok: false; reason: "insufficient" | "invalid" | "blocked" | "error" };
+
+const AUTO_CALCULATION_DEBOUNCE_MS = 500;
 
 function getBackendCustomPriceRequest(error: unknown): { rowCode: string | null } | null {
   if (!error || typeof error !== "object" || !("data" in error)) {
@@ -265,17 +286,17 @@ type ModalHeaderProps = {
 
 function ModalHeader({ action, onClose, title }: ModalHeaderProps) {
   return (
-    <div className="sticky top-0 z-20 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-white/10 bg-slate-950/95 p-3 backdrop-blur light:border-slate-200 light:bg-white/95 sm:flex sm:flex-nowrap sm:gap-3 sm:p-4">
+    <div className="sticky top-0 z-20 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-ui-border-subtle bg-ui-surface p-3 backdrop-blur sm:flex sm:flex-nowrap sm:gap-3 sm:p-4">
       <button
         aria-label="بستن"
-        className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/8 hover:text-white light:hover:bg-slate-100 light:hover:text-slate-900"
+        className="shrink-0 rounded-lg p-1.5 text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
         onClick={onClose}
         title="بستن"
         type="button"
       >
         <X className="h-5 w-5" />
       </button>
-      <h2 className="min-w-0 flex-1 truncate text-right text-base font-black text-white light:text-slate-950">
+      <h2 className="min-w-0 flex-1 truncate text-right text-base font-black text-ui-text-primary">
         {title}
       </h2>
       <div className="col-span-2 flex min-w-0 w-full flex-wrap items-end justify-end gap-2 sm:col-auto sm:w-auto sm:min-w-[12rem]">{action}</div>
@@ -339,8 +360,12 @@ function ItemDetailContent({
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const [calculation, setCalculation] = useState<PricebookCalculateResponse | null>(null);
   const [calculationStatus, setCalculationStatus] = useState<CalculationStatus>("waiting");
-  const [isAutoCalculating, setIsAutoCalculating] = useState(false);
-  const [isAddFlowCalculating, setIsAddFlowCalculating] = useState(false);
+  const [currentReceipt, setCurrentReceipt] = useState<CalculationReceipt | null>(null);
+  const [calculationSessionId, setCalculationSessionId] = useState<string | null>(null);
+  // Recorded silently by background auto-calc; the purchase dialog only opens from handleAddLine.
+  const [insufficientBalance, setInsufficientBalance] =
+    useState<{ error: CombinedTokenBillingError; payloadKey: string } | null>(null);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [lineError, setLineError] = useState<string | null>(null);
   const [lineSuccess, setLineSuccess] = useState<string | null>(null);
   const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
@@ -358,15 +383,15 @@ function ItemDetailContent({
   const [touchedFootnoteInputs, setTouchedFootnoteInputs] = useState<TouchedFootnoteInputs>({});
   const [showAddedRows, setShowAddedRows] = useState(false);
   const [addedRowsLines, setAddedRowsLines] = useState<FinancialDocument["lines"]>([]);
-  const [calculatePricebookItem, calculateState] = useCalculatePricebookItemMutation();
+  const { data: wallet } = useGetTokenWalletQuery();
+  const [createOfficialCalculationSession] = useCreateOfficialCalculationSessionMutation();
+  const [createOfficialCalculation, calculateState] = useCreateOfficialCalculationMutation();
   const [createFinancialDocumentLine, createLineState] = useCreateFinancialDocumentLineMutation();
   const [recalculateFinancialDocument, recalculateState] = useRecalculateFinancialDocumentMutation();
 
-  const pendingAutoTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
-  const latestRequestIdRef = useRef(0);
   const latestCalculatedPayloadKeyRef = useRef<string | null>(null);
-  const inFlightPayloadKeyRef = useRef<string | null>(null);
   const calculationRef = useRef<PricebookCalculateResponse | null>(null);
+  const calculationStatusRef = useRef<CalculationStatus>("waiting");
   const rowsSectionRef = useRef<HTMLElement | null>(null);
   const modalScrollRef = useRef<HTMLDivElement | null>(null);
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -374,7 +399,29 @@ function ItemDetailContent({
   const lastGuidedMissingSetRef = useRef("");
   const missingStarredRowCodesRef = useRef<string[]>([]);
   // Retry key per payload: reusing it lets the backend replay instead of double-charging.
-  const idempotencyRef = useRef<{ payloadKey: string; key: string } | null>(null);
+  const calculationIdempotencyRef = useRef<{ payloadKey: string; key: string } | null>(null);
+  // Line create key scoped to the spent/unspent calculation receipt.
+  const lineIdempotencyRef = useRef<{ key: string; receiptId: number } | null>(null);
+  // Free per-item modal session; issued once per open modal, required by official-calculations.
+  const calculationSessionIdRef = useRef<string | null>(null);
+  // 500ms auto-calc debounce timer, restarted whenever the financially relevant payload changes.
+  const pendingAutoTimerRef = useRef<number | null>(null);
+  // Bumped per request so late responses to superseded inputs are ignored.
+  const latestRequestIdRef = useRef(0);
+  // Dedupe identical concurrent official-calculation requests (auto-fire + forced Add).
+  const inFlightPayloadKeyRef = useRef<string | null>(null);
+  const inFlightPromiseRef = useRef<Promise<CalculationExecutionResult> | null>(null);
+
+  useEffect(() => {
+    calculationStatusRef.current = calculationStatus;
+  }, [calculationStatus]);
+
+  const clearPendingAutoTimer = useCallback(() => {
+    if (pendingAutoTimerRef.current !== null) {
+      window.clearTimeout(pendingAutoTimerRef.current);
+      pendingAutoTimerRef.current = null;
+    }
+  }, []);
 
   const revealMissingStarredPrices = useCallback((rowCodes: string[], forceGuide = false) => {
     const uniqueCodes = [...new Set(rowCodes)];
@@ -634,20 +681,63 @@ function ItemDetailContent({
         }
       : undefined;
 
-  const clearPendingAutoCalculation = useCallback(() => {
-    if (pendingAutoTimerRef.current !== null) {
-      window.clearTimeout(pendingAutoTimerRef.current);
-      pendingAutoTimerRef.current = null;
-    }
+  const clearPaidCalculation = useCallback((status: CalculationStatus = "stale") => {
+    setCalculation(null);
+    calculationRef.current = null;
+    latestCalculatedPayloadKeyRef.current = null;
+    setCurrentReceipt(null);
+    calculationIdempotencyRef.current = null;
+    lineIdempotencyRef.current = null;
+    setCalculationStatus(status);
+    setCalculationError(null);
+    setInsufficientBalance(null);
+    setShowPurchaseModal(false);
   }, []);
 
-  useEffect(
-    () => () => {
-      clearPendingAutoCalculation();
-      latestRequestIdRef.current += 1;
-    },
-    [clearPendingAutoCalculation]
-  );
+  // Session lifecycle: open a free modal session per document+item, reset on close/change.
+  useEffect(() => {
+    clearPendingAutoTimer();
+    inFlightPayloadKeyRef.current = null;
+    inFlightPromiseRef.current = null;
+    calculationSessionIdRef.current = null;
+    setCalculationSessionId(null);
+    setInsufficientBalance(null);
+    setShowPurchaseModal(false);
+
+    if (!document || documentLocked) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    createOfficialCalculationSession({
+      documentId: document.id,
+      body: { pricebook_item_id: item.id }
+    })
+      .unwrap()
+      .then((session) => {
+        if (cancelled) return;
+        calculationSessionIdRef.current = session.calculation_session_id;
+        setCalculationSessionId(session.calculation_session_id);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setCalculationError(
+          getApiErrorMessage(error, "شروع نشست محاسبه ممکن نشد. صفحه را دوباره باز کنید.")
+        );
+      });
+
+    return () => {
+      cancelled = true;
+      clearPendingAutoTimer();
+      inFlightPayloadKeyRef.current = null;
+      inFlightPromiseRef.current = null;
+      calculationSessionIdRef.current = null;
+      setCalculationSessionId(null);
+      setInsufficientBalance(null);
+      setShowPurchaseModal(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [document?.id, item.id, documentLocked]);
 
   const buildCalculationPayload = useCallback(
     (commitErrors: boolean): BuildCalculationPayloadResult => {
@@ -886,175 +976,6 @@ function ItemDetailContent({
     ]
   );
 
-  const runCalculation = useCallback(
-    async (
-      payload: BuildCalculationPayloadResult,
-      options: { forAdd?: boolean; force?: boolean } = {}
-    ) => {
-      if (!payload.ok) {
-        setCalculationStatus("waiting");
-        if (options.forAdd) {
-          setCalculationError(payload.message);
-        }
-        return null;
-      }
-
-      if (
-        !options.force &&
-        payload.key === latestCalculatedPayloadKeyRef.current &&
-        calculationRef.current
-      ) {
-        setCalculationStatus("ready");
-        return calculationRef.current;
-      }
-
-      if (!options.force && inFlightPayloadKeyRef.current === payload.key) {
-        return null;
-      }
-
-      const requestId = latestRequestIdRef.current + 1;
-      latestRequestIdRef.current = requestId;
-      inFlightPayloadKeyRef.current = payload.key;
-      setIsAutoCalculating(true);
-      setCalculationStatus("calculating");
-      setCalculationError(null);
-      if (options.forAdd) {
-        setIsAddFlowCalculating(true);
-      }
-
-      try {
-        const result = await calculatePricebookItem({
-          body: payload.body,
-          itemId: item.id
-        }).unwrap();
-
-        if (requestId !== latestRequestIdRef.current) {
-          return null;
-        }
-
-        latestCalculatedPayloadKeyRef.current = payload.key;
-        calculationRef.current = result;
-        setCalculation(result);
-        setCalculationStatus("ready");
-        return result;
-      } catch (error) {
-        if (requestId === latestRequestIdRef.current) {
-          const missingStarredPrices = getBackendMissingStarredPrices(error);
-          if (missingStarredPrices) {
-            const knownCodes = new Set(item.rows.map((row) => row.row_code));
-            const unknownCodes = missingStarredPrices.filter((rowCode) => !knownCodes.has(rowCode));
-            revealMissingStarredPrices(missingStarredPrices.filter((rowCode) => knownCodes.has(rowCode)));
-            setCalculation(null);
-            calculationRef.current = null;
-            latestCalculatedPayloadKeyRef.current = null;
-            setCalculationStatus(options.forAdd ? "error" : "waiting");
-            setCalculationError(
-              unknownCodes.length > 0
-                ? `ردیف‌های قیمت‌گذاری‌نشده در جزئیات آیتم پیدا نشدند: ${unknownCodes.join("، ")}`
-                : options.forAdd
-                  ? `قیمت ${missingStarredPrices.length} ردیف باید تعیین شود.`
-                  : null
-            );
-            return null;
-          }
-          const customPriceRequest = getBackendCustomPriceRequest(error);
-          if (customPriceRequest) {
-            const fallbackRowCode = customPriceRequest.rowCode ?? rangeFallbackRow?.row_code ?? null;
-            setCalculation(null);
-            calculationRef.current = null;
-            latestCalculatedPayloadKeyRef.current = null;
-            setCalculationStatus("waiting");
-            setCalculationError(null);
-            if (fallbackRowCode) {
-              setBackendFallbackRowCode(fallbackRowCode);
-              if (options.forAdd) {
-                setCustomPriceErrors((current) => ({
-                  ...current,
-                  [fallbackRowCode]: "برای مقدار خارج از بازه، بهای واحد سفارشی لازم است."
-                }));
-              }
-            }
-            return null;
-          }
-
-          const footnoteError = getBackendFootnoteInputError(error);
-          if (footnoteError) {
-            setFootnoteInputErrors((current) => ({
-              ...current,
-              [footnoteError.footnoteId]: {
-                ...(current[footnoteError.footnoteId] ?? {}),
-                [footnoteError.field]: footnoteError.detail
-              }
-            }));
-            setTouchedFootnoteInputs((current) => ({
-              ...current,
-              [footnoteError.footnoteId]: {
-                ...(current[footnoteError.footnoteId] ?? {}),
-                [footnoteError.field]: true
-              }
-            }));
-            setCalculationStatus(options.forAdd ? "error" : "waiting");
-            setCalculationError(options.forAdd ? footnoteError.detail : null);
-            return null;
-          }
-
-          const message = getManualPriceValidationMessage(error);
-          setCalculation(null);
-          calculationRef.current = null;
-          latestCalculatedPayloadKeyRef.current = null;
-          setCalculationStatus("error");
-          setCalculationError(message);
-        }
-        return null;
-      } finally {
-        if (requestId === latestRequestIdRef.current) {
-          setIsAutoCalculating(false);
-          if (options.forAdd) {
-            setIsAddFlowCalculating(false);
-          }
-          if (inFlightPayloadKeyRef.current === payload.key) {
-            inFlightPayloadKeyRef.current = null;
-          }
-        }
-      }
-    },
-    [calculatePricebookItem, item.id, item.rows, rangeFallbackRow?.row_code, revealMissingStarredPrices]
-  );
-
-  useEffect(() => {
-    if (showAddedRows) return undefined;
-
-    clearPendingAutoCalculation();
-    const payload = buildCalculationPayload(false);
-
-    if (!payload.ok) {
-      setCalculation(null);
-      calculationRef.current = null;
-      latestCalculatedPayloadKeyRef.current = null;
-      setCalculationStatus("waiting");
-      setCalculationError(null);
-      return undefined;
-    }
-
-    if (
-      payload.key === latestCalculatedPayloadKeyRef.current &&
-      calculationRef.current !== null
-    ) {
-      setCalculationStatus("ready");
-      return undefined;
-    }
-
-    setCalculation(null);
-    calculationRef.current = null;
-    setCalculationStatus("stale");
-    setCalculationError(null);
-    pendingAutoTimerRef.current = window.setTimeout(() => {
-      void runCalculation(payload);
-    }, 500);
-
-    return clearPendingAutoCalculation;
-  }, [buildCalculationPayload, clearPendingAutoCalculation, runCalculation, showAddedRows]);
-
   const handleInputValueChange = useCallback((key: string, value: string) => {
     setInputValues((current) => ({ ...current, [key]: value }));
     setInputErrors((current) => ({ ...current, [key]: null }));
@@ -1081,8 +1002,7 @@ function ItemDetailContent({
     setLineError(null);
   }, []);
 
-  const handleAddLine = useCallback(async () => {
-    setHasSubmitAttempted(true);
+  const markFootnoteInputsTouched = useCallback(() => {
     setTouchedFootnoteInputs(
       Object.fromEntries(
         item.footnotes
@@ -1093,23 +1013,35 @@ function ItemDetailContent({
           ])
       )
     );
-    setLineError(null);
-    setLineSuccess(null);
+  }, [confirmedFootnotes, item.footnotes]);
 
+  // Single calculation executor shared by the 500ms auto-calc debounce and the forced
+  // immediate calculation Add falls back to when there is no fresh matching receipt yet.
+  const executeCalculation = useCallback(async (): Promise<CalculationExecutionResult> => {
     if (!document) {
-      setLineError("سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید.");
-      return;
+      setCalculationError("سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید.");
+      setCalculationStatus("error");
+      return { ok: false, reason: "blocked" };
     }
 
     if (documentLocked) {
-      setLineError("این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد.");
-      return;
+      setCalculationError("این صورت‌بها قفل شده و امکان محاسبه ندارد.");
+      setCalculationStatus("error");
+      return { ok: false, reason: "blocked" };
     }
 
-    const locallyActiveRows = item.rows.filter((row) =>
-      item.rows.length === 1 ||
-      row.id === selectedRowId ||
-      row.id === matchedRangeRow?.id
+    const sessionId = calculationSessionIdRef.current;
+    if (!sessionId) {
+      // Session still opening; the debounce effect re-fires automatically once it's ready.
+      setCalculationStatus("waiting");
+      return { ok: false, reason: "blocked" };
+    }
+
+    const locallyActiveRows = item.rows.filter(
+      (row) =>
+        item.rows.length === 1 ||
+        row.id === selectedRowId ||
+        row.id === matchedRangeRow?.id
     );
     const locallyMissingStarredPrices = locallyActiveRows
       .filter(
@@ -1124,70 +1056,358 @@ function ItemDetailContent({
       revealMissingStarredPrices(locallyMissingStarredPrices, true);
       setCalculationStatus("error");
       setCalculationError(`قیمت ${locallyMissingStarredPrices.length} ردیف باید تعیین شود.`);
-      return;
+      return { ok: false, reason: "invalid" };
     }
 
     const payload = buildCalculationPayload(true);
     if (!payload.ok) {
-      setCalculation(null);
-      calculationRef.current = null;
-      latestCalculatedPayloadKeyRef.current = null;
       setCalculationStatus("waiting");
+      return { ok: false, reason: "invalid" };
+    }
+
+    // Avoid firing a duplicate request for the exact same payload; join the in-flight one.
+    if (inFlightPayloadKeyRef.current === payload.key && inFlightPromiseRef.current) {
+      return inFlightPromiseRef.current;
+    }
+
+    if (calculationIdempotencyRef.current?.payloadKey !== payload.key) {
+      calculationIdempotencyRef.current = {
+        payloadKey: payload.key,
+        key: createCalculationIdempotencyKey()
+      };
+    }
+    const idempotencyKey = calculationIdempotencyRef.current.key;
+
+    setCalculationStatus("calculating");
+    setCalculationError(null);
+
+    const requestId = ++latestRequestIdRef.current;
+
+    const requestPromise = (async (): Promise<CalculationExecutionResult> => {
+      try {
+        const billed = await createOfficialCalculation({
+          documentId: document.id,
+          body: {
+            calculation_session_id: sessionId,
+            idempotency_key: idempotencyKey,
+            pricebook_item_id: item.id,
+            ...payload.body
+          }
+        }).unwrap();
+
+        const isStale = latestRequestIdRef.current !== requestId;
+
+        if (!isOfficialCalculationResult(billed.result)) {
+          if (!isStale) {
+            setCalculationStatus("error");
+            setCalculationError("پاسخ محاسبه معتبر نبود. دوباره تلاش کنید.");
+          }
+          return { ok: false, reason: "error" };
+        }
+
+        const receipt: CalculationReceipt = {
+          billing: billed.billing,
+          id: billed.receipt.id,
+          payloadKey: payload.key
+        };
+
+        if (!isStale) {
+          latestCalculatedPayloadKeyRef.current = payload.key;
+          calculationRef.current = billed.result;
+          setCalculation(billed.result);
+          setCurrentReceipt(receipt);
+          lineIdempotencyRef.current = null;
+          setCalculationStatus("ready");
+          setCalculationError(null);
+          setInsufficientBalance(null);
+
+          const appliedCost = Number(billed.billing.applied_cost);
+          if (Number.isFinite(appliedCost) && appliedCost > 0 && !billed.replayed) {
+            onToast("محاسبه انجام شد.", "success");
+          }
+        }
+
+        return { ok: true, receipt };
+      } catch (error) {
+        const isStale = latestRequestIdRef.current !== requestId;
+        if (isStale) {
+          return { ok: false, reason: "error" };
+        }
+
+        if (isInsufficientCombinedTokenBalance(error)) {
+          const combined = getCombinedInsufficientBalance(error);
+          if (combined) {
+            setInsufficientBalance({ error: combined, payloadKey: payload.key });
+            // Keep the session id from the 402 response when the backend provides one.
+            if (combined.calculation_session_id) {
+              calculationSessionIdRef.current = combined.calculation_session_id;
+              setCalculationSessionId(combined.calculation_session_id);
+            }
+          }
+          setCalculation(null);
+          calculationRef.current = null;
+          latestCalculatedPayloadKeyRef.current = null;
+          setCurrentReceipt(null);
+          setCalculationStatus("waiting");
+          setCalculationError(null);
+          return { ok: false, reason: "insufficient" };
+        }
+
+        if (isIdempotencyKeyReused(error)) {
+          calculationIdempotencyRef.current = null;
+          setCalculationStatus("error");
+          setCalculationError(
+            "کلید تکرار محاسبه قبلاً برای درخواست دیگری استفاده شده است. دوباره تلاش کنید."
+          );
+          return { ok: false, reason: "error" };
+        }
+
+        const missingStarredPrices = getBackendMissingStarredPrices(error);
+        if (missingStarredPrices) {
+          const knownCodes = new Set(item.rows.map((row) => row.row_code));
+          const unknownCodes = missingStarredPrices.filter((rowCode) => !knownCodes.has(rowCode));
+          revealMissingStarredPrices(
+            missingStarredPrices.filter((rowCode) => knownCodes.has(rowCode)),
+            true
+          );
+          setCalculation(null);
+          calculationRef.current = null;
+          latestCalculatedPayloadKeyRef.current = null;
+          setCurrentReceipt(null);
+          setCalculationStatus("error");
+          setCalculationError(
+            unknownCodes.length > 0
+              ? `ردیف‌های قیمت‌گذاری‌نشده در جزئیات آیتم پیدا نشدند: ${unknownCodes.join("، ")}`
+              : `قیمت ${missingStarredPrices.length} ردیف باید تعیین شود.`
+          );
+          return { ok: false, reason: "invalid" };
+        }
+
+        const customPriceRequest = getBackendCustomPriceRequest(error);
+        if (customPriceRequest) {
+          const fallbackRowCode = customPriceRequest.rowCode ?? rangeFallbackRow?.row_code ?? null;
+          setCalculation(null);
+          calculationRef.current = null;
+          latestCalculatedPayloadKeyRef.current = null;
+          setCurrentReceipt(null);
+          setCalculationStatus("waiting");
+          setCalculationError(null);
+          if (fallbackRowCode) {
+            setBackendFallbackRowCode(fallbackRowCode);
+            setCustomPriceErrors((current) => ({
+              ...current,
+              [fallbackRowCode]: "برای مقدار خارج از بازه، بهای واحد سفارشی لازم است."
+            }));
+          }
+          return { ok: false, reason: "invalid" };
+        }
+
+        const footnoteError = getBackendFootnoteInputError(error);
+        if (footnoteError) {
+          setFootnoteInputErrors((current) => ({
+            ...current,
+            [footnoteError.footnoteId]: {
+              ...(current[footnoteError.footnoteId] ?? {}),
+              [footnoteError.field]: footnoteError.detail
+            }
+          }));
+          setTouchedFootnoteInputs((current) => ({
+            ...current,
+            [footnoteError.footnoteId]: {
+              ...(current[footnoteError.footnoteId] ?? {}),
+              [footnoteError.field]: true
+            }
+          }));
+          setCalculationStatus("error");
+          setCalculationError(footnoteError.detail);
+          return { ok: false, reason: "invalid" };
+        }
+
+        const message = getManualPriceValidationMessage(error);
+        setCalculation(null);
+        calculationRef.current = null;
+        latestCalculatedPayloadKeyRef.current = null;
+        setCurrentReceipt(null);
+        setCalculationStatus("error");
+        setCalculationError(message);
+        return { ok: false, reason: "error" };
+      } finally {
+        if (inFlightPayloadKeyRef.current === payload.key) {
+          inFlightPayloadKeyRef.current = null;
+          inFlightPromiseRef.current = null;
+        }
+      }
+    })();
+
+    inFlightPayloadKeyRef.current = payload.key;
+    inFlightPromiseRef.current = requestPromise;
+    return requestPromise;
+  }, [
+    buildCalculationPayload,
+    createOfficialCalculation,
+    customPrices,
+    document,
+    documentLocked,
+    item.id,
+    item.requires_manual_unit_price,
+    item.rows,
+    matchedRangeRow?.id,
+    onToast,
+    rangeFallbackRow?.row_code,
+    revealMissingStarredPrices,
+    selectedRowId
+  ]);
+
+  // Auto-calc: 500ms after the latest financially relevant change, run the official calculation
+  // through the modal session. Keeps the previous result on screen (stale) while it debounces.
+  useEffect(() => {
+    if (showAddedRows) {
+      clearPendingAutoTimer();
+      return undefined;
+    }
+
+    if (!document || documentLocked || !calculationSessionId) {
+      clearPendingAutoTimer();
+      return undefined;
+    }
+
+    const payload = buildCalculationPayload(false);
+
+    if (!payload.ok) {
+      clearPendingAutoTimer();
+      if (
+        calculationRef.current !== null ||
+        latestCalculatedPayloadKeyRef.current !== null ||
+        currentReceipt !== null
+      ) {
+        clearPaidCalculation("waiting");
+      } else if (calculationStatusRef.current !== "waiting") {
+        setCalculationStatus("waiting");
+      }
+      return undefined;
+    }
+
+    const hasMatchingReadyReceipt =
+      payload.key === latestCalculatedPayloadKeyRef.current &&
+      calculationRef.current !== null &&
+      currentReceipt !== null &&
+      currentReceipt.payloadKey === payload.key;
+
+    if (hasMatchingReadyReceipt) {
+      clearPendingAutoTimer();
+      if (calculationStatusRef.current !== "ready") {
+        setCalculationStatus("ready");
+      }
+      return undefined;
+    }
+
+    // Do not re-fire the same insufficient payload every 500ms. Retry only after
+    // a financially relevant input change (new payload key) or an explicit Add.
+    if (insufficientBalance && insufficientBalance.payloadKey === payload.key) {
+      clearPendingAutoTimer();
+      if (calculationStatusRef.current !== "waiting") {
+        setCalculationStatus("waiting");
+      }
+      return undefined;
+    }
+
+    // Mark stale but keep the previous result/layout visible until the debounced recalculation lands.
+    if (calculationStatusRef.current !== "calculating") {
+      setCalculationStatus("stale");
+    }
+
+    clearPendingAutoTimer();
+    pendingAutoTimerRef.current = window.setTimeout(() => {
+      pendingAutoTimerRef.current = null;
+      void executeCalculation();
+    }, AUTO_CALCULATION_DEBOUNCE_MS);
+
+    return () => {
+      clearPendingAutoTimer();
+    };
+  }, [
+    buildCalculationPayload,
+    calculationSessionId,
+    clearPaidCalculation,
+    clearPendingAutoTimer,
+    currentReceipt,
+    document,
+    documentLocked,
+    executeCalculation,
+    insufficientBalance,
+    showAddedRows
+  ]);
+
+  const handleAddLine = useCallback(async () => {
+    setHasSubmitAttempted(true);
+    markFootnoteInputsTouched();
+    setLineError(null);
+    setLineSuccess(null);
+
+    if (!document) {
+      setLineError("سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید.");
       return;
     }
 
-    clearPendingAutoCalculation();
-
-    const effectiveCalculation =
-      payload.key === latestCalculatedPayloadKeyRef.current && calculationRef.current
-        ? calculationRef.current
-        : await runCalculation(payload, { forAdd: true, force: true });
-
-    if (!effectiveCalculation) {
+    if (documentLocked) {
+      setLineError("این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد.");
       return;
     }
 
-    if (idempotencyRef.current?.payloadKey !== payload.key) {
-      idempotencyRef.current = { payloadKey: payload.key, key: createLineIdempotencyKey() };
+    if (createLineState.isLoading || recalculateState.isLoading) {
+      return;
+    }
+
+    const payload = buildCalculationPayload(false);
+    let receipt =
+      currentReceipt &&
+      payload.ok &&
+      currentReceipt.payloadKey === payload.key &&
+      calculationStatus === "ready" &&
+      calculation
+        ? currentReceipt
+        : null;
+
+    if (!receipt) {
+      // Already known to be insufficient for the current inputs: surface the purchase dialog
+      // instead of retrying a calculation that would fail again.
+      if (insufficientBalance && payload.ok && insufficientBalance.payloadKey === payload.key) {
+        setShowPurchaseModal(true);
+        return;
+      }
+
+      // No fresh receipt: force an immediate calculation through the same session, then add.
+      clearPendingAutoTimer();
+      const outcome = await executeCalculation();
+      if (!outcome.ok) {
+        if (outcome.reason === "insufficient") {
+          setShowPurchaseModal(true);
+        }
+        return;
+      }
+      receipt = outcome.receipt;
+    }
+
+    if (lineIdempotencyRef.current?.receiptId !== receipt.id) {
+      lineIdempotencyRef.current = {
+        receiptId: receipt.id,
+        key: createLineIdempotencyKey()
+      };
     }
 
     const lineBody: FinancialDocumentLineCreatePayload = {
-      idempotency_key: idempotencyRef.current.key,
-      pricebook_item_id: item.id,
-      quantity: effectiveCalculation.quantity
+      calculation_receipt_id: receipt.id,
+      idempotency_key: lineIdempotencyRef.current.key
     };
-
-    if (payload.body.manual_unit_price !== undefined && payload.body.manual_unit_price !== null) {
-      lineBody.manual_unit_price = payload.body.manual_unit_price;
-    }
-    if (payload.body.values !== undefined) {
-      lineBody.values = payload.body.values;
-    }
-    if (payload.body.pricebook_row_id !== undefined && payload.body.pricebook_row_id !== null) {
-      lineBody.pricebook_row_id = payload.body.pricebook_row_id;
-    }
-    if (payload.body.selected_row_id !== undefined && payload.body.selected_row_id !== null) {
-      lineBody.selected_row_id = payload.body.selected_row_id;
-    }
-    if (
-      payload.body.coefficient_set_id !== undefined &&
-      payload.body.coefficient_set_id !== null
-    ) {
-      lineBody.coefficient_set_id = payload.body.coefficient_set_id;
-    }
-    if (payload.body.footnotes !== undefined && payload.body.footnotes !== null) {
-      lineBody.footnotes = payload.body.footnotes;
-    }
-    if (payload.body.custom_prices !== undefined && payload.body.custom_prices !== null) {
-      lineBody.custom_prices = payload.body.custom_prices;
-    }
 
     try {
       const createdLine = await createFinancialDocumentLine({
         body: lineBody,
         documentId: document.id
       }).unwrap();
-      idempotencyRef.current = null;
+      lineIdempotencyRef.current = null;
+      setCurrentReceipt(null);
+      calculationIdempotencyRef.current = null;
       const updatedDocument = await recalculateFinancialDocument(document.id).unwrap();
       onDocumentUpdated(updatedDocument);
       const addedLine =
@@ -1197,7 +1417,7 @@ function ItemDetailContent({
       setHasSubmitAttempted(false);
       onToast(
         createdLine.idempotent_replayed
-          ? "این ردیف قبلاً ثبت شده بود؛ توکن دوباره کسر نشد."
+          ? "این ردیف قبلاً ثبت شده بود."
           : addedDisplayRows.length > 1
             ? "ردیف‌ها به صورت‌بها اضافه شدند."
             : "ردیف به صورت‌بها اضافه شد.",
@@ -1205,64 +1425,30 @@ function ItemDetailContent({
       );
       setShowAddedRows(true);
     } catch (error) {
-      if (isInsufficientTokenBalance(error)) {
-        setLineError(formatInsufficientBalanceMessage(error.data));
-        return;
-      }
       if (isIdempotencyKeyReused(error)) {
-        idempotencyRef.current = null;
+        lineIdempotencyRef.current = null;
         setLineError("کلید تکرار ثبت قبلاً برای درخواست دیگری استفاده شده است. دوباره تلاش کنید.");
         return;
       }
-      const missingStarredPrices = getBackendMissingStarredPrices(error);
-      if (missingStarredPrices) {
-        const knownCodes = new Set(item.rows.map((row) => row.row_code));
-        const matchedCodes = missingStarredPrices.filter((rowCode) => knownCodes.has(rowCode));
-        const unknownCodes = missingStarredPrices.filter((rowCode) => !knownCodes.has(rowCode));
-        revealMissingStarredPrices(matchedCodes, true);
-        setLineError(
-          unknownCodes.length > 0
-            ? `ردیف‌های قیمت‌گذاری‌نشده در جزئیات آیتم پیدا نشدند: ${unknownCodes.join("، ")}`
-            : null
-        );
-        return;
-      }
-      const msg = getManualPriceValidationMessage(error);
-      setLineError(msg);
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "data" in error &&
-        typeof (error as { data?: unknown }).data === "object"
-      ) {
-        const d = (error as { data: Record<string, unknown> }).data;
-        if (
-          d["requires_row_selection"] === true ||
-          String(d["requires_row_selection"]) === "True"
-        ) {
-          onToast("این آیتم چند ردیف دارد؛ ردیف موردنظر را انتخاب کنید.", "error");
-        }
-      }
+      setLineError(getApiErrorMessage(error));
     }
   }, [
     buildCalculationPayload,
-    clearPendingAutoCalculation,
+    calculation,
+    calculationStatus,
+    clearPendingAutoTimer,
     createFinancialDocumentLine,
-    confirmedFootnotes,
-    customPrices,
+    createLineState.isLoading,
+    currentReceipt,
     document,
     documentLocked,
-    item.id,
-    item.footnotes,
-    item.requires_manual_unit_price,
-    item.rows,
-    matchedRangeRow?.id,
+    executeCalculation,
+    insufficientBalance,
+    markFootnoteInputsTouched,
     onDocumentUpdated,
     onToast,
     recalculateFinancialDocument,
-    revealMissingStarredPrices,
-    runCalculation,
-    selectedRowId
+    recalculateState.isLoading
   ]);
 
   const handleSelectedCoefficientSetIdChange = useCallback(
@@ -1276,7 +1462,7 @@ function ItemDetailContent({
   );
 
   function beginRowPriceEdit(row: PricebookItemDetail["rows"][number]) {
-    if (documentLocked || isAddingLine) {
+    if (documentLocked || isAddingLine || isCalculating) {
       return;
     }
 
@@ -1354,13 +1540,26 @@ function ItemDetailContent({
   }
 
   const currentPayload = buildCalculationPayload(false);
-  const isCalculating = isAutoCalculating || calculateState.isLoading;
-  const isAddingLine =
-    isAddFlowCalculating || createLineState.isLoading || recalculateState.isLoading;
+  const isCalculating = calculateState.isLoading || calculationStatus === "calculating";
+  const isAddingLine = createLineState.isLoading || recalculateState.isLoading;
+  const hasCurrentReceipt =
+    currentReceipt !== null &&
+    currentPayload.ok &&
+    currentReceipt.payloadKey === currentPayload.key &&
+    calculationStatus === "ready" &&
+    calculation !== null;
   const addLineDisabledReason = !document
     ? "سند صورت‌بها آماده نیست. به مرحله قبل برگردید و دوباره تلاش کنید."
     : documentLocked
       ? "این صورت‌بها قفل شده و امکان افزودن خط جدید ندارد."
+      : null;
+  // Add stays clickable without a receipt / on insufficient balance / while auto-calc runs;
+  // only the missing/locked document or an active Add submission disables it.
+  const headerAddDisabled = Boolean(addLineDisabledReason) || isAddingLine;
+  const calculateCostLabel = formatCalculationCostLabel(wallet?.official_calculation_cost);
+  const billingBreakdown =
+    hasCurrentReceipt && currentReceipt
+      ? formatBillingBreakdown(currentReceipt.billing)
       : null;
 
   const hasCommittedInputError = Boolean(
@@ -1391,12 +1590,12 @@ function ItemDetailContent({
   const headerAction = (
     <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
       <label className="min-w-0 space-y-1">
-        <span className="block text-xs font-bold text-slate-400 light:text-slate-500">
+        <span className="block text-xs font-bold text-ui-text-muted">
           ضرایب
         </span>
         <select
           className={classNames(inputClasses, "h-9 w-full min-w-0 px-2 text-xs sm:h-10 sm:w-40 sm:max-w-[10rem]")}
-          disabled={isAddingLine}
+          disabled={isAddingLine || isCalculating}
           onChange={(event) =>
             handleSelectedCoefficientSetIdChange(
               event.target.value ? Number(event.target.value) : null
@@ -1420,7 +1619,7 @@ function ItemDetailContent({
       </label>
       <Button
         className="min-w-24 px-3 sm:min-w-28 sm:px-4"
-        disabled={Boolean(addLineDisabledReason) || isAddingLine}
+        disabled={headerAddDisabled}
         onClick={handleAddLine}
         type="button"
       >
@@ -1450,23 +1649,25 @@ function ItemDetailContent({
       <ModalHeader action={headerAction} onClose={onClose} title={item.short_name_fa ?? "جزئیات آیتم"} />
       <div ref={modalScrollRef} className="space-y-3 overflow-y-auto overscroll-contain p-4">
         {item.description_fa ? (
-          <p className="text-sm leading-7 text-slate-300 light:text-slate-600">
+          <p className="text-sm leading-7 text-ui-text-secondary">
             {item.description_fa}
           </p>
         ) : null}
 
         {addLineDisabledReason ? (
-          <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-sm leading-7 text-amber-100 light:text-amber-800">
+          <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 text-sm leading-7 text-amber-100">
             {addLineDisabledReason}
           </p>
         ) : null}
 
         <CalculationSection
+          billingBreakdown={billingBreakdown}
           calculation={calculation}
           calculationError={
             calculationStatus === "error" ? calculationError : hasSubmitAttempted ? calculationError : null
           }
           calculationStatusDot={calculationStatusDot}
+          calculateCostLabel={calculateCostLabel}
           customPriceRowCodes={activeCustomPriceRowCodes}
           inputErrors={
             hasSubmitAttempted && usesInputDrivenCalculation ? inputErrors : undefined
@@ -1489,7 +1690,6 @@ function ItemDetailContent({
           manualUnitPrice={manualUnitPrice}
           manualUnitPriceError={hasSubmitAttempted ? manualUnitPriceError : null}
           matchedRangeRow={itemType === "range-based" ? matchedRangeRow : undefined}
-          onAddLine={handleAddLine}
           onInputValueChange={
             usesInputDrivenCalculation ? handleInputValueChange : undefined
           }
@@ -1507,7 +1707,7 @@ function ItemDetailContent({
         />
 
         <ChecklistNotesSection
-          disabled={isAddingLine}
+          disabled={isAddingLine || isCalculating}
           inputErrors={footnoteInputErrors}
           inputValues={footnoteInputValues}
           notes={item.footnotes}
@@ -1558,7 +1758,7 @@ function ItemDetailContent({
 
         {item.rows.length > 0 ? (
           <section ref={rowsSectionRef}>
-            <h3 className="text-xs font-black uppercase tracking-wide text-slate-400 light:text-slate-500">
+            <h3 className="text-xs font-black uppercase tracking-wide text-ui-text-muted">
               ردیف‌های فهرست‌بها
             </h3>
             <div className="mt-2 space-y-2">
@@ -1582,7 +1782,7 @@ function ItemDetailContent({
                 const currentEditingPrice = isMissingPriceEdit
                   ? missingStarredDraftPrices[row.row_code] ?? ""
                   : editingRowPrice;
-                const priceControlsDisabled = documentLocked || isAddingLine;
+                const priceControlsDisabled = documentLocked || isAddingLine || isCalculating;
                 const rowTitle = row.title_fa || row.short_title_fa || row.row_code;
                 const mobileDescription = getCompactRowDescription(
                   rowTitle,
@@ -1598,23 +1798,23 @@ function ItemDetailContent({
                     className={classNames(
                       "relative overflow-hidden border-b px-2.5 py-2 text-sm transition last:border-b-0 md:rounded-lg md:border md:px-3 md:py-2",
                       missingStarredRowCodes.includes(row.row_code)
-                        ? "border-rose-400/50 bg-rose-500/8 light:border-rose-300 light:bg-rose-50"
+                        ? "border-rose-400/50 bg-rose-500/8"
                         : isMissingStarredPrice
-                          ? "border-amber-300/35 bg-amber-400/8 light:border-amber-300 light:bg-amber-50"
+                          ? "border-amber-300/35 bg-amber-400/8"
                       : calculatedRow
-                        ? "border-b-emerald-300/25 bg-emerald-400/8 before:absolute before:inset-y-1 before:right-0 before:w-0.5 before:rounded-full before:bg-emerald-300 light:bg-emerald-50/80 md:border-emerald-300/35 md:bg-emerald-400/10 md:before:hidden light:md:border-emerald-300/60 light:md:bg-emerald-50"
-                        : "border-b-white/10 bg-transparent light:border-b-slate-200 md:border-white/10 md:bg-white/7 light:md:border-slate-200 light:md:bg-slate-50"
+                        ? "border-b-ui-primary/25 bg-ui-primary-soft before:absolute before:inset-y-1 before:right-0 before:w-0.5 before:rounded-full before:bg-ui-primary/80 md:border-ui-primary/30 md:bg-ui-primary-soft md:before:hidden"
+                        : "border-b-ui-border-subtle bg-transparent md:border-ui-border-subtle md:bg-ui-surface-subtle"
                     )}
                     key={row.id}
                   >
                     <div className="md:hidden">
                       <div className="flex min-w-0 items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-1.5">
-                          <span className="font-mono text-xs font-bold text-emerald-200 light:text-emerald-700">
+                          <span className="font-mono text-xs font-bold text-ui-primary">
                             {row.row_code}
                           </span>
                           {calculatedRow ? (
-                            <span className="rounded-full border border-emerald-300/30 bg-emerald-400/12 px-1.5 py-px text-[10px] font-bold text-emerald-100 light:text-emerald-800">
+                            <span className="rounded-full border border-ui-primary/30 bg-ui-primary-soft px-1.5 py-px text-[10px] font-bold text-ui-primary">
                               انتخاب‌شده
                             </span>
                           ) : null}
@@ -1626,7 +1826,7 @@ function ItemDetailContent({
                               <input
                                 ref={(element) => { rowPriceInputRefs.current[row.row_code] = element; }}
                                 aria-label={isMissingStarredPrice ? `باید قیمت ردیف ${row.row_code} را تعیین کنید` : `ویرایش قیمت ردیف ${row.row_code}`}
-                                className="h-7 w-24 max-w-[7rem] rounded-md border border-white/10 bg-slate-950/45 px-2 text-left text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-white light:text-slate-950"
+                                className="h-7 w-24 max-w-[7rem] rounded-md border border-ui-border-subtle bg-ui-surface/45 px-2 text-left text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30"
                                 dir="ltr"
                                 disabled={priceControlsDisabled}
                                 inputMode="decimal"
@@ -1640,7 +1840,7 @@ function ItemDetailContent({
                               />
                               <button
                                 aria-label="ثبت بهای واحد"
-                                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-emerald-200 transition hover:bg-emerald-400/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 light:text-emerald-700 light:hover:bg-emerald-50"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-ui-primary transition hover:bg-ui-primary-soft hover:text-ui-primary disabled:cursor-not-allowed disabled:opacity-50"
                                 disabled={priceControlsDisabled}
                                 onClick={() => applyRowCustomPrice(row.row_code, currentEditingPrice)}
                                 title="ثبت بهای واحد"
@@ -1650,7 +1850,7 @@ function ItemDetailContent({
                               </button>
                               <button
                                 aria-label="لغو ویرایش بهای واحد"
-                                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                                 disabled={priceControlsDisabled}
                                 onClick={() => cancelRowPriceEdit(row.row_code)}
                                 title="لغو"
@@ -1665,14 +1865,14 @@ function ItemDetailContent({
                                 className={classNames(
                                   "text-[10px] font-bold",
                                   hasCustomPrice
-                                    ? "text-amber-200 light:text-amber-700"
-                                    : "text-emerald-200 light:text-emerald-700"
+                                    ? "text-amber-200"
+                                    : "text-ui-primary "
                                 )}
                               >
                                 {hasCustomPrice || isMissingStarredPrice ? "★ ستاره‌دار" : "قیمت رسمی"}
                               </span>
                               <span
-                                className="max-w-[7rem] truncate text-left text-xs font-bold text-slate-200 light:text-slate-800"
+                                className="max-w-[7rem] truncate text-left text-xs font-bold text-ui-text-secondary"
                                 dir="ltr"
                                 title={
                                   isMissingStarredPrice
@@ -1684,7 +1884,7 @@ function ItemDetailContent({
                               </span>
                               <button
                                 aria-label="ویرایش بهای واحد"
-                                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                                 disabled={priceControlsDisabled}
                                 onClick={() => beginRowPriceEdit(row)}
                                 title="ویرایش بهای واحد"
@@ -1695,7 +1895,7 @@ function ItemDetailContent({
                               {hasCustomPrice ? (
                                 <button
                                   aria-label="بازگشت به قیمت رسمی"
-                                  className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded-md text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                                   disabled={priceControlsDisabled}
                                   onClick={() => resetRowCustomPrice(row.row_code)}
                                   title={`بازگشت به قیمت رسمی: ${officialPriceLabel}`}
@@ -1709,16 +1909,16 @@ function ItemDetailContent({
                         </div>
                       </div>
 
-                      <p className="mt-1 truncate text-sm font-bold leading-5 text-slate-100 light:text-slate-800">
+                      <p className="mt-1 truncate text-sm font-bold leading-5 text-ui-text-primary">
                         {rowTitle}
                       </p>
                       {mobileDescription ? (
-                        <p className="mt-0.5 truncate text-xs leading-4 text-slate-400 light:text-slate-500">
+                        <p className="mt-0.5 truncate text-xs leading-4 text-ui-text-muted">
                           {mobileDescription}
                         </p>
                       ) : null}
                       {calculatedRow ? (
-                        <p className="mt-1 truncate text-xs font-medium leading-4 text-emerald-100 light:text-emerald-800">
+                        <p className="mt-1 truncate text-xs font-medium leading-4 text-ui-primary">
                           مقدار: {formatDecimal(calculatedRow.quantity)}{" "}
                           {calculatedRow.unit ?? row.unit} · مبلغ:{" "}
                           {formatMoneyAmount(calculatedRow.total)}
@@ -1727,20 +1927,20 @@ function ItemDetailContent({
                     </div>
 
                     <div className="hidden gap-x-3 gap-y-2 md:grid md:grid-cols-[6rem_minmax(0,1fr)_5rem_minmax(13rem,auto)] md:items-center">
-                      <span className="font-mono font-bold text-emerald-200 light:text-emerald-700">
+                      <span className="font-mono font-bold text-ui-primary">
                         {row.row_code}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate font-bold text-slate-100 light:text-slate-800">
+                        <p className="truncate font-bold text-ui-text-primary">
                           {rowTitle}
                         </p>
                         {row.description_fa ? (
-                          <p className="mt-0.5 truncate text-xs text-slate-400 light:text-slate-500">
+                          <p className="mt-0.5 truncate text-xs text-ui-text-muted">
                             {row.description_fa}
                           </p>
                         ) : null}
                         {(row.min_value || row.max_value) ? (
-                          <p className="mt-0.5 text-xs text-slate-500 light:text-slate-500">
+                          <p className="mt-0.5 text-xs text-ui-text-muted">
                             {row.min_value ? `از: ${formatDecimal(row.min_value)}` : null}
                             {row.min_value && row.max_value ? " / " : null}
                             {row.max_value ? `تا: ${formatDecimal(row.max_value)}` : null}
@@ -1748,27 +1948,27 @@ function ItemDetailContent({
                         ) : null}
                         {calculatedRow ? (
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                            <span className="rounded-full border border-emerald-300/35 bg-emerald-400/15 px-2 py-0.5 font-bold text-emerald-100 light:text-emerald-800">
+                            <span className="rounded-full border border-ui-primary/35 bg-ui-primary-soft px-2 py-0.5 font-bold text-ui-primary">
                               در محاسبه
                             </span>
-                            <span className="text-slate-300 light:text-slate-700">
+                            <span className="text-ui-text-secondary">
                               مقدار: {formatDecimal(calculatedRow.quantity)}{" "}
                               {calculatedRow.unit ?? row.unit}
                             </span>
-                            <span className="font-bold text-slate-200 light:text-slate-800">
+                            <span className="font-bold text-ui-text-secondary">
                               مبلغ: {formatMoneyAmount(calculatedRow.total)}
                             </span>
                           </div>
                         ) : null}
                       </div>
-                      <span className="text-slate-400 light:text-slate-500">{row.unit}</span>
+                      <span className="text-ui-text-muted">{row.unit}</span>
                       <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:justify-end">
                         {isEditing ? (
                           <>
                               <input
                               ref={(element) => { rowPriceInputRefs.current[row.row_code] = element; }}
                               aria-label={isMissingStarredPrice ? `باید قیمت ردیف ${row.row_code} را تعیین کنید` : `ویرایش قیمت ردیف ${row.row_code}`}
-                              className="h-8 w-32 rounded-md border border-white/10 bg-slate-950/45 px-2 text-left text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-emerald-300/45 light:border-slate-200 light:bg-white light:text-slate-950"
+                              className="h-8 w-32 rounded-md border border-ui-border-subtle bg-ui-surface/45 px-2 text-left text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30"
                               dir="ltr"
                               disabled={priceControlsDisabled}
                               inputMode="decimal"
@@ -1782,7 +1982,7 @@ function ItemDetailContent({
                             />
                             <button
                               aria-label="ثبت بهای واحد"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-emerald-200 transition hover:bg-emerald-400/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 light:text-emerald-700 light:hover:bg-emerald-50"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ui-primary transition hover:bg-ui-primary-soft hover:text-ui-primary disabled:cursor-not-allowed disabled:opacity-50"
                               disabled={priceControlsDisabled}
                               onClick={() => applyRowCustomPrice(row.row_code, currentEditingPrice)}
                               title="ثبت بهای واحد"
@@ -1792,7 +1992,7 @@ function ItemDetailContent({
                             </button>
                             <button
                               aria-label="لغو ویرایش بهای واحد"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                               disabled={priceControlsDisabled}
                               onClick={() => cancelRowPriceEdit(row.row_code)}
                               title="لغو"
@@ -1807,14 +2007,14 @@ function ItemDetailContent({
                               className={classNames(
                                 "rounded-full border px-2 py-0.5 text-xs font-bold",
                                 hasCustomPrice
-                                  ? "border-amber-300/35 bg-amber-400/15 text-amber-100 light:text-amber-800"
-                                  : "border-emerald-300/30 bg-emerald-400/10 text-emerald-100 light:text-emerald-800"
+                                  ? "border-amber-300/35 bg-amber-400/15 text-amber-100"
+                                  : "border-ui-primary/30 bg-ui-primary-soft text-ui-primary "
                               )}
                             >
                               {hasCustomPrice || isMissingStarredPrice ? "★ ستاره‌دار" : "قیمت رسمی"}
                             </span>
                             <span
-                              className="font-bold text-slate-200 light:text-slate-800"
+                              className="font-bold text-ui-text-secondary"
                               title={
                                 isMissingStarredPrice
                                   ? "باید قیمت این ردیف را تعیین کنید."
@@ -1824,13 +2024,13 @@ function ItemDetailContent({
                               {displayPrice}
                             </span>
                             {hasCustomPrice ? (
-                              <span className="text-xs text-slate-400 light:text-slate-500">
+                              <span className="text-xs text-ui-text-muted">
                                 رسمی: {officialPriceLabel}
                               </span>
                             ) : null}
                             <button
                               aria-label="ویرایش بهای واحد"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                               disabled={priceControlsDisabled}
                               onClick={() => beginRowPriceEdit(row)}
                               title="ویرایش بهای واحد"
@@ -1841,7 +2041,7 @@ function ItemDetailContent({
                             {hasCustomPrice ? (
                               <button
                                 aria-label="بازگشت به قیمت رسمی"
-                                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 light:hover:bg-slate-100 light:hover:text-slate-900"
+                                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                                 disabled={priceControlsDisabled}
                                 onClick={() => resetRowCustomPrice(row.row_code)}
                                 title="بازگشت به قیمت رسمی"
@@ -1856,21 +2056,21 @@ function ItemDetailContent({
                     </div>
                     {guidedMissingRowCode === row.row_code && !isEditing ? (
                       <div
-                        className="mt-2 rounded-md border border-amber-300/35 bg-amber-400/12 px-2.5 py-2 text-xs font-bold leading-5 text-amber-100 shadow-lg light:border-amber-300 light:bg-amber-50 light:text-amber-900 md:mr-auto md:max-w-sm"
+                        className="mt-2 rounded-md border border-amber-300/35 bg-amber-400/12 px-2.5 py-2 text-xs font-bold leading-5 text-amber-100 shadow-lg md:mr-auto md:max-w-sm"
                         role="tooltip"
                       >
                         برای ادامه، روی مداد بزنید و قیمت این ردیف را وارد کنید.
                       </div>
                     ) : null}
                     {customPriceErrors[row.row_code] ? (
-                      <p className="mt-1 text-xs text-rose-300 light:text-rose-700">
+                      <p className="mt-1 text-xs text-rose-300">
                         {customPriceErrors[row.row_code]}
                       </p>
                     ) : null}
                     {isMissingStarredPrice && !customPriceErrors[row.row_code] ? (
                       <p
                         aria-label={`باید قیمت ردیف ${row.row_code} را تعیین کنید`}
-                        className="mt-1 text-xs text-amber-200 light:text-amber-700"
+                        className="mt-1 text-xs text-amber-200"
                         title="باید قیمت را تعیین کنید"
                       >
                         قیمت تعیین نشده
@@ -1885,6 +2085,17 @@ function ItemDetailContent({
 
         <ReadableNotesSection notes={item.requirements} title="الزامات" />
       </div>
+      {showPurchaseModal && insufficientBalance ? (
+        <InsufficientTokenModal
+          error={insufficientBalance.error}
+          onClose={() => setShowPurchaseModal(false)}
+          purchaseOrigin={{
+            companyId: document?.company_id,
+            financialDocumentId: document?.id,
+            pricebookItemId: item.id
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1926,7 +2137,7 @@ export function ItemDetailModal({
   return (
     <div
       className={classNames(
-        "fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4",
+        "fixed inset-0 z-[100] flex items-center justify-center bg-ui-overlay p-3 backdrop-blur-sm sm:p-4",
         secondaryNav ? "lg:right-[19rem]" : "lg:right-20"
       )}
       onMouseDown={(event) => {
@@ -1936,7 +2147,7 @@ export function ItemDetailModal({
       }}
     >
       <div
-        className="w-full max-w-4xl overflow-hidden rounded-lg border border-white/10 bg-slate-950 shadow-2xl light:border-slate-200 light:bg-white"
+        className="w-full max-w-4xl overflow-hidden rounded-lg border border-ui-border-subtle bg-ui-surface shadow-ui"
         onMouseDown={(event) => event.stopPropagation()}
       >
         {item ? (
@@ -1955,8 +2166,8 @@ export function ItemDetailModal({
             <ModalHeader onClose={onClose} title="جزئیات آیتم" />
             <div className="overflow-y-auto p-4">
               {isLoading ? (
-                <div className="flex min-h-48 items-center justify-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
-                  <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
+                <div className="flex min-h-48 items-center justify-center gap-3 text-sm font-bold text-ui-text-secondary">
+                  <Loader2 className="h-5 w-5 animate-spin text-ui-primary" />
                   در حال دریافت جزئیات آیتم
                 </div>
               ) : null}

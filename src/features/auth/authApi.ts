@@ -52,7 +52,14 @@ export const authApi = baseApi.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: ["Auth", { type: "Company", id: "LIST" }, { type: "CompanyInvitation", id: "LIST" }]
+      invalidatesTags: [
+        "Auth",
+        { type: "Company", id: "LIST" },
+        { type: "CompanyInvitation", id: "LIST" },
+        { type: "Wallet", id: "BALANCE" },
+        { type: "Wallet", id: "TRANSACTIONS" },
+        { type: "Wallet", id: "POLICY" }
+      ]
     }),
     login: builder.mutation<SessionAuthResponse, PasswordLoginRequest>({
       query: (body) => ({
@@ -60,7 +67,14 @@ export const authApi = baseApi.injectEndpoints({
         method: "POST",
         body
       }),
-      invalidatesTags: ["Auth", { type: "Company", id: "LIST" }, { type: "CompanyInvitation", id: "LIST" }]
+      invalidatesTags: [
+        "Auth",
+        { type: "Company", id: "LIST" },
+        { type: "CompanyInvitation", id: "LIST" },
+        { type: "Wallet", id: "BALANCE" },
+        { type: "Wallet", id: "TRANSACTIONS" },
+        { type: "Wallet", id: "POLICY" }
+      ]
     }),
     logout: builder.mutation<null, void>({
       query: () => ({

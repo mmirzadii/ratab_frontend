@@ -94,3 +94,21 @@ Compose/create paths remain limited to `file` and `financial_document` per OpenA
 - Historical unsupported attachment types render read-only (no create/open/download actions invented).
 - File upload and financial-document attach flows are unchanged.
 
+## Correction (2026-07-30) - Telegram-like custom group create route
+
+- Removed the centered GroupsSection create modal.
+- Route: /companies/:companyId/groups/new nested under the company workspace.
+- Desktop: ~416–480px full-height side panel beside chat (no modal backdrop).
+- Mobile: full content area; bottom workspace nav hidden while creating.
+- Two-step draft (info → members); one POST /api/companies/{id}/groups/ with 
+ame, description, optional member_ids.
+- Active members only (ctive_only + q); creator omitted from invite list; selected members receive pending invitations.
+- Success invalidates group list + invitations and opens the new conversation.
+
+## Correction (2026-07-30) - Telegram-inspired group info side panel
+
+- Replaced the crowded GroupsSection admin form (edit fields + add-member select + permanent row actions) with a profile-first GroupInfoDrawer.
+- Internal panel views: overview / edit / addMembers / memberDetails (no centered modals, no notification switch).
+- Desktop: ~384-416px side panel beside chat; mobile: full-screen panel without dimmed backdrop.
+- Tabs order: اعضا → صورت‌بهاها → فایل‌ها → لینک‌ها; floating Add Member for custom groups.
+- Destructive deactivate moved under collapsed اقدامات حساس.

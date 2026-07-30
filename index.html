@@ -9,6 +9,19 @@
     />
     <meta name="enamad" content="27516986" />
     <title>رتب | پنل توسعه</title>
+    <script>
+      (function () {
+        try {
+          var stored =
+            localStorage.getItem("metril.theme") || localStorage.getItem("ratab.theme");
+          var theme = stored === "light" ? "light" : "dark";
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.classList.toggle("dark", theme === "dark");
+        } catch (_err) {
+          document.documentElement.dataset.theme = "dark";
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

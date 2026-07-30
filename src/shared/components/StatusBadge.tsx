@@ -2,7 +2,8 @@ import type { PropsWithChildren } from "react";
 
 import { classNames } from "../utils/classNames";
 
-type BadgeTone = "emerald" | "violet" | "amber" | "slate" | "brand";
+/** Semantic badge tones. Legacy emerald/violet map to success/brand. */
+type BadgeTone = "neutral" | "info" | "success" | "warning" | "danger" | "brand" | "emerald" | "violet" | "amber" | "slate";
 
 type StatusBadgeProps = PropsWithChildren<{
   tone?: BadgeTone;
@@ -10,14 +11,20 @@ type StatusBadgeProps = PropsWithChildren<{
 }>;
 
 const toneClasses: Record<BadgeTone, string> = {
-  brand:   "border-brand-300/25 bg-brand-400/10 text-brand-200 light:text-brand-800",
-  emerald: "border-emerald-300/25 bg-emerald-400/10 text-emerald-200 light:text-emerald-800",
-  violet:  "border-violet-300/25 bg-violet-400/10 text-violet-200 light:text-violet-800",
-  amber:   "border-amber-300/25 bg-amber-400/10 text-amber-100 light:text-amber-800",
-  slate:   "border-white/10 bg-white/7 text-slate-300 light:border-slate-200 light:bg-white light:text-slate-600"
+  brand: "border-ui-primary/25 bg-ui-primary-soft text-ui-primary",
+  info: "border-ui-info/25 bg-ui-info-soft text-ui-info",
+  success: "border-ui-success/25 bg-ui-success-soft text-ui-success",
+  warning: "border-ui-warning/25 bg-ui-warning-soft text-ui-warning",
+  danger: "border-ui-danger/25 bg-ui-danger-soft text-ui-danger",
+  neutral: "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary",
+  // Legacy aliases
+  emerald: "border-ui-success/25 bg-ui-success-soft text-ui-success",
+  violet: "border-ui-primary/25 bg-ui-primary-soft text-ui-primary",
+  amber: "border-ui-warning/25 bg-ui-warning-soft text-ui-warning",
+  slate: "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary"
 };
 
-export function StatusBadge({ children, className, tone = "slate" }: StatusBadgeProps) {
+export function StatusBadge({ children, className, tone = "neutral" }: StatusBadgeProps) {
   return (
     <span
       className={classNames(

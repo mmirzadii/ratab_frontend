@@ -409,8 +409,8 @@ export function ProjectCoefficientPanel({
               className={classNames(
                 "rounded-lg border px-3 py-2 text-sm font-bold transition",
                 form.scope === option.id
-                  ? "border-emerald-300/50 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-                  : "border-white/10 bg-white/7 text-slate-300 hover:bg-white/10 light:border-slate-200 light:bg-white light:text-slate-700"
+                  ? "border-ui-primary/50 bg-ui-primary-soft text-ui-primary"
+                  : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary hover:bg-ui-surface-hover"
               )}
               key={option.id}
               onClick={() => updateScope(option.id, setter)}
@@ -438,7 +438,7 @@ export function ProjectCoefficientPanel({
               ))}
             </select>
             {availableChapters.length === 0 ? (
-              <p className="mt-1 text-xs leading-6 text-amber-100 light:text-amber-800">
+              <p className="mt-1 text-xs leading-6 text-amber-100">
                 فصل‌های سال فهرست‌بهای فعال هنوز بارگذاری نشده‌اند.
               </p>
             ) : null}
@@ -462,7 +462,7 @@ export function ProjectCoefficientPanel({
               ))}
             </select>
             {rowTargets.length === 0 ? (
-              <p className="mt-1 text-xs leading-6 text-amber-100 light:text-amber-800">
+              <p className="mt-1 text-xs leading-6 text-amber-100">
                 برای ضریب ردیف، ابتدا یک ردیف از مرور فهرست‌بها به سند اضافه کنید.
               </p>
             ) : null}
@@ -514,8 +514,8 @@ export function ProjectCoefficientPanel({
     <GlassCard className="flex max-h-[calc(100dvh-8.5rem)] min-h-0 flex-col overflow-hidden p-0 lg:h-[calc(100dvh-7.5rem)] lg:max-h-none">
       <div className="hidden shrink-0 flex-wrap items-center justify-between gap-3 p-3 sm:flex sm:p-4">
         <div>
-          <h2 className="text-lg font-black text-white light:text-slate-950">ضرایب پروژه</h2>
-          <p className="mt-1 hidden text-xs text-slate-400 light:text-slate-500 sm:block">
+          <h2 className="text-lg font-black text-ui-text-primary">ضرایب پروژه</h2>
+          <p className="mt-1 hidden text-xs text-ui-text-muted sm:block">
             ضریب را برای کل پروژه، یک فصل یا یک ردیف مشخص ثبت کنید.
           </p>
         </div>
@@ -531,9 +531,9 @@ export function ProjectCoefficientPanel({
         </StatusBadge>
       </div>
 
-      <div className="shrink-0 space-y-2 border-white/10 p-3 light:border-slate-200 sm:border-t sm:p-4 lg:pb-3">
+      <div className="shrink-0 space-y-2 border-ui-border-subtle p-3 sm:border-t sm:p-4 lg:pb-3">
         <label className="grid gap-1.5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-3">
-          <span className="text-xs font-bold text-slate-300 light:text-slate-600 sm:text-sm">
+          <span className="text-xs font-bold text-ui-text-secondary sm:text-sm">
             مجموعه فعال
           </span>
           <select
@@ -557,13 +557,13 @@ export function ProjectCoefficientPanel({
         </label>
 
         {isLoadingSets ? (
-          <div className="flex items-center gap-2 text-xs text-slate-400">
+          <div className="flex items-center gap-2 text-xs text-ui-text-muted">
             <Loader2 className="h-4 w-4 animate-spin" />
             در حال دریافت مجموعه‌ها
           </div>
         ) : null}
         {setsError ? (
-          <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-2.5 text-xs text-rose-100 light:text-rose-700">
+          <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-2.5 text-xs text-rose-100">
             {getApiErrorMessage(setsError)}
           </div>
         ) : null}
@@ -573,8 +573,8 @@ export function ProjectCoefficientPanel({
             className={classNames(
               "min-h-11 rounded-lg border px-3 py-2 text-xs font-black transition",
               mobilePane === "add"
-                ? "border-emerald-300/45 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-                : "border-white/10 bg-white/5 text-slate-400 light:border-slate-200 light:bg-white"
+                ? "border-ui-primary/45 bg-ui-primary-soft text-ui-primary"
+                : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-muted"
             )}
             onClick={() => setMobilePane("add")}
             type="button"
@@ -585,8 +585,8 @@ export function ProjectCoefficientPanel({
             className={classNames(
               "min-h-11 rounded-lg border px-3 py-2 text-xs font-black transition",
               mobilePane === "list"
-                ? "border-emerald-300/45 bg-emerald-400/15 text-emerald-100 light:text-emerald-800"
-                : "border-white/10 bg-white/5 text-slate-400 light:border-slate-200 light:bg-white"
+                ? "border-ui-primary/45 bg-ui-primary-soft text-ui-primary"
+                : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-muted"
             )}
             onClick={() => setMobilePane("list")}
             type="button"
@@ -596,7 +596,7 @@ export function ProjectCoefficientPanel({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 border-t border-white/10 p-3 light:border-slate-200 sm:p-4 lg:overflow-hidden">
+      <div className="min-h-0 flex-1 border-t border-ui-border-subtle p-3 sm:p-4 lg:overflow-hidden">
         <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]">
           <div
             className={classNames(
@@ -605,24 +605,24 @@ export function ProjectCoefficientPanel({
             )}
           >
             {selectedSet ? (
-              <div className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50">
+              <div className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-black text-white light:text-slate-950">
+                  <p className="text-sm font-black text-ui-text-primary">
                     مقادیر {selectedSet.name}
                   </p>
                   {isLoadingValues ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-emerald-200" />
+                    <Loader2 className="h-4 w-4 animate-spin text-ui-primary" />
                   ) : null}
                 </div>
 
                 {valuesError ? (
-                  <div className="mt-3 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+                  <div className="mt-3 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
                     {getApiErrorMessage(valuesError)}
                   </div>
                 ) : null}
 
                 {!isLoadingValues && !valuesError && values.length === 0 ? (
-                  <p className="mt-3 text-sm leading-7 text-slate-400 light:text-slate-500">
+                  <p className="mt-3 text-sm leading-7 text-ui-text-muted">
                     هنوز مقدار ضریبی ثبت نشده است.
                   </p>
                 ) : null}
@@ -630,7 +630,7 @@ export function ProjectCoefficientPanel({
                 <div className="mt-3 space-y-2">
                   {values.map((value) => (
                     <div
-                      className="rounded-lg border border-white/10 bg-slate-950/35 p-2.5 light:border-slate-200 light:bg-white sm:p-3"
+                      className="rounded-lg border border-ui-border-subtle bg-ui-surface p-2.5 sm:p-3"
                       key={value.id}
                     >
                       {editingValueId === value.id ? (
@@ -656,7 +656,7 @@ export function ProjectCoefficientPanel({
                             </Button>
                           </div>
                           {editError ? (
-                            <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+                            <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
                               {editError}
                             </p>
                           ) : null}
@@ -665,13 +665,13 @@ export function ProjectCoefficientPanel({
                         <>
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="font-black text-white light:text-slate-950">
+                              <p className="font-black text-ui-text-primary">
                                 {value.label_fa || getCoefficientKeyLabel(value.coefficient_key ?? value.key)}
                               </p>
-                              <p className="mt-1 truncate text-xs text-slate-400 light:text-slate-500">
+                              <p className="mt-1 truncate text-xs text-ui-text-muted">
                                 {getCoefficientScopeLabel(value.scope)} · {getValueTargetLabel(value)}
                               </p>
-                              <p className="mt-1 text-sm font-black text-emerald-200 light:text-emerald-700">
+                              <p className="mt-1 text-sm font-black text-ui-primary">
                                 ضریب {value.multiplier ?? "1"}
                               </p>
                             </div>
@@ -733,7 +733,7 @@ export function ProjectCoefficientPanel({
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-white/10 bg-white/7 p-4 text-center text-sm text-slate-400 light:border-slate-200 light:bg-white light:text-slate-500">
+              <div className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-4 text-center text-sm text-ui-text-muted">
                 مجموعه‌ای برای نمایش انتخاب نشده است.
               </div>
             )}
@@ -747,15 +747,15 @@ export function ProjectCoefficientPanel({
             )}
           >
             {!isLoadingSets && !setsError && coefficientSets.length === 0 ? (
-              <div className="rounded-lg border border-amber-300/20 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100 light:text-amber-800">
+              <div className="rounded-lg border border-amber-300/20 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100">
                 ابتدا یک مجموعه بسازید؛ سپس ضریب‌های آن را ثبت کنید.
               </div>
             ) : null}
             <details
-              className="rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-white"
+              className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-3"
               open={coefficientSets.length === 0 ? true : undefined}
             >
-              <summary className="flex min-h-11 cursor-pointer items-center text-sm font-black text-slate-200 light:text-slate-800 sm:min-h-0">
+              <summary className="flex min-h-11 cursor-pointer items-center text-sm font-black text-ui-text-secondary sm:min-h-0">
                 ساخت مجموعه جدید
               </summary>
               <form className="mt-3 space-y-3" onSubmit={handleCreateSet}>
@@ -780,19 +780,19 @@ export function ProjectCoefficientPanel({
                   ساخت مجموعه
                 </Button>
                 {setError ? (
-                  <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+                  <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
                     {setError}
                   </p>
                 ) : null}
               </form>
             </details>
 
-            <form className="space-y-3 rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-white" onSubmit={handleCreateValue}>
+            <form className="space-y-3 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-3" onSubmit={handleCreateValue}>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-black text-white light:text-slate-950">
+                <p className="text-sm font-black text-ui-text-primary">
                   افزودن ضریب
                 </p>
-                <Plus className="h-4 w-4 text-emerald-200 light:text-emerald-700" />
+                <Plus className="h-4 w-4 text-ui-primary" />
               </div>
               {renderValueFormFields(valueForm, setValueForm)}
               <Button
@@ -808,7 +808,7 @@ export function ProjectCoefficientPanel({
                 ثبت ضریب
               </Button>
               {valueError ? (
-                <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100 light:text-rose-700">
+                <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
                   {valueError}
                 </p>
               ) : null}

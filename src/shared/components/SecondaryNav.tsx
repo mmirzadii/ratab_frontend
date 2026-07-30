@@ -2,31 +2,19 @@ import { useAppShell } from "../../app/appShellContext";
 import { classNames } from "../utils/classNames";
 
 export function SecondaryNav() {
-  const { secondaryNav, companyCtx, secondaryNavVariant } = useAppShell();
+  const { secondaryNav, companyCtx } = useAppShell();
 
   if (!secondaryNav) return null;
 
-  const isViolet = secondaryNavVariant === "violet";
-
-  const activeClasses = isViolet
-    ? "border-violet-300/30 bg-violet-400/15 text-violet-100 light:text-violet-800"
-    : "border-brand-300/30 bg-brand-400/15 text-brand-100 light:text-brand-800";
-
-  const hoverClasses = isViolet
-    ? "border-transparent text-slate-400 hover:border-violet-300/30 hover:bg-violet-400/10 hover:text-violet-100 light:text-slate-600 light:hover:text-violet-800"
-    : "border-transparent text-slate-400 hover:border-brand-300/30 hover:bg-brand-400/10 hover:text-brand-100 light:text-slate-600 light:hover:text-brand-800";
-
-  const headerTextClasses = isViolet
-    ? "text-violet-200 light:text-violet-700"
-    : "text-slate-300 light:text-slate-600";
+  const activeClasses = "border-ui-primary/30 bg-ui-primary-soft text-ui-primary";
+  const hoverClasses =
+    "border-transparent text-ui-text-muted hover:border-ui-primary/30 hover:bg-ui-primary-soft hover:text-ui-primary";
 
   return (
-    <aside className="hidden lg:flex fixed right-16 sm:right-20 top-0 z-20 h-screen w-56 flex-col border-l border-white/10 bg-slate-950/55 backdrop-blur-xl light:border-slate-200 light:bg-white/78">
+    <aside className="fixed right-16 top-0 z-20 hidden h-screen w-56 flex-col border-l border-ui-border-subtle bg-ui-surface sm:right-20 lg:flex">
       {companyCtx ? (
-        <div className="border-b border-white/10 px-3 py-4 light:border-slate-200">
-          <p className={classNames("truncate text-xs font-black", headerTextClasses)}>
-            {companyCtx.name}
-          </p>
+        <div className="border-b border-ui-border-subtle px-3 py-4">
+          <p className="truncate text-xs font-black text-ui-text-secondary">{companyCtx.name}</p>
         </div>
       ) : null}
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
@@ -36,11 +24,11 @@ export function SecondaryNav() {
           return (
             <button
               className={classNames(
-                "flex h-11 w-full items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60",
+                "flex h-11 w-full items-center gap-3 rounded-lg border px-3 text-right text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus",
                 item.isActive
                   ? activeClasses
                   : item.disabled
-                    ? "cursor-not-allowed border-transparent text-slate-500 opacity-65 light:text-slate-400"
+                    ? "cursor-not-allowed border-transparent text-ui-text-muted opacity-65"
                     : hoverClasses
               )}
               disabled={item.disabled}

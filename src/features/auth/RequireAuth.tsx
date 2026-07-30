@@ -29,7 +29,7 @@ export function RequireAuth({ children }: PropsWithChildren) {
 
   if (status === "unknown" || (!user && status === "authenticated" && (isLoading || isFetching))) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-ratab-night p-6 text-slate-100">
+      <div className="flex min-h-screen items-center justify-center bg-ui-canvas p-6 text-ui-text-primary">
         <GlassCard className="max-w-sm p-6 text-center">
           <p className="text-lg font-black">در حال بررسی نشست…</p>
         </GlassCard>

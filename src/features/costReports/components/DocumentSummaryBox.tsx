@@ -28,19 +28,19 @@ export function DocumentSummaryBox({
   );
 
   return (
-    <GlassCard className="rounded-none border-0 bg-transparent p-2.5 shadow-none backdrop-blur-none sm:rounded-lg sm:border sm:border-white/12 sm:bg-slate-950/48 sm:p-3 sm:shadow-2xl sm:backdrop-blur-xl light:sm:border-slate-200 light:sm:bg-white/82">
+    <GlassCard className="rounded-none border-0 bg-transparent p-2.5 shadow-none backdrop-blur-none sm:rounded-lg sm:border sm:border-ui-border-subtle sm:bg-ui-surface sm:p-3 sm:shadow-ui sm:backdrop-blur-xl">
       <div className="flex items-center gap-2 sm:block">
       {/* Stats row — compact, single line */}
       <div className="flex min-w-0 flex-1 items-center gap-2 text-xs sm:gap-3">
-        <div className="flex items-center gap-1 text-slate-400">
+        <div className="flex items-center gap-1 text-ui-text-muted">
           <Hash className="h-3 w-3" />
-          <span className="font-bold text-slate-200 light:text-slate-700">{lineCount}</span>
+          <span className="font-bold text-ui-text-secondary">{lineCount}</span>
           <span>ردیف</span>
         </div>
-        <div className="h-3 w-px bg-white/15 light:bg-slate-300" />
+        <div className="h-3 w-px bg-ui-border-subtle" />
         <div className="flex min-w-0 flex-1 items-center gap-1">
-          <Layers3 className="h-3 w-3 shrink-0 text-slate-400" />
-          <span className="truncate font-bold tabular-nums text-emerald-300 light:text-emerald-700">
+          <Layers3 className="h-3 w-3 shrink-0 text-ui-text-muted" />
+          <span className="truncate font-bold tabular-nums text-ui-primary">
             {formatMoneyAmount(totalAmount)}
           </span>
         </div>
@@ -49,7 +49,7 @@ export function DocumentSummaryBox({
       {/* Action buttons */}
       <div className="grid shrink-0 grid-cols-2 gap-1.5 sm:mt-2.5 sm:gap-2">
         <button
-          className="flex h-9 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/7 px-2 text-[11px] font-bold text-slate-200 transition hover:bg-white/12 light:border-slate-200 light:bg-white light:text-slate-700 sm:h-auto sm:gap-1.5 sm:py-2 sm:text-xs"
+          className="flex h-9 items-center justify-center gap-1 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-2 text-[11px] font-bold text-ui-text-secondary transition hover:bg-ui-surface-hover sm:h-auto sm:gap-1.5 sm:py-2 sm:text-xs"
           onClick={onOpenLines}
           type="button"
         >
@@ -57,7 +57,7 @@ export function DocumentSummaryBox({
           ردیف‌ها
         </button>
         <button
-          className="flex h-9 items-center justify-center gap-1 rounded-lg border border-amber-300/20 bg-amber-400/10 px-2 text-[11px] font-bold text-amber-100 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-55 light:border-amber-300/50 light:bg-amber-50 light:text-amber-800 sm:h-auto sm:gap-1.5 sm:py-2 sm:text-xs"
+          className="flex h-9 items-center justify-center gap-1 rounded-lg border border-amber-300/20 bg-amber-400/10 px-2 text-[11px] font-bold text-amber-100 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-55 sm:h-auto sm:gap-1.5 sm:py-2 sm:text-xs"
           disabled={Boolean(starredDisabledReason) || !onOpenStarredItem}
           onClick={onOpenStarredItem}
           title={starredDisabledReason ?? "افزودن آیتم ستاره‌دار"}
@@ -71,14 +71,14 @@ export function DocumentSummaryBox({
       </div>
 
       {starredDisabledReason ? (
-        <p className="mt-2 hidden text-xs leading-6 text-slate-400 light:text-slate-500 sm:block">
+        <p className="mt-2 hidden text-xs leading-6 text-ui-text-muted sm:block">
           {starredDisabledReason}
         </p>
       ) : null}
 
       {/* Alert: no lines yet */}
       {lineCount === 0 ? (
-        <div className="mt-2 hidden items-center gap-1.5 rounded-lg border border-amber-300/25 bg-amber-400/10 px-2.5 py-1.5 text-xs text-amber-200 light:border-amber-300/60 light:bg-amber-50 light:text-amber-800 sm:flex">
+        <div className="mt-2 hidden items-center gap-1.5 rounded-lg border border-amber-300/25 bg-amber-400/10 px-2.5 py-1.5 text-xs text-amber-200 sm:flex">
           <AlertTriangle className="h-3 w-3 shrink-0" />
           هنوز ردیفی اضافه نشده است
         </div>
@@ -86,7 +86,7 @@ export function DocumentSummaryBox({
 
       {/* Alert: document is locked */}
       {locked ? (
-        <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-violet-300/25 bg-violet-400/10 px-2.5 py-1.5 text-xs text-violet-200 light:border-violet-300/60 light:bg-violet-50 light:text-violet-800">
+        <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-ui-primary/30 bg-ui-primary-soft px-2.5 py-1.5 text-xs text-ui-primary">
           <Lock className="h-3 w-3 shrink-0" />
           صورت‌بها قفل شده است
         </div>

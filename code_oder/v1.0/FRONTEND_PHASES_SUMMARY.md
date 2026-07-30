@@ -7,7 +7,7 @@
 | 3 | Add frontend integration for company members, roles, permissions, and groups while preserving existing company/project behavior. |
 | 4 | Replace local-only company messages with backend-persisted group messaging. |
 | 5 | Add private file upload/opening and file/financial-document message attachments. |
-| 6 | Add wallet visibility and the approved 5-token official pricebook-line creation UX with idempotent retry handling. |
+| 6 | Add wallet visibility and idempotent charged operations. Historical note: the original Phase 6 UI assumed a fixed 5-token official line create; that UX was replaced on 2026-07-30 by calculation-based billing (explicit `محاسبه`, receipts, company wallet). |
 | 7 | Add subscription and daily message-quota states and a clear disabled-payment experience. |
 | 8 | Re-sync with the final backend contract, remove obsolete compatibility code, run regression checks, and finalize v1 documentation. |
 | 9 | Conversation-first company workspace: remove permanent Projects/Groups nav; ordered conversation list; create menu; composer **افزودن** (فایل \| صورت‌بها); list-first financial-document selector; empty-chat/drawer **افزودن صورت‌بها**; group drawer tabs صورت‌بهاها / فایل‌ها / لینک‌ها / اعضا — without inventing backend features. |

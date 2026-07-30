@@ -27,6 +27,8 @@ import {
   useListPricebooksQuery
 } from "../features/pricebooks/pricebookApi";
 import { type Project } from "../features/projects/projectApi";
+import { useGetTokenWalletQuery } from "../features/wallet/walletApi";
+import { formatDecimal } from "../shared/utils/formatters";
 
 import { CurrentDocumentPanel } from "../features/costReports/components/CurrentDocumentPanel";
 import { DocumentInfoSection } from "../features/costReports/components/DocumentInfoSection";
@@ -112,6 +114,7 @@ export function CostReportWizardPage() {
   const { data: company } = useRetrieveCompanyQuery(parsedCompanyId, {
     skip: !hasValidCompanyId
   });
+  const { data: tokenWallet } = useGetTokenWalletQuery();
   const {
     data: pricebooksData,
     error: pricebooksError,
@@ -356,7 +359,7 @@ export function CostReportWizardPage() {
         builderSections.find((section) => section.id === activeSection)?.title ??
         "افزودن صورت‌بها",
       companyName: cleanDisplayText(company?.name, "شرکت"),
-      tokenBalanceLabel: "—",
+      tokenBalanceLabel: tokenWallet ? formatDecimal(tokenWallet.balance) : "—",
       isLastStep,
       canGoNext,
       onNext: isLastStep ? null : () => {
@@ -382,6 +385,7 @@ export function CostReportWizardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     company,
+    tokenWallet,
     activeSection,
     isBuilderUnlocked,
     createdDocument,

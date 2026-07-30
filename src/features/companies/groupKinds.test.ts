@@ -61,24 +61,76 @@ describe("group classification", () => {
 });
 
 describe("conversation list ordering", () => {
-  it("pins the public group first, then project-linked, then custom", () => {
+  it("pins the public group first and preserves backend activity order for the rest", () => {
     const projects = [{ group_id: 20, name: "پروژه الف" }];
+    // Backend returns public first, then activity order (not alphabetical).
     const ordered = sortConversations(
       [
-        { id: 30, is_default: false, name: "سفارشی ب" },
-        { id: 20, is_default: false, name: "گروه پروژه" },
-        { id: 10, is_default: true, name: "عمومی" },
-        { id: 31, is_default: false, name: "سفارشی آ" }
-      ],
-      projects
+        {
+          id: 10,
+          is_default: true,
+          group_type: "public",
+          pin_priority: 0,
+          name: "عمومی",
+          last_activity_at: "2026-07-01T00:00:00Z"
+        },
+        {
+          id: 30,
+          is_default: false,
+          group_type: "custom",
+          pin_priority: 1,
+          name: "سفارشی ب",
+          last_activity_at: "2026-07-29T12:00:00Z"
+        },
+        {
+          id: 20,
+          is_default: false,
+          group_type: "project",
+          pin_priority: 1,
+          name: "گروه پروژه",
+          last_activity_at: "2026-07-28T12:00:00Z"
+        },
+        {
+          id: 31,
+          is_default: false,
+          group_type: "custom",
+          pin_priority: 1,
+          name: "آآآ اول الفبا",
+          last_activity_at: "2026-07-27T12:00:00Z"
+        }
+      ]
     );
     assert.deepEqual(
       ordered.map((g) => g.id),
-      [10, 20, 31, 30]
+      [10, 30, 20, 31]
     );
     assert.equal(classifyCompanyGroup(ordered[0], projects), "public");
-    assert.equal(classifyCompanyGroup(ordered[1], projects), "project");
-    assert.equal(classifyCompanyGroup(ordered[2], projects), "custom");
+    // Must not alphabetize (آآآ would otherwise rise above سفارشی ب).
+    assert.notEqual(ordered[1]?.id, 31);
+  });
+
+  it("does not alphabetize when public is already first", () => {
+    const ordered = sortConversations([
+      { id: 1, is_default: true, group_type: "public", pin_priority: 0, name: "عمومی" },
+      { id: 3, is_default: false, group_type: "custom", pin_priority: 1, name: "ب" },
+      { id: 2, is_default: false, group_type: "custom", pin_priority: 1, name: "آ" }
+    ]);
+    assert.deepEqual(
+      ordered.map((g) => g.id),
+      [1, 3, 2]
+    );
+  });
+
+  it("moves a misplaced public group to the front without reordering others", () => {
+    const ordered = sortConversations([
+      { id: 3, is_default: false, group_type: "custom", pin_priority: 1, name: "ب" },
+      { id: 1, is_default: true, group_type: "public", pin_priority: 0, name: "عمومی" },
+      { id: 2, is_default: false, group_type: "custom", pin_priority: 1, name: "آ" }
+    ]);
+    assert.deepEqual(
+      ordered.map((g) => g.id),
+      [1, 3, 2]
+    );
   });
 
   it("finds the linked project from group_id, not from the title", () => {
@@ -122,7 +174,8 @@ describe("conversation-first navigation and composer contracts", () => {
   it("exposes a clear create menu for project and group", () => {
     const menu = readFileSync(join(here, "workspace/ConversationCreateMenu.tsx"), "utf8");
     assert.match(menu, /پروژه جدید/);
-    assert.match(menu, /گروه جدید/);
+    assert.match(menu, /ساخت گروه/);
+    assert.doesNotMatch(menu, /گروه جدید/);
     assert.match(menu, /data-tour="create-project-action"/);
     assert.match(menu, /data-tour="create-group-action"/);
   });

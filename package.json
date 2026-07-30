@@ -13,10 +13,19 @@
     "test:auth-password": "node --experimental-strip-types --test src/features/auth/signupPassword.test.ts",
     "test:membership-access": "node --experimental-strip-types --test src/features/companies/membershipAccess.test.ts",
     "test:invitations": "node --experimental-strip-types --test src/features/companies/membershipAccess.test.ts src/features/companies/companyInvitations.test.ts",
-    "test:company-groups": "node --experimental-strip-types --test src/features/companies/groupKinds.test.ts",
+    "test:company-groups": "node --experimental-strip-types --test src/features/companies/groupKinds.test.ts src/features/companies/conversationActivityOrder.test.ts src/features/companies/createCompanyGroup.test.ts src/features/companies/groupInfoPanel.test.ts",
+    "test:composer-textarea": "node --experimental-strip-types --test src/features/companies/composerTextarea.test.ts",
+    "test:company-list-layout": "node --experimental-strip-types --test src/features/companies/companyListLayout.test.ts",
     "test:company-permissions": "node --experimental-strip-types --test src/features/companies/companyPermissions.test.ts",
     "test:project-selector": "node --experimental-strip-types --test src/features/costReports/projectSelector.test.ts",
-    "test:text-cleanup": "node --experimental-strip-types --test src/features/ui/textCleanup.test.ts"
+    "test:text-cleanup": "node --experimental-strip-types --test src/features/ui/textCleanup.test.ts",
+    "test:calculation-billing": "node --experimental-strip-types --test src/features/wallet/calculationBilling.test.ts src/shared/components/insufficientTokenModal.test.ts src/features/costReports/officialCalculationSession.test.ts",
+    "test:wallet-donation": "node --experimental-strip-types --test src/features/wallet/walletDonation.test.ts",
+    "test:wallet-purchase": "node --experimental-strip-types --test src/features/wallet/walletPurchase.test.ts src/features/wallet/walletTransactionLabels.test.ts",
+    "test:subscription-current": "node --experimental-strip-types --test src/features/subscription/subscriptionPlanCurrent.test.ts",
+    "test:account-settings": "node --experimental-strip-types --test src/features/account/accountSettingsLayout.test.ts src/features/wallet/walletTransactionLabels.test.ts",
+    "test:token-balance-chip": "node --experimental-strip-types --test src/shared/components/tokenBalanceChip.test.ts",
+    "test:mobile-drawer-nav": "node --experimental-strip-types --test src/shared/components/mobileDrawerNav.test.ts"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.6",

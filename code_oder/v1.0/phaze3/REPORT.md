@@ -89,11 +89,22 @@ Backend 403/409 responses still surface via existing `getApiErrorMessage` toasts
 
 - Persistent group-message UI
 - Message attachments / private files / financial-document attachments
-- Wallet / 5-token UX
+- Wallet / billing UX (see Phase 6, later corrected to calculation-based billing + company wallet)
 - Subscriptions / message quotas / payments
 - Coefficients and settings nav destinations
 - Broad redesign
 
+---
+
+## Related correction (2026-07-30)
+
+Company information includes **کیف توکن شرکت** for every active member (not Owner/Admin only). Donation opens the shared `DonateTokensModal` with the current company locked. Personal balances of other users are never exposed. No company→user withdrawal.
+
+## Related correction (2026-07-30) — dual-wallet headers
+
+- Personal chip remains global-only (`TokenBalanceChip`).
+- Active company workspace shows compact `CompanyTokenBadge` (`شرکت: N توکن`) beside the company name in `WorkspaceContextHeader`.
+- Badge is absent on company list, login/signup, and account settings without an active company workspace.
 ## Contract notes / mismatches
 
 1. OpenAPI still advertises `tokenAuth` alongside `cookieAuth` on these endpoints. Frontend continues Phase 2 cookie + CSRF only; no Token auth restored.
@@ -178,5 +189,21 @@ Earlier checked-in OpenAPI omitted invitation paths. The live Backend v1 schema 
 
 Dedicated ownership-transfer endpoint remains absent (`OWNERSHIP_TRANSFER_SUPPORTED = false`).
 
+## Correction (2026-07-30) - Telegram-like custom group create route
 
+- Removed the centered GroupsSection create modal.
+- Route: /companies/:companyId/groups/new nested under the company workspace.
+- Desktop: ~416–480px full-height side panel beside chat (no modal backdrop).
+- Mobile: full content area; bottom workspace nav hidden while creating.
+- Two-step draft (info → members); one POST /api/companies/{id}/groups/ with 
+ame, description, optional member_ids.
+- Active members only (ctive_only + q); creator omitted from invite list; selected members receive pending invitations.
+- Success invalidates group list + invitations and opens the new conversation.
 
+## Correction (2026-07-30) - Telegram-inspired group info side panel
+
+- Replaced the crowded GroupsSection admin form (edit fields + add-member select + permanent row actions) with a profile-first GroupInfoDrawer.
+- Internal panel views: overview / edit / addMembers / memberDetails (no centered modals, no notification switch).
+- Desktop: ~384-416px side panel beside chat; mobile: full-screen panel without dimmed backdrop.
+- Tabs order: اعضا → صورت‌بهاها → فایل‌ها → لینک‌ها; floating Add Member for custom groups.
+- Destructive deactivate moved under collapsed اقدامات حساس.

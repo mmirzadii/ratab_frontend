@@ -126,8 +126,8 @@ export function PendingInvitationsSection({
   if (isLoading) {
     return (
       <GlassCard className="flex min-h-24 items-center justify-center p-5">
-        <div className="flex items-center gap-3 text-sm font-bold text-slate-300 light:text-slate-600">
-          <Loader2 className="h-5 w-5 animate-spin text-emerald-300" />
+        <div className="flex items-center gap-3 text-sm font-bold text-ui-text-secondary">
+          <Loader2 className="h-5 w-5 animate-spin text-ui-primary" />
           در حال دریافت دعوت‌های عضویت
         </div>
       </GlassCard>
@@ -157,10 +157,10 @@ export function PendingInvitationsSection({
     <section className="space-y-2.5 sm:space-y-4" data-tour="pending-invitations" ref={sectionRef}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-sm font-black text-white light:text-slate-950 sm:text-lg">
+          <h2 className="text-sm font-black text-ui-text-primary sm:text-lg">
             دعوت‌های در انتظار تأیید
           </h2>
-          <p className="text-xs text-slate-400 light:text-slate-500 sm:text-sm">
+          <p className="text-xs text-ui-text-muted sm:text-sm">
             این شرکت‌ها هنوز فعال نیستند و تا تأیید دعوت قابل ورود نیستند.
           </p>
         </div>
@@ -182,39 +182,39 @@ export function PendingInvitationsSection({
                     {invitationStatusLabel(invitation.status)}
                   </StatusBadge>
                   <div>
-                    <h3 className="truncate text-base font-black text-white light:text-slate-950 sm:text-lg">
+                    <h3 className="truncate text-base font-black text-ui-text-primary sm:text-lg">
                       {invitation.company_name}
                     </h3>
-                    <p className="mt-1 text-xs text-slate-400 light:text-slate-500">
+                    <p className="mt-1 text-xs text-ui-text-muted">
                       شرکت در انتظار تأیید — ورود ممکن نیست
                     </p>
                   </div>
                 </div>
               </div>
 
-              <dl className="mt-3 space-y-1.5 text-xs text-slate-300 light:text-slate-600 sm:text-sm">
+              <dl className="mt-3 space-y-1.5 text-xs text-ui-text-secondary sm:text-sm">
                 <div className="flex justify-between gap-3">
                   <dt>نقش پیشنهادی</dt>
-                  <dd className="font-bold text-slate-100 light:text-slate-900">
+                  <dd className="font-bold text-ui-text-primary">
                     {getRoleLabel(invitation.proposed_role)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt>گروه هدف</dt>
-                  <dd className="truncate font-bold text-slate-100 light:text-slate-900">
+                  <dd className="truncate font-bold text-ui-text-primary">
                     {invitation.target_group_name || "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt>تاریخ دعوت</dt>
-                  <dd className="font-bold text-slate-100 light:text-slate-900">
+                  <dd className="font-bold text-ui-text-primary">
                     {formatInvitationDate(invitation.created_at)}
                   </dd>
                 </div>
                 {invitation.invited_by_member_id ? (
                   <div className="flex justify-between gap-3">
                     <dt>شناسه دعوت‌کننده</dt>
-                    <dd className="font-bold text-slate-100 light:text-slate-900">
+                    <dd className="font-bold text-ui-text-primary">
                       {invitation.invited_by_member_id}
                     </dd>
                   </div>
@@ -245,10 +245,10 @@ export function PendingInvitationsSection({
       </div>
 
       {rejectTarget ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ui-overlay p-3 backdrop-blur-sm sm:p-4">
           <GlassCard className="w-full max-w-md p-4 sm:p-5">
-            <h3 className="text-base font-black text-white light:text-slate-950">رد دعوت عضویت</h3>
-            <p className="mt-2 text-sm leading-7 text-slate-300 light:text-slate-600">
+            <h3 className="text-base font-black text-ui-text-primary">رد دعوت عضویت</h3>
+            <p className="mt-2 text-sm leading-7 text-ui-text-secondary">
               دعوت شرکت «{rejectTarget.company_name}» رد شود؟ این شرکت به فهرست فعال‌ها اضافه نخواهد شد.
             </p>
             <div className="mt-4 flex flex-wrap justify-end gap-2">

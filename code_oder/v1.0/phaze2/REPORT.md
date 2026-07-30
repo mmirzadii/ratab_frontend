@@ -97,3 +97,8 @@ Not a new phase. Approved correction to signup password completion:
 - `classifySignupCompleteError` maps `password` / `password_confirmation` field errors to the matching inputs; only real ticket field/detail/code restarts signup with the ticket message. No blanket “every 400 is invalid ticket”.
 - Pure helpers + Node test runner: `src/features/auth/signupPassword.ts` + `signupPassword.test.ts` (`npm run test:auth-password`).
 
+---
+
+## Related correction (2026-07-30)
+
+Signup/login invalidate personal `Wallet` RTK tags so the backend-granted balance is refetched after session creation. The frontend never adds signup tokens locally.

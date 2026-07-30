@@ -19,17 +19,17 @@ export function ReadableNotesSection({
 
   return (
     <section>
-      <h3 className="text-base font-black text-white light:text-slate-950">{title}</h3>
+      <h3 className="text-base font-black text-ui-text-primary">{title}</h3>
       <div className="mt-3 space-y-2">
         {notes.map((note) => (
           <article
-            className="rounded-lg border border-white/10 bg-white/7 p-4 text-sm leading-7 text-slate-300 light:border-slate-200 light:bg-slate-50 light:text-slate-700"
+            className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-4 text-sm leading-7 text-ui-text-secondary"
             key={note.id}
           >
             <div className="flex flex-wrap items-center gap-2">
-              <h4 className="font-black text-slate-100 light:text-slate-900">{note.title_fa}</h4>
+              <h4 className="font-black text-ui-text-primary">{note.title_fa}</h4>
               {note.affects_calculation ? (
-                <span className="rounded-full border border-amber-300/25 bg-amber-400/10 px-2 py-0.5 text-xs text-amber-100 light:text-amber-800">
+                <span className="rounded-full border border-amber-300/25 bg-amber-400/10 px-2 py-0.5 text-xs text-amber-100">
                   اثرگذار در محاسبه
                 </span>
               ) : null}
@@ -44,7 +44,7 @@ export function ReadableNotesSection({
               {note.body_fa}
             </p>
             <button
-              className="mt-1 text-xs font-bold text-success-300 transition hover:text-success-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 light:text-success-600 light:hover:text-success-700"
+              className="mt-1 text-xs font-bold text-success-300 transition hover:text-success-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus:text-success-700"
               onClick={() =>
                 setExpandedNotes((current) => ({
                   ...current,
@@ -91,15 +91,15 @@ export function ChecklistNotesSection({
 
   return (
     <section>
-      <h3 className="text-base font-black text-white light:text-slate-950">تبصره‌ها</h3>
-      <p className="mt-2 text-xs leading-6 text-slate-400 light:text-slate-500">
+      <h3 className="text-base font-black text-ui-text-primary">تبصره‌ها</h3>
+      <p className="mt-2 text-xs leading-6 text-ui-text-muted">
         تبصره‌هایی را که برای این محاسبه برقرار هستند علامت بزنید.
       </p>
       <div className="mt-3 space-y-2">
         {notes.map((note, index) => (
           <article
             className={classNames(
-              "rounded-lg border border-white/10 bg-white/7 p-4 text-sm leading-7 text-slate-300 light:border-slate-200 light:bg-slate-50 light:text-slate-700",
+              "rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-4 text-sm leading-7 text-ui-text-secondary",
               disabled && "opacity-75"
             )}
             key={note.id}
@@ -107,13 +107,13 @@ export function ChecklistNotesSection({
             <label className="flex items-start gap-3">
               <input
                 checked={Boolean(selectedNotes[note.note_code])}
-                className="mt-2 h-4 w-4 accent-emerald-300"
+                className="mt-2 h-4 w-4 accent-ui-primary"
                 disabled={disabled}
                 onChange={(event) => onToggle(note.note_code, event.target.checked)}
                 type="checkbox"
               />
               <span className="min-w-0 flex-1">
-                <span className="block font-black text-slate-100 light:text-slate-900">
+                <span className="block font-black text-ui-text-primary">
                   تبصره {index + 1}: {note.checkbox_text_fa || note.title_fa}
                 </span>
                 <span
@@ -135,15 +135,15 @@ export function ChecklistNotesSection({
                     : null;
                   return (
                     <label className="block min-w-0 text-xs" key={input.name}>
-                      <span className="mb-1 block font-bold text-slate-300 light:text-slate-700">
+                      <span className="mb-1 block font-bold text-ui-text-secondary">
                         {input.label_fa}{input.unit ? ` (${input.unit})` : ""}
                       </span>
                       <input
                         className={classNames(
-                          "h-8 w-full rounded-md border bg-slate-950/45 px-2 text-left text-sm outline-none transition light:bg-white light:text-slate-950",
+                          "h-8 w-full rounded-md border bg-ui-surface/45 px-2 text-left text-sm outline-none transition",
                           error
-                            ? "border-rose-400/60 text-rose-100 light:border-rose-400"
-                            : "border-white/10 text-slate-100 focus:border-emerald-300/45 light:border-slate-200"
+                            ? "border-rose-400/60 text-rose-100"
+                            : "border-ui-border-subtle text-ui-text-primary focus:border-ui-primary/30 "
                         )}
                         dir={input.type === "number" ? "ltr" : "rtl"}
                         disabled={disabled}
@@ -153,14 +153,14 @@ export function ChecklistNotesSection({
                         type="text"
                         value={inputValues[note.note_code]?.[input.name] ?? ""}
                       />
-                      {error ? <span className="mt-1 block text-rose-300 light:text-rose-700">{error}</span> : null}
+                      {error ? <span className="mt-1 block text-rose-300">{error}</span> : null}
                     </label>
                   );
                 })}
               </div>
             ) : null}
             <button
-              className="mt-2 text-xs font-bold text-success-300 transition hover:text-success-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-400/60 light:text-success-600 light:hover:text-success-700"
+              className="mt-2 text-xs font-bold text-success-300 transition hover:text-success-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus:text-success-700"
               onClick={() =>
                 setExpandedNotes((current) => ({
                   ...current,

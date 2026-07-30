@@ -192,90 +192,90 @@ function buildOfficialFormHtml({
       @font-face {
         font-family: "B Nazanin";
         src: url("${bNazaninFontUrl}") format("truetype");
-        font-weight: normal;
-        font-style: normal;
-      }
-      @page { size: A4; margin: 14mm 12mm; }
-      * { box-sizing: border-box; }
-      html, body {
-        margin: 0;
-        background: #fff;
-        color: #111827;
-        direction: rtl;
-        font-family: "B Nazanin", Vazirmatn, Tahoma, sans-serif;
-        font-size: 13px;
-        line-height: 1.8;
-      }
-      .form-header {
-        border: 2px solid #111827;
-        margin-bottom: 12px;
-      }
-      .form-header-top {
-        display: flex;
-        align-items: stretch;
-        border-bottom: 1px solid #111827;
-      }
-      .form-header-cell {
-        flex: 1;
-        padding: 6px 10px;
-        border-left: 1px solid #111827;
-        font-size: 12px;
-      }
-      .form-header-cell:last-child { border-left: none; }
-      .form-header-cell span { display: block; color: #6b7280; font-size: 11px; }
-      .form-header-cell strong { display: block; }
-      .form-title {
-        text-align: center;
-        padding: 8px;
-        font-size: 16px;
-        font-weight: 700;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 8px 0 18px;
-        page-break-inside: auto;
-      }
-      tr { page-break-inside: avoid; }
-      th, td {
-        border: 1px solid #6b7280;
-        padding: 5px 6px;
-        text-align: center;
-        vertical-align: middle;
-        font-size: 12px;
-      }
-      th { background: #f3f4f6; font-weight: 700; }
-      td.desc { text-align: right; }
-      td.code { direction: ltr; font-family: Consolas, "Courier New", monospace; font-size: 11px; }
-      th.desc { text-align: right; }
-      tr.subtotal td { background: #f3f4f6; font-weight: 700; }
-      .chapter-title {
-        font-size: 13px;
-        font-weight: 700;
-        margin: 18px 0 6px;
-        border-bottom: 1px solid #374151;
-        padding-bottom: 4px;
-      }
-      .totals-table { max-width: 460px; min-width: 300px; margin: 24px auto 0; }
-      .signatures {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        margin-top: 32px;
-      }
-      .signature {
-        border: 1px solid #6b7280;
-        min-height: 64px;
-        padding: 8px;
-        text-align: center;
-        font-size: 12px;
-      }
-      .signature-title { font-weight: 700; border-bottom: 1px solid #d1d5db; padding-bottom: 4px; margin-bottom: 4px; }
-      @media print { .no-print { display: none !important; } }
-    </style>
-  </head>
-  <body>
-    <div class="form-header">
+ font-weight: normal;
+ font-style: normal;
+ }
+ @page { size: A4; margin: 14mm 12mm; }
+ * { box-sizing: border-box; }
+ html, body {
+ margin: 0;
+ background: #fff;
+ color: #111827;
+ direction: rtl;
+ font-family:"B Nazanin", Vazirmatn, Tahoma, sans-serif;
+ font-size: 13px;
+ line-height: 1.8;
+ }
+ .form-header {
+ border: 2px solid #111827;
+ margin-bottom: 12px;
+ }
+ .form-header-top {
+ display: flex;
+ align-items: stretch;
+ border-bottom: 1px solid #111827;
+ }
+ .form-header-cell {
+ flex: 1;
+ padding: 6px 10px;
+ border-left: 1px solid #111827;
+ font-size: 12px;
+ }
+ .form-header-cell:last-child { border-left: none; }
+ .form-header-cell span { display: block; color: #6b7280; font-size: 11px; }
+ .form-header-cell strong { display: block; }
+ .form-title {
+ text-align: center;
+ padding: 8px;
+ font-size: 16px;
+ font-weight: 700;
+ }
+ table {
+ width: 100%;
+ border-collapse: collapse;
+ margin: 8px 0 18px;
+ page-break-inside: auto;
+ }
+ tr { page-break-inside: avoid; }
+ th, td {
+ border: 1px solid #6b7280;
+ padding: 5px 6px;
+ text-align: center;
+ vertical-align: middle;
+ font-size: 12px;
+ }
+ th { background: #f3f4f6; font-weight: 700; }
+ td.desc { text-align: right; }
+ td.code { direction: ltr; font-family: Consolas,"Courier New", monospace; font-size: 11px; }
+ th.desc { text-align: right; }
+ tr.subtotal td { background: #f3f4f6; font-weight: 700; }
+ .chapter-title {
+ font-size: 13px;
+ font-weight: 700;
+ margin: 18px 0 6px;
+ border-bottom: 1px solid #374151;
+ padding-bottom: 4px;
+ }
+ .totals-table { max-width: 460px; min-width: 300px; margin: 24px auto 0; }
+ .signatures {
+ display: grid;
+ grid-template-columns: repeat(4, 1fr);
+ gap: 10px;
+ margin-top: 32px;
+ }
+ .signature {
+ border: 1px solid #6b7280;
+ min-height: 64px;
+ padding: 8px;
+ text-align: center;
+ font-size: 12px;
+ }
+ .signature-title { font-weight: 700; border-bottom: 1px solid #d1d5db; padding-bottom: 4px; margin-bottom: 4px; }
+ @media print { .no-print { display: none !important; } }
+ </style>
+ </head>
+ <body>
+ <div class="form-header">
       <div class="form-title">صورت وضعیت قطعی پیمانکار</div>
       <div class="form-header-top">
         <div class="form-header-cell">
@@ -489,7 +489,7 @@ export function CurrentDocumentPanel({
           <>
             <button
               aria-label="ذخیره مقدار"
-              className="flex h-11 w-11 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-45 light:text-emerald-700 sm:h-8 sm:w-8"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-ui-primary/25 bg-ui-primary-soft text-ui-primary transition hover:bg-ui-surface-selected disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
               disabled={isActionBusy || isLocked}
               onClick={() => void handleSaveLine(line)}
               title="ذخیره"
@@ -499,7 +499,7 @@ export function CurrentDocumentPanel({
             </button>
             <button
               aria-label="انصراف"
-              className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-slate-300 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-45 light:border-slate-200 light:bg-white light:text-slate-600 sm:h-8 sm:w-8"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-ui-border-subtle bg-ui-surface-subtle text-ui-text-secondary transition hover:bg-ui-surface-hover disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
               disabled={isActionBusy}
               onClick={() => {
                 setEditingLineId(null);
@@ -515,7 +515,7 @@ export function CurrentDocumentPanel({
           <>
             <button
               aria-label="ویرایش مقدار"
-              className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-emerald-500/10 hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent p-1.5 text-ui-text-muted transition hover:bg-ui-primary-soft hover:text-ui-primary disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
               disabled={isActionBusy || isLocked}
               onClick={() => startEditingLine(line)}
               title="ویرایش مقدار"
@@ -525,7 +525,7 @@ export function CurrentDocumentPanel({
             </button>
             <button
               aria-label="حذف خط"
-              className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent p-1.5 text-slate-400 transition hover:bg-danger-500/10 hover:text-danger-400 disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent p-1.5 text-ui-text-muted transition hover:bg-danger-500/10 hover:text-danger-400 disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
               disabled={isActionBusy || isLocked}
               onClick={() => void handleDeleteLine(line)}
               title="حذف خط"
@@ -614,8 +614,8 @@ export function CurrentDocumentPanel({
     <GlassCard className="flex max-h-[calc(100dvh-8.5rem)] min-h-0 flex-col overflow-hidden p-3 sm:block sm:max-h-none sm:overflow-visible sm:p-5">
       <div className="flex shrink-0 flex-wrap items-start justify-between gap-2 sm:gap-3">
         <div>
-          <h2 className="text-lg font-black text-white light:text-slate-950">صورت‌بهای جاری</h2>
-          <p className="mt-2 hidden text-sm leading-7 text-slate-300 light:text-slate-600 sm:block">
+          <h2 className="text-lg font-black text-ui-text-primary">صورت‌بهای جاری</h2>
+          <p className="mt-2 hidden text-sm leading-7 text-ui-text-secondary sm:block">
             خطوطی که از محاسبه آیتم‌ها به سند اضافه می‌شوند، اینجا نمایش داده می‌شوند.
           </p>
         </div>
@@ -665,7 +665,7 @@ export function CurrentDocumentPanel({
       </div>
 
       {!document ? (
-        <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100 light:text-amber-800">
+        <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
           {setupNotice ?? "ابتدا پروژه و صورت‌بها را ثبت کنید تا بتوانید ردیف اضافه کنید."}
         </div>
       ) : null}
@@ -675,30 +675,30 @@ export function CurrentDocumentPanel({
           className="mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden sm:mt-4 sm:block sm:space-y-4 sm:overflow-visible"
           data-tour="finalize-rows"
         >
-          <details className="shrink-0 rounded-lg border border-white/10 bg-white/7 p-3 light:border-slate-200 light:bg-slate-50 sm:hidden">
+          <details className="shrink-0 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-3 sm:hidden">
             <summary className="flex min-h-11 cursor-pointer list-none items-center">
               <span className="flex w-full items-center justify-between gap-3">
-                <span className="text-xs font-bold text-slate-400 light:text-slate-500">جمع کل</span>
-                <span className="text-base font-black text-emerald-200 light:text-emerald-700">
+                <span className="text-xs font-bold text-ui-text-muted">جمع کل</span>
+                <span className="text-base font-black text-ui-primary">
                   {formatMoneyAmount(totals.totalAmount)}
                 </span>
               </span>
             </summary>
-            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-white/10 pt-3 text-xs light:border-slate-200">
-              <span className="text-slate-400 light:text-slate-500">شماره سند</span>
-              <span className="truncate text-left font-bold text-slate-200 light:text-slate-800">
+            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-ui-border-subtle pt-3 text-xs">
+              <span className="text-ui-text-muted">شماره سند</span>
+              <span className="truncate text-left font-bold text-ui-text-secondary">
                 {cleanDisplayText(document.document_number, "—")}
               </span>
-              <span className="text-slate-400 light:text-slate-500">سال فهرست‌بها</span>
-              <span className="text-left font-bold text-slate-200 light:text-slate-800">
+              <span className="text-ui-text-muted">سال فهرست‌بها</span>
+              <span className="text-left font-bold text-ui-text-secondary">
                 {selectedEditionYear ? String(selectedEditionYear) : "—"}
               </span>
-              <span className="text-slate-400 light:text-slate-500">جمع فهرست‌بها</span>
-              <span className="text-left font-bold text-slate-200 light:text-slate-800">
+              <span className="text-ui-text-muted">جمع فهرست‌بها</span>
+              <span className="text-left font-bold text-ui-text-secondary">
                 {formatMoneyAmount(totals.pricebookAmount)}
               </span>
-              <span className="text-slate-400 light:text-slate-500">جمع ضرایب</span>
-              <span className="text-left font-bold text-slate-200 light:text-slate-800">
+              <span className="text-ui-text-muted">جمع ضرایب</span>
+              <span className="text-left font-bold text-ui-text-secondary">
                 {formatMoneyAmount(totals.coefficientAmount)}
               </span>
             </div>
@@ -724,18 +724,18 @@ export function CurrentDocumentPanel({
           </div>
 
           {isLocked ? (
-            <p className="text-xs leading-6 text-violet-100 light:text-violet-800">
+            <p className="text-xs leading-6 text-ui-primary">
               سند قفل شده است؛ ویرایش، حذف و افزودن خط غیرفعال شده‌اند.
             </p>
           ) : null}
 
           {actionSuccess ? (
-            <p className="rounded-lg border border-success-300/25 bg-success-400/10 p-3 text-sm leading-7 text-success-100 light:text-success-800">
+            <p className="rounded-lg border border-ui-success/25 bg-ui-success-soft p-3 text-sm leading-7 text-ui-success">
               {actionSuccess}
             </p>
           ) : null}
           {actionError ? (
-            <p className="rounded-lg border border-danger-300/25 bg-danger-500/10 p-3 text-sm leading-7 text-danger-100 light:text-danger-700">
+            <p className="rounded-lg border border-danger-300/25 bg-danger-500/10 p-3 text-sm leading-7 text-danger-100">
               {actionError}
             </p>
           ) : null}
@@ -758,7 +758,7 @@ export function CurrentDocumentPanel({
             )}
           >
             {lines.length === 0 ? (
-              <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-8 text-center text-sm text-slate-400 light:border-slate-200 light:bg-white light:text-slate-500">
+              <div className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-4 py-8 text-center text-sm text-ui-text-muted">
                 هنوز خطی به صورت‌بها اضافه نشده است.
               </div>
             ) : null}
@@ -767,15 +767,15 @@ export function CurrentDocumentPanel({
 
               return (
                 <article
-                  className="rounded-lg border border-white/10 bg-white/5 p-2.5 light:border-slate-200 light:bg-white"
+                  className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-2.5"
                   key={line.id}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2 text-xs">
-                      <span className="shrink-0 text-slate-400 light:text-slate-500">
+                      <span className="shrink-0 text-ui-text-muted">
                         خط {formatDecimal(line.line_no)}
                       </span>
-                      <span className="truncate font-black text-slate-200 light:text-slate-800">
+                      <span className="truncate font-black text-ui-text-secondary">
                         {formatMoneyAmount(line.total_amount_snapshot)}
                       </span>
                     </div>
@@ -783,7 +783,7 @@ export function CurrentDocumentPanel({
                   </div>
 
                   {editingLineId === line.id ? (
-                    <label className="mt-2 flex items-center gap-2 rounded-lg bg-slate-950/30 p-2 text-xs text-slate-400 light:bg-slate-50 light:text-slate-500">
+                    <label className="mt-2 flex items-center gap-2 rounded-lg bg-ui-surface/30 p-2 text-xs text-ui-text-muted">
                       مقدار
                       <input
                         autoFocus
@@ -799,21 +799,21 @@ export function CurrentDocumentPanel({
                   <div className="mt-2 space-y-2">
                     {displayRows.map((row, index) => (
                       <div
-                        className="rounded-lg border border-white/8 bg-slate-950/25 p-2.5 light:border-slate-200 light:bg-slate-50"
+                        className="rounded-lg border border-ui-border-subtle bg-ui-surface/25 p-2.5"
                         key={`${row.parentLineId}-${row.rowCode ?? "row"}-${index}`}
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <span className="font-mono text-xs font-bold text-brand-300 light:text-brand-700">
+                          <span className="font-mono text-xs font-bold text-brand-300">
                             {row.rowCode ?? "—"}
                           </span>
-                          <span className="text-xs font-black text-emerald-200 light:text-emerald-700">
+                          <span className="text-xs font-black text-ui-primary">
                             {formatMoneyAmount(row.total)}
                           </span>
                         </div>
-                        <p className="mt-1.5 break-words text-sm font-bold leading-6 text-slate-100 light:text-slate-900">
+                        <p className="mt-1.5 break-words text-sm font-bold leading-6 text-ui-text-primary">
                           {cleanDisplayText(row.title, "شرح ثبت نشده")}
                         </p>
-                        <div className="mt-1.5 flex items-center justify-between gap-3 text-[11px] text-slate-400 light:text-slate-500">
+                        <div className="mt-1.5 flex items-center justify-between gap-3 text-[11px] text-ui-text-muted">
                           <span>
                             {formatDecimal(row.quantity)} {cleanDisplayText(row.unit, "")}
                           </span>
@@ -832,20 +832,20 @@ export function CurrentDocumentPanel({
             })}
 
             {document.chapter_totals.length > 0 ? (
-              <details className="rounded-lg border border-white/10 bg-white/5 p-3 light:border-slate-200 light:bg-white">
-                <summary className="flex min-h-11 cursor-pointer items-center text-sm font-black text-slate-200 light:text-slate-800">
+              <details className="rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-3">
+                <summary className="flex min-h-11 cursor-pointer items-center text-sm font-black text-ui-text-secondary">
                   جمع فصل‌ها
                 </summary>
                 <div className="mt-3 space-y-2">
                   {document.chapter_totals.map((chapterTotal) => (
                     <div
-                      className="rounded-lg bg-slate-950/30 p-2.5 text-xs light:bg-slate-50"
+                      className="rounded-lg bg-ui-surface/30 p-2.5 text-xs"
                       key={chapterTotal.id}
                     >
-                      <p className="font-bold text-slate-200 light:text-slate-800">
+                      <p className="font-bold text-ui-text-secondary">
                         {chapterTotal.chapter_code_snapshot} - {chapterTotal.chapter_title_snapshot}
                       </p>
-                      <p className="mt-1 text-slate-400 light:text-slate-500">
+                      <p className="mt-1 text-ui-text-muted">
                         جمع: {formatMoneyAmount(chapterTotal.final_total_amount)}
                       </p>
                     </div>
@@ -855,10 +855,10 @@ export function CurrentDocumentPanel({
             ) : null}
           </div>
 
-          <div className="hidden overflow-hidden rounded-lg border border-white/10 light:border-slate-200 sm:block">
+          <div className="hidden overflow-hidden rounded-lg border border-ui-border-subtle sm:block">
             <div className="overflow-x-auto">
               <div className="min-w-[1120px]">
-                <div className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 bg-white/7 px-4 py-3 text-xs font-bold text-slate-300 light:bg-slate-50 light:text-slate-600">
+                <div className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 bg-ui-surface-subtle px-4 py-3 text-xs font-bold text-ui-text-secondary">
                   <span>ردیف</span>
                   <span>کد</span>
                   <span>شرح</span>
@@ -871,7 +871,7 @@ export function CurrentDocumentPanel({
                   <span></span>
                 </div>
                 {lines.length === 0 ? (
-                  <div className="px-4 py-5 text-center text-sm text-slate-400 light:text-slate-500">
+                  <div className="px-4 py-5 text-center text-sm text-ui-text-muted">
                     هنوز خطی به صورت‌بها اضافه نشده است.
                   </div>
                 ) : null}
@@ -886,11 +886,11 @@ export function CurrentDocumentPanel({
                       <div key={line.id}>
                         {displayRows.map((row, index) => (
                           <div
-                            className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-200 light:border-slate-200 light:text-slate-700"
+                            className="grid grid-cols-[70px_110px_1fr_130px_90px_130px_130px_130px_130px_80px] gap-3 border-t border-ui-border-subtle px-4 py-3 text-sm text-ui-text-secondary"
                             key={`${row.parentLineId}-${row.rowCode ?? "row"}-${index}`}
                           >
                             <span>{index === 0 ? line.line_no : ""}</span>
-                            <span className="font-mono text-brand-300 light:text-brand-700">
+                            <span className="font-mono text-brand-300">
                               {row.rowCode ?? "—"}
                             </span>
                             <span
@@ -925,7 +925,7 @@ export function CurrentDocumentPanel({
                                 ? "—"
                                 : formatMoneyAmount(line.coefficient_amount_snapshot)}
                             </span>
-                            <span className="font-bold text-slate-100 light:text-slate-900">
+                            <span className="font-bold text-ui-text-primary">
                               {formatMoneyAmount(isExpanded ? row.total : line.total_amount_snapshot)}
                             </span>
                             {index === 0 ? renderLineActions(line) : <span />}
@@ -940,21 +940,21 @@ export function CurrentDocumentPanel({
           </div>
 
           {document.chapter_totals.length > 0 ? (
-            <details className="hidden rounded-lg border border-white/10 bg-white/7 p-4 light:border-slate-200 light:bg-slate-50 sm:block">
-              <summary className="cursor-pointer text-sm font-black text-white light:text-slate-950">
+            <details className="hidden rounded-lg border border-ui-border-subtle bg-ui-surface-subtle p-4 sm:block">
+              <summary className="cursor-pointer text-sm font-black text-ui-text-primary">
                 جمع فصل‌ها
               </summary>
               <div className="mt-3 grid gap-2 md:grid-cols-2">
                 {document.chapter_totals.map((chapterTotal) => (
                   <div
-                    className="rounded-lg border border-white/10 bg-slate-950/35 p-3 text-sm light:border-slate-200 light:bg-white"
+                    className="rounded-lg border border-ui-border-subtle bg-ui-surface p-3 text-sm"
                     key={chapterTotal.id}
                   >
-                    <p className="font-bold text-slate-100 light:text-slate-900">
+                    <p className="font-bold text-ui-text-primary">
                       {chapterTotal.chapter_code_snapshot} -{" "}
                       {chapterTotal.chapter_title_snapshot}
                     </p>
-                    <p className="mt-2 text-xs text-slate-400 light:text-slate-500">
+                    <p className="mt-2 text-xs text-ui-text-muted">
                       جمع نهایی: {formatMoneyAmount(chapterTotal.final_total_amount)}
                     </p>
                   </div>

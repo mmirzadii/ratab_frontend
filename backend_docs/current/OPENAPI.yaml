@@ -529,6 +529,11 @@ paths:
           description: ''
     post:
       operationId: companies_groups_create
+      description: Create a custom/normal company group. Accepts name, optional description,
+        and optional member_ids of active company members. The creator becomes an
+        active group member immediately; selected members receive pending group invitations
+        (no message access until accept). Public and project group types cannot be
+        created here.
       parameters:
       - in: path
         name: id
@@ -542,13 +547,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CompanyGroupRequest'
+              $ref: '#/components/schemas/CompanyGroupCreateRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/CompanyGroupRequest'
+              $ref: '#/components/schemas/CompanyGroupCreateRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CompanyGroupRequest'
+              $ref: '#/components/schemas/CompanyGroupCreateRequest'
         required: true
       security:
       - tokenAuth: []
@@ -558,7 +563,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CompanyGroup'
+                $ref: '#/components/schemas/CompanyGroupCreateResult'
           description: ''
   /api/companies/{id}/invitations/:
     get:
@@ -631,6 +636,12 @@ paths:
     get:
       operationId: companies_members_list
       parameters:
+      - in: query
+        name: active_only
+        schema:
+          type: boolean
+        description: When true, return only active company members (picker-safe).
+          Employees always receive active members only.
       - in: path
         name: id
         schema:
@@ -643,6 +654,11 @@ paths:
         description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
         schema:
           type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Search active/listed members by display name, title, or phone.
       tags:
       - companies
       security:
@@ -786,6 +802,116 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedCompanySlugHistoryList'
+          description: ''
+  /api/companies/{id}/token-donations/:
+    get:
+      operationId: companies_token_donations_list
+      description: List token donations to this company. Owners and admins see all
+        donations; other active members see only their own.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - companies
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyTokenDonationList'
+          description: ''
+    post:
+      operationId: companies_token_donations_create
+      description: 'Donate tokens from the caller''s personal wallet into this company''s
+        wallet. Returns the donation plus updated personal and company balances. Exact
+        replay returns 200 with Idempotent-Replayed: true.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      tags:
+      - companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyTokenDonationCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompanyTokenDonationCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompanyTokenDonationCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyTokenDonationResult'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyTokenDonationResult'
+          description: ''
+        '402':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenBillingError'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenBillingError'
+          description: ''
+  /api/companies/{id}/token-wallet/:
+    get:
+      operationId: companies_token_wallet_retrieve
+      description: Lightweight company token-wallet summary for Company Settings,
+        the company header badge, and the donation modal. Returns the company balance,
+        whether the caller is an active member who may donate, the caller's personal
+        balance, and current calculation costs. Does not load the full ledger.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company را شناسایی میکند.
+        required: true
+      tags:
+      - companies
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyTokenWallet'
           description: ''
   /api/companies/{id}/transfer-ownership/:
     post:
@@ -1690,6 +1816,11 @@ paths:
   /api/financial-documents/{id}/lines/:
     post:
       operationId: financial_documents_lines_create
+      description: 'Create a document line. Preferred path: pass calculation_receipt_id
+        from a prior paid official/starred calculation (free; no second debit). Add-without-receipt
+        fallback: pass pricebook_item_id plus calculation inputs and idempotency_key
+        — the server runs the same official calculation billing once, then creates
+        the line from that receipt.'
       parameters:
       - in: path
         name: id
@@ -1710,7 +1841,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/FinancialDocumentLineCreateRequest'
-        required: true
       security:
       - tokenAuth: []
       - cookieAuth: []
@@ -1739,7 +1869,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenBillingError'
+                $ref: '#/components/schemas/CombinedTokenBillingError'
           description: ''
         '409':
           content:
@@ -1768,6 +1898,101 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FinancialDocument'
+          description: ''
+  /api/financial-documents/{id}/official-calculation-sessions/:
+    post:
+      operationId: financial_documents_official_calculation_sessions_create
+      description: Open a free official calculation modal session for one pricebook
+        item on this document. Opening does not calculate, debit tokens, or create
+        a line. Pass the returned calculation_session_id to official-calculations
+        / pricebook calculate.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfficialCalculationSessionCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OfficialCalculationSessionCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OfficialCalculationSessionCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfficialCalculationSession'
+          description: ''
+  /api/financial-documents/{id}/official-calculations/:
+    post:
+      operationId: financial_documents_official_calculations_create
+      description: Run an official pricebook calculation inside a modal session. The
+        first successful calculation in the session debits the personal wallet then
+        the company wallet; later successful recalculations in the same open session
+        are free. Returns a receipt; pass its id as calculation_receipt_id to POST
+        .../lines/.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfficialCalculationRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OfficialCalculationRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OfficialCalculationRequestRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculationBillingResult'
+          description: Idempotent replay of an already-billed calculation.
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculationBillingResult'
+          description: ''
+        '402':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombinedTokenBillingError'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenBillingError'
           description: ''
   /api/financial-documents/{id}/preview/:
     get:
@@ -1813,6 +2038,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FinancialDocument'
+          description: ''
+  /api/financial-documents/{id}/starred-calculations/:
+    post:
+      operationId: financial_documents_starred_calculations_create
+      description: Price and bill a standalone starred calculation against this document,
+        debiting the personal wallet then the company wallet. Returns a calculation
+        billing receipt; pass its id as calculation_receipt_id to POST .../lines/
+        to materialize the line.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StarredCalculationRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StarredCalculationRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StarredCalculationRequestRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculationBillingResult'
+          description: Idempotent replay of an already-billed calculation.
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculationBillingResult'
+          description: ''
+        '402':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombinedTokenBillingError'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenBillingError'
           description: ''
   /api/health/:
     get:
@@ -1987,8 +2268,8 @@ paths:
     get:
       operationId: message_quota_retrieve
       description: Return the authenticated user's daily message usage, effective
-        limit, and reset time. A null limit means no daily limit is configured for
-        this account.
+        limit from the single effective plan, and reset time. A null limit means unlimited
+        for that plan.
       tags:
       - message-quota
       security:
@@ -2000,6 +2281,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageQuotaStatus'
+          description: ''
+  /api/payments/demo-purchase/:
+    post:
+      operationId: payments_demo_purchase_create
+      description: 'Local/Development instant token-package purchase. Requires DEMO_COMMERCE_ENABLED=true.
+        Loads price and token amount from the server-managed TokenPackage, creates
+        an audited PaymentOrder with provider=demo, credits the personal wallet through
+        the immutable ledger, and returns the order plus new balance. Never a bank-verified
+        payment. Frontend must not credit tokens locally. Exact replay returns 200
+        with Idempotent-Replayed: true.'
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoPurchaseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DemoPurchaseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DemoPurchaseRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoPurchaseResponse'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoPurchaseResponse'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoCommerceDisabled'
           description: ''
   /api/payments/orders/:
     post:
@@ -2157,6 +2483,12 @@ paths:
   /api/pricebook-items/{id}/calculate/:
     post:
       operationId: pricebook_items_calculate_create
+      description: Price an official pricebook calculation inside a modal session.
+        Requires financial_document_id, calculation_session_id, and idempotency_key.
+        The first successful calculation in the session is charged (personal then
+        company wallet); later successful recalculations in the same open session
+        are free. Pass the returned receipt id as calculation_receipt_id to POST /api/financial-documents/{id}/lines/
+        to materialize the line.
       parameters:
       - in: path
         name: id
@@ -2177,6 +2509,7 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/PricebookCalculateInputRequest'
+        required: true
       security:
       - tokenAuth: []
       - cookieAuth: []
@@ -2185,7 +2518,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PricebookCalculateResponse'
+                $ref: '#/components/schemas/CalculationBillingResult'
+          description: Idempotent replay of an already-billed calculation.
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculationBillingResult'
           description: ''
         '400':
           content:
@@ -2195,6 +2534,18 @@ paths:
           description: Validation error. Blank-price/manual-price rows return requires_manual_unit_price=true.
             Multi-row items return requires_row_selection=true when pricebook_row_id
             is not provided.
+        '402':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombinedTokenBillingError'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenBillingError'
+          description: ''
   /api/pricebooks/:
     get:
       operationId: pricebooks_list
@@ -2480,8 +2831,9 @@ paths:
   /api/subscription/:
     get:
       operationId: subscription_retrieve
-      description: Return the authenticated user's current subscription. Subscriptions
-        are activated by an administrator while online payment is disabled.
+      description: Return the authenticated user's single effective plan. A paid UserSubscription
+        is used when valid; otherwise Bronze is the free fallback without creating
+        a subscription row.
       tags:
       - subscription
       security:
@@ -2497,8 +2849,11 @@ paths:
   /api/subscription-plans/:
     get:
       operationId: subscription_plans_list
-      description: List active backend-owned subscription plans. Plan limits, durations,
-        and prices are defined by the backend only.
+      description: List subscription plan catalog rows. ``is_available`` is catalog
+        availability; exactly one row has ``is_current=true`` for the authenticated
+        user (paid plan or free Bronze fallback). ``is_free_fallback`` marks Bronze.
+        ``can_activate`` is true only for paid available plans that are not already
+        current.
       tags:
       - subscription-plans
       security:
@@ -2516,8 +2871,11 @@ paths:
   /api/token-wallet/:
     get:
       operationId: token_wallet_retrieve
-      description: Return the authenticated user's token wallet. The API is read-only;
-        clients cannot set balances or create grants.
+      description: Return the authenticated user's token wallet balance, active server-managed
+        token packages (prices and amounts), current admin-managed official/starred
+        calculation costs, and commerce capability flags (demo purchase available
+        vs purchasing disabled). Read-only; clients cannot set balances or invent
+        package prices. Works even when demo purchasing is disabled.
       tags:
       - token-wallet
       security:
@@ -2603,51 +2961,6 @@ components:
       - is_staff
       - phone_number
       - updated_at
-    AppliedCoefficient:
-      type: object
-      properties:
-        coefficient_value_id:
-          type: integer
-        coefficient_key:
-          type: string
-        key:
-          type: string
-        label_fa:
-          type: string
-        title_fa:
-          type: string
-        scope:
-          type: string
-        multiplier:
-          type: string
-        value:
-          type: string
-        factor:
-          type: string
-        target_id:
-          type: integer
-          nullable: true
-        priority_source:
-          type: string
-        row_id:
-          type: integer
-        row_code:
-          type: string
-        amount_before:
-          type: string
-        amount_after:
-          type: string
-        effect_amount:
-          type: string
-      required:
-      - amount_after
-      - amount_before
-      - coefficient_key
-      - coefficient_value_id
-      - effect_amount
-      - label_fa
-      - multiplier
-      - scope
     AttachmentTypeEnum:
       enum:
       - file
@@ -2656,6 +2969,192 @@ components:
       description: |-
         * `file` - File
         * `financial_document` - Financial document
+    CalculationBillingReceipt:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        calculation_type:
+          allOf:
+          - $ref: '#/components/schemas/CalculationTypeEnum'
+          readOnly: true
+        document_id:
+          type: integer
+          readOnly: true
+        company_id:
+          type: integer
+          readOnly: true
+        pricebook_item_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        session_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        applied_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+        personal_debit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+        company_debit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+        line_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        idempotency_key:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applied_cost
+      - calculation_type
+      - company_debit
+      - company_id
+      - created_at
+      - document_id
+      - id
+      - idempotency_key
+      - line_id
+      - personal_debit
+      - pricebook_item_id
+      - session_id
+    CalculationBillingResult:
+      type: object
+      description: Response shape for official/starred calculation billing endpoints.
+      properties:
+        result: {}
+        receipt:
+          $ref: '#/components/schemas/CalculationBillingReceipt'
+        billing:
+          $ref: '#/components/schemas/CalculationBillingSummary'
+        personal_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        company_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        replayed:
+          type: boolean
+          default: false
+        calculation_session_id:
+          type: string
+          format: uuid
+          nullable: true
+        session_already_paid:
+          type: boolean
+          nullable: true
+      required:
+      - billing
+      - company_balance
+      - personal_balance
+      - receipt
+      - result
+    CalculationBillingSummary:
+      type: object
+      properties:
+        applied_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        personal_debit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        company_debit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+      required:
+      - applied_cost
+      - company_debit
+      - personal_debit
+    CalculationTypeEnum:
+      enum:
+      - official
+      - starred
+      type: string
+      description: |-
+        * `official` - Official pricebook calculation
+        * `starred` - Standalone starred calculation
+    CombinedTokenBillingError:
+      type: object
+      description: Documents ``InsufficientCombinedTokenBalance`` (personal + company).
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+        required_tokens:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        personal_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        company_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        total_available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        calculation_type:
+          type: string
+        company_id:
+          type: integer
+        calculation_session_id:
+          type: string
+          format: uuid
+        official_calculation_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        starred_calculation_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+      required:
+      - calculation_type
+      - code
+      - company_balance
+      - detail
+      - personal_balance
+      - required_tokens
+      - total_available
+    CommerceCapabilities:
+      type: object
+      properties:
+        demo_purchase_available:
+          type: boolean
+        online_payments_enabled:
+          type: boolean
+        purchasing_disabled:
+          type: boolean
+        mode:
+          type: string
+      required:
+      - demo_purchase_available
+      - mode
+      - online_payments_enabled
+      - purchasing_disabled
     Company:
       type: object
       properties:
@@ -2727,6 +3226,9 @@ components:
         pin_priority:
           type: integer
           readOnly: true
+        last_activity_at:
+          type: string
+          readOnly: true
         is_default:
           type: boolean
           readOnly: true
@@ -2758,11 +3260,55 @@ components:
       - id
       - is_active
       - is_default
+      - last_activity_at
       - name
       - pin_priority
       - project
       - project_id
       - updated_at
+    CompanyGroupCreateRequest:
+      type: object
+      description: Safe fields for POST /api/companies/{id}/groups/ (custom groups
+        only).
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 240
+        description:
+          type: string
+          default: ''
+        member_ids:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+          description: Active company member IDs to invite into the new custom group.
+            The creator is always an active member and is never invited.
+      required:
+      - name
+    CompanyGroupCreateResult:
+      type: object
+      properties:
+        group:
+          $ref: '#/components/schemas/CompanyGroup'
+        creator_membership:
+          $ref: '#/components/schemas/CompanyGroupMembership'
+        pending_invitation_count:
+          type: integer
+        invitations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyMembershipInvitation'
+        skipped_already_member_ids:
+          type: array
+          items:
+            type: integer
+      required:
+      - creator_membership
+      - group
+      - invitations
+      - pending_invitation_count
     CompanyGroupMemberAddRequest:
       type: object
       properties:
@@ -2826,17 +3372,6 @@ components:
       - role
       - updated_at
       - user_id
-    CompanyGroupRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 240
-        description:
-          type: string
-      required:
-      - name
     CompanyInvitationCreateRequest:
       type: object
       properties:
@@ -2898,6 +3433,14 @@ components:
           type: object
           additionalProperties: {}
           readOnly: true
+        effective_permissions:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        inherited_permissions:
+          type: object
+          additionalProperties: {}
+          readOnly: true
         configurable_permissions:
           type: array
           items: {}
@@ -2946,7 +3489,9 @@ components:
       - created_at
       - display_name
       - edit_denied_reason
+      - effective_permissions
       - id
+      - inherited_permissions
       - invited_by_member_id
       - is_active
       - joined_at
@@ -3119,6 +3664,117 @@ components:
       - id
       - is_active
       - slug
+    CompanyTokenDonation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        company_id:
+          type: integer
+          readOnly: true
+        donor_user_id:
+          type: integer
+          readOnly: true
+        donor_member_id:
+          type: integer
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+        idempotency_key:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - company_id
+      - created_at
+      - donor_member_id
+      - donor_user_id
+      - id
+      - idempotency_key
+    CompanyTokenDonationCreateRequest:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        idempotency_key:
+          type: string
+          minLength: 1
+          description: Optional retry key for exact-once donation creation.
+          pattern: ^[A-Za-z0-9._:-]{1,128}$
+      required:
+      - amount
+    CompanyTokenDonationResult:
+      type: object
+      description: Donation mutation response with updated personal and company balances.
+      properties:
+        donation:
+          $ref: '#/components/schemas/CompanyTokenDonation'
+        personal_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        company_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+      required:
+      - company_balance
+      - donation
+      - personal_balance
+    CompanyTokenWallet:
+      type: object
+      properties:
+        company_id:
+          type: integer
+        company_name:
+          type: string
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        is_active_member:
+          type: boolean
+        donation_allowed:
+          type: boolean
+        personal_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        official_calculation_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        starred_calculation_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        fallback_available:
+          type: boolean
+          description: True when the company wallet balance is greater than zero.
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - balance
+      - company_id
+      - company_name
+      - donation_allowed
+      - fallback_available
+      - is_active_member
+      - official_calculation_cost
+      - personal_balance
+      - starred_calculation_cost
+      - updated_at
     CsrfTokenResponse:
       type: object
       properties:
@@ -3127,6 +3783,54 @@ components:
           readOnly: true
       required:
       - csrf_token
+    CurrencyEnum:
+      enum:
+      - IRR
+      type: string
+      description: '* `IRR` - Iranian rial'
+    DemoCommerceDisabled:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - detail
+    DemoPurchaseRequest:
+      type: object
+      description: Demo purchase accepts only package identity and a retry key.
+      properties:
+        package_code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        idempotency_key:
+          type: string
+          minLength: 1
+          description: Required retry key for exact-once demo purchase.
+          pattern: ^[A-Za-z0-9._:-]{1,128}$
+      required:
+      - idempotency_key
+      - package_code
+    DemoPurchaseResponse:
+      type: object
+      properties:
+        order:
+          allOf:
+          - $ref: '#/components/schemas/PaymentOrder'
+          readOnly: true
+        wallet_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+      required:
+      - order
+      - wallet_balance
     DevLoginRequest:
       type: object
       properties:
@@ -3648,12 +4352,19 @@ components:
         idempotency_key:
           type: string
           minLength: 1
-          description: Optional retry key for exact-once creation and charging of
-            an official pricebook-backed line.
+          description: Required for official Add-without-receipt (pricebook_item_id
+            without calculation_receipt_id). Also used as the calculation billing
+            retry key. Optional for receipt-backed line creation.
           pattern: ^[A-Za-z0-9._:-]{1,128}$
         pricebook_item_id:
           type: integer
           nullable: true
+        calculation_receipt_id:
+          type: integer
+          nullable: true
+          description: Id of a paid calculation billing receipt (from the official/starred
+            calculation endpoints). When provided, the line is created directly from
+            the receipt and no other calculation fields are read.
         coefficient_set_id:
           type: integer
           nullable: true
@@ -3665,6 +4376,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+          nullable: true
         manual_unit_price:
           type: string
           format: decimal
@@ -3708,8 +4420,6 @@ components:
           nullable: true
           description: Map of footnote_code to bool — applied checkboxes for this
             calculation.
-      required:
-      - quantity
     FinancialDocumentStatusEnum:
       enum:
       - draft
@@ -4029,10 +4739,15 @@ components:
           type: string
           format: date-time
           readOnly: true
+        effective_plan_code:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - code
       - daily_limit
       - detail
+      - effective_plan_code
       - quota_date
       - resets_at
       - used_today
@@ -4073,6 +4788,105 @@ components:
       - resets_at
       - subscription_status
       - used_today
+    OfficialCalculationRequestRequest:
+      type: object
+      description: |-
+        Request body for POST .../official-calculations/. Mirrors the pricebook
+        item calculate inputs plus the required document-scoped billing fields.
+      properties:
+        calculation_session_id:
+          type: string
+          format: uuid
+          description: Server-issued modal calculation session id from POST .../official-calculation-sessions/.
+            First successful calculation in the session is billed; later ones are
+            free.
+        idempotency_key:
+          type: string
+          minLength: 1
+          description: Required retry key for exact-once official calculation billing.
+          pattern: ^[A-Za-z0-9._:-]{1,128}$
+        pricebook_item_id:
+          type: integer
+        coefficient_set_id:
+          type: integer
+          nullable: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+        values:
+          type: array
+          items:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+          description: Indexed input values for v2 items. Supersedes quantity when
+            provided.
+        manual_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          nullable: true
+        custom_prices:
+          type: object
+          additionalProperties:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+          description: Optional per-row custom unit prices keyed by six-digit row_code.
+        pricebook_row_id:
+          type: integer
+          nullable: true
+        selected_row_id:
+          type: integer
+          nullable: true
+          description: Row selection for itemized items.
+        footnotes:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: Map of footnote_code to bool — applied checkboxes for this
+            calculation.
+      required:
+      - calculation_session_id
+      - idempotency_key
+      - pricebook_item_id
+    OfficialCalculationSession:
+      type: object
+      properties:
+        calculation_session_id:
+          type: string
+          format: uuid
+        document_id:
+          type: integer
+        pricebook_item_id:
+          type: integer
+        company_id:
+          type: integer
+        is_paid:
+          type: boolean
+        expires_at:
+          type: string
+          format: date-time
+        official_calculation_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+      required:
+      - calculation_session_id
+      - company_id
+      - document_id
+      - expires_at
+      - is_paid
+      - official_calculation_cost
+      - pricebook_item_id
+    OfficialCalculationSessionCreateRequest:
+      type: object
+      properties:
+        pricebook_item_id:
+          type: integer
+      required:
+      - pricebook_item_id
     OwnershipTransferRequest:
       type: object
       properties:
@@ -4219,6 +5033,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CompanySlugHistory'
+    PaginatedCompanyTokenDonationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyTokenDonation'
     PaginatedFinancialDocumentList:
       type: object
       required:
@@ -4746,6 +5583,14 @@ components:
         currency_snapshot:
           type: string
           readOnly: true
+        provider:
+          type: string
+          readOnly: true
+        fulfilled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -4753,9 +5598,11 @@ components:
       required:
       - created_at
       - currency_snapshot
+      - fulfilled_at
       - id
       - package_code_snapshot
       - price_amount_snapshot
+      - provider
       - status
       - token_amount_snapshot
     PaymentOrderCreateRequest:
@@ -4828,6 +5675,20 @@ components:
     PricebookCalculateInputRequest:
       type: object
       properties:
+        financial_document_id:
+          type: integer
+          description: Required. Official calculations are billed against this document
+            (personal wallet, then company wallet).
+        calculation_session_id:
+          type: string
+          format: uuid
+          description: Server-issued modal calculation session id. First successful
+            calculation in the session is billed; later ones are free.
+        idempotency_key:
+          type: string
+          minLength: 1
+          description: Required retry key for exact-once official calculation billing.
+          pattern: ^[A-Za-z0-9._:-]{1,128}$
         quantity:
           type: string
           format: decimal
@@ -4868,149 +5729,10 @@ components:
           nullable: true
           description: Map of footnote_code to bool — applied checkboxes for this
             calculation.
-    PricebookCalculateResponse:
-      type: object
-      properties:
-        item_id:
-          type: integer
-        item_key:
-          type: string
-        row_id:
-          type: integer
-        row_code:
-          type: string
-        quantity:
-          type: string
-        unit:
-          type: string
-        unit_price:
-          type: string
-          nullable: true
-        currency_code:
-          type: string
-        base_amount:
-          type: string
-        coefficient_amount:
-          type: string
-        total_amount:
-          type: string
-        applied_coefficients:
-          type: array
-          items:
-            $ref: '#/components/schemas/AppliedCoefficient'
-        price_source:
-          type: string
-        manual_unit_price:
-          type: string
-          nullable: true
-        custom_price_row_codes:
-          type: array
-          items:
-            type: string
-        requires_manual_unit_price:
-          type: boolean
-        calculate_message:
-          type: string
-        rows_breakdown:
-          type: array
-          items:
-            $ref: '#/components/schemas/PricebookRowBreakdown'
-        calculation_input:
-          $ref: '#/components/schemas/PricebookCalculationInputSnapshotWithManual'
-        calculation_output:
-          $ref: '#/components/schemas/PricebookCalculationOutput'
       required:
-      - applied_coefficients
-      - base_amount
-      - calculate_message
-      - calculation_input
-      - calculation_output
-      - coefficient_amount
-      - currency_code
-      - item_id
-      - item_key
-      - manual_unit_price
-      - price_source
-      - quantity
-      - requires_manual_unit_price
-      - row_code
-      - row_id
-      - rows_breakdown
-      - total_amount
-      - unit
-      - unit_price
-    PricebookCalculationInputSnapshotWithManual:
-      type: object
-      properties:
-        quantity:
-          type: string
-        values:
-          type: array
-          items:
-            type: string
-        selected_row_id:
-          type: integer
-          nullable: true
-        selected_row_code:
-          type: string
-          nullable: true
-        coefficient_set_id:
-          type: integer
-          nullable: true
-        manual_unit_price:
-          type: string
-          nullable: true
-        custom_prices:
-          type: object
-          additionalProperties:
-            type: string
-        custom_price_row_codes:
-          type: array
-          items:
-            type: string
-        footnotes:
-          type: object
-          additionalProperties: {}
-          nullable: true
-      required:
-      - coefficient_set_id
-      - manual_unit_price
-      - quantity
-    PricebookCalculationOutput:
-      type: object
-      properties:
-        base_amount:
-          type: string
-        coefficient_amount:
-          type: string
-        total_amount:
-          type: string
-        applied_coefficients:
-          type: array
-          items:
-            $ref: '#/components/schemas/AppliedCoefficient'
-        formula:
-          type: string
-        price_source:
-          type: string
-        selected_row_code:
-          type: string
-          nullable: true
-        custom_price_row_codes:
-          type: array
-          items:
-            type: string
-        rows_breakdown:
-          type: array
-          items:
-            $ref: '#/components/schemas/PricebookRowBreakdown'
-      required:
-      - applied_coefficients
-      - base_amount
-      - coefficient_amount
-      - formula
-      - price_source
-      - total_amount
+      - calculation_session_id
+      - financial_document_id
+      - idempotency_key
     PricebookChapter:
       type: object
       properties:
@@ -5325,51 +6047,6 @@ components:
       - selection_rule
       - short_title_fa
       - title_fa
-      - unit
-      - unit_price
-    PricebookRowBreakdown:
-      type: object
-      properties:
-        row_id:
-          type: integer
-        row_code:
-          type: string
-        title_fa:
-          type: string
-        description_fa:
-          type: string
-        unit:
-          type: string
-        unit_price:
-          type: string
-          nullable: true
-        currency_code:
-          type: string
-        quantity:
-          type: string
-        total:
-          type: string
-        price_source:
-          type: string
-        coefficient_multiplier:
-          type: string
-        coefficient_amount:
-          type: string
-        total_after_coefficients:
-          type: string
-        applied_coefficients:
-          type: array
-          items:
-            type: object
-            additionalProperties: {}
-      required:
-      - currency_code
-      - description_fa
-      - quantity
-      - row_code
-      - row_id
-      - title_fa
-      - total
       - unit
       - unit_price
     PricebookSelectInputItem:
@@ -6014,8 +6691,47 @@ components:
       required:
       - expires_in_seconds
       - signup_ticket
+    StarredCalculationRequestRequest:
+      type: object
+      description: Request body for POST .../starred-calculations/ (standalone starred
+        line).
+      properties:
+        idempotency_key:
+          type: string
+          minLength: 1
+          description: Required retry key for exact-once starred calculation billing.
+          pattern: ^[A-Za-z0-9._:-]{1,128}$
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,18}(?:\.\d{0,6})?$
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,4})?$
+        description:
+          type: string
+          minLength: 1
+        unit:
+          type: string
+          minLength: 1
+        coefficient_set_id:
+          type: integer
+          nullable: true
+      required:
+      - description
+      - idempotency_key
+      - quantity
+      - unit
+      - unit_price
     SubscriptionPlan:
       type: object
+      description: |-
+        Catalog plan with explicit availability / current / fallback flags.
+
+        ``is_active`` on the model means catalog availability. Frontend-facing
+        responses expose that as ``is_available`` so it is never confused with the
+        user's current effective plan.
       properties:
         code:
           type: string
@@ -6030,6 +6746,10 @@ components:
           type: integer
           readOnly: true
           nullable: true
+        max_attachment_bytes_per_message:
+          type: integer
+          readOnly: true
+          nullable: true
         duration_days:
           type: integer
           readOnly: true
@@ -6041,12 +6761,33 @@ components:
         currency:
           type: string
           readOnly: true
+        display_order:
+          type: integer
+          readOnly: true
+        is_available:
+          type: boolean
+          readOnly: true
+        is_current:
+          type: boolean
+          readOnly: true
+        is_free_fallback:
+          type: boolean
+          readOnly: true
+        can_activate:
+          type: boolean
+          readOnly: true
       required:
+      - can_activate
       - code
       - currency
       - daily_message_limit
       - description_fa
+      - display_order
       - duration_days
+      - is_available
+      - is_current
+      - is_free_fallback
+      - max_attachment_bytes_per_message
       - price_amount
       - title_fa
     TokenBillingError:
@@ -6067,25 +6808,83 @@ components:
       required:
       - code
       - detail
+    TokenPackage:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        title_fa:
+          type: string
+          readOnly: true
+        token_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+          readOnly: true
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+          readOnly: true
+        currency:
+          allOf:
+          - $ref: '#/components/schemas/CurrencyEnum'
+          readOnly: true
+        display_order:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - code
+      - currency
+      - display_order
+      - is_active
+      - price_amount
+      - title_fa
+      - token_amount
     TokenWallet:
       type: object
+      description: |-
+        Renders ``TokenWalletService.get_wallet_summary`` output.
+
+        Includes the current admin-managed billing policy costs, active token
+        packages, and commerce capability flags so clients never guess prices or
+        whether demo purchase is available from their own environment.
       properties:
         balance:
           type: string
           format: decimal
           pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
-          readOnly: true
+        official_calculation_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        starred_calculation_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        token_packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenPackage'
+        commerce:
+          $ref: '#/components/schemas/CommerceCapabilities'
         created_at:
           type: string
           format: date-time
-          readOnly: true
         updated_at:
           type: string
           format: date-time
-          readOnly: true
       required:
       - balance
+      - commerce
       - created_at
+      - official_calculation_cost
+      - starred_calculation_cost
+      - token_packages
       - updated_at
     TokenWalletTransaction:
       type: object
@@ -6152,12 +6951,18 @@ components:
       - manual_grant
       - pricebook_line_usage
       - token_package_purchase
+      - calculation_usage
+      - company_donation_debit
+      - demo_package_credit
       type: string
       description: |-
         * `initial_grant` - Initial grant
         * `manual_grant` - Manual grant
         * `pricebook_line_usage` - Pricebook line usage
         * `token_package_purchase` - Token package purchase
+        * `calculation_usage` - Calculation usage
+        * `company_donation_debit` - Company donation debit
+        * `demo_package_credit` - Demo package credit
     UploadStatusEnum:
       enum:
       - pending
@@ -6170,8 +6975,29 @@ components:
         * `failed` - Failed
     UserSubscriptionStatus:
       type: object
+      description: |-
+        One effective plan for the authenticated user.
+
+        ``has_active_subscription`` / ``has_paid_subscription`` mean a stored paid
+        UserSubscription row is currently valid. The free Bronze fallback is never
+        a paid subscription row; it appears via ``is_free_fallback`` and
+        ``effective_plan_code``.
       properties:
         has_active_subscription:
+          type: boolean
+          readOnly: true
+        has_paid_subscription:
+          type: boolean
+          readOnly: true
+        effective_plan_code:
+          type: string
+          readOnly: true
+          nullable: true
+        effective_plan_title_fa:
+          type: string
+          readOnly: true
+          nullable: true
+        is_free_fallback:
           type: boolean
           readOnly: true
         plan_code:
@@ -6199,10 +7025,19 @@ components:
           type: integer
           readOnly: true
           nullable: true
+        effective_max_attachment_bytes:
+          type: integer
+          readOnly: true
+          nullable: true
       required:
       - effective_daily_message_limit
+      - effective_max_attachment_bytes
+      - effective_plan_code
+      - effective_plan_title_fa
       - ends_at
       - has_active_subscription
+      - has_paid_subscription
+      - is_free_fallback
       - plan_code
       - plan_title_fa
       - starts_at
