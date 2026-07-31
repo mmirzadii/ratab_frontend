@@ -11,3 +11,4 @@
 | 7 | Add subscription and daily message-quota states and a clear disabled-payment experience. |
 | 8 | Re-sync with the final backend contract, remove obsolete compatibility code, run regression checks, and finalize v1 documentation. |
 | 9 | Conversation-first company workspace: remove permanent Projects/Groups nav; ordered conversation list; create menu; composer **افزودن** (فایل \| صورت‌بها); list-first financial-document selector; empty-chat/drawer **افزودن صورت‌بها**; group drawer tabs صورت‌بهاها / فایل‌ها / لینک‌ها / اعضا — without inventing backend features. |
+| 10 | Messenger-like message lifecycle: in-bubble pending/sent/failed status (single check = server persistence); no send-success toast; desktop right-click + mobile long-press actions; composer edit; soft-delete tombstone; same-company forward modal; actions gated by backend `can_edit` / `can_delete` / `can_forward`. |

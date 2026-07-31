@@ -96,6 +96,21 @@ planned future work as implemented.
 - Manual admin grant/subscription activation is the only non-demo top-up path
   in v1.0 (plus Local/Development demo package purchase when enabled).
 
+## Pricebook source paths
+
+- `PricebookEdition.source_dir` must be a durable path under the repository
+  `data/` root (prefer relative `data/building_pricebook/<year>`). Temporary
+  paths such as `/tmp/tmp*`, pytest extraction dirs, or deleted TemporaryDirectory
+  trees must never be stored on Local/live databases.
+- Operator repair (no reimport; preserves IDs/snapshots): 
+  `python manage.py repair_pricebook_source_dirs [--pricebook ABN1404] [--dry-run]`.
+- Validation reports missing directories, unstable temporary paths, paths outside
+  `data/`, and missing required `rows/<item_key>/calculate.py` files:
+  `python manage.py validate_pricebook --pricebook ABN1404`.
+- Imports into a non-test database refuse to persist unstable temporary
+  `source_dir` values; the building pricebook family (`ABN1404`) is remapped to
+  the canonical year-scoped data path when that directory exists.
+
 ## Product / rendering
 
 - PDF binary rendering remains unavailable; export download may return conflict

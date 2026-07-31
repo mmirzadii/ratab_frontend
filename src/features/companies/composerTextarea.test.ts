@@ -95,7 +95,8 @@ describe("MessagesSection composer wiring", () => {
     assert.ok(messages.includes("useLayoutEffect"));
     assert.ok(messages.includes("items-end"));
     assert.ok(messages.includes("shouldSendOnEnterKey"));
-    assert.ok(messages.includes('aria-label="متن پیام"'));
+    assert.ok(messages.includes("متن پیام"));
+    assert.ok(messages.includes("<textarea"));
     assert.ok(!messages.includes("max-h-28"));
     assert.ok(!messages.includes("rows={4}"));
   });
@@ -109,7 +110,7 @@ describe("MessagesSection composer wiring", () => {
   it("keeps attachment preview above the expanding textarea", () => {
     const areaStart = messages.indexOf('data-tour="message-input-area"');
     const previewIdx = messages.indexOf("pendingAttachments.length > 0", areaStart);
-    const textareaIdx = messages.indexOf('aria-label="متن پیام"', areaStart);
+    const textareaIdx = messages.indexOf("<textarea", areaStart);
     assert.ok(areaStart > 0 && previewIdx > areaStart && textareaIdx > previewIdx);
   });
 });

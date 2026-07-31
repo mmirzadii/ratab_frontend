@@ -995,7 +995,8 @@ paths:
     get:
       operationId: company_groups_messages_retrieve
       description: List persistent group messages in stable created_at/id order. Active
-        membership in the group is required.
+        membership in the group is required. Soft-deleted messages appear as tombstones.
+        A returned created_at is the server-confirmed sent timestamp (not a read receipt).
       parameters:
       - in: path
         name: group_id
@@ -1017,9 +1018,9 @@ paths:
     post:
       operationId: company_groups_messages_create
       description: Create a text-only, attachment-only, or combined persistent message.
-        Attachments are references to existing private files or financial documents.
-        The configured daily message quota is checked atomically before the message
-        is created; exceeding it returns the stable MESSAGE_QUOTA_EXCEEDED response.
+        Optional client_message_id makes exact retries idempotent. A successful response
+        includes the persisted message id and server created_at (sent confirmation,
+        not a read receipt). Exceeding the daily quota returns MESSAGE_QUOTA_EXCEEDED.
       parameters:
       - in: path
         name: group_id
@@ -2094,6 +2095,105 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenBillingError'
+          description: ''
+  /api/group-messages/{message_id}/:
+    patch:
+      operationId: group_messages_partial_update
+      description: Edit only the sender's own message text/caption. Attachments are
+        preserved. Does not consume message quota and does not reorder the group conversation.
+      parameters:
+      - in: path
+        name: message_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - group-messages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedGroupMessageEditRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedGroupMessageEditRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedGroupMessageEditRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMessage'
+          description: ''
+    delete:
+      operationId: group_messages_destroy
+      description: Soft-delete a message. Members see a tombstone; original text and
+        attachment cards are hidden. Does not consume quota and does not reorder the
+        group.
+      parameters:
+      - in: path
+        name: message_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - group-messages
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMessage'
+          description: ''
+  /api/group-messages/{message_id}/forward/:
+    post:
+      operationId: group_messages_forward_create
+      description: Forward one readable message to one eligible same-company group.
+        Creates a new message (consumes one quota slot), stores an immutable source
+        snapshot, and reuses attachment references after target-context validation.
+      parameters:
+      - in: path
+        name: message_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - group-messages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupMessageForwardRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GroupMessageForwardRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GroupMessageForwardRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMessage'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageQuotaExceeded'
           description: ''
   /api/health/:
     get:
@@ -4529,14 +4629,85 @@ components:
           type: string
           format: date-time
           readOnly: true
+        edited_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_edited:
+          type: boolean
+          readOnly: true
+        is_deleted:
+          type: boolean
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        client_message_id:
+          type: string
+          nullable: true
+          readOnly: true
+        forwarded_from:
+          allOf:
+          - $ref: '#/components/schemas/ForwardedFrom'
+          nullable: true
+          readOnly: true
+        can_edit:
+          type: boolean
+          readOnly: true
+        can_delete:
+          type: boolean
+          readOnly: true
+        can_forward:
+          type: boolean
+          readOnly: true
       required:
       - attachments
+      - can_delete
+      - can_edit
+      - can_forward
+      - client_message_id
       - created_at
+      - deleted_at
+      - edited_at
+      - forwarded_from
       - group_id
       - id
+      - is_deleted
+      - is_edited
       - sender_display_name
       - sender_member_id
       - text
+    ForwardedFrom:
+      type: object
+      properties:
+        source_message_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        source_group_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        source_group_name:
+          type: string
+          nullable: true
+          readOnly: true
+        source_sender_display_name:
+          type: string
+          nullable: true
+          readOnly: true
+        source_created_at:
+          type: string
+          nullable: true
+          readOnly: true
+        label_fa:
+          type: string
+          readOnly: true
+      required:
+      - label_fa
     GroupMessageCreateRequest:
       type: object
       properties:
@@ -4546,6 +4717,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MessageAttachmentCreateRequest'
+        client_message_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+    GroupMessageForwardRequest:
+      type: object
+      properties:
+        target_group_id:
+          type: integer
+          minimum: 1
+        client_message_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - target_group_id
     HealthResponse:
       type: object
       properties:
@@ -5489,6 +5676,11 @@ components:
           type: string
           format: date
           nullable: true
+    PatchedGroupMessageEditRequest:
+      type: object
+      properties:
+        text:
+          type: string
     PatchedProjectCoefficientValueRequest:
       type: object
       properties:

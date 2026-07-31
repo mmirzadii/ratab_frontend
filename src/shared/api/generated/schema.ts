@@ -411,10 +411,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List persistent group messages in stable created_at/id order. Active membership in the group is required. */
+        /** @description List persistent group messages in stable created_at/id order. Active membership in the group is required. Soft-deleted messages appear as tombstones. A returned created_at is the server-confirmed sent timestamp (not a read receipt). */
         get: operations["company_groups_messages_retrieve"];
         put?: never;
-        /** @description Create a text-only, attachment-only, or combined persistent message. Attachments are references to existing private files or financial documents. The configured daily message quota is checked atomically before the message is created; exceeding it returns the stable MESSAGE_QUOTA_EXCEEDED response. */
+        /** @description Create a text-only, attachment-only, or combined persistent message. Optional client_message_id makes exact retries idempotent. A successful response includes the persisted message id and server created_at (sent confirmation, not a read receipt). Exceeding the daily quota returns MESSAGE_QUOTA_EXCEEDED. */
         post: operations["company_groups_messages_create"];
         delete?: never;
         options?: never;
@@ -863,6 +863,41 @@ export interface paths {
         put?: never;
         /** @description Price and bill a standalone starred calculation against this document, debiting the personal wallet then the company wallet. Returns a calculation billing receipt; pass its id as calculation_receipt_id to POST .../lines/ to materialize the line. */
         post: operations["financial_documents_starred_calculations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/group-messages/{message_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Soft-delete a message. Members see a tombstone; original text and attachment cards are hidden. Does not consume quota and does not reorder the group. */
+        delete: operations["group_messages_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Edit only the sender's own message text/caption. Attachments are preserved. Does not consume message quota and does not reorder the group conversation. */
+        patch: operations["group_messages_partial_update"];
+        trace?: never;
+    };
+    "/api/group-messages/{message_id}/forward/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Forward one readable message to one eligible same-company group. Creates a new message (consumes one quota slot), stores an immutable source snapshot, and reuses attachment references after target-context validation. */
+        post: operations["group_messages_forward_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1896,10 +1931,34 @@ export interface components {
             readonly attachments: components["schemas"]["MessageAttachment"][];
             /** Format: date-time */
             readonly created_at: string;
+            /** Format: date-time */
+            readonly edited_at: string | null;
+            readonly is_edited: boolean;
+            readonly is_deleted: boolean;
+            /** Format: date-time */
+            readonly deleted_at: string | null;
+            readonly client_message_id: string | null;
+            readonly forwarded_from: components["schemas"]["ForwardedFrom"] | null;
+            readonly can_edit: boolean;
+            readonly can_delete: boolean;
+            readonly can_forward: boolean;
+        };
+        ForwardedFrom: {
+            readonly source_message_id?: number | null;
+            readonly source_group_id?: number | null;
+            readonly source_group_name?: string | null;
+            readonly source_sender_display_name?: string | null;
+            readonly source_created_at?: string | null;
+            readonly label_fa: string;
         };
         GroupMessageCreateRequest: {
             text?: string;
             attachments?: components["schemas"]["MessageAttachmentCreateRequest"][];
+            client_message_id?: string;
+        };
+        GroupMessageForwardRequest: {
+            target_group_id: number;
+            client_message_id?: string;
         };
         HealthResponse: {
             status: string;
@@ -2356,6 +2415,9 @@ export interface components {
             period_start_on?: string | null;
             /** Format: date */
             period_end_on?: string | null;
+        };
+        PatchedGroupMessageEditRequest: {
+            text?: string;
         };
         PatchedProjectCoefficientValueRequest: {
             coefficient_key?: string;
@@ -4913,6 +4975,89 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenBillingError"];
+                };
+            };
+        };
+    };
+    group_messages_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMessage"];
+                };
+            };
+        };
+    };
+    group_messages_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedGroupMessageEditRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedGroupMessageEditRequest"];
+                "multipart/form-data": components["schemas"]["PatchedGroupMessageEditRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMessage"];
+                };
+            };
+        };
+    };
+    group_messages_forward_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupMessageForwardRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GroupMessageForwardRequest"];
+                "multipart/form-data": components["schemas"]["GroupMessageForwardRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMessage"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageQuotaExceeded"];
                 };
             };
         };

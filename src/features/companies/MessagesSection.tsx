@@ -1,13 +1,17 @@
 import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Ban,
+  Check,
+  Clock,
   FileText,
   Info,
   Loader2,
   MessageCircle,
+  MoreVertical,
   Network,
   Paperclip,
   Plus,
+  RotateCcw,
   Send,
   X,
   XCircle
@@ -33,14 +37,32 @@ import { useUploadCompanyFileMutation } from "./companyFilesApi";
 import { useListCompanyGroupsQuery, useListCompanyGroupMembersQuery } from "./companyGroupsApi";
 import { useListCompanyMembersQuery } from "./companyMembersApi";
 import {
+  buildOptimisticOutgoingMessage,
+  createClientMessageId,
+  formatCompactMessageTime,
+  getForwardedLabel,
+  markMessageFailed,
+  mergeUniqueMessages,
+  nextTempMessageId,
+  replaceMessageById,
+  sortMessagesAscending,
+  type ChatMessage,
+  type PendingAttachmentPreview
+} from "./chatMessageHelpers";
+import {
   formatQuotaResetHint,
   GROUP_MESSAGE_PAGE_SIZE,
   type GroupMessage,
   isMessageQuotaExceeded,
   useCreateGroupMessageMutation,
-  useLazyListGroupMessagesQuery
+  useDeleteGroupMessageMutation,
+  useForwardGroupMessageMutation,
+  useLazyListGroupMessagesQuery,
+  useUpdateGroupMessageMutation
 } from "./companyMessagesApi";
 import { findCurrentMembership } from "./companyPermissions";
+import { DeleteMessageConfirm } from "./DeleteMessageConfirm";
+import { ForwardMessageModal } from "./ForwardMessageModal";
 import {
   classifyCompanyGroup,
   findLinkedProject,
@@ -48,7 +70,9 @@ import {
   resolveGroupDisplayName,
   sortConversations
 } from "./groupKinds";
+import { MessageActionsMenu, type MessageActionId } from "./MessageActionsMenu";
 import { MessageAttachmentCard } from "./MessageAttachmentCard";
+import { messageHasAnyAction } from "./messageMenuPosition";
 import {
   GROUP_MEMBERSHIP_REQUIRED_MESSAGE,
   formatMembershipAccessMessage,
@@ -66,54 +90,20 @@ export type SeedFinancialDocumentAttachment = {
   documentNumber?: string | null;
 };
 
-type PendingAttachment =
-  | {
-      key: string;
-      attachment_type: "file";
-      resource_id: number;
-      label: string;
-      detail?: string;
-    }
-  | {
-      key: string;
-      attachment_type: "financial_document";
-      resource_id: number;
-      label: string;
-      detail?: string;
-    };
+type PendingAttachment = PendingAttachmentPreview;
 
-function sortMessagesAscending(messages: readonly GroupMessage[]): GroupMessage[] {
-  return [...messages].sort((a, b) => {
-    const byTime = a.created_at.localeCompare(b.created_at);
-    if (byTime !== 0) return byTime;
-    return a.id - b.id;
-  });
-}
+type ComposerDraft = {
+  text: string;
+  attachments: PendingAttachment[];
+};
 
-function mergeUniqueMessages(
-  existing: readonly GroupMessage[],
-  incoming: readonly GroupMessage[]
-): GroupMessage[] {
-  const byId = new Map<number, GroupMessage>();
-  for (const message of existing) {
-    byId.set(message.id, message);
-  }
-  for (const message of incoming) {
-    byId.set(message.id, message);
-  }
-  return sortMessagesAscending([...byId.values()]);
-}
+type ContextMenuState = {
+  messageId: number;
+  x: number;
+  y: number;
+};
 
-function formatMessageTime(value: string): string {
-  try {
-    return new Intl.DateTimeFormat("fa-IR", {
-      dateStyle: "short",
-      timeStyle: "short"
-    }).format(new Date(value));
-  } catch {
-    return value;
-  }
-}
+const LONG_PRESS_MS = 480;
 
 export function MessagesSection({
   companyId,
@@ -144,6 +134,8 @@ export function MessagesSection({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredRef = useRef(false);
 
   const {
     data: groupsData,
@@ -177,10 +169,13 @@ export function MessagesSection({
 
   const [fetchMessages] = useLazyListGroupMessagesQuery();
   const [createMessage, { isLoading: isSending }] = useCreateGroupMessageMutation();
+  const [updateMessage, { isLoading: isSavingEdit }] = useUpdateGroupMessageMutation();
+  const [deleteMessage, { isLoading: isDeleting }] = useDeleteGroupMessageMutation();
+  const [forwardMessage, { isLoading: isForwarding }] = useForwardGroupMessageMutation();
   const [uploadFile, { isLoading: isUploading }] = useUploadCompanyFileMutation();
   const { data: messageQuota, refetch: refetchMessageQuota } = useGetMessageQuotaQuery();
 
-  const [messages, setMessages] = useState<GroupMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [oldestLoadedPage, setOldestLoadedPage] = useState<number | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [isBootstrapping, setIsBootstrapping] = useState(false);
@@ -192,6 +187,15 @@ export function MessagesSection({
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [editingMessage, setEditingMessage] = useState<GroupMessage | null>(null);
+  const [draftBackup, setDraftBackup] = useState<ComposerDraft | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<GroupMessage | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [forwardTarget, setForwardTarget] = useState<GroupMessage | null>(null);
+  const [forwardError, setForwardError] = useState<string | null>(null);
+  const [forwardClientMessageId, setForwardClientMessageId] = useState<string | null>(null);
 
   const {
     data: groupMembershipsData,
@@ -210,8 +214,6 @@ export function MessagesSection({
     effectiveGroupId == null ||
     (!isFetchingGroupMemberships &&
       (groupMembershipsData != null || groupMembershipsError != null));
-  // Only gate on a successful memberships list. Random list failures must not
-  // permanently block message bootstrap; membership-required errors use membershipDeniedByError.
   const membershipDeniedByGate =
     membershipGateKnown &&
     effectiveGroupId != null &&
@@ -226,23 +228,29 @@ export function MessagesSection({
   const lastPage =
     totalCount > 0 ? Math.max(1, Math.ceil(totalCount / GROUP_MESSAGE_PAGE_SIZE)) : 1;
   const canLoadEarlier = oldestLoadedPage != null && oldestLoadedPage > 1;
+  const isEditMode = editingMessage != null;
   const canCompose =
     Boolean(activeGroup) && !loadError && !quotaBlockedHint && !membershipDenied;
   const canSend =
+    !isEditMode &&
     canCompose &&
     !isSending &&
     !isUploading &&
     (Boolean(messageText.trim()) || pendingAttachments.length > 0);
 
+  const contextMenuMessage =
+    contextMenu == null
+      ? null
+      : (messages.find((message) => message.id === contextMenu.messageId) ?? null);
+
   useLayoutEffect(() => {
     applyComposerTextareaAutoResize(textareaRef.current);
-  }, [messageText, pendingAttachments.length, effectiveGroupId, canCompose]);
+  }, [messageText, pendingAttachments.length, effectiveGroupId, canCompose, isEditMode]);
 
   useEffect(() => {
     if (!quotaBlockedHint || !messageQuota) {
       return;
     }
-    // Soft UX unlock after backend quota refreshes past the block; backend remains the authority on send.
     if (messageQuota.daily_limit == null) {
       setQuotaBlockedHint(null);
       return;
@@ -253,7 +261,7 @@ export function MessagesSection({
   }, [messageQuota, quotaBlockedHint]);
 
   useEffect(() => {
-    if (!seedFinancialDocumentAttachment) {
+    if (!seedFinancialDocumentAttachment || isEditMode) {
       return;
     }
     setPendingAttachments((current) => {
@@ -280,7 +288,7 @@ export function MessagesSection({
       ];
     });
     onSeedFinancialDocumentConsumed?.();
-  }, [onSeedFinancialDocumentConsumed, seedFinancialDocumentAttachment]);
+  }, [isEditMode, onSeedFinancialDocumentConsumed, seedFinancialDocumentAttachment]);
 
   useEffect(() => {
     if (!isAddMenuOpen) return;
@@ -302,14 +310,86 @@ export function MessagesSection({
   }, [isAddMenuOpen]);
 
   useEffect(() => {
-    if (openFinancialDocumentRequestId <= 0) return;
+    if (openFinancialDocumentRequestId <= 0 || isEditMode) return;
     setIsAddMenuOpen(false);
     setIsDocumentModalOpen(true);
-  }, [openFinancialDocumentRequestId]);
+  }, [isEditMode, openFinancialDocumentRequestId]);
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current != null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  function closeContextMenu() {
+    setContextMenu(null);
+  }
+
+  function cancelEditMode(options?: { restoreDraft?: boolean }) {
+    const restoreDraft = options?.restoreDraft !== false;
+    setEditingMessage(null);
+    setEditError(null);
+    if (restoreDraft && draftBackup) {
+      setMessageText(draftBackup.text);
+      setPendingAttachments(draftBackup.attachments);
+    }
+    setDraftBackup(null);
+  }
+
+  function resetTransientUi() {
+    clearLongPressTimer();
+    closeContextMenu();
+    setDeleteTarget(null);
+    setDeleteError(null);
+    setForwardTarget(null);
+    setForwardError(null);
+    setForwardClientMessageId(null);
+    if (editingMessage) {
+      cancelEditMode({ restoreDraft: true });
+    }
+  }
+
+  useEffect(() => {
+    resetTransientUi();
+    // Group switch must drop menus/edit/forward state for the previous conversation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional on group change only
+  }, [effectiveGroupId]);
+
+  useEffect(() => {
+    const listEl = listRef.current;
+    if (!listEl || !contextMenu) return;
+    function handleScroll() {
+      closeContextMenu();
+    }
+    listEl.addEventListener("scroll", handleScroll, { passive: true });
+    return () => listEl.removeEventListener("scroll", handleScroll);
+  }, [contextMenu]);
 
   function openFinancialDocumentFlow() {
+    if (isEditMode) return;
     setIsAddMenuOpen(false);
     setIsDocumentModalOpen(true);
+  }
+
+  function openMessageActions(message: ChatMessage, x: number, y: number) {
+    if (message.localStatus || message.is_deleted || !messageHasAnyAction(message)) {
+      return;
+    }
+    setContextMenu({ messageId: message.id, x, y });
+  }
+
+  function beginEdit(message: GroupMessage) {
+    closeContextMenu();
+    setEditError(null);
+    if (!editingMessage) {
+      setDraftBackup({ text: messageText, attachments: pendingAttachments });
+    }
+    setEditingMessage(message);
+    setMessageText(message.text ?? "");
+    setPendingAttachments([]);
+    setIsAddMenuOpen(false);
+    requestAnimationFrame(() => textareaRef.current?.focus());
   }
 
   useEffect(() => {
@@ -322,7 +402,6 @@ export function MessagesSection({
       return;
     }
 
-    // Do not repeatedly request messages when the current user is not an active group member.
     if (!membershipGateKnown) {
       setIsBootstrapping(true);
       return;
@@ -433,7 +512,7 @@ export function MessagesSection({
 
   async function handleFileSelected(fileList: FileList | null) {
     const file = fileList?.[0];
-    if (!file || !canCompose) {
+    if (!file || !canCompose || isEditMode) {
       return;
     }
     if (fileInputRef.current) {
@@ -483,6 +562,7 @@ export function MessagesSection({
   }
 
   function handleSelectDocument(selection: SelectedFinancialDocumentAttachment) {
+    if (isEditMode) return;
     setPendingAttachments((current) => {
       if (
         current.some(
@@ -507,23 +587,26 @@ export function MessagesSection({
     });
   }
 
-  async function handleSend(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!effectiveGroupId || !canSend) {
-      return;
-    }
+  async function sendOutgoingMessage(input: {
+    tempId: number;
+    clientMessageId: string;
+    text: string;
+    attachments: PendingAttachment[];
+    clearComposer: boolean;
+  }) {
+    if (!effectiveGroupId || myMemberId == null) return;
 
-    const text = messageText.trim();
     const body = {
-      ...(text ? { text } : {}),
-      ...(pendingAttachments.length > 0
+      ...(input.text ? { text: input.text } : {}),
+      ...(input.attachments.length > 0
         ? {
-            attachments: pendingAttachments.map((item) => ({
+            attachments: input.attachments.map((item) => ({
               attachment_type: item.attachment_type,
               resource_id: item.resource_id
             }))
           }
-        : {})
+        : {}),
+      client_message_id: input.clientMessageId
     };
 
     if (!body.text && !body.attachments?.length) {
@@ -536,17 +619,30 @@ export function MessagesSection({
         companyId,
         body
       }).unwrap();
-      setMessageText("");
-      setPendingAttachments([]);
+      if (input.clearComposer) {
+        setMessageText("");
+        setPendingAttachments([]);
+      }
       setQuotaBlockedHint(null);
       shouldStickToBottomRef.current = true;
-      setMessages((current) => mergeUniqueMessages(current, [created]));
-      setTotalCount((count) => count + 1);
+      let shouldBumpCount = false;
+      setMessages((current) => {
+        shouldBumpCount = !current.some(
+          (message) => message.id === created.id && message.localStatus == null
+        );
+        return mergeUniqueMessages(
+          current.filter((message) => message.id !== input.tempId),
+          [created]
+        );
+      });
+      if (shouldBumpCount) {
+        setTotalCount((count) => count + 1);
+      }
       if (oldestLoadedPage == null) {
         setOldestLoadedPage(lastPage);
       }
-      dispatch(addToast({ message: "پیام ارسال شد.", type: "success" }));
     } catch (error) {
+      setMessages((current) => markMessageFailed(current, input.tempId));
       if (isMessageQuotaExceeded(error)) {
         const hint = formatQuotaResetHint(error.data.resets_at, {
           usedToday: error.data.used_today,
@@ -558,6 +654,159 @@ export function MessagesSection({
         return;
       }
       dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
+    }
+  }
+
+  async function handleSend(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isEditMode) {
+      await handleSaveEdit();
+      return;
+    }
+    if (!effectiveGroupId || !canSend || myMemberId == null) {
+      return;
+    }
+
+    const text = messageText.trim();
+    const attachments = [...pendingAttachments];
+    if (!text && attachments.length === 0) {
+      return;
+    }
+
+    const clientMessageId = createClientMessageId("send");
+    const tempId = nextTempMessageId();
+    const optimistic = buildOptimisticOutgoingMessage({
+      tempId,
+      groupId: effectiveGroupId,
+      senderMemberId: myMemberId,
+      senderDisplayName: myMembership?.display_name || authUser?.display_name || "شما",
+      text,
+      clientMessageId,
+      pendingAttachments: attachments
+    });
+
+    shouldStickToBottomRef.current = true;
+    setMessages((current) => mergeUniqueMessages(current, [optimistic]));
+    setMessageText("");
+    setPendingAttachments([]);
+
+    await sendOutgoingMessage({
+      tempId,
+      clientMessageId,
+      text,
+      attachments,
+      clearComposer: false
+    });
+  }
+
+  async function handleRetryFailed(message: ChatMessage) {
+    if (message.localStatus !== "failed" || !effectiveGroupId || myMemberId == null) {
+      return;
+    }
+    const clientMessageId = message.client_message_id || createClientMessageId("retry");
+    const attachments = message.pendingPreviewAttachments ?? [];
+    setMessages((current) =>
+      current.map((item) =>
+        item.id === message.id
+          ? {
+              ...item,
+              localStatus: "pending",
+              client_message_id: clientMessageId
+            }
+          : item
+      )
+    );
+    await sendOutgoingMessage({
+      tempId: message.id,
+      clientMessageId,
+      text: message.text?.trim() ?? "",
+      attachments,
+      clearComposer: false
+    });
+  }
+
+  async function handleSaveEdit() {
+    if (!editingMessage || !effectiveGroupId || isSavingEdit) return;
+    const text = messageText;
+    setEditError(null);
+    try {
+      const updated = await updateMessage({
+        messageId: editingMessage.id,
+        groupId: effectiveGroupId,
+        body: { text }
+      }).unwrap();
+      setMessages((current) => replaceMessageById(current, updated));
+      cancelEditMode({ restoreDraft: true });
+    } catch (error) {
+      setEditError(getApiErrorMessage(error));
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget || !effectiveGroupId || isDeleting) return;
+    setDeleteError(null);
+    try {
+      const tombstone = await deleteMessage({
+        messageId: deleteTarget.id,
+        groupId: effectiveGroupId
+      }).unwrap();
+      setMessages((current) => replaceMessageById(current, tombstone));
+      setDeleteTarget(null);
+    } catch (error) {
+      setDeleteError(getApiErrorMessage(error));
+    }
+  }
+
+  async function handleConfirmForward(targetGroupId: number) {
+    if (!forwardTarget || isForwarding) return;
+    setForwardError(null);
+    const clientMessageId = forwardClientMessageId ?? createClientMessageId("fwd");
+    setForwardClientMessageId(clientMessageId);
+    try {
+      await forwardMessage({
+        messageId: forwardTarget.id,
+        companyId,
+        sourceGroupId: forwardTarget.group_id,
+        body: {
+          target_group_id: targetGroupId,
+          client_message_id: clientMessageId
+        }
+      }).unwrap();
+      setForwardTarget(null);
+      setForwardClientMessageId(null);
+      setForwardError(null);
+    } catch (error) {
+      if (isMessageQuotaExceeded(error)) {
+        const hint = formatQuotaResetHint(error.data.resets_at, {
+          usedToday: error.data.used_today,
+          dailyLimit: error.data.daily_limit
+        });
+        setQuotaBlockedHint(hint);
+        void refetchMessageQuota();
+        setForwardError(hint);
+        return;
+      }
+      setForwardError(getApiErrorMessage(error));
+    }
+  }
+
+  function handleMessageAction(action: MessageActionId) {
+    if (!contextMenuMessage) return;
+    const message = contextMenuMessage;
+    closeContextMenu();
+    if (action === "edit" && message.can_edit) {
+      beginEdit(message);
+      return;
+    }
+    if (action === "delete" && message.can_delete) {
+      setDeleteError(null);
+      setDeleteTarget(message);
+      return;
+    }
+    if (action === "forward" && message.can_forward) {
+      setForwardError(null);
+      setForwardClientMessageId(createClientMessageId("fwd"));
+      setForwardTarget(message);
     }
   }
 
@@ -660,8 +909,7 @@ export function MessagesSection({
               <Link
                 className={classNames(
                   "inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold transition",
-                  "border border-ui-border-subtle bg-ui-surface-subtle text-ui-text-primary hover:border-ui-border-default hover:bg-ui-surface-hover",
-                  "   "
+                  "border border-ui-border-subtle bg-ui-surface-subtle text-ui-text-primary hover:border-ui-border-default hover:bg-ui-surface-hover"
                 )}
                 state={{ focusInvitations: true }}
                 to="/companies"
@@ -730,7 +978,7 @@ export function MessagesSection({
                   <Button
                     className="w-full"
                     data-tour="empty-chat-add-financial-document"
-                    disabled={!canCompose || effectiveGroupId == null}
+                    disabled={!canCompose || effectiveGroupId == null || isEditMode}
                     onClick={openFinancialDocumentFlow}
                     type="button"
                     variant="secondary"
@@ -746,48 +994,174 @@ export function MessagesSection({
                 const prev = messages[index - 1];
                 const sameSender =
                   prev != null && prev.sender_member_id === message.sender_member_id;
+                const isDeleted = Boolean(message.is_deleted);
+                const forwardedLabel = !isDeleted ? getForwardedLabel(message) : null;
+                const showActions = !message.localStatus && messageHasAnyAction(message);
+                const previewAttachments = message.pendingPreviewAttachments ?? [];
+
                 return (
                   <div
                     className={classNames(
-                      "flex w-full",
+                      "group/message flex w-full",
                       isMine ? "justify-start" : "justify-end",
                       sameSender ? "mt-0.5" : "mt-2"
                     )}
-                    key={message.id}
+                    key={message.client_message_id ?? message.id}
                   >
                     <div
                       className={classNames(
-                        "max-w-[72%] rounded-2xl px-3 py-2 text-sm leading-6",
-                        isMine
-                          ? "rounded-br-md bg-ui-primary text-slate-50"
-                          : "rounded-bl-md bg-white/10 text-ui-text-primary"
+                        "relative max-w-[72%] rounded-2xl px-3 py-2 text-sm leading-6",
+                        isDeleted
+                          ? "rounded-bl-md rounded-br-md bg-ui-surface-subtle/80 text-ui-text-muted italic"
+                          : isMine
+                            ? "rounded-br-md bg-ui-primary text-slate-50"
+                            : "rounded-bl-md bg-white/10 text-ui-text-primary"
                       )}
+                      data-testid={`message-bubble-${message.id}`}
+                      onContextMenu={(event) => {
+                        if (!showActions) return;
+                        event.preventDefault();
+                        openMessageActions(message, event.clientX, event.clientY);
+                      }}
+                      onTouchCancel={() => {
+                        clearLongPressTimer();
+                      }}
+                      onTouchEnd={() => {
+                        clearLongPressTimer();
+                      }}
+                      onTouchMove={() => {
+                        clearLongPressTimer();
+                      }}
+                      onTouchStart={(event) => {
+                        if (!showActions) return;
+                        longPressTriggeredRef.current = false;
+                        clearLongPressTimer();
+                        const touch = event.touches[0];
+                        if (!touch) return;
+                        const x = touch.clientX;
+                        const y = touch.clientY;
+                        longPressTimerRef.current = window.setTimeout(() => {
+                          longPressTriggeredRef.current = true;
+                          openMessageActions(message, x, y);
+                        }, LONG_PRESS_MS);
+                      }}
                     >
-                      {!isMine && !sameSender ? (
+                      {showActions ? (
+                        <button
+                          aria-label="عملیات پیام"
+                          className={classNames(
+                            "absolute -top-1 left-1 z-10 flex h-7 w-7 items-center justify-center rounded-lg opacity-100 transition sm:opacity-0 sm:group-hover/message:opacity-100",
+                            isMine
+                              ? "bg-black/15 text-slate-50 hover:bg-black/25"
+                              : "bg-ui-surface-subtle text-ui-text-secondary hover:bg-ui-surface-hover"
+                          )}
+                          data-testid={`message-overflow-${message.id}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            openMessageActions(message, rect.left, rect.bottom + 4);
+                          }}
+                          type="button"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
+
+                      {!isMine && !sameSender && !isDeleted ? (
                         <p className="mb-0.5 text-[11px] font-bold text-ui-primary/90">
                           {message.sender_display_name || "عضو"}
                         </p>
                       ) : null}
+
+                      {forwardedLabel ? (
+                        <p
+                          className={classNames(
+                            "mb-1 text-[11px] font-bold",
+                            isMine ? "text-slate-100/80" : "text-ui-text-muted"
+                          )}
+                        >
+                          {forwardedLabel}
+                        </p>
+                      ) : null}
+
                       {message.text ? (
                         <p className="whitespace-pre-wrap break-words">{message.text}</p>
                       ) : null}
-                      {message.attachments.map((attachment) => (
-                        <MessageAttachmentCard
-                          attachment={attachment}
-                          companyId={companyId}
-                          key={attachment.id}
-                        />
-                      ))}
-                      <p
+
+                      {!isDeleted
+                        ? message.attachments.map((attachment) => (
+                            <MessageAttachmentCard
+                              attachment={attachment}
+                              companyId={companyId}
+                              key={attachment.id}
+                            />
+                          ))
+                        : null}
+
+                      {!isDeleted && previewAttachments.length > 0
+                        ? previewAttachments.map((attachment) => (
+                            <div
+                              className={classNames(
+                                "mt-1.5 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-bold",
+                                isMine ? "bg-black/15 text-slate-50" : "bg-ui-surface-subtle text-ui-text-secondary"
+                              )}
+                              key={attachment.key}
+                            >
+                              {attachment.attachment_type === "file" ? (
+                                <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                              ) : (
+                                <FileText className="h-3.5 w-3.5 shrink-0" />
+                              )}
+                              <span className="truncate">{attachment.label}</span>
+                            </div>
+                          ))
+                        : null}
+
+                      <div
                         className={classNames(
-                          "mt-1 text-[10px] font-bold",
-                          isMine
-                            ? "text-ui-primary/70 /70"
-                            : "text-ui-text-muted"
+                          "mt-1 flex items-center gap-1.5 text-[10px] font-bold",
+                          isMine ? "text-ui-primary/70 text-slate-100/70" : "text-ui-text-muted"
                         )}
                       >
-                        {formatMessageTime(message.created_at)}
-                      </p>
+                        {message.is_edited && !isDeleted ? (
+                          <span data-testid="message-edited-marker">ویرایش‌شده</span>
+                        ) : null}
+                        {message.localStatus === "pending" ? (
+                          <span
+                            aria-label="در حال ارسال"
+                            className="inline-flex items-center gap-1"
+                            data-testid="message-status-pending"
+                          >
+                            <Clock className="h-3 w-3 animate-pulse" />
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          </span>
+                        ) : message.localStatus === "failed" ? (
+                          <button
+                            aria-label="تلاش دوباره برای ارسال"
+                            className="inline-flex items-center gap-1 text-rose-200 underline-offset-2 hover:underline"
+                            data-testid="message-status-failed"
+                            onClick={() => void handleRetryFailed(message)}
+                            type="button"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            ارسال نشد · تلاش دوباره
+                          </button>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1"
+                            data-testid={isMine ? "message-status-sent" : "message-status-time"}
+                          >
+                            <span>{formatCompactMessageTime(message.created_at)}</span>
+                            {isMine ? (
+                              <Check
+                                aria-label="ارسال‌شده"
+                                className="h-3 w-3"
+                                data-testid="message-sent-check"
+                              />
+                            ) : null}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -815,7 +1189,35 @@ export function MessagesSection({
           </p>
         ) : null}
 
-        {pendingAttachments.length > 0 ? (
+        {isEditMode ? (
+          <div
+            className="mb-1.5 flex items-start justify-between gap-2 rounded-lg border border-ui-primary/30 bg-ui-primary-soft px-2.5 py-2"
+            data-testid="composer-edit-banner"
+          >
+            <div className="min-w-0">
+              <p className="text-[11px] font-black text-ui-primary">ویرایش پیام</p>
+              <p className="mt-0.5 line-clamp-1 text-[11px] text-ui-text-secondary">
+                {editingMessage?.text || "پیام بدون متن"}
+              </p>
+            </div>
+            <button
+              className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-black text-ui-primary transition hover:bg-ui-surface/40"
+              data-testid="composer-edit-cancel"
+              onClick={() => cancelEditMode({ restoreDraft: true })}
+              type="button"
+            >
+              انصراف
+            </button>
+          </div>
+        ) : null}
+
+        {editError ? (
+          <p className="mb-1.5 rounded-lg border border-rose-300/30 bg-rose-400/10 px-2.5 py-1.5 text-[11px] font-bold text-rose-100">
+            {editError}
+          </p>
+        ) : null}
+
+        {!isEditMode && pendingAttachments.length > 0 ? (
           <ul className="mb-1.5 space-y-1">
             {pendingAttachments.map((attachment) => (
               <li
@@ -863,12 +1265,12 @@ export function MessagesSection({
                 aria-haspopup="menu"
                 aria-label="افزودن"
                 className={classNames(
-                  "mb-0 flex h-11 shrink-0 items-center gap-1.5 self-end rounded-xl px-2.5 text-xs font-black text-ui-primary transition hover:bg-ui-primary-soft disabled:cursor-not-allowed disabled:opacity-45 ",
+                  "mb-0 flex h-11 shrink-0 items-center gap-1.5 self-end rounded-xl px-2.5 text-xs font-black text-ui-primary transition hover:bg-ui-primary-soft disabled:cursor-not-allowed disabled:opacity-45",
                   highlightAddAction && "ring-2 ring-emerald-200/40",
                   isAddMenuOpen && "bg-ui-primary-soft"
                 )}
                 data-tour="composer-add-action"
-                disabled={!canCompose || isUploading}
+                disabled={!canCompose || isUploading || isEditMode}
                 onClick={() => setIsAddMenuOpen((open) => !open)}
                 type="button"
               >
@@ -880,7 +1282,7 @@ export function MessagesSection({
                 افزودن
               </button>
 
-              {isAddMenuOpen ? (
+              {isAddMenuOpen && !isEditMode ? (
                 <div
                   className="absolute bottom-[calc(100%+0.4rem)] right-0 z-20 min-w-[11rem] overflow-hidden rounded-xl border border-ui-border-subtle bg-ui-surface py-1 shadow-xl backdrop-blur-md"
                   data-tour="composer-add-menu"
@@ -916,7 +1318,7 @@ export function MessagesSection({
             </div>
 
             <textarea
-              aria-label="متن پیام"
+              aria-label={isEditMode ? "ویرایش متن پیام" : "متن پیام"}
               className="min-h-11 w-full min-w-0 flex-1 resize-none rounded-xl border-0 bg-ui-surface-subtle px-3 py-2.5 text-sm leading-6 text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:bg-ui-surface-hover focus-visible:ring-2 focus-visible:ring-ui-focus"
               disabled={!canCompose}
               onChange={(event) => {
@@ -929,22 +1331,38 @@ export function MessagesSection({
                 }
                 event.preventDefault();
                 const form = event.currentTarget.form;
-                if (form && canSend) {
+                if (form && (isEditMode ? canCompose && !isSavingEdit : canSend)) {
                   form.requestSubmit();
                 }
               }}
-              placeholder={activeGroup ? "پیام…" : "ابتدا یک گروه انتخاب کنید"}
+              placeholder={
+                isEditMode
+                  ? "متن ویرایش‌شده…"
+                  : activeGroup
+                    ? "پیام…"
+                    : "ابتدا یک گروه انتخاب کنید"
+              }
               ref={textareaRef}
               rows={1}
               value={messageText}
             />
             <button
-              aria-label="ارسال"
+              aria-label={isEditMode ? "ذخیره ویرایش" : "ارسال"}
               className="mb-0 flex h-11 w-11 shrink-0 items-center justify-center self-end rounded-xl bg-ui-primary text-ui-primary-foreground transition hover:bg-ui-primary-hover disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={!canSend}
+              disabled={isEditMode ? !canCompose || isSavingEdit : !canSend}
               type="submit"
             >
-              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {isEditMode ? (
+                isSavingEdit ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )
+              ) : isSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </button>
           </div>
         </form>
@@ -963,13 +1381,58 @@ export function MessagesSection({
         ) : null}
       </div>
 
-      {isDocumentModalOpen && effectiveGroupId != null ? (
+      {isDocumentModalOpen && effectiveGroupId != null && !isEditMode ? (
         <FinancialDocumentActionModal
           companyId={companyId}
           groupId={effectiveGroupId}
           lockedProject={linkedProject}
           onClose={() => setIsDocumentModalOpen(false)}
           onSelect={handleSelectDocument}
+        />
+      ) : null}
+
+      {contextMenu && contextMenuMessage ? (
+        <MessageActionsMenu
+          anchor={{ x: contextMenu.x, y: contextMenu.y }}
+          canDelete={Boolean(contextMenuMessage.can_delete)}
+          canEdit={Boolean(contextMenuMessage.can_edit)}
+          canForward={Boolean(contextMenuMessage.can_forward)}
+          onAction={handleMessageAction}
+          onClose={closeContextMenu}
+        />
+      ) : null}
+
+      {deleteTarget ? (
+        <DeleteMessageConfirm
+          errorMessage={deleteError}
+          onCancel={() => {
+            if (!isDeleting) {
+              setDeleteTarget(null);
+              setDeleteError(null);
+            }
+          }}
+          onConfirm={() => void handleConfirmDelete()}
+          pending={isDeleting}
+        />
+      ) : null}
+
+      {forwardTarget ? (
+        <ForwardMessageModal
+          currentGroupId={effectiveGroupId}
+          errorMessage={forwardError}
+          groups={groups}
+          onClose={() => {
+            if (!isForwarding) {
+              setForwardTarget(null);
+              setForwardError(null);
+              setForwardClientMessageId(null);
+            }
+          }}
+          onConfirm={(targetGroupId) => void handleConfirmForward(targetGroupId)}
+          open
+          pending={isForwarding}
+          projects={projects}
+          sourceMessage={forwardTarget}
         />
       ) : null}
     </div>

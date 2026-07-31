@@ -9,7 +9,7 @@ Documentation root note: the repository uses `code_oder` as the folder name. Do 
 
 ## Purpose
 
-Onboarding and handoff document for Frontend v1.0 after Phases 1–9, including the calculation-based token policy correction (2026-07-30). Phases 1–7 delivered contract sync, session auth, company workspace, messaging, files/attachments, wallet foundations, and subscription/quota/disabled-payment UX. Phase 8 finalized regression, cleanup, and documentation. Phase 9 simplified the company workspace into a compact Telegram-inspired RTL master-detail layout. The 2026-07-30 correction replaces the obsolete 5-token official-line-create UX with backend-authoritative paid calculations, receipts, and company-wallet donation.
+Onboarding and handoff document for Frontend v1.0 after Phases 1–10, including the calculation-based token policy correction (2026-07-30). Phases 1–7 delivered contract sync, session auth, company workspace, messaging, files/attachments, wallet foundations, and subscription/quota/disabled-payment UX. Phase 8 finalized regression, cleanup, and documentation. Phase 9 simplified the company workspace into a compact Telegram-inspired RTL master-detail layout. Phase 10 adds messenger-like message status, edit, soft-delete, and forward driven by backend capability fields. The 2026-07-30 correction replaces the obsolete 5-token official-line-create UX with backend-authoritative paid calculations, receipts, and company-wallet donation.
 
 Before changing code, read in this order:
 
@@ -37,6 +37,7 @@ Before changing code, read in this order:
 | 7 | ✅ | Subscription, message quota, disabled payment UX |
 | 8 | ✅ | Final integration, cleanup, regression, handoff |
 | 9 | ✅ | Compact Telegram-inspired company workspace UX + text cleanup |
+| 10 | ✅ | Message status, edit, soft-delete, forward (backend `can_*`) |
 | — | ✅ | **2026-07-30 correction:** calculation-based token policy + company wallet |
 
 ## Product snapshot
@@ -153,6 +154,16 @@ Company workspace is conversation-first when `companyCtx.workspaceActive` is set
 
 Project/group creation and management remain available from the conversation UI (create menu + drawer), not as primary nav sections. Cost-report wizard still uses SecondaryNav and returns attachments to the originating conversation when `returnToGroupId` is set.
 
+## Phase 10 message lifecycle
+
+Outgoing bubbles show pending → sent (server time + one check) or failed+retry. Normal send no longer toasts `پیام ارسال شد.` Idempotent `client_message_id` prevents duplicate bubbles on retry.
+
+Actions (ویرایش / حذف / بازارسال) come only from backend `can_edit` / `can_delete` / `can_forward`. Desktop uses a custom right-click menu; mobile uses long-press/overflow; both share one menu model.
+
+Edit runs in the composer (banner + draft restore). Delete confirms then renders the backend tombstone. Forward opens a searchable same-company group modal and refreshes target activity without leaving the current chat.
+
+Endpoints: `PATCH|DELETE /api/group-messages/{id}/`, `POST /api/group-messages/{id}/forward/`.
+
 ## Obsolete assumptions (resolved)
 
 1. Token + `sessionStorage` primary browser auth → session + CSRF
@@ -169,6 +180,7 @@ Project/group creation and management remain available from the conversation UI 
 12. Verbose internal developer text in user-facing UI → Phase 9 text cleanup (compact, action-oriented)
 13. Obsolete fixed 5-token official-line-create UX → 2026-07-30 calculation-based billing + company wallet
 14. Client alphabetical/kind conversation sorting → backend `last_activity_at` list order (public still pinned)
+15. Send-success toast + no edit/delete/forward UX → Phase 10 in-bubble status + capability-gated lifecycle
 
 ## Behavior that must remain stable
 

@@ -44,6 +44,19 @@ Admin **inherits every Employee capability automatically**. Employee keys are
 | `can_manage_invitations` | `true` | مدیریت دعوت‌نامه‌ها |
 | `can_deactivate_employees` | `true` | غیرفعال‌سازی یا حذف کارمند |
 | `can_manage_all_custom_groups` | `true` | مدیریت همه گروه‌های سفارشی |
+| `can_delete_employee_messages` | `false` | حذف پیام‌های کارمندان |
+
+Admin message moderation:
+
+- Every role may edit **only** messages they originally sent.
+- Employee may soft-delete **only** their own messages.
+- Admin may always soft-delete their own messages; may soft-delete an
+  Employee message only when `can_delete_employee_messages` is true.
+- Admin must **not** soft-delete Owner or other Admin messages through that
+  capability.
+- Owner may soft-delete any normal human-authored message in company groups.
+- Frontend must use backend `can_edit` / `can_delete` / `can_forward` fields;
+  do not reconstruct moderation from role names alone.
 
 ### Owner
 

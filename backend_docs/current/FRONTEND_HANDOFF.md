@@ -142,8 +142,29 @@ other schemes are ignored. No permanent public storage URLs.
 
 ## Messages, files, attachments
 
-- Messages: `GET|POST /api/company-groups/{group_id}/messages/` (page size 50).
-- Payload: optional `text` and/or `attachments: [{attachment_type, resource_id}]`.
+- Messages list/create: `GET|POST /api/company-groups/{group_id}/messages/`
+  (page size 50).
+- Message lifecycle: `PATCH|DELETE /api/group-messages/{message_id}/`,
+  `POST /api/group-messages/{message_id}/forward/`.
+- Create payload: optional `text` and/or
+  `attachments: [{attachment_type, resource_id}]`, optional
+  `client_message_id` for idempotent retries.
+- A successful create/forward response includes the persisted message `id` and
+  server `created_at`. Treat that as **server-confirmed sent**, not a read
+  receipt. Exact retries with the same `client_message_id` and payload return
+  the same message; a reused key with a different payload returns
+  `IDEMPOTENCY_KEY_REUSED` (409).
+- Edit changes only text/caption, preserves attachments, records `edited_at` /
+  `is_edited`, consumes **no** quota, and does **not** reorder the group.
+- Soft delete returns a tombstone (`text` = `پیام حذف شد`, empty
+  `attachments`, `is_deleted=true`). Original content is hidden from normal
+  responses. Delete consumes **no** quota and does **not** reorder the group.
+- Forward creates one new message in one eligible **same-company** group,
+  consumes one normal message quota slot, stores an immutable
+  `forwarded_from` snapshot, and copies attachment references after
+  target-context validation.
+- Capability fields on every message response (do **not** reconstruct from
+  roles): `can_edit`, `can_delete`, `can_forward`.
 - Types: `file` | `financial_document` only. **`project` attachments cannot be
   created** (validation / `project_attachment_disabled`). Historical rows, if
   any, stay readable for compatibility but must not be offered as a new attach
@@ -151,7 +172,10 @@ other schemes are ignored. No permanent public storage URLs.
 - Upload files first via `POST /api/companies/{company_id}/files/` (multipart
   `file`, optional `checksum_sha256`).
 - Open/download only through authorized endpoints; never expect public URLs.
-- Quota: on 429 `MESSAGE_QUOTA_EXCEEDED`, disable send and show `resets_at`.
+  Attachments belonging to soft-deleted messages are not openable through the
+  normal attachment API.
+- Quota: on 429 `MESSAGE_QUOTA_EXCEEDED`, disable send/forward and show
+  `resets_at`. Edit/delete are never blocked by quota.
 
 ## Pricebooks and calculations
 
