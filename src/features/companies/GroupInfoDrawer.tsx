@@ -42,7 +42,9 @@ import {
 import {
   canManageGroup,
   findCurrentMembership,
-  getRoleLabel
+  getRoleLabel,
+  readPermissionFlag,
+  resolveGroupInfoCapabilities
 } from "./companyPermissions";
 import {
   classifyCompanyGroup,
@@ -51,7 +53,11 @@ import {
   resolveGroupDisplayName,
   type GroupKind
 } from "./groupKinds";
-import type { Project } from "../projects/projectApi";
+import {
+  useListCompanyProjectsQuery,
+  useUpdateCompanyProjectMutation,
+  type Project
+} from "../projects/projectApi";
 import type { FinancialDocument } from "../financialDocuments/financialDocumentApi";
 import {
   downloadAuthorizedBinary,
@@ -268,9 +274,14 @@ export function GroupInfoDrawer({
   const [fetchPage] = useLazyListGroupMessagesQuery();
 
   const groupId = group?.id ?? 0;
-  const linkedProject = group ? findLinkedProject(group, projects) : null;
-  const kind = group ? classifyCompanyGroup(group, projects) : null;
-  const title = group ? resolveGroupDisplayName(group, projects) : "";
+  const { data: projectsFromQuery = [] } = useListCompanyProjectsQuery(companyId, {
+    skip: !open || !group
+  });
+  // Prefer parent-provided projects when present; fall back to query for refresh after project rename.
+  const projectList = projects.length > 0 ? projects : projectsFromQuery;
+  const linkedProject = group ? findLinkedProject(group, projectList) : null;
+  const kind = group ? classifyCompanyGroup(group, projectList) : null;
+  const title = group ? resolveGroupDisplayName(group, projectList) : "";
 
   const { data: companyMembersData } = useListCompanyMembersQuery(companyId, {
     skip: !open || !group
@@ -279,9 +290,23 @@ export function GroupInfoDrawer({
   const myMembership = findCurrentMembership(companyMembers, authUser?.id);
   const actorRole = myMembership?.is_active ? myMembership.role : null;
   const actorMemberId = myMembership?.is_active ? myMembership.id : null;
-  const canManage = group ? canManageGroup(actorRole, actorMemberId, group) : false;
-  const canEditMeta = Boolean(canManage && kind === "custom");
-  const canManageMembership = Boolean(canManage && kind === "custom");
+  const effectivePermissions =
+    (myMembership?.effective_permissions as Record<string, unknown> | null | undefined) ?? null;
+  const canManage = group
+    ? canManageGroup(actorRole, actorMemberId, group, effectivePermissions)
+    : false;
+  const canUpdateProjects =
+    actorRole === "owner" || readPermissionFlag(effectivePermissions, "can_update_projects");
+  const groupCaps = resolveGroupInfoCapabilities({
+    kind,
+    canManage,
+    canUpdateProjects
+  });
+  const canEditMeta = groupCaps.canEditGroup;
+  const canManageMembership = groupCaps.canManageMembers;
+  const canInviteMembers = groupCaps.canInviteMembers;
+  const canDeactivateGroup = groupCaps.canDeactivateGroup;
+  const editViaProjectApi = groupCaps.editViaProjectApi;
 
   const {
     data: membershipsData,
@@ -332,7 +357,9 @@ export function GroupInfoDrawer({
     { skip: !open || view.type !== "addMembers" }
   );
 
-  const [updateGroup, { isLoading: isUpdating }] = useUpdateCompanyGroupMutation();
+  const [updateGroup, { isLoading: isUpdatingGroup }] = useUpdateCompanyGroupMutation();
+  const [updateProject, { isLoading: isUpdatingProject }] = useUpdateCompanyProjectMutation();
+  const isUpdating = isUpdatingGroup || isUpdatingProject;
   const [deactivateGroup, { isLoading: isDeactivatingGroup }] = useDeactivateCompanyGroupMutation();
   const [addGroupMember] = useAddCompanyGroupMemberMutation();
   const [deactivateMembership, { isLoading: isDeactivatingMembership }] =
@@ -340,12 +367,21 @@ export function GroupInfoDrawer({
   const [removeMembership, { isLoading: isRemovingMembership }] =
     useRemoveCompanyGroupMembershipMutation();
 
+  function seedEditFields(activeGroup: CompanyGroup, project: Project | null) {
+    if (project) {
+      setEditName(project.name);
+      setEditDescription(project.description ?? activeGroup.description ?? "");
+      return;
+    }
+    setEditName(activeGroup.name);
+    setEditDescription(activeGroup.description ?? "");
+  }
+
   useEffect(() => {
     if (!open || !group) return;
     setView({ type: "overview" });
     setTab("members");
-    setEditName(group.name);
-    setEditDescription(group.description ?? "");
+    seedEditFields(group, findLinkedProject(group, projectList));
     setEditError(null);
     setSensitiveOpen(false);
     setConfirmDeactivate(false);
@@ -440,15 +476,19 @@ export function GroupInfoDrawer({
     return items;
   }, [messages]);
 
-  const addableMembers = useMemo(() => {
+  const addableCandidates = useMemo(() => {
     const results = getListResults(searchedMembersData);
-    return results.filter(
-      (member) =>
-        member.is_active &&
-        member.id !== actorMemberId &&
-        !activeMemberIds.has(member.id) &&
-        !pendingInviteeUserIds.has(member.user_id)
-    );
+    return results
+      .filter(
+        (member) =>
+          member.is_active &&
+          member.id !== actorMemberId &&
+          !activeMemberIds.has(member.id)
+      )
+      .map((member) => ({
+        member,
+        isPendingInvite: pendingInviteeUserIds.has(member.user_id)
+      }));
   }, [activeMemberIds, actorMemberId, pendingInviteeUserIds, searchedMembersData]);
 
   const selectedMembers = useMemo(
@@ -543,12 +583,29 @@ export function GroupInfoDrawer({
     }
     setEditError(null);
     try {
-      await updateGroup({
-        companyId,
-        groupId: group.id,
-        body: { name, description: editDescription.trim() }
-      }).unwrap();
-      dispatch(addToast({ message: "گروه به‌روز شد.", type: "success" }));
+      if (editViaProjectApi) {
+        const projectId = linkedProject?.id ?? group.project_id;
+        if (projectId == null) {
+          setEditError("پروژه مرتبط یافت نشد.");
+          return;
+        }
+        await updateProject({
+          companyId,
+          projectId,
+          body: {
+            name,
+            description: editDescription.trim(),
+            include_all_company_members_in_group:
+              linkedProject?.include_all_company_members_in_group ?? true
+          }
+        }).unwrap();
+      } else {
+        await updateGroup({
+          companyId,
+          groupId: group.id,
+          body: { name, description: editDescription.trim() }
+        }).unwrap();
+      }
       setView({ type: "overview" });
     } catch (err) {
       setEditError(getApiErrorMessage(err, "ذخیره گروه انجام نشد."));
@@ -556,7 +613,7 @@ export function GroupInfoDrawer({
   }
 
   async function handleDeactivateGroup() {
-    if (!group || !canEditMeta || isDeactivatingGroup) return;
+    if (!group || !canDeactivateGroup || isDeactivatingGroup) return;
     try {
       await deactivateGroup({ companyId, groupId: group.id }).unwrap();
       dispatch(addToast({ message: "گروه غیرفعال شد.", type: "success" }));
@@ -576,7 +633,7 @@ export function GroupInfoDrawer({
   }
 
   async function handleSendInvites() {
-    if (!group || !canManageMembership || isInviting) return;
+    if (!group || !canInviteMembers || isInviting) return;
     const ids = [...new Set(selectedMemberIds.filter((id) => !activeMemberIds.has(id)))];
     if (ids.length === 0) {
       setAddError("عضوی برای دعوت انتخاب نشده است.");
@@ -707,17 +764,19 @@ export function GroupInfoDrawer({
     );
   }
 
-  if (view.type === "edit") {
+  if (view.type === "edit" && canEditMeta) {
     return (
       <aside aria-label="ویرایش گروه" className={shellClass} data-testid="group-info-panel">
         {renderHeader("ویرایش گروه", {
           onBack: () => {
             setEditError(null);
+            seedEditFields(group, linkedProject);
             setView({ type: "overview" });
           },
           trailing: (
             <button
               className="px-3 text-sm font-black text-ui-primary disabled:opacity-45"
+              data-testid="group-info-edit-save"
               disabled={isUpdating}
               onClick={() => void handleSaveEdit()}
               type="button"
@@ -727,6 +786,11 @@ export function GroupInfoDrawer({
           )
         })}
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
+          {editViaProjectApi ? (
+            <p className="rounded-lg bg-ui-surface-subtle px-3 py-2 text-[11px] leading-5 text-ui-text-muted">
+              نام و توضیحات این گروه پروژه از طریق پروژه مرتبط ذخیره می‌شود و پیوند پروژه تغییر نمی‌کند.
+            </p>
+          ) : null}
           <label className="block space-y-1.5">
             <span className="text-sm font-bold text-ui-text-secondary">نام گروه</span>
             <input
@@ -756,7 +820,7 @@ export function GroupInfoDrawer({
     );
   }
 
-  if (view.type === "addMembers") {
+  if (view.type === "addMembers" && canInviteMembers) {
     return (
       <aside aria-label="افزودن اعضا" className={shellClass} data-testid="group-info-panel">
         {renderHeader("افزودن اعضا", {
@@ -769,12 +833,13 @@ export function GroupInfoDrawer({
         <div className="flex min-h-0 flex-1 flex-col">
           {selectedMembers.length > 0 ? (
             <div className="shrink-0 border-b border-ui-border-subtle px-3 py-2">
-              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+              <div className="flex flex-wrap gap-2">
                 {selectedMembers.map((member) => {
                   const name = memberDisplayName(member);
                   return (
                     <button
-                      className="inline-flex h-9 max-w-[9.5rem] shrink-0 items-center gap-1.5 rounded-full border border-ui-primary/30 bg-ui-primary-soft px-2 text-xs font-bold text-ui-primary"
+                      aria-label={`حذف ${name}`}
+                      className="inline-flex h-9 max-w-[9.5rem] items-center gap-1.5 rounded-full border border-ui-primary/30 bg-ui-primary-soft px-2 text-xs font-bold text-ui-primary"
                       key={member.id}
                       onClick={() =>
                         setSelectedMemberIds((current) => current.filter((id) => id !== member.id))
@@ -809,8 +874,12 @@ export function GroupInfoDrawer({
             </p>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]" role="listbox" aria-multiselectable>
-            {isLoadingSearch || (isFetchingSearch && addableMembers.length === 0) ? (
+          <div
+            aria-multiselectable
+            className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]"
+            role="listbox"
+          >
+            {isLoadingSearch || (isFetchingSearch && addableCandidates.length === 0) ? (
               <div className="flex items-center justify-center gap-2 py-10 text-sm font-bold text-ui-text-muted">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 در حال دریافت اعضا
@@ -819,20 +888,41 @@ export function GroupInfoDrawer({
               <p className="px-4 py-8 text-center text-sm font-bold text-rose-300">
                 اعضای شرکت دریافت نشدند.
               </p>
-            ) : addableMembers.length === 0 ? (
+            ) : addableCandidates.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-ui-text-muted">
                 {debouncedSearch ? "عضوی با این عبارت پیدا نشد." : "عضو واجدی برای دعوت نیست."}
               </p>
             ) : (
-              addableMembers.map((member) => {
+              addableCandidates.map(({ member, isPendingInvite }) => {
                 const name = memberDisplayName(member);
                 const selected = selectedMemberIds.includes(member.id);
+                if (isPendingInvite) {
+                  return (
+                    <div
+                      aria-disabled
+                      className="flex min-h-[52px] w-full items-center gap-3 border-b border-ui-border-subtle px-3 py-2 opacity-80"
+                      data-testid={`group-info-candidate-pending-${member.id}`}
+                      key={member.id}
+                      role="option"
+                    >
+                      <AvatarCircle name={name} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-bold text-ui-text-primary">
+                          {name}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[11px] text-amber-200/90">
+                          دعوت در انتظار
+                        </span>
+                      </span>
+                    </div>
+                  );
+                }
                 return (
                   <button
                     aria-checked={selected}
                     className={classNames(
                       "flex min-h-[52px] w-full items-center gap-3 border-b border-ui-border-subtle px-3 py-2 text-right transition",
-                      selected ? "bg-ui-primary-soft" : "hover:bg-ui-surface-subtle "
+                      selected ? "bg-ui-primary-soft" : "hover:bg-ui-surface-subtle"
                     )}
                     key={member.id}
                     onClick={() => toggleCandidate(member)}
@@ -854,7 +944,7 @@ export function GroupInfoDrawer({
                         "flex h-6 w-6 items-center justify-center rounded-full border",
                         selected
                           ? "border-ui-primary bg-ui-primary text-ui-primary-foreground"
-                          : "border-ui-border-default text-transparent "
+                          : "border-ui-border-default text-transparent"
                       )}
                     >
                       <Check className="h-3.5 w-3.5" />
@@ -874,7 +964,8 @@ export function GroupInfoDrawer({
             ) : null}
             <Button
               className="w-full"
-              disabled={isInviting}
+              data-testid="group-info-send-invites"
+              disabled={isInviting || selectedMemberIds.length === 0}
               onClick={() => void handleSendInvites()}
               type="button"
             >
@@ -947,17 +1038,16 @@ export function GroupInfoDrawer({
         trailing: canEditMeta ? (
           <button
             aria-label="ویرایش گروه"
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-ui-text-secondary transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-ui-primary transition hover:bg-ui-primary/10 hover:text-ui-primary"
             data-testid="group-info-edit-action"
             onClick={() => {
-              setEditName(group.name);
-              setEditDescription(group.description ?? "");
+              seedEditFields(group, linkedProject);
               setEditError(null);
               setView({ type: "edit" });
             }}
             type="button"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil aria-hidden className="h-5 w-5" strokeWidth={2.25} />
           </button>
         ) : (
           <span className="w-10" />
@@ -974,9 +1064,9 @@ export function GroupInfoDrawer({
           {kind ? (
             <p className="mt-1 text-[11px] text-ui-text-muted">{infoKindLabel(kind)}</p>
           ) : null}
-          {group.description ? (
+          {group.description || linkedProject?.description ? (
             <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-ui-text-muted">
-              {group.description}
+              {group.description || linkedProject?.description}
             </p>
           ) : null}
           {linkedProject ? (
@@ -1027,7 +1117,7 @@ export function GroupInfoDrawer({
           data-tour="group-info-drawer-scroll"
         >
           {tab === "members" ? (
-            <div data-tour="group-info-members-tab">
+            <div className="relative min-h-full pb-16" data-tour="group-info-members-tab">
               {isLoadingMembers || isFetchingMembers || isLoadingInvitations ? (
                 <div className="flex items-center justify-center gap-2 py-8 text-xs font-bold text-ui-text-muted">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1114,7 +1204,7 @@ export function GroupInfoDrawer({
                 </ul>
               )}
 
-              {canManageMembership ? (
+              {canInviteMembers ? (
                 <button
                   aria-label="افزودن عضو"
                   className="absolute bottom-4 left-4 flex h-12 w-12 items-center justify-center rounded-full border border-ui-primary/30 bg-ui-primary text-ui-primary-foreground shadow-ui transition hover:bg-ui-primary-hover"
@@ -1268,7 +1358,7 @@ export function GroupInfoDrawer({
           ) : null}
         </div>
 
-        {canEditMeta ? (
+        {canDeactivateGroup ? (
           <div className="shrink-0 border-t border-ui-border-subtle px-3 py-2">
             <button
               className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-xs font-bold text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-secondary"

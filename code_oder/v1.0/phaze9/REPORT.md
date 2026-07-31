@@ -307,3 +307,12 @@ ame, description, optional member_ids.
 - Rejected manual-`محاسبه` official-item workflow removed.
 - Session-based automatic calculation restored (one session per modal open; 500ms debounce; first success may charge; later same-session recalcs free).
 - Unrelated Phase 9 work (Corporate Blue, wallets, groups, badges, etc.) preserved.
+
+## Correction (2026-07-31) - Group Info edit / add-members refinement
+
+- Confirmed no centered edit/add-member modals (`isEditModalOpen` / `isAddModalOpen` remain absent).
+- Pencil + FAB gated by `canEditMeta` / `canManageMembership` for custom groups only.
+- Admin manage path uses backend `effective_permissions.can_manage_all_custom_groups` (plus creator path); owner always; employee creator-only.
+- Pending invitees appear as non-selectable «دعوت در انتظار» rows (no duplicate invite).
+- Save returns to overview without a success toast; invite submit disabled until a selection exists.
+- Tests: `groupInfoPanel.test.ts` + `canManageGroup` cases under `npm run test:company-groups`.

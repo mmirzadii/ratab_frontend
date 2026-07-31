@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Search, X } from "lucide-react";
+import { Loader2, Paperclip, Search, X } from "lucide-react";
 
 import { Button } from "../../shared/components/Button";
 import { classNames } from "../../shared/utils/classNames";
 import type { CompanyGroup } from "./companyGroupsApi";
 import type { GroupMessage } from "./companyMessagesApi";
 import { getForwardedLabel } from "./chatMessageHelpers";
+import { buildForwardPreview } from "./forwardMessageHelpers";
 import {
   classifyCompanyGroup,
   groupKindLabel,
@@ -37,6 +38,7 @@ export function ForwardMessageModal({
   const [query, setQuery] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
+  // Include the current/source group — same-group forward is valid.
   const eligibleGroups = useMemo(
     () => groups.filter((group) => group.is_active),
     [groups]
@@ -54,6 +56,9 @@ export function ForwardMessageModal({
     });
   }, [eligibleGroups, projects, query]);
 
+  const preview = useMemo(() => buildForwardPreview(sourceMessage), [sourceMessage]);
+  const previewForward = getForwardedLabel(sourceMessage);
+
   useEffect(() => {
     if (!open) return;
     setQuery("");
@@ -61,9 +66,6 @@ export function ForwardMessageModal({
   }, [open, sourceMessage.id]);
 
   if (!open) return null;
-
-  const previewText = sourceMessage.text?.trim() || "پیام با پیوست";
-  const previewForward = getForwardedLabel(sourceMessage);
 
   return (
     <div
@@ -104,17 +106,25 @@ export function ForwardMessageModal({
         </div>
 
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 [scrollbar-width:thin]">
-          <div className="rounded-xl border border-ui-border-subtle bg-ui-surface-subtle px-3 py-2.5">
+          <div
+            className="rounded-xl border border-ui-border-subtle bg-ui-surface-subtle px-3 py-2.5"
+            data-testid="forward-message-preview"
+          >
             <p className="text-[11px] font-bold text-ui-text-muted">پیش‌نمایش پیام</p>
             {previewForward ? (
               <p className="mt-1 text-[11px] font-bold text-ui-primary/90">{previewForward}</p>
             ) : null}
-            <p className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-sm text-ui-text-primary">
-              {previewText}
+            <p className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-sm font-bold text-ui-text-primary">
+              {preview.primary}
             </p>
-            {sourceMessage.attachments.length > 0 ? (
-              <p className="mt-1 text-[11px] text-ui-text-muted">
-                {sourceMessage.attachments.length} پیوست
+            {preview.extraAttachmentCount != null ? (
+              <p
+                aria-label={`${preview.extraAttachmentCount + 1} پیوست`}
+                className="mt-1 inline-flex items-center gap-1 text-[11px] text-ui-text-muted"
+                data-testid="forward-preview-extra-attachments"
+              >
+                <Paperclip className="h-3 w-3" />
+                <span>+{preview.extraAttachmentCount}</span>
               </p>
             ) : null}
           </div>
@@ -149,6 +159,9 @@ export function ForwardMessageModal({
                           ? "border-ui-primary bg-ui-primary-soft text-ui-primary"
                           : "border-ui-border-subtle bg-ui-surface-subtle text-ui-text-primary hover:border-ui-border-default"
                       )}
+                      data-testid={
+                        isCurrent ? "forward-target-current-group" : `forward-target-group-${group.id}`
+                      }
                       onClick={() => setSelectedGroupId(group.id)}
                       role="option"
                       type="button"
@@ -170,7 +183,10 @@ export function ForwardMessageModal({
           </ul>
 
           {errorMessage ? (
-            <p className="rounded-lg border border-rose-300/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-100">
+            <p
+              className="rounded-lg border border-rose-300/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-100"
+              data-testid="forward-error"
+            >
               {errorMessage}
             </p>
           ) : null}
@@ -181,6 +197,7 @@ export function ForwardMessageModal({
             انصراف
           </Button>
           <Button
+            data-testid="forward-submit"
             disabled={pending || selectedGroupId == null}
             onClick={() => {
               if (selectedGroupId != null) onConfirm(selectedGroupId);

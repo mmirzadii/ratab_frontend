@@ -3,6 +3,7 @@ import type { components } from "../../shared/api/generated/schema";
 
 export type Project = components["schemas"]["Project"];
 export type ProjectRequest = components["schemas"]["ProjectRequest"];
+export type PatchedProjectRequest = components["schemas"]["PatchedProjectRequest"];
 export type PaginatedProjectList = components["schemas"]["PaginatedProjectList"];
 
 type ListResponse<T> = { results?: readonly T[] } | readonly T[] | T;
@@ -53,8 +54,34 @@ export const projectApi = baseApi.injectEndpoints({
         }
         return tags;
       }
+    }),
+    updateCompanyProject: builder.mutation<
+      Project,
+      { companyId: number; projectId: number; body: PatchedProjectRequest }
+    >({
+      query: ({ projectId, body }) => ({
+        url: `/api/projects/${projectId}/`,
+        method: "PATCH",
+        body
+      }),
+      // Project rename syncs the linked group name on the backend.
+      invalidatesTags: (result, _error, { companyId, projectId }) => {
+        const tags: Array<{ type: "Project" | "CompanyGroup"; id: string | number }> = [
+          { type: "Project", id: "LIST" },
+          { type: "Project", id: projectId },
+          { type: "CompanyGroup", id: `COMPANY-${companyId}` }
+        ];
+        if (result?.group_id != null) {
+          tags.push({ type: "CompanyGroup", id: result.group_id });
+        }
+        return tags;
+      }
     })
   })
 });
 
-export const { useCreateCompanyProjectMutation, useListCompanyProjectsQuery } = projectApi;
+export const {
+  useCreateCompanyProjectMutation,
+  useListCompanyProjectsQuery,
+  useUpdateCompanyProjectMutation
+} = projectApi;

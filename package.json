@@ -16,6 +16,7 @@
     "test:company-groups": "node --experimental-strip-types --test src/features/companies/groupKinds.test.ts src/features/companies/conversationActivityOrder.test.ts src/features/companies/createCompanyGroup.test.ts src/features/companies/groupInfoPanel.test.ts",
     "test:composer-textarea": "node --experimental-strip-types --test src/features/companies/composerTextarea.test.ts",
     "test:message-lifecycle": "node --experimental-strip-types --test src/features/companies/messageLifecycle.test.ts",
+    "test:forward-message": "node --experimental-strip-types --test src/features/companies/forwardMessage.test.ts",
     "test:company-list-layout": "node --experimental-strip-types --test src/features/companies/companyListLayout.test.ts",
     "test:company-permissions": "node --experimental-strip-types --test src/features/companies/companyPermissions.test.ts",
     "test:project-selector": "node --experimental-strip-types --test src/features/costReports/projectSelector.test.ts",

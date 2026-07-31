@@ -485,18 +485,84 @@ export function canDeactivateOrRemoveMember(
   return true;
 }
 
+/**
+ * Group Info action capabilities.
+ *
+ * The synchronized CompanyGroup schema does **not** expose `can_edit_group` /
+ * `can_invite_members` / `can_manage_members`. Until the backend adds those
+ * fields, the frontend mirrors `AccessPolicyService.require_group_manager`
+ * plus documented group-type rules (public immutable; project rename via
+ * project API; custom via group PATCH).
+ */
+export type GroupInfoCapabilities = {
+  canEditGroup: boolean;
+  canInviteMembers: boolean;
+  canManageMembers: boolean;
+  canDeactivateGroup: boolean;
+  /** Project groups edit name/description through PATCH /api/projects/{id}/. */
+  editViaProjectApi: boolean;
+};
+
+export function resolveGroupInfoCapabilities(input: {
+  kind: "public" | "project" | "custom" | null;
+  canManage: boolean;
+  canUpdateProjects: boolean;
+}): GroupInfoCapabilities {
+  const { kind, canManage, canUpdateProjects } = input;
+  if (kind == null || kind === "public") {
+    return {
+      canEditGroup: false,
+      canInviteMembers: false,
+      canManageMembers: false,
+      canDeactivateGroup: false,
+      editViaProjectApi: false
+    };
+  }
+  if (kind === "project") {
+    // Invite/manage: require_group_manager. Display name/description: project PATCH.
+    return {
+      canEditGroup: canUpdateProjects,
+      canInviteMembers: canManage,
+      canManageMembers: canManage,
+      canDeactivateGroup: false,
+      editViaProjectApi: true
+    };
+  }
+  // custom — group PATCH + deactivate when require_group_manager succeeds
+  return {
+    canEditGroup: canManage,
+    canInviteMembers: canManage,
+    canManageMembers: canManage,
+    canDeactivateGroup: canManage,
+    editViaProjectApi: false
+  };
+}
+
 export function canManageGroup(
   actorRole: CompanyRole | null | undefined,
   actorMemberId: number | null | undefined,
-  group: { created_by_member_id: number; is_active: boolean }
+  group: { created_by_member_id: number; is_active: boolean },
+  /**
+   * Prefer backend `effective_permissions` (e.g. Admin `can_manage_all_custom_groups`).
+   * When omitted, Admin is not granted manage-all; only owner or creator paths remain.
+   */
+  effectivePermissions?: Record<string, unknown> | null
 ): boolean {
   if (!group.is_active) {
     return false;
   }
-  if (actorRole === "owner" || actorRole === "admin") {
+  if (actorRole === "owner") {
     return true;
   }
-  return actorRole === "employee" && actorMemberId != null && group.created_by_member_id === actorMemberId;
+  const isCreator =
+    actorMemberId != null && group.created_by_member_id === actorMemberId;
+  if (actorRole === "admin") {
+    return (
+      isCreator ||
+      readPermissionFlag(effectivePermissions, "can_manage_all_custom_groups")
+    );
+  }
+  return actorRole === "employee" && isCreator;
 }
 
 function collectErrorTexts(error: unknown): string[] {

@@ -4,13 +4,18 @@ import type { Project } from "../projects/projectApi";
 export type GroupKind = "public" | "project" | "custom";
 
 export function classifyCompanyGroup(
-  group: Pick<CompanyGroup, "id" | "is_default">,
+  group: Pick<CompanyGroup, "id" | "is_default"> &
+    Partial<Pick<CompanyGroup, "group_type">>,
   projects: readonly Pick<Project, "group_id" | "name">[] = []
 ): GroupKind {
-  if (group.is_default) {
+  if (group.is_default || group.group_type === "public") {
     return "public";
   }
-  if (projects.some((project) => project.group_id === group.id)) {
+  // Prefer backend group_type so project groups stay project even before projects load.
+  if (
+    group.group_type === "project" ||
+    projects.some((project) => project.group_id === group.id)
+  ) {
     return "project";
   }
   return "custom";

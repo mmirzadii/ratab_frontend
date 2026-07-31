@@ -9,54 +9,39 @@ Date: 2026-07-31
 | `npm run generate:api` | Pass |
 | `npm run validate:docs` | Pass (`CURRENT_BACKEND_CONTRACT_SYNCED`) |
 | `npx tsc -b` | Pass |
-| `npm run lint` | Pass |
+| Focused ESLint on changed forward files | Pass |
 | `npm run test:message-lifecycle` | Pass — 15/15 |
-| `npm run test:composer-textarea` | Pass — 11/11 (aria-label assertion updated for edit-mode label) |
-| `npm run test:company-groups` | Pass — 52/52 |
-| `npm run test:membership-access` | Pass — 11/11 |
-| `npm run test:text-cleanup` | Pass — 26/26 |
+| `npm run test:forward-message` | Pass — 15/15 |
+| `npm run test:composer-textarea` | Pass — 11/11 |
 | `npm run build` | Pass |
 
 ## Focused Phase 10 coverage (`messageLifecycle.test.ts`)
 
-Helpers:
+- no send-success toast; pending / sent+single check / failed retry
+- edit via composer; delete tombstone; capability-gated actions
+- forward modal searchable; current group labeled; no generic `پیام با پیوست`
 
-- distinct `client_message_id` values
-- optimistic ↔ server merge without duplicate bubbles
-- tombstone replace hides attachments
-- viewport menu clamping
-- capability-gated actions
-- forwarded `label_fa` rendering
+## Forward correction (`forwardMessage.test.ts`) — 2026-07-31
 
-Wiring (source assertions):
-
-- no `پیام ارسال شد.` toast
-- pending / sent+single check / failed retry; no `CheckCheck` / read receipt
-- edit via composer banner + draft backup + `ویرایش‌شده`
-- delete confirmation + tombstone copy
-- forward modal searchable groups + documented fields
-- no local role hierarchy reconstruction
-
-## Live verification
-
-Dev server: `http://localhost:1000/` (active).
-
-Browser session at verification time was **logged out** (landing / ورود-ثبت‌نام only). Full interactive desktop right-click and mobile long-press against a live conversation therefore **could not be completed in this agent session**.
-
-Code-level wiring for both entry points is present and covered by tests:
-
-- `onContextMenu` + `MessageActionsMenu`
-- `LONG_PRESS_MS` long-press + overflow button
-
-**Manual follow-up after login** (see `USER_ACTIONS_REQUIRED.md`):
-
-1. Desktop: right-click own/other messages → confirm menu items match `can_*`.
-2. Mobile/narrow: long-press / overflow → same actions.
-3. Send → pending then single check; no success toast.
-4. Edit / delete / forward happy paths.
+- Current group remains in the target list, selectable, labeled `گفتگوی فعلی`
+- Same-group success appends the created message and closes the modal without navigation
+- Preview uses real text / filename / financial-document title; no `پیام با پیوست`; no `۱ پیوست` for a single attachment
+- Obsolete English same-group error is mapped away; inaccessible/generic English → Persian
+- Duplicate submit blocked while pending; modal stays viewport-bounded
 
 ## Notes
 
-- OpenAPI `attachments` method field was corrected after spectacular exported it as `string`; regenerated types again after the fix.
 - No backend application code was modified.
-- Results are not fabricated; live UI paths requiring auth remain pending manual confirmation.
+- No commit/push.
+- Results are not fabricated.
+
+## Related (2026-07-31) Group Info refinement regression
+
+| Command | Result |
+| --- | --- |
+| `npm run test:company-groups` | Pass — 58/58 (includes Group Info + `canManageGroup`) |
+| `npm run test:company-permissions` | Pass — 12/12 |
+| `npm run test:membership-access` | Pass — 11/11 |
+| `npm run test:message-lifecycle` | Pass — 15/15 |
+| `npm run test:forward-message` | Pass — 15/15 |
+| `npm run build` | Pass |

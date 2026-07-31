@@ -10,11 +10,16 @@
 4. Right-click a message:
    - custom menu (not the browser menu);
    - only backend-allowed actions appear.
-5. Edit own message via composer banner; cancel once to confirm draft restore; save and confirm `ویرایش‌شده`.
-6. Delete a permitted message; confirm tombstone `پیام حذف شد` and hidden attachments.
-7. Forward to another eligible group; confirm current chat stays open and target list activity refreshes.
-8. On a phone or DevTools mobile emulation: long-press / overflow opens the same actions.
-9. Retry a failed send (e.g. offline briefly) and confirm no duplicate bubble for the same `client_message_id`.
+5. Forward a message to **گفتگوی فعلی** (same group):
+   - confirm the current group is selectable (not disabled/excluded);
+   - after success, modal closes, chat stays open, and the new forwarded bubble appears;
+   - preview shows real text or filename/title — not `پیام با پیوست` / `۱ پیوست`.
+6. Forward to another eligible group; confirm current chat stays open and target list activity refreshes.
+7. Edit own message via composer banner; cancel once to confirm draft restore; save and confirm `ویرایش‌شده`.
+8. Delete a permitted message; confirm tombstone `پیام حذف شد` and hidden attachments.
+9. On a phone or DevTools mobile emulation: long-press / overflow opens the same actions.
+10. Retry a failed send (e.g. offline briefly) and confirm no duplicate bubble for the same `client_message_id`.
+11. Confirm forward errors never show English such as `A message cannot be forwarded into the same group.`
 
 ## Not required from the user for this phase
 

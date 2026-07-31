@@ -55,6 +55,13 @@ describe("group classification", () => {
     );
   });
 
+  it("marks backend group_type=project even when projects list is empty", () => {
+    assert.equal(
+      classifyCompanyGroup({ id: 2, is_default: false, group_type: "project" }, []),
+      "project"
+    );
+  });
+
   it("treats other groups as custom", () => {
     assert.equal(classifyCompanyGroup({ id: 9, is_default: false }, []), "custom");
   });

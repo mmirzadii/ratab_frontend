@@ -149,7 +149,7 @@ Company workspace is conversation-first when `companyCtx.workspaceActive` is set
 1. Narrow company icon rail (~68px, `lg+`) — **گفتگوها**, اعضا, اطلاعات شرکت (no permanent Projects/Groups nav).
 2. Conversation list (~304–352px): public `عمومی` pinned first; remaining groups keep **backend** `last_activity_at` order (newest activity first; no client alphabetical/kind sort). `+` menu for پروژه جدید / گروه جدید. Successful message send / group or project create invalidates the company group list so the active chat moves without losing selection or draft.
 3. Main chat pane with sticky composer: Telegram-like auto-growing textarea (min ~44px, max ~160px / ~140px mobile via `scrollHeight`); Enter sends, Shift+Enter newline, IME-safe; one **افزودن** menu (فایل | صورت‌بها); empty chat and drawer use **افزودن صورت‌بها** to open the same list-first financial-document selector; project-linked chats lock the project; public/custom require project selection with visible **ایجاد پروژه جدید**. Cost-report wizard Project Selection step also exposes compact **افزودن پروژه** (shared `CreateProjectSheet`) unless `lockProject` is set.
-4. Optional left info drawer (closed by default) with tabs صورت‌بهاها / فایل‌ها / لینک‌ها / اعضا; shared resources come from that group's messages; members from the group-members endpoint.
+4. Optional left Group Info side panel (Telegram-like internal views: `overview` / `edit` / `addMembers` / `memberDetails` — no centered modals). Default tab `اعضا`, plus صورت‌بهاها / فایل‌ها / لینک‌ها. Header pencil edits custom groups when permitted (`can_manage_all_custom_groups` / creator / owner). Members tab uses compact rows + FAB `افزودن عضو`; invitations stay pending until accepted. Sensitive deactivate lives under `اقدامات حساس`. Desktop ~384–416px beside chat; mobile full-screen overlay. Chat selection, draft, and scroll stay intact when switching panel views.
 5. Below `lg`: bottom section nav + mobile list↔detail.
 
 Project/group creation and management remain available from the conversation UI (create menu + drawer), not as primary nav sections. Cost-report wizard still uses SecondaryNav and returns attachments to the originating conversation when `returnToGroupId` is set.
@@ -160,7 +160,7 @@ Outgoing bubbles show pending → sent (server time + one check) or failed+retry
 
 Actions (ویرایش / حذف / بازارسال) come only from backend `can_edit` / `can_delete` / `can_forward`. Desktop uses a custom right-click menu; mobile uses long-press/overflow; both share one menu model.
 
-Edit runs in the composer (banner + draft restore). Delete confirms then renders the backend tombstone. Forward opens a searchable same-company group modal and refreshes target activity without leaving the current chat.
+Edit runs in the composer (banner + draft restore). Delete confirms then renders the backend tombstone. Forward opens a searchable same-company group modal (**current group included and selectable**, labeled `گفتگوی فعلی`); same-group success appends the new message in place. Preview shows real text or attachment/document title (no generic `پیام با پیوست`). Errors stay Persian-only.
 
 Endpoints: `PATCH|DELETE /api/group-messages/{id}/`, `POST /api/group-messages/{id}/forward/`.
 

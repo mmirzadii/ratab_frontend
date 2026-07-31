@@ -62,6 +62,7 @@ import {
 } from "./companyMessagesApi";
 import { findCurrentMembership } from "./companyPermissions";
 import { DeleteMessageConfirm } from "./DeleteMessageConfirm";
+import { formatForwardError } from "./forwardMessageHelpers";
 import { ForwardMessageModal } from "./ForwardMessageModal";
 import {
   classifyCompanyGroup,
@@ -763,7 +764,7 @@ export function MessagesSection({
     const clientMessageId = forwardClientMessageId ?? createClientMessageId("fwd");
     setForwardClientMessageId(clientMessageId);
     try {
-      await forwardMessage({
+      const created = await forwardMessage({
         messageId: forwardTarget.id,
         companyId,
         sourceGroupId: forwardTarget.group_id,
@@ -772,6 +773,12 @@ export function MessagesSection({
           client_message_id: clientMessageId
         }
       }).unwrap();
+      // Same-group forward is valid: append the new message without leaving this chat.
+      if (effectiveGroupId != null && targetGroupId === effectiveGroupId) {
+        shouldStickToBottomRef.current = true;
+        setMessages((current) => mergeUniqueMessages(current, [created]));
+        setTotalCount((count) => count + 1);
+      }
       setForwardTarget(null);
       setForwardClientMessageId(null);
       setForwardError(null);
@@ -786,7 +793,7 @@ export function MessagesSection({
         setForwardError(hint);
         return;
       }
-      setForwardError(getApiErrorMessage(error));
+      setForwardError(formatForwardError(error));
     }
   }
 

@@ -68,12 +68,13 @@ Composer edit mode (not a centered modal):
 
 `ForwardMessageModal`:
 
-- eligible active same-company groups from existing membership-scoped list
-- search + single selection + kind labels
-- source preview
+- eligible active same-company groups from existing membership-scoped list (**including the current/source group**; same-group forward is valid)
+- search + single selection + kind labels; current group marked `گفتگوی فعلی` (informational only)
+- compact source preview: real message text, else attachment filename / financial-document title (no `پیام با پیوست` / no `۱ پیوست` for a single attachment)
 - submits only `target_group_id` + `client_message_id`
 - duplicate-submit blocked while pending
-- success closes modal, invalidates target group activity/quota tags, keeps current chat open
+- success closes modal; same-group success appends the new forwarded message locally; other targets refresh activity via RTK tags; current chat stays open
+- Persian-only forward errors via `formatForwardError` (never the obsolete English same-group message)
 
 ## Primary files
 
@@ -83,8 +84,9 @@ Composer edit mode (not a centered modal):
 - `src/features/companies/MessageActionsMenu.tsx`
 - `src/features/companies/DeleteMessageConfirm.tsx`
 - `src/features/companies/ForwardMessageModal.tsx`
+- `src/features/companies/forwardMessageHelpers.ts`
+- `src/features/companies/forwardMessage.test.ts`
 - `src/features/companies/MessagesSection.tsx`
-- `src/features/companies/messageLifecycle.test.ts`
 - `backend_docs/current/OPENAPI.yaml` (+ synced handoff package)
 
 ## Cleanup
@@ -94,7 +96,12 @@ Composer edit mode (not a centered modal):
 - No browser-native context menu dependency for actions
 - Shared action model for desktop/mobile
 - Edit/delete do not invalidate conversation ordering; forward does for the target group
+- Forward correction: same-group allowed; compact real-title preview; Persian-only forward errors
 
 ## Out of scope (intentionally not added)
 
 Read receipts, double-check, reactions, replies, voice, fake realtime, cross-company forward UI, attachment replacement on edit, hard delete.
+
+## Related correction (2026-07-31) — Group Info panel
+
+Telegram-style Group Info internal views (overview / edit / addMembers) remain separate from message lifecycle. Permission gating for custom-group edit/invite now respects Admin `can_manage_all_custom_groups` from `effective_permissions`. Messaging Phase 10 behavior was not changed by this correction.

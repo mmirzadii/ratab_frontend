@@ -61,7 +61,7 @@ export function CompanyListPage() {
               </StatusBadge>
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <h1 className="text-xl font-black leading-tight text-white sm:text-4xl">
+              <h1 className="text-xl font-black leading-tight text-ui-text-primary sm:text-4xl">
                 شرکت‌های شما
               </h1>
               <p className="hidden text-sm leading-7 text-ui-text-secondary sm:block">

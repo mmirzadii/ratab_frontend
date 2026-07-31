@@ -193,9 +193,12 @@ describe("Phase 10 MessagesSection wiring", () => {
   it("forwards through a searchable same-company modal without leaving the chat", () => {
     assert.match(messagesSection, /ForwardMessageModal/);
     assert.match(messagesSection, /target_group_id/);
+    assert.match(messagesSection, /formatForwardError/);
     const forwardModal = read("ForwardMessageModal.tsx");
     assert.match(forwardModal, /جستجوی گروه/);
     assert.match(forwardModal, /groupKindLabel/);
+    assert.match(forwardModal, /گفتگوی فعلی/);
+    assert.equal(forwardModal.includes("پیام با پیوست"), false);
   });
 
   it("does not reconstruct Owner/Manager/Employee delete rules in React", () => {
