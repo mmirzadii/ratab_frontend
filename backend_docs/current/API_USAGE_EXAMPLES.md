@@ -245,6 +245,61 @@ Selected members are invited (pending); they must accept via
 creator is always an active member and is never invited. Invalid `member_ids`
 reject the whole create (no partial group).
 
+Pricebook family / year selection (then create FD with resolved ids):
+
+```http
+GET /api/pricebooks/
+```
+
+```json
+[
+  {
+    "id": 1,
+    "code": "building",
+    "title_fa": "ابنیه",
+    "official_title_fa": "فهرست‌بهای واحد پایه رشته ابنیه",
+    "discipline": "building",
+    "base_year": 1404,
+    "sort_order": 10,
+    "is_active": true,
+    "latest_available_year": 1404
+  }
+]
+```
+
+```http
+GET /api/pricebooks/1/editions/
+```
+
+```json
+[
+  {
+    "id": 10,
+    "pricebook_id": 1,
+    "family_code": "building",
+    "family_title_fa": "ابنیه",
+    "code": "building-1404",
+    "year": 1404,
+    "title_fa": "فهرست‌بهای واحد پایه رشته ابنیه سال 1404",
+    "currency_code": "IRR",
+    "is_locked": true,
+    "is_active": true,
+    "is_stale": false,
+    "is_base_year": true,
+    "active_price_set": {
+      "id": 20,
+      "code": "official-1404",
+      "title_fa": "قیمت‌های رسمی سال 1404",
+      "is_active": true
+    }
+  }
+]
+```
+
+List returns only active, non-stale editions (newest year first). Use
+`pricebook_edition_id` + `price_set_id` from that payload — never treat
+`ABN1404` as the family code.
+
 Project-group financial documents (linked project is authoritative):
 
 ```http
@@ -252,7 +307,13 @@ GET /api/company-groups/9/financial-documents/
 POST /api/company-groups/9/financial-documents/
 Content-Type: application/json
 
-{"document_type": "cost_report", "title": "گزارش", "pricebook_edition_id": 1, "price_set_id": 2}
+{"document_type": "cost_report", "title": "گزارش", "pricebook_edition_id": 10, "price_set_id": 20}
+```
+
+Stale or inactive edition on create (HTTP 400):
+
+```json
+{"pricebook_edition_id": ["Pricebook edition is inactive or stale and cannot be used for new documents."]}
 ```
 
 Then attach with the single message-attachment flow:
@@ -413,15 +474,52 @@ Owner rows return empty `permission_settings` / `configurable_permissions`,
 keys as editable switches; those appear under `inherited_permissions` /
 `effective_permissions` only.
 
-## 5. Message create and quota exceeded
+## 5. Message create, lifecycle, and quota exceeded
 
 ```http
 POST /api/company-groups/3/messages/
 Content-Type: application/json
 X-CSRFToken: masked-csrf-token-example
 
-{"text": "سلام، سند پیوست شد", "attachments": []}
+{
+  "text": "سلام، سند پیوست شد",
+  "attachments": [],
+  "client_message_id": "client-msg-001"
+}
 ```
+
+Successful create returns the persisted message including `id`, `created_at`
+(server-confirmed sent timestamp — **not** a read receipt), `can_edit`,
+`can_delete`, `can_forward`, `is_edited`, and `is_deleted`.
+
+```http
+PATCH /api/group-messages/42/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"text": "متن ویرایش‌شده"}
+```
+
+```http
+DELETE /api/group-messages/42/
+X-CSRFToken: masked-csrf-token-example
+```
+
+Soft-delete response keeps the row as a tombstone (`text` = `پیام حذف شد`,
+`attachments` = `[]`, `is_deleted` = true).
+
+```http
+POST /api/group-messages/42/forward/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"target_group_id": 9, "client_message_id": "fwd-001"}
+```
+
+Forward creates one new message in the target group (the source group is also
+an allowed target), consumes one quota slot, and includes `forwarded_from`
+with an immutable source summary. Same-group forward keeps the original
+message unchanged and returns a distinct message `id`.
 
 Allowed attachment types: `file`, `financial_document` only. Sending
 `attachment_type: "project"` returns **400** (`project_attachment_disabled`).
@@ -441,7 +539,7 @@ is the Bronze fallback):
 }
 ```
 
-HTTP **429**.
+HTTP **429** on create or forward. Edit/delete never consume quota.
 
 ## 6. File upload and private download
 

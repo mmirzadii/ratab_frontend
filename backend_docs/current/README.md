@@ -54,4 +54,6 @@ login), only the current contract is documented here.
   session IDs, or the old `dev-login` flow as normal authentication
 - Treat public permanent file URLs, client-chosen token costs, or client-chosen
   payment amounts/status as valid
+- Treat `ABN1404` as the pricebook family identity (legacy alias only;
+  authoritative code is `building`)
 - Enforce security only in the UI

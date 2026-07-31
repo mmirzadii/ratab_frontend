@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, XCircle } from "lucide-react";
 
-import type { PricebookEdition, PricebookFamily } from "../../pricebooks/pricebookApi";
+import type { Pricebook, PricebookEdition } from "../../pricebooks/pricebookApi";
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { Field } from "../../../shared/components/Field";
 import { JalaliDateField } from "../../../shared/components/JalaliDateField";
@@ -14,6 +14,7 @@ export function DocumentInfoSection({
   editionsError,
   form,
   formError,
+  isExistingDocument,
   isLoadingEditions,
   isLoadingPricebooks,
   onEditionChange,
@@ -21,6 +22,7 @@ export function DocumentInfoSection({
   onFamilyChange,
   families,
   pricebooksError,
+  savedEdition,
   selectedActivePriceSet,
   selectedEdition,
   selectedFamily
@@ -29,16 +31,18 @@ export function DocumentInfoSection({
   editionsError: unknown;
   form: WizardFormState;
   formError: string | null;
+  isExistingDocument: boolean;
   isLoadingEditions: boolean;
   isLoadingPricebooks: boolean;
   onEditionChange: (value: string) => void;
   onFieldChange: (field: keyof WizardFormState, value: string) => void;
   onFamilyChange: (value: string) => void;
-  families: PricebookFamily[];
+  families: Pricebook[];
   pricebooksError: unknown;
+  savedEdition: PricebookEdition | undefined;
   selectedActivePriceSet: { id: number } | null;
   selectedEdition: PricebookEdition | undefined;
-  selectedFamily: PricebookFamily | undefined;
+  selectedFamily: Pricebook | undefined;
 }) {
   const [isOptionalInfoOpen, setIsOptionalInfoOpen] = useState(() =>
     Boolean(
@@ -50,52 +54,102 @@ export function DocumentInfoSection({
     )
   );
 
+  const readOnlyFamilyTitle =
+    savedEdition?.family_title_fa?.trim() ||
+    selectedFamily?.title_fa?.trim() ||
+    "—";
+  const readOnlyYear = savedEdition?.year ?? selectedEdition?.year ?? null;
+  const yearSelectDisabled =
+    isExistingDocument ||
+    isLoadingEditions ||
+    !selectedFamily ||
+    editions.length === 0;
+
   return (
     <>
       <GlassCard className="p-3 sm:p-5 xl:p-4">
-        <div className="grid gap-3 sm:grid-cols-2 xl:gap-x-4 xl:gap-y-2.5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 xl:gap-x-4 xl:gap-y-2.5">
           <Field label="عنوان صورت‌بها" required>
             <input
               className={inputClasses}
+              disabled={isExistingDocument}
               onChange={(event) => onFieldChange("document_title", event.target.value)}
               placeholder="مثلاً صورت‌بهای ماه اول"
               required
               value={form.document_title}
             />
           </Field>
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            <Field label="فهرست‌بها">
-              <select
-                aria-label="فهرست‌بها"
-                className={`${inputClasses} min-w-0 px-2 sm:px-4`}
-                disabled={isLoadingPricebooks || families.length === 0}
-                onChange={(event) => onFamilyChange(event.target.value)}
-                value={selectedFamily?.id ?? ""}
-              >
-                {families.map((family) => (
-                  <option key={family.id} value={family.id}>
-                    {family.nameFa}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="سال">
-              <select
-                aria-label="سال"
-                className={`${inputClasses} min-w-0 px-2 sm:px-4`}
-                disabled={isLoadingEditions || editions.length === 0}
-                onChange={(event) => onEditionChange(event.target.value)}
-                value={selectedEdition?.id ?? ""}
-              >
-                {editions.map((edition) => (
-                  <option key={edition.id} value={edition.id}>
-                    {edition.year}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
+          {isExistingDocument ? (
+            <>
+              <Field label="نوع فهرست‌بها">
+                <div
+                  aria-label="نوع فهرست‌بها"
+                  className={`${inputClasses} flex items-center text-ui-text-primary`}
+                  data-testid="document-info-family-readonly"
+                >
+                  {readOnlyFamilyTitle}
+                </div>
+              </Field>
+              <Field label="سال">
+                <div
+                  aria-label="سال"
+                  className={`${inputClasses} flex items-center text-ui-text-primary`}
+                  data-testid="document-info-year-readonly"
+                >
+                  {readOnlyYear ?? "—"}
+                </div>
+              </Field>
+            </>
+          ) : (
+            <>
+              <Field label="نوع فهرست‌بها">
+                <select
+                  aria-label="نوع فهرست‌بها"
+                  className={`${inputClasses} min-w-0 px-2 sm:px-4`}
+                  data-testid="document-info-family-select"
+                  disabled={isLoadingPricebooks || families.length === 0}
+                  onChange={(event) => onFamilyChange(event.target.value)}
+                  value={selectedFamily?.id ?? ""}
+                >
+                  {families.length === 0 ? (
+                    <option value="">فهرست‌بهایی نیست</option>
+                  ) : null}
+                  {families.map((family) => (
+                    <option key={family.id} value={family.id}>
+                      {family.title_fa}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="سال">
+                <select
+                  aria-label="سال"
+                  className={`${inputClasses} min-w-0 px-2 sm:px-4`}
+                  data-testid="document-info-year-select"
+                  disabled={yearSelectDisabled}
+                  onChange={(event) => onEditionChange(event.target.value)}
+                  value={selectedEdition?.id ?? ""}
+                >
+                  {editions.length === 0 ? (
+                    <option value="">سالی موجود نیست</option>
+                  ) : null}
+                  {editions.map((edition) => (
+                    <option key={edition.id} value={edition.id}>
+                      {edition.year}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </>
+          )}
         </div>
+
+        {isExistingDocument ? (
+          <p className="mt-2 text-[11px] leading-5 text-ui-text-muted">
+            نوع و سال فهرست‌بها پس از ایجاد صورت‌بها ثابت می‌ماند. برای سال یا نوع دیگر، صورت‌بهای
+            جدید بسازید.
+          </p>
+        ) : null}
 
         <button
           aria-controls="optional-document-info"
@@ -177,9 +231,29 @@ export function DocumentInfoSection({
           </div>
         ) : null}
 
-        {selectedEdition && !selectedActivePriceSet ? (
+        {!isExistingDocument &&
+        selectedFamily &&
+        !isLoadingEditions &&
+        !editionsError &&
+        editions.length === 0 ? (
+          <div
+            className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100"
+            data-testid="document-info-no-editions"
+          >
+            برای این نوع فهرست‌بها هنوز سال فعالی ثبت نشده است.
+          </div>
+        ) : null}
+
+        {!isExistingDocument && selectedEdition && !selectedActivePriceSet ? (
           <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
             برای این سال هنوز مجموعه قیمت فعال ثبت نشده است.
+          </div>
+        ) : null}
+
+        {isExistingDocument && !savedEdition && !isLoadingEditions ? (
+          <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+            نسخه ذخیره‌شده فهرست‌بها در فهرست فعال پیدا نشد؛ مرور ساختار با همان شناسه ادامه
+            می‌یابد و نوع/سال تغییر نمی‌کند.
           </div>
         ) : null}
 

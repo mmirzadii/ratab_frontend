@@ -233,6 +233,30 @@ codes. Field names match APIException JSON bodies unless noted.
 | Retry | Safe with a document from the linked project |
 | Action required | Client |
 
+### Pricebook edition inactive or stale
+
+| | |
+| --- | --- |
+| Shape | `{"pricebook_edition_id":["Pricebook edition is inactive or stale and cannot be used for new documents."]}` |
+| HTTP | 400 |
+| Operations | `POST` financial-document create (project or group endpoints) |
+| Meaning | Selected edition is not usable for new documents (`is_active=false` or `is_stale=true`) |
+| Frontend | Re-fetch `GET /api/pricebooks/{id}/editions/` (active + non-stale only); pick another year |
+| Retry | Safe after selecting a usable edition |
+| Action required | Client |
+
+### Price set mismatch or inactive
+
+| | |
+| --- | --- |
+| Shape | Field-keyed on `price_set_id` (must belong to the edition; must be active) |
+| HTTP | 400 |
+| Operations | Financial-document create |
+| Meaning | Price set does not match the selected edition, or is inactive |
+| Frontend | Use `active_price_set` from the editions list (`official-<year>`) |
+| Retry | Safe after correcting `price_set_id` |
+| Action required | Client |
+
 ### Membership conflict (protected remove)
 
 | | |
@@ -349,12 +373,62 @@ codes. Field names match APIException JSON bodies unless noted.
 | --- | --- |
 | Code | `MESSAGE_QUOTA_EXCEEDED` |
 | HTTP | 429 |
-| Operations | `POST /api/company-groups/{id}/messages/` |
+| Operations | `POST /api/company-groups/{id}/messages/`, `POST /api/group-messages/{id}/forward/` |
 | Fields | `code`, `detail`, `used_today`, `daily_limit`, `quota_date`, `resets_at` (counts as strings), `effective_plan_code` (the single effective plan checked, e.g. `bronze` when there is no paid subscription) |
 | Meaning | Daily message limit reached for the user's current effective plan |
-| Frontend | Disable send; show reset time; optionally surface `effective_plan_code` to hint at upgrading |
+| Frontend | Disable send/forward; show reset time; optionally surface `effective_plan_code` to hint at upgrading |
 | Retry | After `resets_at`, or immediately if a higher-limit plan becomes effective |
 | Action required | Wait / admin subscription activation |
+
+### Message edit forbidden
+
+| | |
+| --- | --- |
+| Code | `MESSAGE_EDIT_FORBIDDEN` |
+| HTTP | 403 |
+| Operations | `PATCH /api/group-messages/{id}/` |
+| Meaning | Caller is not the original sender (or cannot edit this message) |
+| Frontend | Hide/disable edit; refresh message capabilities |
+
+### Message delete forbidden
+
+| | |
+| --- | --- |
+| Code | `MESSAGE_DELETE_FORBIDDEN` |
+| HTTP | 403 |
+| Operations | `DELETE /api/group-messages/{id}/` |
+| Meaning | Caller lacks role/permission to soft-delete this message |
+| Frontend | Hide/disable delete; refresh message capabilities |
+
+### Message not editable
+
+| | |
+| --- | --- |
+| Code | `MESSAGE_NOT_EDITABLE` |
+| HTTP | 400 |
+| Operations | `PATCH` / forward of deleted or system messages |
+| Meaning | Soft-deleted or system messages cannot be edited/forwarded through ordinary APIs |
+| Frontend | Show tombstone / disable lifecycle actions |
+
+### Message forward target invalid
+
+| | |
+| --- | --- |
+| Code | `MESSAGE_FORWARD_TARGET_INVALID` |
+| HTTP | 400 |
+| Operations | `POST /api/group-messages/{id}/forward/` |
+| Meaning | Target group missing, inaccessible, or cross-company |
+| Frontend | Re-select an eligible same-company group membership (the source group is allowed) |
+
+### Message attachment forward denied
+
+| | |
+| --- | --- |
+| Code | `MESSAGE_ATTACHMENT_FORWARD_DENIED` |
+| HTTP | 400 |
+| Operations | `POST /api/group-messages/{id}/forward/` |
+| Meaning | At least one attachment cannot be safely referenced in the target context |
+| Frontend | Abort forward; keep source message unchanged |
 
 ### Payments disabled
 

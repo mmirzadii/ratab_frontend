@@ -20,6 +20,17 @@ planned future work as implemented.
   invitations (no message access until accept). Post-create
   `POST /api/company-groups/{id}/members/` still adds existing members
   directly. Company invitations remain a separate flow for non-members.
+- Single-check / server-confirmed sent status means the message row was
+  persisted (`id` + `created_at`). It is **not** a read receipt, delivery
+  receipt, or double-check. Read receipts, reactions, replies, voice
+  messages, WebSockets, and local-only deletion are out of scope.
+- Soft-deleted messages remain in the conversation as tombstones. Underlying
+  private-file and financial-document records follow their existing retention
+  rules; attachment cards are hidden from normal message responses.
+- Forwarding is limited to one eligible same-company group per request.
+  The source group itself is an allowed target and creates a new message.
+  Cross-company forwarding is rejected to protect private files and financial
+  documents.
 
 ## Billing and subscriptions
 
@@ -96,20 +107,25 @@ planned future work as implemented.
 - Manual admin grant/subscription activation is the only non-demo top-up path
   in v1.0 (plus Local/Development demo package purchase when enabled).
 
-## Pricebook source paths
+## Pricebook families and source layout (Phase 11)
 
-- `PricebookEdition.source_dir` must be a durable path under the repository
-  `data/` root (prefer relative `data/building_pricebook/<year>`). Temporary
-  paths such as `/tmp/tmp*`, pytest extraction dirs, or deleted TemporaryDirectory
-  trees must never be stored on Local/live databases.
-- Operator repair (no reimport; preserves IDs/snapshots): 
-  `python manage.py repair_pricebook_source_dirs [--pricebook ABN1404] [--dry-run]`.
-- Validation reports missing directories, unstable temporary paths, paths outside
-  `data/`, and missing required `rows/<item_key>/calculate.py` files:
-  `python manage.py validate_pricebook --pricebook ABN1404`.
-- Imports into a non-test database refuse to persist unstable temporary
-  `source_dir` values; the building pricebook family (`ABN1404`) is remapped to
-  the canonical year-scoped data path when that directory exists.
+- Authoritative building family code is `building` (`title_fa`: `ابنیه`).
+  `ABN1404` is a **legacy alias only**, not the catalog identity.
+- Canonical layout: `data/building_pricebook/pricebook.json` plus
+  `data/building_pricebook/<year>/` with complete `prices.xlsx` at the year
+  root. Non-base years are sparse structural overlays on the family
+  `base_year` (currently 1404); every year still needs its own prices file.
+- Operator commands: `validate_pricebook_family`,
+  `materialize_pricebook_edition`, `rebuild_pricebook_family`,
+  `sync_pricebooks`, and Local-only `reset_pricebook_catalog`. Prefer these
+  over deprecated `bootstrap_dev_pricebook`. Year-encoded import family codes
+  (e.g. recreating `ABN1404` as a family) are refused.
+- Mechanical/electrical (and other) families are supported only when a valid
+  `pricebook.json` + structured year sources exist. The backend does **not**
+  fabricate those catalogs from PDFs.
+- `PricebookEdition.source_dir` / provenance must stay durable under the
+  repository `data/` root. Temporary paths (`/tmp`, pytest dirs) must never be
+  stored on Local/live databases.
 
 ## Product / rendering
 

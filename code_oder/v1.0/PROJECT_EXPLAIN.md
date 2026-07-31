@@ -1,6 +1,6 @@
 # Ratab Frontend Project Explain — v1.0 (Final)
 
-Last updated: 2026-07-30  
+Last updated: 2026-07-31  
 Active version file: `code_oder/active_version.txt` = `v1.0`  
 Backend contract: `backend_docs/current/BACKEND_VERSION` = `v1.0`  
 Package version: `package.json` = `1.0.0`
@@ -9,7 +9,7 @@ Documentation root note: the repository uses `code_oder` as the folder name. Do 
 
 ## Purpose
 
-Onboarding and handoff document for Frontend v1.0 after Phases 1–10, including the calculation-based token policy correction (2026-07-30). Phases 1–7 delivered contract sync, session auth, company workspace, messaging, files/attachments, wallet foundations, and subscription/quota/disabled-payment UX. Phase 8 finalized regression, cleanup, and documentation. Phase 9 simplified the company workspace into a compact Telegram-inspired RTL master-detail layout. Phase 10 adds messenger-like message status, edit, soft-delete, and forward driven by backend capability fields. The 2026-07-30 correction replaces the obsolete 5-token official-line-create UX with backend-authoritative paid calculations, receipts, and company-wallet donation.
+Onboarding and handoff document for Frontend v1.0 after Phases 1–11, including the calculation-based token policy correction (2026-07-30) and Phase 11 family/year pricebook selection. Phases 1–7 delivered contract sync, session auth, company workspace, messaging, files/attachments, wallet foundations, and subscription/quota/disabled-payment UX. Phase 8 finalized regression, cleanup, and documentation. Phase 9 simplified the company workspace into a compact Telegram-inspired RTL master-detail layout. Phase 10 adds messenger-like message status, edit, soft-delete, and forward driven by backend capability fields. Phase 11 separates pricebook family and year selection using Backend Phase 11 editions. The 2026-07-30 correction replaces the obsolete 5-token official-line-create UX with backend-authoritative paid calculations, receipts, and company-wallet donation.
 
 Before changing code, read in this order:
 
@@ -38,6 +38,7 @@ Before changing code, read in this order:
 | 8 | ✅ | Final integration, cleanup, regression, handoff |
 | 9 | ✅ | Compact Telegram-inspired company workspace UX + text cleanup |
 | 10 | ✅ | Message status, edit, soft-delete, forward (backend `can_*`) |
+| 11 | ✅ | Separate pricebook family (`نوع فهرست‌بها`) and year (`سال`) selection |
 | — | ✅ | **2026-07-30 correction:** calculation-based token policy + company wallet |
 
 ## Product snapshot
@@ -48,7 +49,7 @@ Persian-first RTL construction cost-reporting app.
    Signup password step: mandatory ≥6 characters (blocking); live non-blocking weak-password yellow warning; signup-complete errors classified by field so password `400`s are not shown as invalid tickets.
 2. Protected company list / create.
 3. Company workspace (`/companies/:id`): compact section tabs + context list + main pane for messages, members, and company info. Custom/normal group create is routed at `/companies/:id/groups/new` (Telegram-like desktop side panel / mobile full page; two-step draft; atomic `member_ids` invitations). Group info is a Telegram-like side panel (overview/edit/add-members) without admin-form clutter.
-4. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Opening an official item modal creates one free backend calculation session; valid inputs auto-calculate after 500ms. The first successful calculation in that session may charge the backend official cost (default 2); later recalculations in the same open session are free. Add uses the latest receipt (`calculation_receipt_id`) with no second charge, or forces one immediate same-session calculation when the result is pending/stale. Insufficient combined balance is kept silent until the user clicks Add, then opens the shared purchase dialog → `/settings?tab=tokens`.
+4. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Document Info selects independent `نوع فهرست‌بها` (`Pricebook.title_fa`) and `سال` (edition years, newest first); create submits the exact `pricebook_edition_id` + official `active_price_set`. Existing documents keep family/year read-only. Opening an official item modal creates one free backend calculation session; valid inputs auto-calculate after 500ms. The first successful calculation in that session may charge the backend official cost (default 2); later recalculations in the same open session are free. Add uses the latest receipt (`calculation_receipt_id`) with no second charge, or forces one immediate same-session calculation when the result is pending/stale. Insufficient combined balance is kept silent until the user clicks Add, then opens the shared purchase dialog → `/settings?tab=tokens`.
 5. Account settings (`/settings?tab=account|tokens|subscription`): circular avatar + prominent header token chip; summary = plan/quota/status only; Token tab = compact wallet metrics, server package cards / demo Buy when available, **اهدای توکن به شرکت** (shared modal), collapsible transaction history.
 
 Visual system: **Metril Corporate Blue** — semantic `--ui-*` tokens in `src/styles/index.css`, Tailwind `ui.*` aliases, shared components first. Light canvas is cool gray-blue (`#F5F7FB`); dark canvas navy (`#08111F`). Primary actions use brand blue (not emerald). See `docs/product_reference/v0.0/UI_THEME_NOTES.md`.

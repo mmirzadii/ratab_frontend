@@ -159,10 +159,11 @@ other schemes are ignored. No permanent public storage URLs.
 - Soft delete returns a tombstone (`text` = `پیام حذف شد`, empty
   `attachments`, `is_deleted=true`). Original content is hidden from normal
   responses. Delete consumes **no** quota and does **not** reorder the group.
-- Forward creates one new message in one eligible **same-company** group,
-  consumes one normal message quota slot, stores an immutable
-  `forwarded_from` snapshot, and copies attachment references after
-  target-context validation.
+- Forward creates one new message in an eligible **same-company** group —
+  including the **source group** itself. Same-group forward is a new message
+  (new `id` / `created_at`), not a rewrite of the original. It consumes one
+  normal message quota slot, stores an immutable `forwarded_from` snapshot,
+  and copies attachment references after target-context validation.
 - Capability fields on every message response (do **not** reconstruct from
   roles): `can_edit`, `can_delete`, `can_forward`.
 - Types: `file` | `financial_document` only. **`project` attachments cannot be
@@ -178,6 +179,31 @@ other schemes are ignored. No permanent public storage URLs.
   `resets_at`. Edit/delete are never blocked by quota.
 
 ## Pricebooks and calculations
+
+### Family and year selection (Phase 11)
+
+- A **Pricebook** is a family/type. Authoritative machine `code` has **no year**
+  (example: `building`). Short UI label is `title_fa` (e.g. `ابنیه`); longer
+  official Persian title is `official_title_fa`. Do **not** treat `ABN1404` as
+  the family identity — it is a legacy alias only.
+- An **edition** is one family + one year. Client UX: pick family, then year;
+  submit the resolved `pricebook_edition_id` (and `price_set_id`) on create.
+- `GET /api/pricebooks/` — active families (`code`, `title_fa`,
+  `official_title_fa`, `base_year`, `sort_order`, `is_active`,
+  `latest_available_year`). Do not embed year in the family dropdown label.
+- `GET /api/pricebooks/{id}/editions/` — editions usable for **new** documents:
+  `is_active` and not `is_stale`, newest `year` first. Fields include
+  `family_code`, `family_title_fa`, `year`, `is_active`, `is_stale`,
+  `is_base_year`, `active_price_set` (official set code `official-<year>`).
+- Default year for a family: `latest_available_year` (newest active non-stale).
+- Existing documents keep their saved edition even if it later becomes inactive
+  or stale; retrieve by edition id still works for browse/structure.
+- After FinancialDocument create, edition and price set are immutable through
+  ordinary update APIs. Changing family/year means a new document.
+- Create rejects inactive or stale editions (field error on
+  `pricebook_edition_id`). Price set must belong to the edition and be active.
+
+### Browse and calculate
 
 - Browse editions → chapters → groups → items.
 - Row codes are **strings** (preserve leading zeros).
@@ -274,6 +300,9 @@ wallet is exhausted.
 ## Financial documents
 
 - Create/list under a project; edit lines while unlocked.
+- On create, send `pricebook_edition_id` + `price_set_id` resolved from the
+  family/year pickers (see Pricebooks). Do not invent a family/year pair that
+  disagrees with the edition id.
 - Official pricebook-backed lines are created from a paid calculation receipt
   (`calculation_receipt_id`) **or** via the Add-without-receipt fallback that
   bills one official calculation then creates the line. Receipt-backed create

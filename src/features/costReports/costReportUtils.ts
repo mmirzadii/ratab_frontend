@@ -134,8 +134,16 @@ export function getInitialWizardForm(
   };
 }
 
+/** @deprecated Prefer selectDefaultEditionForFamily — keeps newest usable year without hardcoding. */
 export function getDefaultEdition(editions: PricebookEdition[]) {
-  return [...editions].sort((first, second) => second.year - first.year)[0];
+  return [...editions]
+    .filter(
+      (edition) =>
+        edition.is_active !== false &&
+        edition.is_stale !== true &&
+        (edition.active_price_set == null || edition.active_price_set.is_active === true)
+    )
+    .sort((first, second) => second.year - first.year)[0];
 }
 
 export function getSnapshotString(snapshot: unknown, keys: string[]): string | null {

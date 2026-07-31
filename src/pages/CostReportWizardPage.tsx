@@ -18,10 +18,9 @@ import {
   type PricebookEdition,
   type PricebookGroup,
   type PricebookItemList,
-  getPricebookEditionFamilyId,
-  getPricebookFamilies,
   useListPricebookChaptersQuery,
   useListPricebookEditionsForFamiliesQuery,
+  useListPricebookEditionsQuery,
   useListPricebookGroupsQuery,
   useListPricebookItemsQuery,
   useListPricebooksQuery
@@ -51,7 +50,6 @@ import {
   lockedBuilderSectionMessage
 } from "../features/costReports/constants";
 import {
-  getDefaultEdition,
   getInitialWizardForm,
   matchesChapterFilter,
   omitEmpty,
@@ -59,6 +57,15 @@ import {
   parsePositiveInteger,
   getDeprecatedConfiguredPriceSetId
 } from "../features/costReports/costReportUtils";
+import {
+  editionBelongsToFamily,
+  formatPricebookEditionCreateError,
+  listUsableEditionsForFamily,
+  priceSetBelongsToEdition,
+  selectDefaultEditionForFamily,
+  selectDefaultPricebookFamily,
+  sortActivePricebookFamilies
+} from "../features/costReports/pricebookFamilyYear";
 import type {
   BuilderSection,
   CostReportBuilderState,
@@ -98,8 +105,11 @@ export function CostReportWizardPage() {
   );
   const [documentSetupNotice, setDocumentSetupNotice] = useState<string | null>(null);
   const isDevPriceSetConfirmed = false;
-  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
-  const [selectedEditionId, setSelectedEditionId] = useState<number | null>(null);
+  const [selectedFamilyId, setSelectedFamilyId] = useState<number | null>(null);
+  const [selectedEditionId, setSelectedEditionId] = useState<number | null>(
+    builderState?.existingDocument?.pricebook_edition_id ?? null
+  );
+  const isExistingDocument = Boolean(createdDocument);
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [activeChapterFilter, setActiveChapterFilter] = useState("all");
@@ -121,60 +131,121 @@ export function CostReportWizardPage() {
     isLoading: isLoadingPricebooks
   } = useListPricebooksQuery();
   const pricebooks = getListResults<Pricebook>(pricebooksData);
-  const activePricebooks = useMemo(
-    () => pricebooks.filter((pricebook) => pricebook.is_active),
+  const families = useMemo(
+    () => sortActivePricebookFamilies(pricebooks),
     [pricebooks]
   );
-  const activePricebookIds = useMemo(
-    () => activePricebooks.map((pricebook) => pricebook.id),
-    [activePricebooks]
+  const familyIds = useMemo(() => families.map((family) => family.id), [families]);
+
+  const selectedFamily =
+    selectDefaultPricebookFamily(families, selectedFamilyId) ?? undefined;
+
+  // New documents: editions for the selected family only (avoids cross-family races).
+  const {
+    data: familyEditionsData,
+    error: familyEditionsError,
+    isFetching: isFetchingFamilyEditions,
+    isLoading: isLoadingFamilyEditions
+  } = useListPricebookEditionsQuery(selectedFamily?.id ?? 0, {
+    skip: !selectedFamily || isExistingDocument
+  });
+
+  // Existing documents: resolve the immutable saved edition across families.
+  const {
+    data: allEditionsData,
+    error: allEditionsError,
+    isLoading: isLoadingAllEditions
+  } = useListPricebookEditionsForFamiliesQuery(familyIds, {
+    skip: !isExistingDocument || familyIds.length === 0
+  });
+
+  const familyEditions = useMemo(
+    () => getListResults<PricebookEdition>(familyEditionsData),
+    [familyEditionsData]
+  );
+  const allEditions = useMemo(
+    () => getListResults<PricebookEdition>(allEditionsData),
+    [allEditionsData]
   );
 
-  const {
-    data: editionsData,
-    error: editionsError,
-    isLoading: isLoadingEditions
-  } = useListPricebookEditionsForFamiliesQuery(activePricebookIds, {
-    skip: activePricebookIds.length === 0
-  });
-  const availableEditions = useMemo(
-    () =>
-      getListResults<PricebookEdition>(editionsData).filter(
-        (edition) =>
-          edition.id === createdDocument?.pricebook_edition_id ||
-          edition.active_price_set?.is_active === true
-      ),
-    [createdDocument?.pricebook_edition_id, editionsData]
-  );
-  const families = useMemo(
-    () => getPricebookFamilies(activePricebooks, availableEditions),
-    [activePricebooks, availableEditions]
-  );
-  const savedEdition = availableEditions.find(
-    (edition) => edition.id === createdDocument?.pricebook_edition_id
-  );
-  const selectedFamily =
-    families.find((family) => family.id === selectedFamilyId) ??
-    families.find(
-      (family) => savedEdition && family.id === getPricebookEditionFamilyId(savedEdition)
-    ) ??
-    families[0];
-  const editions = availableEditions.filter(
-    (edition) =>
-      selectedFamily && getPricebookEditionFamilyId(edition) === selectedFamily.id
-  );
-  const selectedEdition =
-    editions.find((edition) => edition.id === selectedEditionId) ??
-    editions.find((edition) => edition.id === savedEdition?.id) ??
-    getDefaultEdition(editions);
+  const savedEdition = useMemo(() => {
+    if (!createdDocument?.pricebook_edition_id) return undefined;
+    const editionId = createdDocument.pricebook_edition_id;
+    return (
+      allEditions.find((edition) => edition.id === editionId) ??
+      familyEditions.find((edition) => edition.id === editionId)
+    );
+  }, [allEditions, createdDocument?.pricebook_edition_id, familyEditions]);
+
+  const editions = useMemo(() => {
+    if (isExistingDocument) {
+      return savedEdition ? [savedEdition] : [];
+    }
+    if (!selectedFamily) return [];
+    // Guard stale out-of-order responses: only keep editions for the current family.
+    return listUsableEditionsForFamily(familyEditions, selectedFamily.id);
+  }, [familyEditions, isExistingDocument, savedEdition, selectedFamily]);
+
+  const editionsError = isExistingDocument ? allEditionsError : familyEditionsError;
+  const isLoadingEditions = isExistingDocument
+    ? isLoadingAllEditions
+    : isLoadingFamilyEditions || (Boolean(selectedFamily) && isFetchingFamilyEditions);
+
+  const selectedEdition = useMemo(() => {
+    if (isExistingDocument) {
+      return savedEdition;
+    }
+    if (!selectedFamily) return undefined;
+    if (
+      selectedEditionId != null &&
+      editions.some((edition) => edition.id === selectedEditionId)
+    ) {
+      return editions.find((edition) => edition.id === selectedEditionId);
+    }
+    return selectDefaultEditionForFamily(editions, selectedFamily, selectedEditionId);
+  }, [
+    editions,
+    isExistingDocument,
+    savedEdition,
+    selectedEditionId,
+    selectedFamily
+  ]);
+
   const selectedActivePriceSet = selectedEdition?.active_price_set ?? null;
+
+  // Sync explicit selection state once defaults resolve (new documents only).
+  useEffect(() => {
+    if (isExistingDocument) {
+      if (savedEdition) {
+        setSelectedFamilyId(savedEdition.pricebook_id);
+        setSelectedEditionId(savedEdition.id);
+      }
+      return;
+    }
+    if (!selectedFamily) return;
+    setSelectedFamilyId((current) =>
+      current === selectedFamily.id ? current : selectedFamily.id
+    );
+    setSelectedEditionId((current) => {
+      if (
+        current != null &&
+        editions.some((edition) => edition.id === current)
+      ) {
+        return current;
+      }
+      return selectDefaultEditionForFamily(editions, selectedFamily)?.id ?? null;
+    });
+  }, [editions, isExistingDocument, savedEdition, selectedFamily]);
+
+  const activeEditionId =
+    selectedEdition?.id ?? createdDocument?.pricebook_edition_id ?? null;
 
   const {
     data: chaptersData,
     error: chaptersError,
     isLoading: isLoadingChapters
-  } = useListPricebookChaptersQuery(selectedEdition?.id ?? 0, {
-    skip: !selectedEdition
+  } = useListPricebookChaptersQuery(activeEditionId ?? 0, {
+    skip: activeEditionId == null
   });
   const chapters = useMemo(
     () => getListResults<PricebookChapter>(chaptersData),
@@ -202,11 +273,11 @@ export function CostReportWizardPage() {
   } = useListPricebookItemsQuery(
     {
       chapterId: selectedChapterId ?? undefined,
-      editionId: selectedEdition?.id,
+      editionId: activeEditionId ?? undefined,
       groupId: selectedGroupId ?? undefined,
       q: searchTerm.trim() || undefined
     },
-    { skip: !selectedEdition || !selectedChapterId }
+    { skip: activeEditionId == null || !selectedChapterId }
   );
   const items = getListResults<PricebookItemList>(itemsData);
 
@@ -448,14 +519,20 @@ export function CostReportWizardPage() {
   }
 
   function handleFamilyChange(value: string) {
-    setSelectedFamilyId(value);
+    if (isExistingDocument) return;
+    const nextFamilyId = Number(value);
+    if (!Number.isInteger(nextFamilyId) || nextFamilyId <= 0) return;
+    setSelectedFamilyId(nextFamilyId);
     setSelectedEditionId(null);
     setSelectedChapterId(null);
     setSelectedGroupId(null);
   }
 
   function handleEditionChange(value: string) {
-    setSelectedEditionId(Number(value));
+    if (isExistingDocument) return;
+    const nextEditionId = Number(value);
+    if (!Number.isInteger(nextEditionId) || nextEditionId <= 0) return;
+    setSelectedEditionId(nextEditionId);
     setSelectedChapterId(null);
     setSelectedGroupId(null);
   }
@@ -485,7 +562,21 @@ export function CostReportWizardPage() {
     }
 
     if (isLoadingEditions || editionsError || editions.length === 0 || !selectedEdition) {
-      setFormError("سال فهرست‌بها را انتخاب کنید.");
+      setFormError(
+        editions.length === 0 && selectedFamily
+          ? "برای این نوع فهرست‌بها سال فعالی وجود ندارد."
+          : "سال فهرست‌بها را انتخاب کنید."
+      );
+      return;
+    }
+
+    if (!editionBelongsToFamily(selectedEdition, selectedFamily.id)) {
+      setFormError("سال انتخاب‌شده با نوع فهرست‌بها هم‌خوان نیست.");
+      return;
+    }
+
+    if (selectedEdition.year == null) {
+      setFormError("سال فهرست‌بها نامعتبر است.");
       return;
     }
 
@@ -522,6 +613,14 @@ export function CostReportWizardPage() {
       return;
     }
 
+    if (
+      selectedActivePriceSet &&
+      !priceSetBelongsToEdition(selectedEdition, priceSetId)
+    ) {
+      setFormError("مجموعه قیمت با نسخه فهرست‌بهای انتخاب‌شده هم‌خوان نیست.");
+      return;
+    }
+
     try {
       const document =
         createdDocument ??
@@ -545,7 +644,12 @@ export function CostReportWizardPage() {
       setStep("browser");
       setActiveSection("pricebook");
     } catch (error) {
-      dispatch(addToast({ message: getApiErrorMessage(error), type: "error" }));
+      const message = formatPricebookEditionCreateError(
+        error,
+        getApiErrorMessage(error, "ایجاد صورت‌بها انجام نشد.")
+      );
+      setFormError(message);
+      dispatch(addToast({ message, type: "error" }));
     }
   }
 
@@ -612,12 +716,14 @@ export function CostReportWizardPage() {
                   families={families}
                   form={form}
                   formError={formError}
+                  isExistingDocument={isExistingDocument}
                   isLoadingEditions={isLoadingEditions}
                   isLoadingPricebooks={isLoadingPricebooks}
                   onEditionChange={handleEditionChange}
                   onFamilyChange={handleFamilyChange}
                   onFieldChange={updateField}
                   pricebooksError={pricebooksError}
+                  savedEdition={savedEdition}
                   selectedActivePriceSet={selectedActivePriceSet}
                   selectedEdition={selectedEdition}
                   selectedFamily={selectedFamily}

@@ -40,12 +40,28 @@
 - [ ] Shared-resources browse for FD / files / links (paginated, members only).
 - [ ] Groups + membership UX; messaging only for group members.
 - [ ] Message attachments: only `file` and `financial_document` (no `project`).
+- [ ] Message send: use optional `client_message_id`; treat response `id` +
+      `created_at` as server-confirmed sent (not a read receipt).
+- [ ] Message edit/delete/forward UI driven only by `can_edit` / `can_delete` /
+      `can_forward`. Soft-delete shows tombstone `پیام حذف شد`.
+- [ ] Forward to eligible same-company groups, including the source group;
+      handle `MESSAGE_FORWARD_TARGET_INVALID` and
+      `MESSAGE_ATTACHMENT_FORWARD_DENIED`.
 - [ ] Page-number pagination (`page`, size 50).
 - [ ] Map field validation errors into forms.
 - [ ] Handle stable `code` errors from `ERROR_CODES.md`.
 - [ ] Multipart company file upload; authorized open/download only.
 - [ ] Financial document lock UI + backend conflict handling.
-- [ ] Pricebook browse; keep row codes as strings.
+- [ ] Pricebook family/year UX (Phase 11): family dropdown from
+      `GET /api/pricebooks/` using `title_fa` only (e.g. `ابنیه` for
+      `building`) — never year in the family label, never treat `ABN1404` as
+      the family code. Year dropdown from
+      `GET /api/pricebooks/{id}/editions/` (active + non-stale, newest first);
+      default to `latest_available_year`. Submit resolved
+      `pricebook_edition_id` + `price_set_id` (`official-<year>` /
+      `active_price_set`). Handle 400 when create rejects stale/inactive
+      editions. Existing documents retain their saved edition.
+- [ ] Pricebook browse (chapters → groups → items); keep row codes as strings.
 - [ ] Official modal session: on item modal open, call
       `POST .../official-calculation-sessions/` (free) and store
       `calculation_session_id`. Do not reuse a session after the modal closes.

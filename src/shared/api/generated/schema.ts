@@ -896,7 +896,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Forward one readable message to one eligible same-company group. Creates a new message (consumes one quota slot), stores an immutable source snapshot, and reuses attachment references after target-context validation. */
+        /** @description Forward one readable message to one eligible same-company group (including the source group). Creates a new message (consumes one quota slot), stores an immutable source snapshot, and reuses attachment references after target-context validation. */
         post: operations["group_messages_forward_create"];
         delete?: never;
         options?: never;
@@ -1922,6 +1922,14 @@ export interface components {
             display_name?: string;
             title?: string;
         };
+        ForwardedFrom: {
+            readonly source_message_id?: number | null;
+            readonly source_group_id?: number | null;
+            readonly source_group_name?: string | null;
+            readonly source_sender_display_name?: string | null;
+            readonly source_created_at?: string | null;
+            readonly label_fa: string;
+        };
         GroupMessage: {
             readonly id: number;
             readonly group_id: number;
@@ -1942,14 +1950,6 @@ export interface components {
             readonly can_edit: boolean;
             readonly can_delete: boolean;
             readonly can_forward: boolean;
-        };
-        ForwardedFrom: {
-            readonly source_message_id?: number | null;
-            readonly source_group_id?: number | null;
-            readonly source_group_name?: string | null;
-            readonly source_sender_display_name?: string | null;
-            readonly source_created_at?: string | null;
-            readonly label_fa: string;
         };
         GroupMessageCreateRequest: {
             text?: string;
@@ -2489,8 +2489,12 @@ export interface components {
             readonly id: number;
             readonly code: string;
             readonly title_fa: string;
+            readonly official_title_fa: string;
             readonly discipline: string;
+            readonly base_year: number | null;
+            readonly sort_order: number;
             readonly is_active: boolean;
+            readonly latest_available_year: number;
         };
         PricebookCalculateInputRequest: {
             /** @description Required. Official calculations are billed against this document (personal wallet, then company wallet). */
@@ -2531,11 +2535,16 @@ export interface components {
         PricebookEdition: {
             readonly id: number;
             readonly pricebook_id: number;
+            readonly family_code: string;
+            readonly family_title_fa: string;
             readonly code: string;
             readonly year: number;
             readonly title_fa: string;
             readonly currency_code: string;
             readonly is_locked: boolean;
+            readonly is_active: boolean;
+            readonly is_stale: boolean;
+            readonly is_base_year: boolean;
             readonly active_price_set: components["schemas"]["ActivePriceSet"] | null;
         };
         PricebookGroup: {

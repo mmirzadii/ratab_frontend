@@ -2,47 +2,7 @@ import { baseApi } from "../../shared/api/baseApi";
 import type { components } from "../../shared/api/generated/schema";
 
 export type Pricebook = components["schemas"]["Pricebook"];
-type GeneratedPricebookEdition = components["schemas"]["PricebookEdition"];
-// Runtime compatibility for the current multi-year backend schema. Remove this
-// extension after the checked-in OpenAPI document includes these read-only fields.
-export type PricebookEdition = GeneratedPricebookEdition & {
-  pricebook_family_code?: string;
-  pricebook_persian_name?: string;
-  pricebook_english_name?: string;
-};
-export type PricebookFamily = {
-  id: string;
-  nameFa: string;
-  nameEn: string;
-};
-
-export function getPricebookEditionFamilyId(edition: PricebookEdition): string {
-  return edition.pricebook_family_code?.trim() || `pricebook:${edition.pricebook_id}`;
-}
-
-export function getPricebookFamilies(
-  pricebooks: Pricebook[],
-  editions: PricebookEdition[]
-): PricebookFamily[] {
-  const pricebooksById = new Map(pricebooks.map((pricebook) => [pricebook.id, pricebook]));
-  const families = new Map<string, PricebookFamily>();
-
-  editions.forEach((edition) => {
-    const id = getPricebookEditionFamilyId(edition);
-    if (families.has(id)) return;
-    const legacyPricebook = pricebooksById.get(edition.pricebook_id);
-    families.set(id, {
-      id,
-      nameFa:
-        edition.pricebook_persian_name?.trim() ||
-        legacyPricebook?.title_fa?.trim() ||
-        edition.title_fa,
-      nameEn: edition.pricebook_english_name?.trim() || ""
-    });
-  });
-
-  return Array.from(families.values());
-}
+export type PricebookEdition = components["schemas"]["PricebookEdition"];
 export type PricebookChapter = components["schemas"]["PricebookChapter"];
 export type PricebookGroup = components["schemas"]["PricebookGroup"];
 export type PricebookItemList = components["schemas"]["PricebookItemList"];
@@ -50,7 +10,7 @@ type GeneratedPricebookItemDetail = components["schemas"]["PricebookItemDetail"]
 type GeneratedPricebookItemNote = components["schemas"]["PricebookItemNote"];
 
 // Temporary runtime extension: the backend exposes conditional footnote inputs,
-// but the v0.0 OpenAPI schema does not model them yet. Remove after schema catches up.
+// but OpenAPI may not model every footnote input field yet.
 export type PricebookFootnoteInput = {
   name: string;
   label_fa: string;
@@ -147,6 +107,10 @@ export const pricebookApi = baseApi.injectEndpoints({
         { type: "Pricebook", id: `editions-${pricebookId}` }
       ]
     }),
+    /**
+     * Resolve a saved FinancialDocument edition across families (existing-doc path).
+     * New-document year pickers should use `listPricebookEditions` for one family only.
+     */
     listPricebookEditionsForFamilies: builder.query<PricebookEdition[], number[]>({
       async queryFn(pricebookIds, _api, _extraOptions, fetchWithBQ) {
         const responses = await Promise.all(

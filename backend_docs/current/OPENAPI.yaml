@@ -2156,9 +2156,10 @@ paths:
   /api/group-messages/{message_id}/forward/:
     post:
       operationId: group_messages_forward_create
-      description: Forward one readable message to one eligible same-company group.
-        Creates a new message (consumes one quota slot), stores an immutable source
-        snapshot, and reuses attachment references after target-context validation.
+      description: Forward one readable message to one eligible same-company group
+        (including the source group). Creates a new message (consumes one quota slot),
+        stores an immutable source snapshot, and reuses attachment references after
+        target-context validation.
       parameters:
       - in: path
         name: message_id
@@ -4602,6 +4603,34 @@ components:
       required:
       - phone_number
       - role
+    ForwardedFrom:
+      type: object
+      properties:
+        source_message_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        source_group_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        source_group_name:
+          type: string
+          nullable: true
+          readOnly: true
+        source_sender_display_name:
+          type: string
+          nullable: true
+          readOnly: true
+        source_created_at:
+          type: string
+          nullable: true
+          readOnly: true
+        label_fa:
+          type: string
+          readOnly: true
+      required:
+      - label_fa
     GroupMessage:
       type: object
       properties:
@@ -4680,34 +4709,6 @@ components:
       - sender_display_name
       - sender_member_id
       - text
-    ForwardedFrom:
-      type: object
-      properties:
-        source_message_id:
-          type: integer
-          nullable: true
-          readOnly: true
-        source_group_id:
-          type: integer
-          nullable: true
-          readOnly: true
-        source_group_name:
-          type: string
-          nullable: true
-          readOnly: true
-        source_sender_display_name:
-          type: string
-          nullable: true
-          readOnly: true
-        source_created_at:
-          type: string
-          nullable: true
-          readOnly: true
-        label_fa:
-          type: string
-          readOnly: true
-      required:
-      - label_fa
     GroupMessageCreateRequest:
       type: object
       properties:
@@ -5852,17 +5853,34 @@ components:
         title_fa:
           type: string
           readOnly: true
+        official_title_fa:
+          type: string
+          readOnly: true
         discipline:
           type: string
+          readOnly: true
+        base_year:
+          type: integer
+          readOnly: true
+          nullable: true
+        sort_order:
+          type: integer
           readOnly: true
         is_active:
           type: boolean
           readOnly: true
+        latest_available_year:
+          type: integer
+          readOnly: true
       required:
+      - base_year
       - code
       - discipline
       - id
       - is_active
+      - latest_available_year
+      - official_title_fa
+      - sort_order
       - title_fa
     PricebookCalculateInputRequest:
       type: object
@@ -5958,6 +5976,12 @@ components:
         pricebook_id:
           type: integer
           readOnly: true
+        family_code:
+          type: string
+          readOnly: true
+        family_title_fa:
+          type: string
+          readOnly: true
         code:
           type: string
           readOnly: true
@@ -5973,6 +5997,15 @@ components:
         is_locked:
           type: boolean
           readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        is_stale:
+          type: boolean
+          readOnly: true
+        is_base_year:
+          type: boolean
+          readOnly: true
         active_price_set:
           allOf:
           - $ref: '#/components/schemas/ActivePriceSet'
@@ -5982,8 +6015,13 @@ components:
       - active_price_set
       - code
       - currency_code
+      - family_code
+      - family_title_fa
       - id
+      - is_active
+      - is_base_year
       - is_locked
+      - is_stale
       - pricebook_id
       - title_fa
       - year

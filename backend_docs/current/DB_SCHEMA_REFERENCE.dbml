@@ -344,12 +344,37 @@ Table group_messages {
   id bigint [pk, increment]
   group_id bigint [not null]
   sender_member_id bigint [not null]
-  text text [not null, note: 'May be blank only when attachments are created atomically by the messaging service']
+  text text [not null, note: 'May be blank only when attachments are created atomically by the messaging service. Soft-deleted responses expose tombstone text, not this stored body.']
   created_at timestamptz [not null]
+  edited_at timestamptz
+  is_deleted boolean [not null, default: false]
+  deleted_at timestamptz
+  deleted_by_member_id bigint
+  is_system boolean [not null, default: false]
+  client_message_id varchar(128) [not null, default: '', note: 'Empty when no client idempotency key was supplied']
+  request_fingerprint varchar(64) [not null, default: '']
+  forwarded_from_message_id bigint
+  forward_snapshot jsonb
 
   indexes {
     (group_id, created_at, id)
     (sender_member_id, created_at)
+    (group_id, is_deleted, created_at)
+    (sender_member_id, client_message_id) [unique, note: 'Partial: client_message_id is not empty']
+  }
+}
+
+Table message_lifecycle_events {
+  id bigint [pk, increment]
+  message_id bigint [not null]
+  event_type varchar(20) [not null, note: 'created|edited|deleted|forwarded']
+  actor_member_id bigint
+  previous_payload jsonb [not null, default: '{}']
+  new_payload jsonb [not null, default: '{}']
+  created_at timestamptz [not null]
+
+  indexes {
+    (message_id, event_type, created_at)
   }
 }
 
@@ -361,7 +386,7 @@ Table message_attachments {
   financial_document_id bigint
   created_at timestamptz [not null]
 
-  Note: 'New attachments may only use file or financial_document. project is not an allowed create type; historical rows are preserved if present. References existing file/document targets; never copies content.'
+  Note: 'New attachments may only use file or financial_document. project is not an allowed create type; historical rows are preserved if present. References existing file/document targets; never copies content. Soft-deleted parent messages hide attachment cards in normal serializers.'
 
   indexes {
     (message_id, attachment_type)
@@ -428,9 +453,16 @@ Table pricebooks {
   id bigint [pk, increment]
   code varchar(40) [not null, unique]
   title_fa varchar(240) [not null]
+  official_title_fa varchar(240) [not null, default: '']
   discipline varchar(80)
+  base_year int
+  sort_order int [not null, default: 0]
+  source_root varchar(500) [not null, default: '']
+  legacy_aliases json [not null, default: '[]']
   is_active boolean [not null, default: true]
   created_at timestamp [not null, default: `now()`]
+
+  Note: 'Pricebook = family/type. code has no year (e.g. building). ABN1404 is legacy alias only.'
 }
 
 Table pricebook_editions {
@@ -443,12 +475,26 @@ Table pricebook_editions {
   source_file_id bigint
   source_dir varchar(500) [not null, default: '']
   is_locked boolean [not null, default: true]
+  is_active boolean [not null, default: true]
+  is_stale boolean [not null, default: false]
   published_at timestamp
+  materialized_at timestamp
+  materialization_version varchar(40) [not null, default: '']
+  manifest_hash varchar(64) [not null, default: '']
+  base_structure_hash varchar(64) [not null, default: '']
+  overlay_hash varchar(64) [not null, default: '']
+  effective_structure_hash varchar(64) [not null, default: '']
+  prices_hash varchar(64) [not null, default: '']
+  root_files_hash varchar(64) [not null, default: '']
+  final_calculate_source_year int
+  final_calculate_relative_path varchar(240) [not null, default: '']
   created_at timestamp [not null, default: `now()`]
 
   indexes {
     (pricebook_id, year) [unique]
   }
+
+  Note: 'Edition = family + year. Official price set code is official-<year>. is_base_year is derived (year == pricebook.base_year).'
 }
 
 Table pricebook_chapters {
@@ -1100,9 +1146,13 @@ Ref: company_membership_invitations.invited_by_member_id > company_members.id
 Ref: company_membership_invitations.target_group_id > company_groups.id
 Ref: group_messages.group_id > company_groups.id
 Ref: group_messages.sender_member_id > company_members.id
+Ref: group_messages.deleted_by_member_id > company_members.id
+Ref: group_messages.forwarded_from_message_id > group_messages.id
 Ref: message_attachments.message_id > group_messages.id
 Ref: message_attachments.storage_file_id > storage_files.id
 Ref: message_attachments.financial_document_id > financial_documents.id
+Ref: message_lifecycle_events.message_id > group_messages.id
+Ref: message_lifecycle_events.actor_member_id > company_members.id
 Ref: projects.company_id > companies.id
 Ref: projects.created_by_member_id > company_members.id
 Ref: projects.group_id > company_groups.id

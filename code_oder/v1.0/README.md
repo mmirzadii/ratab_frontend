@@ -2,7 +2,7 @@
 
 This directory contains the frontend upgrade plan from v0.0 to v1.0.
 
-**Status: Phases 1–10 completed (Phase 10: 2026-07-31).** Awaiting Phase 10 review.
+**Status: Phases 1–11 completed (Phase 11: 2026-07-31).** Awaiting Phase 11 review.
 
 Rules:
 
@@ -25,16 +25,18 @@ Phase order:
 8. final integration, regression, cleanup, and handoff — **completed 2026-07-28**
 9. Telegram-inspired company workspace UX simplification — **completed 2026-07-28**
 10. messenger-like message status, edit, delete, and forward — **completed 2026-07-31**
+11. separate pricebook family and year selection — **completed 2026-07-31**
 
-## Current baseline (after Phase 10)
+## Current baseline (after Phase 11)
 
 - Frontend active version: `code_oder/active_version.txt` = `v1.0`
 - Package version: `package.json` = `1.0.0`
 - Backend contract: `backend_docs/current/BACKEND_VERSION` = `v1.0`
 - OpenAPI generation: `backend_docs/current/OPENAPI.yaml` → `src/shared/api/generated/schema.ts`
 - Browser auth: session cookies + CSRF (signup/login/logout/restore)
-- Workspace: conversation-first RTL shell; composer **افزودن**; Phase 10 in-bubble send status + edit/delete/forward via backend `can_*`
+- Workspace: conversation-first RTL shell; composer **افزودن**; Phase 10 message lifecycle
+- Cost reports: Document Info uses independent `نوع فهرست‌بها` + `سال`; submit exact `pricebook_edition_id`
 - Billing UX: personal + company wallets; paid explicit `محاسبه` with receipt-based Add; donation; subscription/quota
-- Handoff: root `README.md`, `PROJECT_EXPLAIN.md`, `phaze8/`–`phaze10/` reports
+- Handoff: root `README.md`, `PROJECT_EXPLAIN.md`, `phaze8/`–`phaze11/` reports
 
 See `PROJECT_EXPLAIN.md` and each `phazeN/REPORT.md` for details.
