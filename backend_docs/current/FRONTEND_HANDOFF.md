@@ -75,6 +75,12 @@ are optional frontend warnings only and must not block signup. See
   backend `last_activity_at` (latest successful message timestamp, else group
   `created_at`) — do not derive order by scanning each group's messages on the
   client. Public groups cannot be renamed, deleted, duplicated, or retyped.
+  Hard delete of the public group returns `PUBLIC_GROUP_DELETE_FORBIDDEN`.
+- Group list/detail include authoritative settings fields: `group_kind`
+  (`public` | `project` | `custom`), `is_public`, `project_id`, nested
+  `project` metadata (full editable project fields when linked), `can_edit`,
+  `can_delete`, `deletion_type`, and `deletion_preview_available`. Do not infer
+  project ownership from Persian titles or badges.
 - Every active company member belongs to the public group. Accepting a company
   invitation auto-joins it; deactivating membership revokes group access.
 - Company invitations are separate from custom-group invitations. A user with
@@ -103,14 +109,49 @@ are optional frontend warnings only and must not block signup. See
 
 - `POST /api/companies/{company_id}/projects/` atomically creates the project
   **and** exactly one linked group with `group_type: "project"`.
-- Group list/detail expose `project_id` and `project: {id, name, project_code,
-  status}` — do not infer the project from the group name.
+- Group list/detail expose `project_id` and a nested `project` object with
+  editable metadata — do not infer the project from the group name.
 - Response includes read-only `group_id` plus
   `include_all_company_members_in_group` (default **`true`** when omitted).
 - When `true`: all current active company members join; future accepted members
   auto-join. When `false`: only the creator; later adds use group-member APIs.
-- Renaming a project updates the linked group display name. Do not rename or
-  deactivate project groups via the group APIs.
+- **Project-group settings:** `PATCH /api/company-groups/{id}/` with project
+  fields (name, description, codes, parties, dates, status,
+  `include_all_company_members_in_group`) updates the linked Project via
+  `can_update_projects`. Renaming the project updates the project-group display
+  name in the same transaction. Ordinary custom groups still edit only group
+  `name` / `description`.
+- Soft archive remains available as `POST .../deactivate/` for custom groups
+  only (public/project groups stay protected).
+
+## Group / project hard deletion
+
+Before destructive delete, call the non-destructive preview:
+
+- `GET /api/company-groups/{id}/deletion-preview/`
+- `GET /api/projects/{id}/deletion-preview/`
+
+Preview returns counts only (no message content), `deletion_type`
+(`group` | `project`), `confirmation_required`, `warning_key`, and
+`warning_message_fa`.
+
+Destructive confirmation (backend-enforced; the modal is not a security
+boundary):
+
+- Ordinary custom group: `DELETE /api/company-groups/{id}/` with
+  `{"confirmation":"DELETE_GROUP"}` — requires `can_delete_custom_groups` plus
+  group-manage authority. Removes that group, memberships, messages, and
+  message attachments. Does **not** delete the company, other groups/projects,
+  or shared storage files still referenced elsewhere.
+- Project group or project: `DELETE /api/company-groups/{id}/` or
+  `DELETE /api/projects/{id}/` with `{"confirmation":"DELETE_PROJECT"}` —
+  requires `can_delete_projects`. Deletes the project, linked project group,
+  project messages, financial documents/lines/selected pricebooks, project
+  coefficient sets, calculation sessions/receipts for those documents, and
+  related project-owned records. Public group and unrelated company data remain.
+- Public group delete is always rejected with `PUBLIC_GROUP_DELETE_FORBIDDEN`.
+- Missing/wrong confirmation → `DELETION_CONFIRMATION_REQUIRED`.
+- Unauthorized → `GROUP_DELETE_FORBIDDEN` / `PROJECT_DELETE_FORBIDDEN`.
 
 ## Financial documents in chat
 
@@ -186,8 +227,15 @@ other schemes are ignored. No permanent public storage URLs.
   (example: `building`). Short UI label is `title_fa` (e.g. `ابنیه`); longer
   official Persian title is `official_title_fa`. Do **not** treat `ABN1404` as
   the family identity — it is a legacy alias only.
-- An **edition** is one family + one year. Client UX: pick family, then year;
-  submit the resolved `pricebook_edition_id` (and `price_set_id`) on create.
+- An **edition** is one family + one year. Client UX: pick one or more
+  family/year pairs; submit resolved edition id(s) on create.
+- Preferred create body: `pricebook_edition_ids: […]` — the server resolves
+  each edition’s active official PriceSet. Legacy singular
+  `pricebook_edition_id` + `price_set_id` still works and creates one selection.
+- Document responses include authoritative `selected_pricebooks` (selection id,
+  family code/title, edition id, year, price set id/code, active/stale flags)
+  plus legacy singular `pricebook_edition_id` / `price_set_id` mirroring the
+  **primary** (first) selection only.
 - `GET /api/pricebooks/` — active families (`code`, `title_fa`,
   `official_title_fa`, `base_year`, `sort_order`, `is_active`,
   `latest_available_year`). Do not embed year in the family dropdown label.
@@ -196,12 +244,17 @@ other schemes are ignored. No permanent public storage URLs.
   `family_code`, `family_title_fa`, `year`, `is_active`, `is_stale`,
   `is_base_year`, `active_price_set` (official set code `official-<year>`).
 - Default year for a family: `latest_available_year` (newest active non-stale).
-- Existing documents keep their saved edition even if it later becomes inactive
-  or stale; retrieve by edition id still works for browse/structure.
-- After FinancialDocument create, edition and price set are immutable through
-  ordinary update APIs. Changing family/year means a new document.
-- Create rejects inactive or stale editions (field error on
-  `pricebook_edition_id`). Price set must belong to the edition and be active.
+- Existing documents keep their saved selections even if an edition later
+  becomes inactive or stale; retrieve by edition id still works for browse.
+- A FinancialDocument has **one or more** immutable selected Edition/PriceSet
+  bindings while locked/finalized. While draft: add via
+  `POST .../document-pricebooks/`, remove unused via
+  `DELETE .../document-pricebooks/{selection_id}/` (blocked if lines reference
+  it or it is the last selection).
+- Create/add reject inactive or stale editions (field error on
+  `pricebook_edition_id` / `pricebook_edition_ids`). For the multi-id path the
+  server resolves the official PriceSet; for legacy singular create the client
+  still sends `price_set_id` belonging to the edition.
 
 ### Browse and calculate
 
@@ -300,19 +353,25 @@ wallet is exhausted.
 ## Financial documents
 
 - Create/list under a project; edit lines while unlocked.
-- On create, send `pricebook_edition_id` + `price_set_id` resolved from the
-  family/year pickers (see Pricebooks). Do not invent a family/year pair that
-  disagrees with the edition id.
+- On create, prefer `pricebook_edition_ids` from family/year pickers (server
+  resolves official price sets). Legacy `pricebook_edition_id` + `price_set_id`
+  remains supported for single-pricebook clients.
+- Read `selected_pricebooks` as the authoritative list; singular edition/set
+  fields are the primary selection only.
+- When the document has **more than one** selection, pricebook line creates
+  (receipt or Add-without-receipt) **must** send `document_pricebook_id`.
+  With exactly one selection, the backend may infer it.
 - Official pricebook-backed lines are created from a paid calculation receipt
   (`calculation_receipt_id`) **or** via the Add-without-receipt fallback that
   bills one official calculation then creates the line. Receipt-backed create
   itself is **free**.
 - Standalone starred/custom lines without a pricebook item and without a
-  receipt do **not** charge.
+  receipt do **not** charge and may omit `document_pricebook_id`.
 - Edit/delete/recalculate/preview/export do **not** charge.
 - Always send a client `idempotency_key` for calculation and line-create calls
   that may be retried.
-- Locked documents: disable edits; handle backend conflict responses.
+- Locked documents: disable edits and document-pricebook add/remove; handle
+  backend conflict responses.
 - Export may be blocked while PDF rendering is unavailable (409).
 
 ## Wallet

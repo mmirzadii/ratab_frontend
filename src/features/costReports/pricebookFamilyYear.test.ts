@@ -7,10 +7,14 @@ import type { Pricebook, PricebookEdition } from "../pricebooks/pricebookApi.ts"
 import {
   describeSavedEdition,
   editionBelongsToFamily,
+  formatDocumentPricebookRemoveError,
   formatPricebookEditionCreateError,
+  formatPricebookSelectionLabel,
   isUsableEditionForNewDocument,
   listUsableEditionsForFamily,
   priceSetBelongsToEdition,
+  reconcileActiveDocumentPricebookId,
+  resolveDocumentSelectedPricebooks,
   selectDefaultEditionForFamily,
   selectDefaultPricebookFamily,
   sortActivePricebookFamilies,
@@ -233,35 +237,107 @@ describe("Phase 11 pricebook family/year selection", () => {
       [1405, 1404, 1403]
     );
   });
+
+  it("formats multi-selection chip labels with Persian digits", () => {
+    assert.equal(
+      formatPricebookSelectionLabel({ familyTitleFa: "ابنیه", year: 1404 }),
+      "ابنیه — ۱۴۰۴"
+    );
+  });
+
+  it("resolves selected_pricebooks and reconciles active browser selection", () => {
+    const document = {
+      selected_pricebooks: [
+        {
+          id: 2,
+          pricebook_edition_id: 12,
+          family_code: "building",
+          family_title_fa: "ابنیه",
+          year: 1405,
+          price_set_id: 12,
+          price_set_code: "official-1405",
+          is_edition_active: true,
+          is_edition_stale: false,
+          is_base_year: false,
+          sort_order: 1,
+          created_at: "2026-01-01T00:00:00Z"
+        },
+        {
+          id: 1,
+          pricebook_edition_id: 11,
+          family_code: "building",
+          family_title_fa: "ابنیه",
+          year: 1404,
+          price_set_id: 11,
+          price_set_code: "official-1404",
+          is_edition_active: true,
+          is_edition_stale: false,
+          is_base_year: true,
+          sort_order: 0,
+          created_at: "2026-01-01T00:00:00Z"
+        }
+      ]
+    } as Parameters<typeof resolveDocumentSelectedPricebooks>[0];
+    const resolved = resolveDocumentSelectedPricebooks(document);
+    assert.deepEqual(
+      resolved.map((item) => item.id),
+      [1, 2]
+    );
+    assert.equal(reconcileActiveDocumentPricebookId(resolved, 2), 2);
+    assert.equal(reconcileActiveDocumentPricebookId(resolved, 99), 1);
+  });
+
+  it("maps remove-selection errors to Persian copy", () => {
+    assert.match(
+      formatDocumentPricebookRemoveError({
+        data: { detail: "Selection already has lines." }
+      }),
+      /ردیف/
+    );
+    assert.match(
+      formatDocumentPricebookRemoveError({
+        data: { detail: "Cannot remove the last selection." }
+      }),
+      /حداقل یک/
+    );
+  });
 });
 
 describe("Phase 11 UI wiring (route-rendered wizard)", () => {
   const wizard = readFileSync(join(here, "../../pages/CostReportWizardPage.tsx"), "utf8");
   const documentInfo = readFileSync(join(here, "components/DocumentInfoSection.tsx"), "utf8");
+  const browser = readFileSync(join(here, "components/PricebookBrowserSection.tsx"), "utf8");
   const pricebookApi = readFileSync(join(here, "../pricebooks/pricebookApi.ts"), "utf8");
   const selection = readFileSync(join(here, "pricebookFamilyYear.ts"), "utf8");
 
-  it("DocumentInfoSection labels and short family titles", () => {
+  it("DocumentInfoSection add-to-list workflow", () => {
     assert.match(documentInfo, /نوع فهرست‌بها/);
     assert.match(documentInfo, /aria-label="سال"/);
+    assert.match(documentInfo, /افزودن/);
+    assert.match(documentInfo, /document-info-add-pricebook/);
+    assert.match(documentInfo, /document-info-selected-pricebooks/);
     assert.match(documentInfo, /family\.title_fa/);
     assert.match(documentInfo, /edition\.year/);
     assert.doesNotMatch(documentInfo, /ABN1404/);
     assert.doesNotMatch(documentInfo, /aria-label="فهرست‌بها"/);
   });
 
-  it("existing documents are read-only for family/year", () => {
-    assert.match(documentInfo, /isExistingDocument/);
-    assert.match(documentInfo, /document-info-family-readonly/);
-    assert.match(documentInfo, /document-info-year-readonly/);
-    assert.match(documentInfo, /پس از ایجاد صورت‌بها ثابت می‌ماند/);
+  it("locked documents cannot mutate selections; draft can add/remove", () => {
+    assert.match(documentInfo, /canMutateSelections/);
+    assert.match(documentInfo, /onRemovePersistedSelection/);
+    assert.match(documentInfo, /onRemoveDraftPick/);
+    assert.match(wizard, /useAddFinancialDocumentPricebookMutation/);
+    assert.match(wizard, /useRemoveFinancialDocumentPricebookMutation/);
   });
 
-  it("wizard uses generated family list + per-family editions and selection helpers", () => {
+  it("wizard creates with pricebook_edition_ids and browser selector for multi", () => {
     assert.match(wizard, /sortActivePricebookFamilies/);
     assert.match(wizard, /selectDefaultEditionForFamily/);
     assert.match(wizard, /useListPricebookEditionsQuery/);
-    assert.match(wizard, /pricebook_edition_id: selectedEdition\.id/);
+    assert.match(wizard, /pricebook_edition_ids/);
+    assert.match(wizard, /activeDocumentPricebookId/);
+    assert.match(wizard, /documentPricebookId/);
+    assert.match(browser, /pricebook-browser-selector/);
     assert.doesNotMatch(wizard, /getPricebookFamilies/);
     assert.doesNotMatch(wizard, /ABN1404/);
     assert.doesNotMatch(wizard, /getDefaultEdition\(/);

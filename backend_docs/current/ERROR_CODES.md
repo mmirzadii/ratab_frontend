@@ -237,12 +237,36 @@ codes. Field names match APIException JSON bodies unless noted.
 
 | | |
 | --- | --- |
-| Shape | `{"pricebook_edition_id":["Pricebook edition is inactive or stale and cannot be used for new documents."]}` |
+| Shape | `{"pricebook_edition_id":["Pricebook edition is inactive or stale and cannot be used for document pricebook selections."]}` |
 | HTTP | 400 |
-| Operations | `POST` financial-document create (project or group endpoints) |
-| Meaning | Selected edition is not usable for new documents (`is_active=false` or `is_stale=true`) |
+| Operations | Financial-document create; `POST .../document-pricebooks/` |
+| Meaning | Selected edition is not usable (`is_active=false` or `is_stale=true`) |
 | Frontend | Re-fetch `GET /api/pricebooks/{id}/editions/` (active + non-stale only); pick another year |
 | Retry | Safe after selecting a usable edition |
+| Action required | Client |
+
+### Document pricebook selection required
+
+| | |
+| --- | --- |
+| Shape | `{"document_pricebook_id":["document_pricebook_id is required when multiple pricebooks are selected."]}` |
+| HTTP | 400 |
+| Operations | Line create (receipt or Add-without-receipt) when document has multiple selections |
+| Meaning | Client must choose which selected document pricebook the line belongs to |
+| Frontend | Pass `document_pricebook_id` from `selected_pricebooks` |
+| Retry | Safe after including the selection id |
+| Action required | Client |
+
+### Document pricebook remove blocked
+
+| | |
+| --- | --- |
+| Shape | `{"detail":["Cannot remove a document pricebook that still has lines..."]}` or last-selection / locked-document errors |
+| HTTP | 400 |
+| Operations | `DELETE .../document-pricebooks/{selection_id}/` |
+| Meaning | Selection has lines, is the last remaining selection, or document is locked |
+| Frontend | Delete lines first, keep at least one selection, or unlock/draft only |
+| Retry | Safe after correcting preconditions |
 | Action required | Client |
 
 ### Price set mismatch or inactive
@@ -251,9 +275,9 @@ codes. Field names match APIException JSON bodies unless noted.
 | --- | --- |
 | Shape | Field-keyed on `price_set_id` (must belong to the edition; must be active) |
 | HTTP | 400 |
-| Operations | Financial-document create |
+| Operations | Financial-document create (legacy singular path); internal PriceSet validation |
 | Meaning | Price set does not match the selected edition, or is inactive |
-| Frontend | Use `active_price_set` from the editions list (`official-<year>`) |
+| Frontend | Prefer `pricebook_edition_ids` (server resolves official set) or use `active_price_set` from the editions list (`official-<year>`) |
 | Retry | Safe after correcting `price_set_id` |
 | Action required | Client |
 

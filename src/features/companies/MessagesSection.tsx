@@ -33,6 +33,9 @@ import {
   applyComposerTextareaAutoResize,
   shouldSendOnEnterKey
 } from "./composerTextarea";
+import { ComposerMathTextarea } from "../../shared/math/ComposerMathTextarea";
+import { useEscapeLayer } from "../../shared/shortcuts/useShortcut";
+import { primaryModifierPressed } from "../../shared/shortcuts/shortcutRegistry";
 import { useUploadCompanyFileMutation } from "./companyFilesApi";
 import { useListCompanyGroupsQuery, useListCompanyGroupMembersQuery } from "./companyGroupsApi";
 import { useListCompanyMembersQuery } from "./companyMembersApi";
@@ -299,16 +302,13 @@ export function MessagesSection({
         setIsAddMenuOpen(false);
       }
     }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setIsAddMenuOpen(false);
-    }
     document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isAddMenuOpen]);
+
+  useEscapeLayer(() => setIsAddMenuOpen(false), isAddMenuOpen, "composer-add-menu");
 
   useEffect(() => {
     if (openFinancialDocumentRequestId <= 0 || isEditMode) return;
@@ -353,7 +353,10 @@ export function MessagesSection({
 
   useEffect(() => {
     resetTransientUi();
-    // Group switch must drop menus/edit/forward state for the previous conversation.
+    setMessageText("");
+    setPendingAttachments([]);
+    setDraftBackup(null);
+    // Group switch / deleted group must drop menus/edit/forward/draft state.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional on group change only
   }, [effectiveGroupId]);
 
@@ -1257,7 +1260,7 @@ export function MessagesSection({
         ) : null}
 
         <form className="relative" onSubmit={(event) => void handleSend(event)}>
-          <div className="flex items-end gap-1.5" ref={addMenuRef}>
+          <div className="flex items-center gap-1.5" ref={addMenuRef}>
             <input
               accept="*/*"
               className="hidden"
@@ -1272,7 +1275,7 @@ export function MessagesSection({
                 aria-haspopup="menu"
                 aria-label="افزودن"
                 className={classNames(
-                  "mb-0 flex h-11 shrink-0 items-center gap-1.5 self-end rounded-xl px-2.5 text-xs font-black text-ui-primary transition hover:bg-ui-primary-soft disabled:cursor-not-allowed disabled:opacity-45",
+                  "flex h-11 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-xs font-black text-ui-primary transition hover:bg-ui-primary-soft disabled:cursor-not-allowed disabled:opacity-45",
                   highlightAddAction && "ring-2 ring-emerald-200/40",
                   isAddMenuOpen && "bg-ui-primary-soft"
                 )}
@@ -1324,15 +1327,28 @@ export function MessagesSection({
               ) : null}
             </div>
 
-            <textarea
+            <ComposerMathTextarea
               aria-label={isEditMode ? "ویرایش متن پیام" : "متن پیام"}
-              className="min-h-11 w-full min-w-0 flex-1 resize-none rounded-xl border-0 bg-ui-surface-subtle px-3 py-2.5 text-sm leading-6 text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:bg-ui-surface-hover focus-visible:ring-2 focus-visible:ring-ui-focus"
+              className="min-h-11 w-full min-w-0 flex-1 resize-none rounded-xl border-0 px-3 py-2.5 text-sm leading-6 text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:bg-ui-surface-hover/40 focus-visible:ring-2 focus-visible:ring-ui-focus"
+              detectionKey={effectiveGroupId}
               disabled={!canCompose}
-              onChange={(event) => {
-                setMessageText(event.target.value);
-                applyComposerTextareaAutoResize(event.currentTarget);
-              }}
+              onChange={setMessageText}
+              onInputResize={(element) => applyComposerTextareaAutoResize(element)}
               onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  primaryModifierPressed(event) &&
+                  !event.shiftKey &&
+                  !event.altKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault();
+                  const form = event.currentTarget.form;
+                  if (form && (isEditMode ? canCompose && !isSavingEdit : canSend)) {
+                    form.requestSubmit();
+                  }
+                  return;
+                }
                 if (!shouldSendOnEnterKey(event)) {
                   return;
                 }
@@ -1349,13 +1365,12 @@ export function MessagesSection({
                     ? "پیام…"
                     : "ابتدا یک گروه انتخاب کنید"
               }
-              ref={textareaRef}
-              rows={1}
+              textareaRef={textareaRef}
               value={messageText}
             />
             <button
               aria-label={isEditMode ? "ذخیره ویرایش" : "ارسال"}
-              className="mb-0 flex h-11 w-11 shrink-0 items-center justify-center self-end rounded-xl bg-ui-primary text-ui-primary-foreground transition hover:bg-ui-primary-hover disabled:cursor-not-allowed disabled:opacity-45"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ui-primary text-ui-primary-foreground transition hover:bg-ui-primary-hover disabled:cursor-not-allowed disabled:opacity-45"
               disabled={isEditMode ? !canCompose || isSavingEdit : !canSend}
               type="submit"
             >

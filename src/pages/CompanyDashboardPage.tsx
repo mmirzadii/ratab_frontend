@@ -17,6 +17,7 @@ import { Link, Outlet, useLocation, useMatch, useNavigate, useParams, useSearchP
 
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { useAppShell } from "../app/appShellContext";
+import { useRegisterSearchTarget, useEscapeLayer, useRegisterSaveAction } from "../shared/shortcuts/useShortcut";
 import { addToast } from "../features/ui/uiSlice";
 import {
   type Company,
@@ -145,9 +146,9 @@ function CompanyEditModal({
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!canEdit) return;
+  async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    if (!canEdit || isSaving) return;
 
     const body: PatchedCompanyRequest = {};
     const name = form.name.trim();
@@ -170,13 +171,8 @@ function CompanyEditModal({
     }
   }
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  useEscapeLayer(onClose, true, "company-edit-modal");
+  useRegisterSaveAction(canEdit ? () => void handleSubmit() : null);
 
   return (
     <div
@@ -348,13 +344,22 @@ function ContextListSearch({
   onChange: (value: string) => void;
   placeholder: string;
 }) {
+  const [searchInput, setSearchInput] = useState<HTMLInputElement | null>(null);
+  useRegisterSearchTarget(searchInput);
+
   return (
     <label className="relative block border-b border-ui-border-subtle px-2 py-2">
-      <Search className="pointer-events-none absolute right-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ui-text-muted" />
+      <Search
+        aria-hidden
+        className="pointer-events-none absolute right-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ui-text-muted"
+      />
       <input
-        className="h-9 w-full rounded-lg border border-ui-border-subtle bg-ui-surface pr-9 pl-3 text-xs text-ui-text-primary outline-none placeholder:text-ui-text-muted focus:border-ui-primary/30"
+        className="h-9 w-full rounded-lg border border-ui-border-subtle bg-ui-surface pr-9 pl-3 text-xs text-ui-text-primary outline-none placeholder:text-ui-text-muted focus:border-ui-primary/30 focus-visible:ring-2 focus-visible:ring-ui-focus"
+        data-shortcut-target="context-search"
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        ref={setSearchInput}
+        type="search"
         value={value}
       />
     </label>
@@ -1032,6 +1037,19 @@ export function CompanyDashboardPage() {
               setOpenFinancialDocumentRequestId((id) => id + 1);
             }}
             onClose={() => setIsDetailsDrawerOpen(false)}
+            onDeleted={({ groupId }) => {
+              setIsDetailsDrawerOpen(false);
+              const remaining = groups.filter((item) => item.id !== groupId);
+              const publicGroup =
+                remaining.find(
+                  (item) =>
+                    item.is_default ||
+                    item.is_public ||
+                    item.group_kind === "public" ||
+                    item.group_type === "public"
+                ) ?? remaining[0];
+              setSelectedMessageGroupId(publicGroup?.id ?? null);
+            }}
             open={isDetailsDrawerOpen}
             projects={projects}
           />

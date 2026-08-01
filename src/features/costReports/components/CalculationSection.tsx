@@ -7,6 +7,7 @@ import type {
   PricebookItemInputSpec,
   PricebookItemRowDetail
 } from "../../pricebooks/pricebookApi";
+import { MathNumericInput } from "../../../shared/math/MathNumericInput";
 import { classNames } from "../../../shared/utils/classNames";
 import { formatDecimal, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { inputClasses } from "../constants";
@@ -264,12 +265,13 @@ export function CalculationSection({
       <span className="text-sm font-bold text-ui-text-secondary">
         {formatInputLabel("قیمت واحد", "ریال")}
       </span>
-      <input
+      <MathNumericInput
         className={classNames(inputClasses, "text-left")}
         dir="ltr"
         disabled={inputsDisabled}
+        enterAdvances
         inputMode="decimal"
-        onChange={(event) => setManualUnitPrice(event.target.value)}
+        onChange={setManualUnitPrice}
         placeholder="ریال"
         value={manualUnitPrice}
       />
@@ -310,12 +312,13 @@ export function CalculationSection({
           <span className="text-xs font-bold text-ui-text-secondary">
             بهای واحد سفارشی
           </span>
-          <input
+          <MathNumericInput
             className="h-9 w-full rounded-md border border-ui-border-subtle bg-ui-surface/45 px-2 text-left text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30"
             dir="ltr"
             disabled={inputsDisabled}
+            enterAdvances
             inputMode="decimal"
-            onChange={(event) => customFallbackPrice.onChange(event.target.value)}
+            onChange={customFallbackPrice.onChange}
             placeholder="بهای واحد"
             value={customFallbackPrice.value}
           />
@@ -381,12 +384,13 @@ export function CalculationSection({
             ) : null}
           </>
         ) : (
-          <input
+          <MathNumericInput
             className={classNames(inputClasses, "text-left")}
             dir="ltr"
             disabled={inputsDisabled}
+            enterAdvances
             inputMode="decimal"
-            onChange={(event) => onInputValueChange?.(inputKey, event.target.value)}
+            onChange={(next) => onInputValueChange?.(inputKey, next)}
             placeholder={
               input.min_value && Number(input.min_value) > 0
                 ? input.min_value
@@ -444,6 +448,7 @@ export function CalculationSection({
       {isMultiInput ? (
         <form
           className="mt-4 space-y-3"
+          data-data-entry-form="true"
           onSubmit={(event) => {
             event.preventDefault();
           }}
@@ -457,6 +462,7 @@ export function CalculationSection({
       ) : (
         <form
           className={classNames("mt-4 grid gap-3", gridCols)}
+          data-data-entry-form="true"
           onSubmit={(event) => {
             event.preventDefault();
           }}
@@ -466,12 +472,13 @@ export function CalculationSection({
             <span className="text-sm font-bold text-ui-text-secondary">
               {formatInputLabel("مقدار", unit)}
             </span>
-            <input
+            <MathNumericInput
               className={classNames(inputClasses, "text-left")}
               dir="ltr"
               disabled={inputsDisabled}
+              enterAdvances
               inputMode="decimal"
-              onChange={(event) => setQuantity(event.target.value)}
+              onChange={setQuantity}
               placeholder={unit || "عدد مثبت"}
               value={quantity}
             />

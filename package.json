@@ -28,6 +28,8 @@
     "test:subscription-current": "node --experimental-strip-types --test src/features/subscription/subscriptionPlanCurrent.test.ts",
     "test:account-settings": "node --experimental-strip-types --test src/features/account/accountSettingsLayout.test.ts src/features/wallet/walletTransactionLabels.test.ts",
     "test:token-balance-chip": "node --experimental-strip-types --test src/shared/components/tokenBalanceChip.test.ts",
+    "test:math-expression": "node --experimental-strip-types --test src/shared/math/mathExpression.test.ts src/shared/math/mathUi.contract.test.ts",
+    "test:shortcuts": "node --experimental-strip-types --test src/shared/shortcuts/shortcutRegistry.test.ts src/shared/focus/focusNavigation.test.ts",
     "test:mobile-drawer-nav": "node --experimental-strip-types --test src/shared/components/mobileDrawerNav.test.ts"
   },
   "dependencies": {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import type { PricebookItemDetail } from "../../pricebooks/pricebookApi";
+import { MathNumericInput } from "../../../shared/math/MathNumericInput";
 import { classNames } from "../../../shared/utils/classNames";
 import type { FootnoteInputErrors, FootnoteInputValues, TouchedFootnoteInputs } from "../costReportUtils";
 
@@ -138,21 +139,37 @@ export function ChecklistNotesSection({
                       <span className="mb-1 block font-bold text-ui-text-secondary">
                         {input.label_fa}{input.unit ? ` (${input.unit})` : ""}
                       </span>
-                      <input
-                        className={classNames(
-                          "h-8 w-full rounded-md border bg-ui-surface/45 px-2 text-left text-sm outline-none transition",
-                          error
-                            ? "border-rose-400/60 text-rose-100"
-                            : "border-ui-border-subtle text-ui-text-primary focus:border-ui-primary/30 "
-                        )}
-                        dir={input.type === "number" ? "ltr" : "rtl"}
-                        disabled={disabled}
-                        inputMode={input.type === "number" ? "decimal" : undefined}
-                        onBlur={() => onInputBlur(note.note_code, input.name)}
-                        onChange={(event) => onInputChange(note.note_code, input.name, event.target.value)}
-                        type="text"
-                        value={inputValues[note.note_code]?.[input.name] ?? ""}
-                      />
+                      {input.type === "number" ? (
+                        <MathNumericInput
+                          className={classNames(
+                            "h-8 w-full rounded-md border bg-ui-surface/45 px-2 text-left text-sm outline-none transition",
+                            error
+                              ? "border-rose-400/60 text-rose-100"
+                              : "border-ui-border-subtle text-ui-text-primary focus:border-ui-primary/30 "
+                          )}
+                          dir="ltr"
+                          disabled={disabled}
+                          inputMode="decimal"
+                          onBlur={() => onInputBlur(note.note_code, input.name)}
+                          onChange={(next) => onInputChange(note.note_code, input.name, next)}
+                          value={inputValues[note.note_code]?.[input.name] ?? ""}
+                        />
+                      ) : (
+                        <input
+                          className={classNames(
+                            "h-8 w-full rounded-md border bg-ui-surface/45 px-2 text-sm outline-none transition",
+                            error
+                              ? "border-rose-400/60 text-rose-100"
+                              : "border-ui-border-subtle text-ui-text-primary focus:border-ui-primary/30 "
+                          )}
+                          dir="rtl"
+                          disabled={disabled}
+                          onBlur={() => onInputBlur(note.note_code, input.name)}
+                          onChange={(event) => onInputChange(note.note_code, input.name, event.target.value)}
+                          type="text"
+                          value={inputValues[note.note_code]?.[input.name] ?? ""}
+                        />
+                      )}
                       {error ? <span className="mt-1 block text-rose-300">{error}</span> : null}
                     </label>
                   );

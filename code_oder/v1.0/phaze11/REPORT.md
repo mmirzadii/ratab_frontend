@@ -1,76 +1,90 @@
 # Frontend Phase 11 Report
 
-Status: **completed** (2026-07-31)
+Status: **completed** (multi-pricebook correction, 2026-07-31)
 
 ## Understanding
 
-Phase 11 integrates the Backend Phase 11 family/year pricebook contract into the existing cost-report Document Info step without redesigning unrelated wizard, calculation, billing, messaging, or workspace behavior.
+Phase 11 integrates the Backend Phase 11 family/year pricebook contract into the existing cost-report Document Info step. The corrected contract allows **one FinancialDocument to contain multiple selected pricebooks** (several families and/or years). This is a Phase 11 correction, not Phase 12.
 
 ## Contract sync
 
-- Copied `ratab_backend/codexphaze/frontend_docs/` → `backend_docs/current/` (hashes matched after copy).
+- Copied corrected Backend Phase 11 OpenAPI / handoff into `backend_docs/current/` (hashes matched after copy).
 - Regenerated OpenAPI types (`npm run generate:api`).
-- Pricebook schema now includes: `title_fa`, `official_title_fa`, `base_year`, `sort_order`, `latest_available_year`.
-- Edition schema includes: `family_code`, `family_title_fa`, `year`, `is_active`, `is_stale`, `is_base_year`, `active_price_set`.
-- Corrected a spectacular regression in the copied OpenAPI where `GroupMessage.attachments` was typed as `string` and `ForwardedFrom` was missing (restored array + `$ref` from the prior Phase 10 contract so messaging types remain valid). Generated `schema.ts` was not hand-edited.
+- Spectacular GroupMessage `attachments` typing regression was corrected via `scripts/fix-openapi-group-message.py` before regenerate (generated `schema.ts` not hand-edited).
+- Authoritative document field: `selected_pricebooks: FinancialDocumentPricebook[]`.
+- Create prefers `pricebook_edition_ids: number[]` (server resolves official price sets).
+- Add/remove: `POST/DELETE .../document-pricebooks/`.
+- Lines: optional/required `document_pricebook_id` (required when document has more than one selection).
+- Legacy singular `pricebook_edition_id` / `price_set_id` retained as primary/first compatibility only.
 
-## Final UI fields
+## Document-information workflow
 
-| Field | Label | Source |
-| --- | --- | --- |
-| Family | `نوع فهرست‌بها` | `GET /api/pricebooks/` → `title_fa` only |
-| Year | `سال` | `GET /api/pricebooks/{id}/editions/` → numeric `year`, newest first |
-| Submit | — | exact `pricebook_edition_id` + edition `active_price_set.id` |
+| Control | Behavior |
+| --- | --- |
+| `نوع فهرست‌بها` | Family picker (`title_fa`) |
+| `سال` | Usable years for that family only; default newest |
+| `افزودن` | Adds exact Edition to selected list (chip) |
+| Selected list | `نام خانواده — سال` with remove when permitted |
 
-## Selection algorithm (new document)
+Rules enforced in UI:
 
-1. Load active families; sort by backend `sort_order` (stable `id` tie-break).
-2. Keep an explicit valid user family selection; otherwise first family in that order (no hardcoded `building` / year-encoded legacy codes).
-3. Load editions for the selected family only.
-4. Default year = `latest_available_year` when present among usable editions; else maximum usable year.
-5. Usable = `is_active && !is_stale && active_price_set.is_active`.
-6. Family change clears edition/chapter/group and selects the new family's newest usable year.
-7. Stale responses are ignored by filtering `edition.pricebook_id === selectedFamily.id`.
+- at least one selection required before create;
+- duplicate Edition blocked;
+- family and year stay separate (no year parsed from labels/codes);
+- real Edition IDs only;
+- adding does not clear prior picks;
+- before create: local draft add/remove;
+- after create: backend add/remove; locked documents read-only;
+- backend remove errors surfaced (has lines / last selection / locked / stale).
 
-## Existing document
+## Existing documents
 
-- Family/year become read-only after create (`document-info-*-readonly`).
-- Saved edition is resolved across families; browse continues via `pricebook_edition_id`.
-- No auto-upgrade to a newer year.
+- Load selections from `selected_pricebooks` (no auto-upgrade to newest year).
+- One-pricebook (including migrated) documents keep prior single-edition browse behavior.
+- Multi-pricebook documents show all chips; mutate only when backend permits.
 
-## Legacy removed
+## Pricebook browser selector
 
-- `getPricebookFamilies` / string family ids / `pricebook_family_code` / `pricebook_persian_name` authority.
-- Deriving families from edition titles.
-- Hardcoded default edition year `1404` as selection authority.
-- Old Document Info label `فهرست‌بها` → `نوع فهرست‌بها`.
+- Hidden when exactly one selected pricebook.
+- When count > 1: compact header selector labeled `نام خانواده — سال`.
+- Switching changes **browser context only** (chapters/items); clears chapter/group/item/search/modal; does not rewrite stored selections.
+- Active browser selection is reconciled when the document response changes (retain if still present, else first).
 
-`VITE_DEFAULT_PRICE_SET_ID` remains only behind the existing gated `isDevPriceSetConfirmed` path and does not override a valid official `active_price_set`.
+## Line requests
 
-## Files changed (focused)
+- Normal receipt-backed lines include active `document_pricebook_id` when a real selection id is known.
+- Starred/custom standalone lines unchanged (may omit selection id).
+- Document lines modal shows family/year source when the document has multiple selections.
 
-- `backend_docs/current/*` (Phase 11 sync + GroupMessage OpenAPI correction)
+## State separation
+
+- Persisted: `selected_pricebooks` from FinancialDocument.
+- Draft picker: family/year before Add (pre-create draft list).
+- Browser: `activeDocumentPricebookId` only.
+
+## Files changed (correction focus)
+
+- `backend_docs/current/*` (corrected Phase 11 sync + GroupMessage OpenAPI fix)
 - `src/shared/api/generated/schema.ts` (regenerated)
-- `src/features/pricebooks/pricebookApi.ts`
-- `src/features/costReports/pricebookFamilyYear.ts` (+ test)
+- `src/features/financialDocuments/financialDocumentApi.ts` (add/remove mutations + line `document_pricebook_id`)
+- `src/features/costReports/pricebookFamilyYear.ts` (+ helpers/tests)
 - `src/features/costReports/components/DocumentInfoSection.tsx`
-- `src/features/costReports/costReportUtils.ts` (`getDefaultEdition` deprecated wrapper)
+- `src/features/costReports/components/PricebookBrowserSection.tsx`
+- `src/features/costReports/components/ItemDetailModal.tsx`
+- `src/features/costReports/components/DocumentLinesModal.tsx`
 - `src/pages/CostReportWizardPage.tsx`
-- `package.json` (`test:pricebook-family-year`)
-- Phase 11 / project summary docs
+- Phase 11 docs (`REPORT.md`, `TEST_RESULTS.md`, `ACCEPTANCE_MATRIX.md`, `README.md`)
 
-## Live verification (local)
+## Validation
 
-- Family select shows **ابنیه** only (no year / no `ABN1404`).
-- Year select shows **1404** (only imported year in live `data/building_pricebook/`; defaults to newest existing).
-- Created document `آزمایش فاز ۱۱` with edition id `1` / price set `official-1404`.
-- Reopened Document step: read-only **ابنیه** / **1404**, helper about immutability, no dropdowns.
-- Pricebook browser chapters loaded for the saved edition.
-- Live catalog currently has **one family / one year**; multi-family and multi-year switching covered by unit tests with Phase 11 response shapes. Additional families/years require backend data import.
+- `npm run generate:api` — pass
+- `npx tsc -b` — pass
+- `npm run test:pricebook-family-year` — pass (21/21)
+- `npm run build` — pass
 
-## Contract gaps / notes
+## Remaining limitations
 
-- Backend does not expose an explicit `is_default` family flag; frontend uses `sort_order` first active family (building is first because backend `sort_order=10`, not because of hardcoded matching).
-- Live data does not yet include mechanical/electrical or non-1404 years.
+- Local catalog often has only `building/1404`, so live multi-family/multi-year UI checks depend on imported backend data.
+- Legacy singular payloads without `selected_pricebooks` are browsable via edition id; synthetic selection id `0` is never sent as `document_pricebook_id`.
 
-Stop after Frontend Phase 11. No commit/push.
+Stop after Frontend Phase 11 correction. No commit/push. No Phase 12 folder.

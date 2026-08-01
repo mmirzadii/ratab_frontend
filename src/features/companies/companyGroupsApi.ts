@@ -10,7 +10,30 @@ export type PaginatedCompanyGroupList = components["schemas"]["PaginatedCompanyG
 export type PaginatedCompanyGroupMembershipList =
   components["schemas"]["PaginatedCompanyGroupMembershipList"];
 export type PatchedCompanyGroupRequest = components["schemas"]["PatchedCompanyGroupRequest"];
+type PatchedProjectRequest = components["schemas"]["PatchedProjectRequest"];
+/** Group PATCH may carry linked project fields (handoff); OpenAPI schema lists name/description only. */
+export type CompanyGroupSettingsUpdateRequest = PatchedCompanyGroupRequest &
+  Partial<
+    Pick<
+      PatchedProjectRequest,
+      | "project_code"
+      | "contract_number"
+      | "employer_name"
+      | "consultant_name"
+      | "contractor_name"
+      | "executive_agency_name"
+      | "base_year"
+      | "status"
+      | "starts_on"
+      | "ends_on"
+      | "include_all_company_members_in_group"
+    >
+  >;
 export type MembershipActionResponse = components["schemas"]["MembershipActionResponse"];
+export type DeletionPreview = components["schemas"]["DeletionPreview"];
+export type DeletionConfirmationRequest = {
+  confirmation: string;
+};
 
 export const companyGroupsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -52,7 +75,7 @@ export const companyGroupsApi = baseApi.injectEndpoints({
     }),
     updateCompanyGroup: builder.mutation<
       CompanyGroup,
-      { companyId: number; groupId: number; body: PatchedCompanyGroupRequest }
+      { companyId: number; groupId: number; body: CompanyGroupSettingsUpdateRequest }
     >({
       query: ({ groupId, body }) => ({
         url: `/api/company-groups/${groupId}/`,
@@ -61,7 +84,56 @@ export const companyGroupsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { companyId, groupId }) => [
         { type: "CompanyGroup", id: `COMPANY-${companyId}` },
-        { type: "CompanyGroup", id: groupId }
+        { type: "CompanyGroup", id: groupId },
+        { type: "Project", id: "LIST" }
+      ]
+    }),
+    retrieveCompanyGroup: builder.query<CompanyGroup, number>({
+      query: (groupId) => `/api/company-groups/${groupId}/`,
+      providesTags: (_result, _error, groupId) => [{ type: "CompanyGroup", id: groupId }],
+      async onQueryStarted(groupId, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const companyId = data.company_id;
+          if (companyId == null) return;
+          dispatch(
+            companyGroupsApi.util.updateQueryData(
+              "listCompanyGroups",
+              companyId,
+              (draft) => {
+                const index = draft.results.findIndex((item) => item.id === groupId);
+                if (index >= 0) {
+                  draft.results[index] = { ...draft.results[index], ...data };
+                }
+              }
+            )
+          );
+        } catch {
+          // Detail fetch failures leave the list cache untouched.
+        }
+      }
+    }),
+    getCompanyGroupDeletionPreview: builder.query<DeletionPreview, number>({
+      query: (groupId) => `/api/company-groups/${groupId}/deletion-preview/`
+    }),
+    deleteCompanyGroup: builder.mutation<
+      void,
+      { companyId: number; groupId: number; body: DeletionConfirmationRequest }
+    >({
+      query: ({ groupId, body }) => ({
+        url: `/api/company-groups/${groupId}/`,
+        method: "DELETE",
+        body
+      }),
+      invalidatesTags: (_result, _error, { companyId, groupId }) => [
+        { type: "CompanyGroup", id: `COMPANY-${companyId}` },
+        { type: "CompanyGroup", id: groupId },
+        { type: "CompanyGroup", id: `MEMBERS-${groupId}` },
+        { type: "GroupMessage", id: `GROUP-${groupId}` },
+        { type: "CompanyInvitation", id: `GROUP-${groupId}` },
+        { type: "CompanyInvitation", id: "LIST" },
+        { type: "Project", id: "LIST" },
+        { type: "FinancialDocument", id: "LIST" }
       ]
     }),
     deactivateCompanyGroup: builder.mutation<
@@ -151,6 +223,9 @@ export const {
   useListCompanyGroupsQuery,
   useCreateCompanyGroupMutation,
   useUpdateCompanyGroupMutation,
+  useRetrieveCompanyGroupQuery,
+  useLazyGetCompanyGroupDeletionPreviewQuery,
+  useDeleteCompanyGroupMutation,
   useDeactivateCompanyGroupMutation,
   useListCompanyGroupMembersQuery,
   useAddCompanyGroupMemberMutation,

@@ -483,7 +483,8 @@ export interface paths {
         get: operations["company_groups_retrieve"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** @description Hard-delete an ordinary custom group (confirmation=DELETE_GROUP) or the linked project for a project group (confirmation=DELETE_PROJECT). Public groups are always rejected. */
+        delete: operations["company_groups_destroy"];
         options?: never;
         head?: never;
         patch: operations["company_groups_partial_update"];
@@ -499,6 +500,23 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["company_groups_deactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company-groups/{id}/deletion-preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Non-destructive deletion preview. Ordinary groups return group counts; project groups return project deletion counts. */
+        get: operations["company_groups_deletion_preview_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -733,6 +751,41 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["financial_documents_partial_update"];
+        trace?: never;
+    };
+    "/api/financial-documents/{id}/document-pricebooks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List pricebook editions selected on this financial document. */
+        get: operations["financial_documents_document_pricebooks_list"];
+        put?: never;
+        /** @description Add a pricebook edition selection to a draft financial document. */
+        post: operations["financial_documents_document_pricebooks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/financial-documents/{id}/document-pricebooks/{selection_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Remove a pricebook selection from a draft document. Rejected when the selection still has lines or is the last remaining selection. */
+        delete: operations["financial_documents_document_pricebooks_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/financial-documents/{id}/exports/": {
@@ -1213,7 +1266,8 @@ export interface paths {
         get: operations["projects_retrieve"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** @description Hard-delete the project and its linked project group. Requires confirmation=DELETE_PROJECT. */
+        delete: operations["projects_destroy"];
         options?: never;
         head?: never;
         patch: operations["projects_partial_update"];
@@ -1229,6 +1283,23 @@ export interface paths {
         get: operations["projects_coefficient_sets_list"];
         put?: never;
         post: operations["projects_coefficient_sets_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{id}/deletion-preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Non-destructive preview of records removed by project deletion. */
+        get: operations["projects_deletion_preview_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1476,6 +1547,8 @@ export interface components {
             description?: string;
             readonly created_by_member_id: number;
             readonly group_type: string;
+            readonly group_kind: string;
+            readonly is_public: boolean;
             readonly pin_priority: number;
             readonly last_activity_at: string;
             readonly is_default: boolean;
@@ -1483,6 +1556,10 @@ export interface components {
             readonly project: {
                 [key: string]: unknown;
             } | null;
+            readonly can_edit: boolean;
+            readonly can_delete: boolean;
+            readonly deletion_type: string | null;
+            readonly deletion_preview_available: boolean;
             readonly is_active: boolean;
             /** Format: date-time */
             readonly created_at: string;
@@ -1671,6 +1748,26 @@ export interface components {
          * @enum {string}
          */
         CurrencyEnum: "IRR";
+        DeletionPreview: {
+            deletion_type: components["schemas"]["DeletionTypeEnum"];
+            warning_key: string;
+            warning_message_fa: string;
+            confirmation_required: string;
+            group_id: number | null;
+            group_name?: string | null;
+            project_id: number | null;
+            project_name?: string | null;
+            can_delete: boolean;
+            counts: {
+                [key: string]: number;
+            };
+        };
+        /**
+         * @description * `group` - group
+         *     * `project` - project
+         * @enum {string}
+         */
+        DeletionTypeEnum: "group" | "project";
         DemoCommerceDisabled: {
             readonly code: string;
             readonly detail: string;
@@ -1735,6 +1832,7 @@ export interface components {
             readonly status: components["schemas"]["FinancialDocumentStatusEnum"];
             readonly pricebook_edition_id: number;
             readonly price_set_id: number;
+            readonly selected_pricebooks: components["schemas"]["FinancialDocumentPricebook"][];
             readonly coefficient_set_id: number;
             readonly created_by_member_id: number;
             /** Format: date-time */
@@ -1781,8 +1879,9 @@ export interface components {
             period_start_on?: string | null;
             /** Format: date */
             period_end_on?: string | null;
-            pricebook_edition_id: number;
-            price_set_id: number;
+            pricebook_edition_id?: number;
+            price_set_id?: number;
+            pricebook_edition_ids?: number[];
             coefficient_set_id?: number | null;
         };
         FinancialDocumentExport: {
@@ -1811,6 +1910,7 @@ export interface components {
         FinancialDocumentLine: {
             readonly id: number;
             readonly document_id: number;
+            readonly document_pricebook_id: number | null;
             readonly line_no: number;
             readonly line_source: components["schemas"]["LineSourceEnum"];
             readonly pricebook_item_id: number;
@@ -1859,6 +1959,8 @@ export interface components {
             /** @description Required for official Add-without-receipt (pricebook_item_id without calculation_receipt_id). Also used as the calculation billing retry key. Optional for receipt-backed line creation. */
             idempotency_key?: string;
             pricebook_item_id?: number | null;
+            /** @description Optional document pricebook selection when the document has multiple editions. */
+            document_pricebook_id?: number | null;
             /** @description Id of a paid calculation billing receipt (from the official/starred calculation endpoints). When provided, the line is created directly from the receipt and no other calculation fields are read. */
             calculation_receipt_id?: number | null;
             /** @description Optional line-level coefficient set. Omit to use the document default; null disables coefficients. */
@@ -1887,6 +1989,24 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        FinancialDocumentPricebook: {
+            readonly id: number;
+            readonly pricebook_edition_id: number;
+            readonly family_code: string;
+            readonly family_title_fa: string;
+            readonly year: number;
+            readonly price_set_id: number;
+            readonly price_set_code: string;
+            readonly is_edition_active: boolean;
+            readonly is_edition_stale: boolean;
+            readonly is_base_year: boolean;
+            readonly sort_order: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        FinancialDocumentPricebookAddRequest: {
+            pricebook_edition_id: number;
+        };
         /**
          * @description * `draft` - Draft
          *     * `calculated` - Calculated
@@ -1911,8 +2031,9 @@ export interface components {
             period_start_on?: string | null;
             /** Format: date */
             period_end_on?: string | null;
-            pricebook_edition_id: number;
-            price_set_id: number;
+            pricebook_edition_id?: number;
+            price_set_id?: number;
+            pricebook_edition_ids?: number[];
             coefficient_set_id?: number | null;
             project_id?: number;
         };
@@ -4116,6 +4237,27 @@ export interface operations {
             };
         };
     };
+    company_groups_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group or linked project deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     company_groups_partial_update: {
         parameters: {
             query?: never;
@@ -4162,6 +4304,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompanyGroup"];
+                };
+            };
+        };
+    };
+    company_groups_deletion_preview_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این company group را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletionPreview"];
                 };
             };
         };
@@ -4701,6 +4865,79 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["FinancialDocument"];
                 };
+            };
+        };
+    };
+    financial_documents_document_pricebooks_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این financial document را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialDocumentPricebook"][];
+                };
+            };
+        };
+    };
+    financial_documents_document_pricebooks_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این financial document را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinancialDocumentPricebookAddRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["FinancialDocumentPricebookAddRequest"];
+                "multipart/form-data": components["schemas"]["FinancialDocumentPricebookAddRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialDocumentPricebook"];
+                };
+            };
+        };
+    };
+    financial_documents_document_pricebooks_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این financial document را شناسایی میکند. */
+                id: number;
+                /** @description FinancialDocumentPricebook selection id. */
+                selection_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document pricebook selection removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -5587,6 +5824,27 @@ export interface operations {
             };
         };
     };
+    projects_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این project را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project and linked project group deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     projects_partial_update: {
         parameters: {
             query?: never;
@@ -5664,6 +5922,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectCoefficientSet"];
+                };
+            };
+        };
+    };
+    projects_deletion_preview_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description یک مقداد عدد یکتا که این project را شناسایی میکند. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletionPreview"];
                 };
             };
         };

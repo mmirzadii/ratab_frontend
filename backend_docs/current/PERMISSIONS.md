@@ -21,7 +21,9 @@ rejected.
 | `can_invite_employees` | `true` | افزودن کارمند جدید |
 | `can_create_projects` | `true` | ایجاد پروژه |
 | `can_update_projects` | `true` | ویرایش پروژه |
+| `can_delete_projects` | `true` | حذف پروژه |
 | `can_create_custom_groups` | `true` | ایجاد گروه سفارشی |
+| `can_delete_custom_groups` | `true` | حذف گروه سفارشی |
 | `can_create_financial_documents` | `true` | ایجاد سند مالی |
 | `can_edit_unlocked_financial_documents` | `true` | ویرایش سند مالی قفل‌نشده |
 | `can_upload_private_files` | `true` | آپلود فایل خصوصی |

@@ -1,5 +1,6 @@
 import { baseApi } from "../../shared/api/baseApi";
 import type { components } from "../../shared/api/generated/schema";
+import type { DeletionConfirmationRequest, DeletionPreview } from "../companies/companyGroupsApi";
 
 export type Project = components["schemas"]["Project"];
 export type ProjectRequest = components["schemas"]["ProjectRequest"];
@@ -76,6 +77,43 @@ export const projectApi = baseApi.injectEndpoints({
         }
         return tags;
       }
+    }),
+    getProjectDeletionPreview: builder.query<DeletionPreview, number>({
+      query: (projectId) => `/api/projects/${projectId}/deletion-preview/`
+    }),
+    deleteProject: builder.mutation<
+      void,
+      {
+        companyId: number;
+        projectId: number;
+        groupId?: number | null;
+        body: DeletionConfirmationRequest;
+      }
+    >({
+      query: ({ projectId, body }) => ({
+        url: `/api/projects/${projectId}/`,
+        method: "DELETE",
+        body
+      }),
+      invalidatesTags: (_result, _error, { companyId, projectId, groupId }) => {
+        const tags: Array<{
+          type: "Project" | "CompanyGroup" | "GroupMessage" | "FinancialDocument" | "CompanyInvitation";
+          id: string | number;
+        }> = [
+          { type: "Project", id: "LIST" },
+          { type: "Project", id: projectId },
+          { type: "CompanyGroup", id: `COMPANY-${companyId}` },
+          { type: "FinancialDocument", id: "LIST" },
+          { type: "CompanyInvitation", id: "LIST" }
+        ];
+        if (groupId != null) {
+          tags.push({ type: "CompanyGroup", id: groupId });
+          tags.push({ type: "CompanyGroup", id: `MEMBERS-${groupId}` });
+          tags.push({ type: "GroupMessage", id: `GROUP-${groupId}` });
+          tags.push({ type: "CompanyInvitation", id: `GROUP-${groupId}` });
+        }
+        return tags;
+      }
     })
   })
 });
@@ -83,5 +121,7 @@ export const projectApi = baseApi.injectEndpoints({
 export const {
   useCreateCompanyProjectMutation,
   useListCompanyProjectsQuery,
-  useUpdateCompanyProjectMutation
+  useUpdateCompanyProjectMutation,
+  useLazyGetProjectDeletionPreviewQuery,
+  useDeleteProjectMutation
 } = projectApi;

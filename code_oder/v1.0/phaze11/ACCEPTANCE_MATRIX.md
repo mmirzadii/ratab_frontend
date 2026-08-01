@@ -46,8 +46,14 @@
 - [x] newest actually available year is default.
 - [x] changing family reloads/chooses that family's newest year.
 - [x] no hardcoded ABN1404 or default 1404 selection remains.
-- [x] existing document family/year is read-only and preserved.
-- [x] submission uses real edition ID.
+- [x] Document Info uses add-to-list workflow (`افزودن` → chips).
+- [x] one document may hold multiple Editions (families/years).
+- [x] duplicate Edition selections are blocked.
+- [x] existing document selections load from `selected_pricebooks` (no auto-upgrade).
+- [x] locked documents cannot mutate selections.
+- [x] browser selector appears only when selected count > 1.
+- [x] normal lines send active `document_pricebook_id` when known.
+- [x] submission uses real edition ID(s) via `pricebook_edition_ids`.
 - [x] RTL/mobile/light/dark layouts remain valid.
 
 ## Regression

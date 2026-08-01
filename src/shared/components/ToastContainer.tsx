@@ -22,12 +22,12 @@ function ToastItem({ toast }: { toast: Toast }) {
   return (
     <div
       className={classNames(
-        "flex min-w-[220px] max-w-xs items-start gap-3 rounded-xl border px-4 py-3 text-sm font-bold shadow-ui backdrop-blur-md",
+        "flex w-full max-w-[min(22rem,calc(100vw-2rem))] items-start gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm font-bold shadow-ui backdrop-blur-md",
         toastColorClasses[toast.type]
       )}
       role="alert"
     >
-      <span className="flex-1 leading-6">{toast.message}</span>
+      <span className="flex-1 leading-5">{toast.message}</span>
       <button
         aria-label="بستن"
         className="mt-0.5 shrink-0 text-ui-text-muted transition hover:text-ui-text-primary"
@@ -46,7 +46,10 @@ export function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed left-4 top-4 z-[100] flex flex-col gap-2">
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[140] flex flex-col items-center gap-2 px-4"
+      data-testid="toast-container"
+    >
       {toasts.map((toast) => (
         <div className="pointer-events-auto" key={toast.id}>
           <ToastItem toast={toast} />

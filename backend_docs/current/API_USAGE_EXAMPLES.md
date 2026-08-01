@@ -296,9 +296,10 @@ GET /api/pricebooks/1/editions/
 ]
 ```
 
-List returns only active, non-stale editions (newest year first). Use
-`pricebook_edition_id` + `price_set_id` from that payload — never treat
-`ABN1404` as the family code.
+List returns only active, non-stale editions (newest year first). Prefer create
+with `pricebook_edition_ids` (server resolves each official PriceSet). Legacy
+clients may still send `pricebook_edition_id` + `price_set_id` from that payload
+— never treat `ABN1404` as the family code.
 
 Project-group financial documents (linked project is authoritative):
 
@@ -307,13 +308,39 @@ GET /api/company-groups/9/financial-documents/
 POST /api/company-groups/9/financial-documents/
 Content-Type: application/json
 
+{"document_type": "cost_report", "title": "گزارش", "pricebook_edition_ids": [10, 12]}
+```
+
+Legacy single-edition create (still supported):
+
+```json
 {"document_type": "cost_report", "title": "گزارش", "pricebook_edition_id": 10, "price_set_id": 20}
 ```
 
-Stale or inactive edition on create (HTTP 400):
+Document detail includes `selected_pricebooks` (authoritative) and mirrors the
+primary selection on singular `pricebook_edition_id` / `price_set_id`.
+
+```http
+GET /api/financial-documents/{id}/document-pricebooks/
+POST /api/financial-documents/{id}/document-pricebooks/
+{"pricebook_edition_id": 12}
+
+DELETE /api/financial-documents/{id}/document-pricebooks/{selection_id}/
+```
+
+When creating a pricebook line on a multi-selection document, include
+`document_pricebook_id` (required). Single-selection documents may omit it.
+
+Stale or inactive edition on create/add (HTTP 400):
 
 ```json
-{"pricebook_edition_id": ["Pricebook edition is inactive or stale and cannot be used for new documents."]}
+{"pricebook_edition_id": ["Pricebook edition is inactive or stale and cannot be used for document pricebook selections."]}
+```
+
+Missing selection on multi-edition document line create (HTTP 400):
+
+```json
+{"document_pricebook_id": ["document_pricebook_id is required when multiple pricebooks are selected."]}
 ```
 
 Then attach with the single message-attachment flow:

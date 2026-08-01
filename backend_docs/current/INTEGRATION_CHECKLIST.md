@@ -57,10 +57,12 @@
       `building`) — never year in the family label, never treat `ABN1404` as
       the family code. Year dropdown from
       `GET /api/pricebooks/{id}/editions/` (active + non-stale, newest first);
-      default to `latest_available_year`. Submit resolved
-      `pricebook_edition_id` + `price_set_id` (`official-<year>` /
-      `active_price_set`). Handle 400 when create rejects stale/inactive
-      editions. Existing documents retain their saved edition.
+      default to `latest_available_year`. Prefer submit
+      `pricebook_edition_ids` (server resolves official sets); legacy
+      `pricebook_edition_id` + `price_set_id` still works for one edition.
+      Handle 400 when create/add rejects stale/inactive editions. Existing
+      documents expose `selected_pricebooks`; singular fields are primary only.
+      Multi-selection line create must send `document_pricebook_id`.
 - [ ] Pricebook browse (chapters → groups → items); keep row codes as strings.
 - [ ] Official modal session: on item modal open, call
       `POST .../official-calculation-sessions/` (free) and store

@@ -24,6 +24,7 @@ import {
 import { Button } from "../../../shared/components/Button";
 import { Field } from "../../../shared/components/Field";
 import { InsufficientTokenModal } from "../../../shared/components/InsufficientTokenModal";
+import { MathNumericInput } from "../../../shared/math/MathNumericInput";
 import { classNames } from "../../../shared/utils/classNames";
 import { getApiErrorMessage } from "../../../shared/utils/apiError";
 import { formatMoneyAmount } from "../../../shared/utils/formatters";
@@ -380,13 +381,13 @@ export function StarredItemModal({
               </Field>
 
               <Field label="مقدار" required>
-                <input
+                <MathNumericInput
                   className={classNames(inputClasses, "text-left")}
                   dir="ltr"
                   disabled={isBusy || locked}
                   inputMode="decimal"
                   onBlur={() => markTouched("quantity")}
-                  onChange={(event) => updateField("quantity", event.target.value)}
+                  onChange={(next) => updateField("quantity", next)}
                   value={form.quantity}
                 />
                 {shouldShowError("quantity") ? (
@@ -395,13 +396,13 @@ export function StarredItemModal({
               </Field>
 
               <Field label="بهای واحد" required>
-                <input
+                <MathNumericInput
                   className={classNames(inputClasses, "text-left")}
                   dir="ltr"
                   disabled={isBusy || locked}
                   inputMode="decimal"
                   onBlur={() => markTouched("unitPrice")}
-                  onChange={(event) => updateField("unitPrice", event.target.value)}
+                  onChange={(next) => updateField("unitPrice", next)}
                   value={form.unitPrice}
                 />
                 {shouldShowError("unitPrice") ? (

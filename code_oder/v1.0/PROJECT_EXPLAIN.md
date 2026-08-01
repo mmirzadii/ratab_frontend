@@ -1,6 +1,6 @@
 # Ratab Frontend Project Explain — v1.0 (Final)
 
-Last updated: 2026-07-31  
+Last updated: 2026-08-01  
 Active version file: `code_oder/active_version.txt` = `v1.0`  
 Backend contract: `backend_docs/current/BACKEND_VERSION` = `v1.0`  
 Package version: `package.json` = `1.0.0`
@@ -9,7 +9,7 @@ Documentation root note: the repository uses `code_oder` as the folder name. Do 
 
 ## Purpose
 
-Onboarding and handoff document for Frontend v1.0 after Phases 1–11, including the calculation-based token policy correction (2026-07-30) and Phase 11 family/year pricebook selection. Phases 1–7 delivered contract sync, session auth, company workspace, messaging, files/attachments, wallet foundations, and subscription/quota/disabled-payment UX. Phase 8 finalized regression, cleanup, and documentation. Phase 9 simplified the company workspace into a compact Telegram-inspired RTL master-detail layout. Phase 10 adds messenger-like message status, edit, soft-delete, and forward driven by backend capability fields. Phase 11 separates pricebook family and year selection using Backend Phase 11 editions. The 2026-07-30 correction replaces the obsolete 5-token official-line-create UX with backend-authoritative paid calculations, receipts, and company-wallet donation.
+Onboarding and handoff document for Frontend v1.0 after Phases 1–11, including the calculation-based token policy correction (2026-07-30), Phase 11 multi-pricebook selection, the 2026-07-31 group/project hard-deletion + project-settings correction, and the 2026-08-01 safe math-expression correction for financial numeric inputs and the message composer. Phases 1–7 delivered contract sync, session auth, company workspace, messaging, files/attachments, wallet foundations, and subscription/quota/disabled-payment UX. Phase 8 finalized regression, cleanup, and documentation. Phase 9 simplified the company workspace into a compact Telegram-inspired RTL master-detail layout. Phase 10 adds messenger-like message status, edit, soft-delete, and forward driven by backend capability fields. Phase 11 selects one or more pricebook Editions per FinancialDocument via Backend Phase 11 `selected_pricebooks`. The 2026-07-30 correction replaces the obsolete 5-token official-line-create UX with backend-authoritative paid calculations, receipts, and company-wallet donation. The 2026-07-31 correction adds safe group/project hard deletion (preview + confirmation) and project metadata editing from the existing Group Info panel. The 2026-08-01 correction adds a whitelist math parser so users can type expressions like `3**4` or `sin(30)` in financial fields and the chat composer; only canonical numbers are sent to the backend.
 
 Before changing code, read in this order:
 
@@ -38,8 +38,10 @@ Before changing code, read in this order:
 | 8 | ✅ | Final integration, cleanup, regression, handoff |
 | 9 | ✅ | Compact Telegram-inspired company workspace UX + text cleanup |
 | 10 | ✅ | Message status, edit, soft-delete, forward (backend `can_*`) |
-| 11 | ✅ | Separate pricebook family (`نوع فهرست‌بها`) and year (`سال`) selection |
+| 11 | ✅ | Multi-pricebook Document Info: family + year add-to-list; browser selector when count > 1 |
 | — | ✅ | **2026-07-30 correction:** calculation-based token policy + company wallet |
+| — | ✅ | **2026-07-31 correction:** group/project hard delete + project edit in Group Info |
+| — | ✅ | **2026-08-01 correction:** safe math expressions in financial inputs + message composer |
 
 ## Product snapshot
 
@@ -48,8 +50,8 @@ Persian-first RTL construction cost-reporting app.
 1. Public landing → signup (`/signup`) or login (`/login`) with session cookies.
    Signup password step: mandatory ≥6 characters (blocking); live non-blocking weak-password yellow warning; signup-complete errors classified by field so password `400`s are not shown as invalid tickets.
 2. Protected company list / create.
-3. Company workspace (`/companies/:id`): compact section tabs + context list + main pane for messages, members, and company info. Custom/normal group create is routed at `/companies/:id/groups/new` (Telegram-like desktop side panel / mobile full page; two-step draft; atomic `member_ids` invitations). Group info is a Telegram-like side panel (overview/edit/add-members) without admin-form clutter.
-4. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Document Info selects independent `نوع فهرست‌بها` (`Pricebook.title_fa`) and `سال` (edition years, newest first); create submits the exact `pricebook_edition_id` + official `active_price_set`. Existing documents keep family/year read-only. Opening an official item modal creates one free backend calculation session; valid inputs auto-calculate after 500ms. The first successful calculation in that session may charge the backend official cost (default 2); later recalculations in the same open session are free. Add uses the latest receipt (`calculation_receipt_id`) with no second charge, or forces one immediate same-session calculation when the result is pending/stale. Insufficient combined balance is kept silent until the user clicks Add, then opens the shared purchase dialog → `/settings?tab=tokens`.
+3. Company workspace (`/companies/:id`): compact section tabs + context list + main pane for messages, members, and company info. Custom/normal group create is routed at `/companies/:id/groups/new` (Telegram-like desktop side panel / mobile full page; two-step draft; atomic `member_ids` invitations). Group info is a Telegram-like side panel (overview/edit/add-members). Group kind comes from backend `group_kind` / `is_public` / `group_type` / `project_id` (never title). Public groups never show delete. Ordinary groups with `can_delete` show `حذف گروه`; project groups show `حذف پروژه` after deletion-preview confirmation. Project-group edit patches the group with linked project fields in one mutation.
+4. Cost report wizard: project → document → pricebook → coefficients → finalize/lock/print. Document Info keeps `نوع فهرست‌بها` (`Pricebook.title_fa`) and `سال` as separate pickers, then `افزودن` appends exact Editions to a selected-pricebooks list (chips). Create submits `pricebook_edition_ids`; after create, add/remove use document-pricebook endpoints. Existing drafts can mutate selections when unlocked; locked documents are read-only. The pricebook browser shows a compact family—year selector only when the document has more than one selection; normal lines include the active `document_pricebook_id`. Opening an official item modal creates one free backend calculation session; valid inputs auto-calculate after 500ms. The first successful calculation in that session may charge the backend official cost (default 2); later recalculations in the same open session are free. Add uses the latest receipt (`calculation_receipt_id`) with no second charge, or forces one immediate same-session calculation when the result is pending/stale. Insufficient combined balance is kept silent until the user clicks Add, then opens the shared purchase dialog → `/settings?tab=tokens`.
 5. Account settings (`/settings?tab=account|tokens|subscription`): circular avatar + prominent header token chip; summary = plan/quota/status only; Token tab = compact wallet metrics, server package cards / demo Buy when available, **اهدای توکن به شرکت** (shared modal), collapsible transaction history.
 
 Visual system: **Metril Corporate Blue** — semantic `--ui-*` tokens in `src/styles/index.css`, Tailwind `ui.*` aliases, shared components first. Light canvas is cool gray-blue (`#F5F7FB`); dark canvas navy (`#08111F`). Primary actions use brand blue (not emerald). See `docs/product_reference/v0.0/UI_THEME_NOTES.md`.
@@ -150,7 +152,7 @@ Company workspace is conversation-first when `companyCtx.workspaceActive` is set
 1. Narrow company icon rail (~68px, `lg+`) — **گفتگوها**, اعضا, اطلاعات شرکت (no permanent Projects/Groups nav).
 2. Conversation list (~304–352px): public `عمومی` pinned first; remaining groups keep **backend** `last_activity_at` order (newest activity first; no client alphabetical/kind sort). `+` menu for پروژه جدید / گروه جدید. Successful message send / group or project create invalidates the company group list so the active chat moves without losing selection or draft.
 3. Main chat pane with sticky composer: Telegram-like auto-growing textarea (min ~44px, max ~160px / ~140px mobile via `scrollHeight`); Enter sends, Shift+Enter newline, IME-safe; one **افزودن** menu (فایل | صورت‌بها); empty chat and drawer use **افزودن صورت‌بها** to open the same list-first financial-document selector; project-linked chats lock the project; public/custom require project selection with visible **ایجاد پروژه جدید**. Cost-report wizard Project Selection step also exposes compact **افزودن پروژه** (shared `CreateProjectSheet`) unless `lockProject` is set.
-4. Optional left Group Info side panel (Telegram-like internal views: `overview` / `edit` / `addMembers` / `memberDetails` — no centered modals). Default tab `اعضا`, plus صورت‌بهاها / فایل‌ها / لینک‌ها. Header pencil edits custom groups when permitted (`can_manage_all_custom_groups` / creator / owner). Members tab uses compact rows + FAB `افزودن عضو`; invitations stay pending until accepted. Sensitive deactivate lives under `اقدامات حساس`. Desktop ~384–416px beside chat; mobile full-screen overlay. Chat selection, draft, and scroll stay intact when switching panel views.
+4. Optional left Group Info side panel (Telegram-like internal views: `overview` / `edit` / `addMembers` / `memberDetails`). Default tab `اعضا`, plus صورت‌بهاها / فایل‌ها / لینک‌ها. Header pencil edits when `can_edit` (project groups edit linked Project metadata via `PATCH /api/company-groups/{id}/`; ordinary groups edit name/description). Members tab uses compact rows + FAB `افزودن عضو`; invitations stay pending until accepted. Hard delete (`حذف گروه` / `حذف پروژه`) appears only when `can_delete`; preview counts come from `.../deletion-preview/`; confirmation modal required; success navigates to Public and invalidates groups/projects/messages/documents. Desktop ~384–416px beside chat; mobile full-screen overlay.
 5. Below `lg`: bottom section nav + mobile list↔detail.
 
 Project/group creation and management remain available from the conversation UI (create menu + drawer), not as primary nav sections. Cost-report wizard still uses SecondaryNav and returns attachments to the originating conversation when `returnToGroupId` is set.
@@ -255,3 +257,11 @@ Shared modal: `src/shared/components/DonateTokensModal.tsx`
 - Idempotent `POST .../token-donations/`; invalidates personal `Wallet:BALANCE` + `CompanyWallet:{id}`; toast on success; no optimistic math; no withdrawal
 
 Cache: personal wallet shared; company wallet keyed by company id (switch clears via skip/new key); calculation spend invalidates all `CompanyWallet` tags; purchase invalidates personal only.
+
+## Correction (2026-08-01) — safe math expressions
+
+Frontend-only whitelist math parser for financial numeric inputs and the message composer. Backend still receives only canonical Latin numbers. Full details: `code_oder/v1.0/MATH_EXPRESSION_CORRECTION.md`. Modules under `src/shared/math/`. Test script: `npm run test:math-expression`.
+
+## Correction (2026-08-01) — keyboard shortcuts + mobile math hint
+
+Centralized shortcuts (`Ctrl/⌘+S`, `Ctrl/⌘+K`, `Ctrl/⌘+/`, Escape layers), form Enter-to-next for registered data-entry forms, and desktop `Tab` / mobile `محاسبه` math result actions. See `code_oder/v1.0/KEYBOARD_SHORTCUTS_CORRECTION.md`. Tests: `npm run test:shortcuts`.

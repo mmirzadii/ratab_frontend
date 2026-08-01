@@ -1,48 +1,68 @@
 import { useState } from "react";
-import { ChevronDown, XCircle } from "lucide-react";
+import { ChevronDown, Plus, X, XCircle } from "lucide-react";
 
+import type { FinancialDocumentPricebook } from "../../financialDocuments/financialDocumentApi";
 import type { Pricebook, PricebookEdition } from "../../pricebooks/pricebookApi";
+import { Button } from "../../../shared/components/Button";
 import { GlassCard } from "../../../shared/components/GlassCard";
 import { Field } from "../../../shared/components/Field";
 import { JalaliDateField } from "../../../shared/components/JalaliDateField";
 import { classNames } from "../../../shared/utils/classNames";
 import { inputClasses } from "../constants";
+import {
+  type DraftPricebookPick,
+  formatPricebookSelectionLabel
+} from "../pricebookFamilyYear";
 import type { WizardFormState } from "../types";
 
 export function DocumentInfoSection({
+  canMutateSelections,
+  draftPicks,
   editions,
   editionsError,
   form,
   formError,
+  isAddingSelection,
   isExistingDocument,
   isLoadingEditions,
   isLoadingPricebooks,
+  isRemovingSelectionId,
+  onAddSelection,
   onEditionChange,
   onFieldChange,
   onFamilyChange,
+  onRemoveDraftPick,
+  onRemovePersistedSelection,
   families,
+  persistedSelections,
   pricebooksError,
-  savedEdition,
-  selectedActivePriceSet,
   selectedEdition,
-  selectedFamily
+  selectedFamily,
+  selectionActionError
 }: {
+  canMutateSelections: boolean;
+  draftPicks: DraftPricebookPick[];
   editions: PricebookEdition[];
   editionsError: unknown;
   form: WizardFormState;
   formError: string | null;
+  isAddingSelection: boolean;
   isExistingDocument: boolean;
   isLoadingEditions: boolean;
   isLoadingPricebooks: boolean;
+  isRemovingSelectionId: number | null;
+  onAddSelection: () => void;
   onEditionChange: (value: string) => void;
   onFieldChange: (field: keyof WizardFormState, value: string) => void;
   onFamilyChange: (value: string) => void;
+  onRemoveDraftPick: (editionId: number) => void;
+  onRemovePersistedSelection: (selectionId: number) => void;
   families: Pricebook[];
+  persistedSelections: FinancialDocumentPricebook[];
   pricebooksError: unknown;
-  savedEdition: PricebookEdition | undefined;
-  selectedActivePriceSet: { id: number } | null;
   selectedEdition: PricebookEdition | undefined;
   selectedFamily: Pricebook | undefined;
+  selectionActionError: string | null;
 }) {
   const [isOptionalInfoOpen, setIsOptionalInfoOpen] = useState(() =>
     Boolean(
@@ -54,16 +74,21 @@ export function DocumentInfoSection({
     )
   );
 
-  const readOnlyFamilyTitle =
-    savedEdition?.family_title_fa?.trim() ||
-    selectedFamily?.title_fa?.trim() ||
-    "—";
-  const readOnlyYear = savedEdition?.year ?? selectedEdition?.year ?? null;
   const yearSelectDisabled =
-    isExistingDocument ||
-    isLoadingEditions ||
-    !selectedFamily ||
-    editions.length === 0;
+    isLoadingEditions || !selectedFamily || editions.length === 0;
+  const selectedEditionIds = new Set(
+    isExistingDocument
+      ? persistedSelections.map((item) => item.pricebook_edition_id)
+      : draftPicks.map((item) => item.editionId)
+  );
+  const canAdd =
+    canMutateSelections &&
+    selectedEdition != null &&
+    !selectedEditionIds.has(selectedEdition.id) &&
+    !isAddingSelection;
+
+  const listEmpty =
+    (isExistingDocument ? persistedSelections.length : draftPicks.length) === 0;
 
   return (
     <>
@@ -79,75 +104,128 @@ export function DocumentInfoSection({
               value={form.document_title}
             />
           </Field>
-          {isExistingDocument ? (
-            <>
-              <Field label="نوع فهرست‌بها">
-                <div
-                  aria-label="نوع فهرست‌بها"
-                  className={`${inputClasses} flex items-center text-ui-text-primary`}
-                  data-testid="document-info-family-readonly"
+          <Field label="نوع فهرست‌بها">
+            <select
+              aria-label="نوع فهرست‌بها"
+              className={`${inputClasses} min-w-0 px-2 sm:px-4`}
+              data-testid="document-info-family-select"
+              disabled={!canMutateSelections || isLoadingPricebooks || families.length === 0}
+              onChange={(event) => onFamilyChange(event.target.value)}
+              value={selectedFamily?.id ?? ""}
+            >
+              {families.length === 0 ? (
+                <option value="">فهرست‌بهایی نیست</option>
+              ) : null}
+              {families.map((family) => (
+                <option key={family.id} value={family.id}>
+                  {family.title_fa}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="سال">
+            <div className="flex gap-2">
+              <select
+                aria-label="سال"
+                className={`${inputClasses} min-w-0 flex-1 px-2 sm:px-4`}
+                data-testid="document-info-year-select"
+                disabled={!canMutateSelections || yearSelectDisabled}
+                onChange={(event) => onEditionChange(event.target.value)}
+                value={selectedEdition?.id ?? ""}
+              >
+                {editions.length === 0 ? (
+                  <option value="">سالی موجود نیست</option>
+                ) : null}
+                {editions.map((edition) => (
+                  <option key={edition.id} value={edition.id}>
+                    {edition.year}
+                  </option>
+                ))}
+              </select>
+              {canMutateSelections ? (
+                <Button
+                  className="shrink-0 px-3"
+                  data-testid="document-info-add-pricebook"
+                  disabled={!canAdd}
+                  onClick={onAddSelection}
+                  type="button"
+                  variant="secondary"
                 >
-                  {readOnlyFamilyTitle}
-                </div>
-              </Field>
-              <Field label="سال">
-                <div
-                  aria-label="سال"
-                  className={`${inputClasses} flex items-center text-ui-text-primary`}
-                  data-testid="document-info-year-readonly"
-                >
-                  {readOnlyYear ?? "—"}
-                </div>
-              </Field>
-            </>
+                  {isAddingSelection ? (
+                    "…"
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      افزودن
+                    </>
+                  )}
+                </Button>
+              ) : null}
+            </div>
+          </Field>
+        </div>
+
+        <div className="mt-3 space-y-2" data-testid="document-info-selected-pricebooks">
+          <p className="text-[11px] font-bold text-ui-text-muted">فهرست‌بهای انتخاب‌شده</p>
+          {listEmpty ? (
+            <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs leading-6 text-amber-100">
+              حداقل یک فهرست‌بها باید با «افزودن» به فهرست اضافه شود.
+            </p>
           ) : (
-            <>
-              <Field label="نوع فهرست‌بها">
-                <select
-                  aria-label="نوع فهرست‌بها"
-                  className={`${inputClasses} min-w-0 px-2 sm:px-4`}
-                  data-testid="document-info-family-select"
-                  disabled={isLoadingPricebooks || families.length === 0}
-                  onChange={(event) => onFamilyChange(event.target.value)}
-                  value={selectedFamily?.id ?? ""}
-                >
-                  {families.length === 0 ? (
-                    <option value="">فهرست‌بهایی نیست</option>
-                  ) : null}
-                  {families.map((family) => (
-                    <option key={family.id} value={family.id}>
-                      {family.title_fa}
-                    </option>
+            <ul className="flex flex-wrap gap-2">
+              {isExistingDocument
+                ? persistedSelections.map((selection) => (
+                    <li
+                      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-ui-border-subtle bg-ui-surface-subtle px-3 text-xs font-bold text-ui-text-primary"
+                      key={selection.id}
+                    >
+                      <span>
+                        {formatPricebookSelectionLabel({
+                          familyTitleFa: selection.family_title_fa,
+                          year: selection.year
+                        })}
+                      </span>
+                      {canMutateSelections ? (
+                        <button
+                          aria-label="حذف فهرست‌بها"
+                          className="rounded-full p-1 text-ui-text-muted transition hover:bg-ui-surface hover:text-rose-300 disabled:opacity-40"
+                          disabled={isRemovingSelectionId === selection.id}
+                          onClick={() => onRemovePersistedSelection(selection.id)}
+                          type="button"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
+                    </li>
+                  ))
+                : draftPicks.map((pick) => (
+                    <li
+                      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-ui-border-subtle bg-ui-surface-subtle px-3 text-xs font-bold text-ui-text-primary"
+                      key={pick.editionId}
+                    >
+                      <span>
+                        {formatPricebookSelectionLabel({
+                          familyTitleFa: pick.familyTitleFa,
+                          year: pick.year
+                        })}
+                      </span>
+                      <button
+                        aria-label="حذف فهرست‌بها"
+                        className="rounded-full p-1 text-ui-text-muted transition hover:bg-ui-surface hover:text-rose-300"
+                        onClick={() => onRemoveDraftPick(pick.editionId)}
+                        type="button"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
                   ))}
-                </select>
-              </Field>
-              <Field label="سال">
-                <select
-                  aria-label="سال"
-                  className={`${inputClasses} min-w-0 px-2 sm:px-4`}
-                  data-testid="document-info-year-select"
-                  disabled={yearSelectDisabled}
-                  onChange={(event) => onEditionChange(event.target.value)}
-                  value={selectedEdition?.id ?? ""}
-                >
-                  {editions.length === 0 ? (
-                    <option value="">سالی موجود نیست</option>
-                  ) : null}
-                  {editions.map((edition) => (
-                    <option key={edition.id} value={edition.id}>
-                      {edition.year}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </>
+            </ul>
           )}
         </div>
 
-        {isExistingDocument ? (
+        {isExistingDocument && !canMutateSelections ? (
           <p className="mt-2 text-[11px] leading-5 text-ui-text-muted">
-            نوع و سال فهرست‌بها پس از ایجاد صورت‌بها ثابت می‌ماند. برای سال یا نوع دیگر، صورت‌بهای
-            جدید بسازید.
+            صورت‌بهای قفل‌شده: فهرست‌بهای انتخاب‌شده فقط خواندنی هستند و قابل افزودن یا حذف نیستند.
           </p>
         ) : null}
 
@@ -179,43 +257,43 @@ export function DocumentInfoSection({
           )}
           id="optional-document-info"
         >
-            <Field label="عنوان گزارش">
-              <input
-                className={inputClasses}
-                onChange={(event) => onFieldChange("report_title", event.target.value)}
-                placeholder="اختیاری"
-                value={form.report_title}
-              />
-            </Field>
-            <Field label="شماره سند">
-              <input
-                className={inputClasses}
-                onChange={(event) => onFieldChange("document_number", event.target.value)}
-                placeholder="اختیاری"
-                value={form.document_number}
-              />
-            </Field>
-            <Field label="تاریخ سند">
-              <JalaliDateField
-                inputClass={inputClasses}
-                onChange={(iso) => onFieldChange("document_date", iso)}
-                value={form.document_date}
-              />
-            </Field>
-            <Field label="شروع دوره">
-              <JalaliDateField
-                inputClass={inputClasses}
-                onChange={(iso) => onFieldChange("period_start_on", iso)}
-                value={form.period_start_on}
-              />
-            </Field>
-            <Field label="پایان دوره">
-              <JalaliDateField
-                inputClass={inputClasses}
-                onChange={(iso) => onFieldChange("period_end_on", iso)}
-                value={form.period_end_on}
-              />
-            </Field>
+          <Field label="عنوان گزارش">
+            <input
+              className={inputClasses}
+              onChange={(event) => onFieldChange("report_title", event.target.value)}
+              placeholder="اختیاری"
+              value={form.report_title}
+            />
+          </Field>
+          <Field label="شماره سند">
+            <input
+              className={inputClasses}
+              onChange={(event) => onFieldChange("document_number", event.target.value)}
+              placeholder="اختیاری"
+              value={form.document_number}
+            />
+          </Field>
+          <Field label="تاریخ سند">
+            <JalaliDateField
+              inputClass={inputClasses}
+              onChange={(iso) => onFieldChange("document_date", iso)}
+              value={form.document_date}
+            />
+          </Field>
+          <Field label="شروع دوره">
+            <JalaliDateField
+              inputClass={inputClasses}
+              onChange={(iso) => onFieldChange("period_start_on", iso)}
+              value={form.period_start_on}
+            />
+          </Field>
+          <Field label="پایان دوره">
+            <JalaliDateField
+              inputClass={inputClasses}
+              onChange={(iso) => onFieldChange("period_end_on", iso)}
+              value={form.period_end_on}
+            />
+          </Field>
         </div>
 
         {pricebooksError || editionsError ? (
@@ -231,8 +309,7 @@ export function DocumentInfoSection({
           </div>
         ) : null}
 
-        {!isExistingDocument &&
-        selectedFamily &&
+        {selectedFamily &&
         !isLoadingEditions &&
         !editionsError &&
         editions.length === 0 ? (
@@ -244,19 +321,12 @@ export function DocumentInfoSection({
           </div>
         ) : null}
 
-        {!isExistingDocument && selectedEdition && !selectedActivePriceSet ? (
-          <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
-            برای این سال هنوز مجموعه قیمت فعال ثبت نشده است.
+        {selectionActionError ? (
+          <div className="mt-4 flex items-start gap-2 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+            <XCircle className="mt-1 h-4 w-4 shrink-0" />
+            {selectionActionError}
           </div>
         ) : null}
-
-        {isExistingDocument && !savedEdition && !isLoadingEditions ? (
-          <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
-            نسخه ذخیره‌شده فهرست‌بها در فهرست فعال پیدا نشد؛ مرور ساختار با همان شناسه ادامه
-            می‌یابد و نوع/سال تغییر نمی‌کند.
-          </div>
-        ) : null}
-
       </GlassCard>
 
       {formError ? (
@@ -265,7 +335,6 @@ export function DocumentInfoSection({
           {formError}
         </div>
       ) : null}
-
     </>
   );
 }

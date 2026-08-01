@@ -9,8 +9,11 @@ import { useRetrieveCompanyQuery } from "../features/companies/companyApi";
 import { useListProjectCoefficientSetsQuery } from "../features/coefficients/coefficientApi";
 import {
   type FinancialDocument,
+  useAddFinancialDocumentPricebookMutation,
   useCreateProjectFinancialDocumentMutation,
-  useLockFinancialDocumentMutation
+  useLockFinancialDocumentMutation,
+  useRemoveFinancialDocumentPricebookMutation,
+  useRetrieveFinancialDocumentQuery
 } from "../features/financialDocuments/financialDocumentApi";
 import {
   type Pricebook,
@@ -19,7 +22,6 @@ import {
   type PricebookGroup,
   type PricebookItemList,
   useListPricebookChaptersQuery,
-  useListPricebookEditionsForFamiliesQuery,
   useListPricebookEditionsQuery,
   useListPricebookGroupsQuery,
   useListPricebookItemsQuery,
@@ -51,17 +53,19 @@ import {
 } from "../features/costReports/constants";
 import {
   getInitialWizardForm,
+  isFinancialDocumentLocked,
   matchesChapterFilter,
   omitEmpty,
-  optionalDate,
-  parsePositiveInteger,
-  getDeprecatedConfiguredPriceSetId
+  optionalDate
 } from "../features/costReports/costReportUtils";
 import {
-  editionBelongsToFamily,
+  type DraftPricebookPick,
+  formatDocumentPricebookRemoveError,
   formatPricebookEditionCreateError,
+  formatPricebookSelectionLabel,
   listUsableEditionsForFamily,
-  priceSetBelongsToEdition,
+  reconcileActiveDocumentPricebookId,
+  resolveDocumentSelectedPricebooks,
   selectDefaultEditionForFamily,
   selectDefaultPricebookFamily,
   sortActivePricebookFamilies
@@ -104,12 +108,17 @@ export function CostReportWizardPage() {
     builderState?.existingDocument ?? null
   );
   const [documentSetupNotice, setDocumentSetupNotice] = useState<string | null>(null);
-  const isDevPriceSetConfirmed = false;
-  const [selectedFamilyId, setSelectedFamilyId] = useState<number | null>(null);
-  const [selectedEditionId, setSelectedEditionId] = useState<number | null>(
-    builderState?.existingDocument?.pricebook_edition_id ?? null
+  const [draftFamilyId, setDraftFamilyId] = useState<number | null>(null);
+  const [draftEditionId, setDraftEditionId] = useState<number | null>(null);
+  const [draftPicks, setDraftPicks] = useState<DraftPricebookPick[]>([]);
+  const [activeDocumentPricebookId, setActiveDocumentPricebookId] = useState<number | null>(
+    null
   );
+  const [selectionActionError, setSelectionActionError] = useState<string | null>(null);
+  const [isRemovingSelectionId, setIsRemovingSelectionId] = useState<number | null>(null);
   const isExistingDocument = Boolean(createdDocument);
+  const documentLocked = isFinancialDocumentLocked(createdDocument);
+  const canMutateSelections = !documentLocked;
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [activeChapterFilter, setActiveChapterFilter] = useState("all");
@@ -135,110 +144,78 @@ export function CostReportWizardPage() {
     () => sortActivePricebookFamilies(pricebooks),
     [pricebooks]
   );
-  const familyIds = useMemo(() => families.map((family) => family.id), [families]);
 
   const selectedFamily =
-    selectDefaultPricebookFamily(families, selectedFamilyId) ?? undefined;
+    selectDefaultPricebookFamily(families, draftFamilyId) ?? undefined;
 
-  // New documents: editions for the selected family only (avoids cross-family races).
   const {
     data: familyEditionsData,
-    error: familyEditionsError,
+    error: editionsError,
     isFetching: isFetchingFamilyEditions,
     isLoading: isLoadingFamilyEditions
   } = useListPricebookEditionsQuery(selectedFamily?.id ?? 0, {
-    skip: !selectedFamily || isExistingDocument
-  });
-
-  // Existing documents: resolve the immutable saved edition across families.
-  const {
-    data: allEditionsData,
-    error: allEditionsError,
-    isLoading: isLoadingAllEditions
-  } = useListPricebookEditionsForFamiliesQuery(familyIds, {
-    skip: !isExistingDocument || familyIds.length === 0
+    skip: !selectedFamily
   });
 
   const familyEditions = useMemo(
     () => getListResults<PricebookEdition>(familyEditionsData),
     [familyEditionsData]
   );
-  const allEditions = useMemo(
-    () => getListResults<PricebookEdition>(allEditionsData),
-    [allEditionsData]
-  );
-
-  const savedEdition = useMemo(() => {
-    if (!createdDocument?.pricebook_edition_id) return undefined;
-    const editionId = createdDocument.pricebook_edition_id;
-    return (
-      allEditions.find((edition) => edition.id === editionId) ??
-      familyEditions.find((edition) => edition.id === editionId)
-    );
-  }, [allEditions, createdDocument?.pricebook_edition_id, familyEditions]);
 
   const editions = useMemo(() => {
-    if (isExistingDocument) {
-      return savedEdition ? [savedEdition] : [];
-    }
     if (!selectedFamily) return [];
-    // Guard stale out-of-order responses: only keep editions for the current family.
     return listUsableEditionsForFamily(familyEditions, selectedFamily.id);
-  }, [familyEditions, isExistingDocument, savedEdition, selectedFamily]);
+  }, [familyEditions, selectedFamily]);
 
-  const editionsError = isExistingDocument ? allEditionsError : familyEditionsError;
-  const isLoadingEditions = isExistingDocument
-    ? isLoadingAllEditions
-    : isLoadingFamilyEditions || (Boolean(selectedFamily) && isFetchingFamilyEditions);
+  const isLoadingEditions =
+    isLoadingFamilyEditions || (Boolean(selectedFamily) && isFetchingFamilyEditions);
 
   const selectedEdition = useMemo(() => {
-    if (isExistingDocument) {
-      return savedEdition;
-    }
     if (!selectedFamily) return undefined;
     if (
-      selectedEditionId != null &&
-      editions.some((edition) => edition.id === selectedEditionId)
+      draftEditionId != null &&
+      editions.some((edition) => edition.id === draftEditionId)
     ) {
-      return editions.find((edition) => edition.id === selectedEditionId);
+      return editions.find((edition) => edition.id === draftEditionId);
     }
-    return selectDefaultEditionForFamily(editions, selectedFamily, selectedEditionId);
-  }, [
-    editions,
-    isExistingDocument,
-    savedEdition,
-    selectedEditionId,
-    selectedFamily
-  ]);
+    return selectDefaultEditionForFamily(editions, selectedFamily, draftEditionId);
+  }, [draftEditionId, editions, selectedFamily]);
 
-  const selectedActivePriceSet = selectedEdition?.active_price_set ?? null;
-
-  // Sync explicit selection state once defaults resolve (new documents only).
   useEffect(() => {
-    if (isExistingDocument) {
-      if (savedEdition) {
-        setSelectedFamilyId(savedEdition.pricebook_id);
-        setSelectedEditionId(savedEdition.id);
-      }
-      return;
-    }
     if (!selectedFamily) return;
-    setSelectedFamilyId((current) =>
+    setDraftFamilyId((current) =>
       current === selectedFamily.id ? current : selectedFamily.id
     );
-    setSelectedEditionId((current) => {
-      if (
-        current != null &&
-        editions.some((edition) => edition.id === current)
-      ) {
+    setDraftEditionId((current) => {
+      if (current != null && editions.some((edition) => edition.id === current)) {
         return current;
       }
       return selectDefaultEditionForFamily(editions, selectedFamily)?.id ?? null;
     });
-  }, [editions, isExistingDocument, savedEdition, selectedFamily]);
+  }, [editions, selectedFamily]);
+
+  const persistedSelections = useMemo(
+    () => resolveDocumentSelectedPricebooks(createdDocument),
+    [createdDocument]
+  );
+
+  useEffect(() => {
+    setActiveDocumentPricebookId((current) =>
+      reconcileActiveDocumentPricebookId(persistedSelections, current)
+    );
+  }, [persistedSelections]);
+
+  const activeDocumentPricebook =
+    persistedSelections.find((item) => item.id === activeDocumentPricebookId) ??
+    persistedSelections[0] ??
+    null;
 
   const activeEditionId =
-    selectedEdition?.id ?? createdDocument?.pricebook_edition_id ?? null;
+    activeDocumentPricebook?.pricebook_edition_id ??
+    createdDocument?.pricebook_edition_id ??
+    null;
+
+  const activeEditionYear = activeDocumentPricebook?.year;
 
   const {
     data: chaptersData,
@@ -320,7 +297,15 @@ export function CostReportWizardPage() {
 
   const [createDocument, createDocumentState] = useCreateProjectFinancialDocumentMutation();
   const [lockDocument] = useLockFinancialDocumentMutation();
+  const [addDocumentPricebook, addDocumentPricebookState] =
+    useAddFinancialDocumentPricebookMutation();
+  const [removeDocumentPricebook] = useRemoveFinancialDocumentPricebookMutation();
+  const { refetch: refetchDocument } = useRetrieveFinancialDocumentQuery(
+    createdDocument?.id ?? 0,
+    { skip: !createdDocument }
+  );
   const isSubmitting = createDocumentState.isLoading;
+  const isAddingSelection = addDocumentPricebookState.isLoading;
 
   const isLastStep = activeSection === "finalize";
 
@@ -390,8 +375,14 @@ export function CostReportWizardPage() {
 
   const canGoNext: boolean = (() => {
     if (activeSection === "project") return Boolean(createdProject);
-    if (activeSection === "document")
-      return !isSubmitting && form.document_title.trim().length > 0 && Boolean(selectedEdition);
+    if (activeSection === "document") {
+      if (createdDocument) return !isSubmitting;
+      return (
+        !isSubmitting &&
+        form.document_title.trim().length > 0 &&
+        draftPicks.length >= 1
+      );
+    }
     if (activeSection === "finalize") return false;
     return isBuilderUnlocked;
   })();
@@ -471,10 +462,93 @@ export function CostReportWizardPage() {
     setWizardCtx
   ]);
 
-  const deprecatedConfiguredPriceSetId = getDeprecatedConfiguredPriceSetId();
-
   function updateField(field: keyof WizardFormState, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function clearBrowserContext() {
+    setSelectedChapterId(null);
+    setSelectedGroupId(null);
+    setSearchTerm("");
+    setSelectedItemId(null);
+    setActiveChapterFilter("all");
+  }
+
+  function handleActivePricebookChange(selectionId: number) {
+    if (selectionId === activeDocumentPricebookId) return;
+    setActiveDocumentPricebookId(selectionId);
+    clearBrowserContext();
+  }
+
+  async function handleAddSelection() {
+    if (!canMutateSelections || !selectedFamily || !selectedEdition) return;
+    if (selectedEdition.year == null) {
+      setSelectionActionError("سال فهرست‌بها نامعتبر است.");
+      return;
+    }
+    setSelectionActionError(null);
+    setFormError(null);
+
+    if (createdDocument) {
+      try {
+        await addDocumentPricebook({
+          documentId: createdDocument.id,
+          body: { pricebook_edition_id: selectedEdition.id }
+        }).unwrap();
+        const refreshed = await refetchDocument().unwrap();
+        setCreatedDocument(refreshed);
+      } catch (error) {
+        const message = formatDocumentPricebookRemoveError(
+          error,
+          getApiErrorMessage(error, "افزودن فهرست‌بها به صورت‌بها انجام نشد.")
+        );
+        setSelectionActionError(message);
+        dispatch(addToast({ message, type: "error" }));
+      }
+      return;
+    }
+
+    if (draftPicks.some((pick) => pick.editionId === selectedEdition.id)) {
+      setSelectionActionError("این فهرست‌بها قبلاً به فهرست اضافه شده است.");
+      return;
+    }
+
+    setDraftPicks((current) => [
+      ...current,
+      {
+        editionId: selectedEdition.id,
+        familyTitleFa: selectedFamily.title_fa,
+        year: selectedEdition.year as number
+      }
+    ]);
+  }
+
+  function handleRemoveDraftPick(editionId: number) {
+    setDraftPicks((current) => current.filter((pick) => pick.editionId !== editionId));
+    setSelectionActionError(null);
+  }
+
+  async function handleRemovePersistedSelection(selectionId: number) {
+    if (!createdDocument || !canMutateSelections) return;
+    setSelectionActionError(null);
+    setIsRemovingSelectionId(selectionId);
+    try {
+      await removeDocumentPricebook({
+        documentId: createdDocument.id,
+        selectionId
+      }).unwrap();
+      const refreshed = await refetchDocument().unwrap();
+      setCreatedDocument(refreshed);
+      if (activeDocumentPricebookId === selectionId) {
+        clearBrowserContext();
+      }
+    } catch (error) {
+      const message = formatDocumentPricebookRemoveError(error);
+      setSelectionActionError(message);
+      dispatch(addToast({ message, type: "error" }));
+    } finally {
+      setIsRemovingSelectionId(null);
+    }
   }
 
   function handleBuilderSectionSelect(section: BuilderSection) {
@@ -519,22 +593,18 @@ export function CostReportWizardPage() {
   }
 
   function handleFamilyChange(value: string) {
-    if (isExistingDocument) return;
+    if (!canMutateSelections) return;
     const nextFamilyId = Number(value);
     if (!Number.isInteger(nextFamilyId) || nextFamilyId <= 0) return;
-    setSelectedFamilyId(nextFamilyId);
-    setSelectedEditionId(null);
-    setSelectedChapterId(null);
-    setSelectedGroupId(null);
+    setDraftFamilyId(nextFamilyId);
+    setDraftEditionId(null);
   }
 
   function handleEditionChange(value: string) {
-    if (isExistingDocument) return;
+    if (!canMutateSelections) return;
     const nextEditionId = Number(value);
     if (!Number.isInteger(nextEditionId) || nextEditionId <= 0) return;
-    setSelectedEditionId(nextEditionId);
-    setSelectedChapterId(null);
-    setSelectedGroupId(null);
+    setDraftEditionId(nextEditionId);
   }
 
   function handleChapterSelect(chapter: PricebookChapter) {
@@ -545,9 +615,17 @@ export function CostReportWizardPage() {
 
   async function doSubmit() {
     setFormError(null);
+    setSelectionActionError(null);
 
     if (!createdProject) {
       setFormError("ابتدا یک پروژه انتخاب کنید.");
+      return;
+    }
+
+    if (createdDocument) {
+      setDocumentSetupNotice(null);
+      setStep("browser");
+      setActiveSection("pricebook");
       return;
     }
 
@@ -556,90 +634,33 @@ export function CostReportWizardPage() {
       return;
     }
 
-    if (isLoadingPricebooks || pricebooksError || families.length === 0 || !selectedFamily) {
+    if (isLoadingPricebooks || pricebooksError || families.length === 0) {
       setFormError("فهرست‌بها هنوز بارگذاری نشده است. دوباره تلاش کنید.");
       return;
     }
 
-    if (isLoadingEditions || editionsError || editions.length === 0 || !selectedEdition) {
-      setFormError(
-        editions.length === 0 && selectedFamily
-          ? "برای این نوع فهرست‌بها سال فعالی وجود ندارد."
-          : "سال فهرست‌بها را انتخاب کنید."
-      );
-      return;
-    }
-
-    if (!editionBelongsToFamily(selectedEdition, selectedFamily.id)) {
-      setFormError("سال انتخاب‌شده با نوع فهرست‌بها هم‌خوان نیست.");
-      return;
-    }
-
-    if (selectedEdition.year == null) {
-      setFormError("سال فهرست‌بها نامعتبر است.");
-      return;
-    }
-
-    const manualPriceSetId = parsePositiveInteger(form.price_set_id);
-    if (form.price_set_id.trim() && !manualPriceSetId) {
-      setFormError("شناسه فنی مجموعه قیمت باید یک عدد مثبت باشد.");
-      return;
-    }
-
-    if (!selectedActivePriceSet && manualPriceSetId && !isDevPriceSetConfirmed) {
-      setFormError(
-        "برای استفاده از تنظیمات پیشرفته توسعه، تایید استفاده از شناسه فنی لازم است."
-      );
-      return;
-    }
-
-    if (
-      !selectedActivePriceSet &&
-      isDevPriceSetConfirmed &&
-      !manualPriceSetId &&
-      !deprecatedConfiguredPriceSetId
-    ) {
-      setFormError("تنظیم آزمایشی معتبر وارد یا پیکربندی نشده است.");
-      return;
-    }
-
-    const fallbackPriceSetId = isDevPriceSetConfirmed
-      ? (manualPriceSetId ?? deprecatedConfiguredPriceSetId)
-      : null;
-    const priceSetId = selectedActivePriceSet?.id ?? fallbackPriceSetId;
-
-    if (!priceSetId) {
-      setFormError("برای این سال هنوز مجموعه قیمت فعال ثبت نشده است.");
-      return;
-    }
-
-    if (
-      selectedActivePriceSet &&
-      !priceSetBelongsToEdition(selectedEdition, priceSetId)
-    ) {
-      setFormError("مجموعه قیمت با نسخه فهرست‌بهای انتخاب‌شده هم‌خوان نیست.");
+    if (draftPicks.length === 0) {
+      setFormError("حداقل یک فهرست‌بها را با «افزودن» به فهرست اضافه کنید.");
       return;
     }
 
     try {
-      const document =
-        createdDocument ??
-        (await createDocument({
-          projectId: createdProject.id,
-          body: {
-            document_type: "cost_report",
-            document_number: omitEmpty(form.document_number),
-            title: form.document_title.trim(),
-            report_title: omitEmpty(form.report_title),
-            document_date: optionalDate(form.document_date),
-            period_start_on: optionalDate(form.period_start_on),
-            period_end_on: optionalDate(form.period_end_on),
-            pricebook_edition_id: selectedEdition.id,
-            price_set_id: priceSetId
-          }
-        }).unwrap());
+      const document = await createDocument({
+        projectId: createdProject.id,
+        body: {
+          document_type: "cost_report",
+          document_number: omitEmpty(form.document_number),
+          title: form.document_title.trim(),
+          report_title: omitEmpty(form.report_title),
+          document_date: optionalDate(form.document_date),
+          period_start_on: optionalDate(form.period_start_on),
+          period_end_on: optionalDate(form.period_end_on),
+          pricebook_edition_ids: draftPicks.map((pick) => pick.editionId)
+        }
+      }).unwrap();
 
       setCreatedDocument(document);
+      setDraftPicks([]);
       setDocumentSetupNotice(null);
       setStep("browser");
       setActiveSection("pricebook");
@@ -711,22 +732,33 @@ export function CostReportWizardPage() {
 
             {activeSection === "document" ? (
                 <DocumentInfoSection
+                  canMutateSelections={canMutateSelections}
+                  draftPicks={draftPicks}
                   editions={editions}
                   editionsError={editionsError}
                   families={families}
                   form={form}
                   formError={formError}
+                  isAddingSelection={isAddingSelection}
                   isExistingDocument={isExistingDocument}
                   isLoadingEditions={isLoadingEditions}
                   isLoadingPricebooks={isLoadingPricebooks}
+                  isRemovingSelectionId={isRemovingSelectionId}
+                  onAddSelection={() => {
+                    void handleAddSelection();
+                  }}
                   onEditionChange={handleEditionChange}
                   onFamilyChange={handleFamilyChange}
                   onFieldChange={updateField}
+                  onRemoveDraftPick={handleRemoveDraftPick}
+                  onRemovePersistedSelection={(selectionId) => {
+                    void handleRemovePersistedSelection(selectionId);
+                  }}
+                  persistedSelections={persistedSelections}
                   pricebooksError={pricebooksError}
-                  savedEdition={savedEdition}
-                  selectedActivePriceSet={selectedActivePriceSet}
                   selectedEdition={selectedEdition}
                   selectedFamily={selectedFamily}
+                  selectionActionError={selectionActionError}
                 />
             ) : null}
             <button aria-hidden="true" className="sr-only" tabIndex={-1} type="submit" />
@@ -739,7 +771,7 @@ export function CostReportWizardPage() {
                 onDocumentUpdated={setCreatedDocument}
                 project={createdProject}
                 selectedCoefficientSetName={selectedCoefficientSet?.name ?? null}
-                selectedEditionYear={selectedEdition?.year}
+                selectedEditionYear={activeEditionYear}
                 setupNotice={documentSetupNotice}
               />
             ) : null}
@@ -761,6 +793,22 @@ export function CostReportWizardPage() {
             {activeSection === "pricebook" ? (
               <PricebookBrowserSection
                 activeChapterFilter={activeChapterFilter}
+                activePricebookLabel={
+                  activeDocumentPricebook
+                    ? formatPricebookSelectionLabel({
+                        familyTitleFa: activeDocumentPricebook.family_title_fa,
+                        year: activeDocumentPricebook.year
+                      })
+                    : null
+                }
+                activePricebookOptions={persistedSelections.map((selection) => ({
+                  id: selection.id,
+                  label: formatPricebookSelectionLabel({
+                    familyTitleFa: selection.family_title_fa,
+                    year: selection.year
+                  })
+                }))}
+                activePricebookSelectionId={activeDocumentPricebookId}
                 chaptersError={chaptersError}
                 filteredChapters={filteredChapters}
                 groups={groups}
@@ -770,6 +818,7 @@ export function CostReportWizardPage() {
                 isLoadingGroups={isLoadingGroups}
                 items={items}
                 itemsError={itemsError}
+                onActivePricebookChange={handleActivePricebookChange}
                 onChapterFilterChange={(filterId) => {
                   setActiveChapterFilter(filterId);
                   setSelectedChapterId(null);
@@ -802,10 +851,23 @@ export function CostReportWizardPage() {
         <ItemDetailModal
           coefficientSets={coefficientSets}
           document={createdDocument}
+          documentPricebookId={
+            activeDocumentPricebookId != null && activeDocumentPricebookId > 0
+              ? activeDocumentPricebookId
+              : null
+          }
           itemId={selectedItemId}
           onSelectedCoefficientSetIdChange={setSelectedCoefficientSetId}
           onClose={() => setSelectedItemId(null)}
-          onDocumentUpdated={setCreatedDocument}
+          onDocumentUpdated={(document) => {
+            setCreatedDocument(document);
+            setActiveDocumentPricebookId((current) =>
+              reconcileActiveDocumentPricebookId(
+                resolveDocumentSelectedPricebooks(document),
+                current
+              )
+            );
+          }}
           onToast={(msg, type = "info") =>
             dispatch(addToast({ message: msg, type }))
           }

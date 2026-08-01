@@ -21,13 +21,15 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { userInitials } from "../account/accountDisplay";
 import { addToast } from "../ui/uiSlice";
-import type { CompanyGroup, CompanyGroupMembership } from "./companyGroupsApi";
+import type { CompanyGroup, CompanyGroupMembership, DeletionPreview } from "./companyGroupsApi";
 import {
   useAddCompanyGroupMemberMutation,
   useDeactivateCompanyGroupMembershipMutation,
-  useDeactivateCompanyGroupMutation,
+  useDeleteCompanyGroupMutation,
+  useLazyGetCompanyGroupDeletionPreviewQuery,
   useListCompanyGroupMembersQuery,
   useRemoveCompanyGroupMembershipMutation,
+  useRetrieveCompanyGroupQuery,
   useUpdateCompanyGroupMutation
 } from "./companyGroupsApi";
 import { useListCompanyGroupInvitationsQuery } from "./companyInvitationsApi";
@@ -54,8 +56,9 @@ import {
   type GroupKind
 } from "./groupKinds";
 import {
+  useDeleteProjectMutation,
+  useLazyGetProjectDeletionPreviewQuery,
   useListCompanyProjectsQuery,
-  useUpdateCompanyProjectMutation,
   type Project
 } from "../projects/projectApi";
 import type { FinancialDocument } from "../financialDocuments/financialDocumentApi";
@@ -66,6 +69,8 @@ import {
 } from "../../shared/api/authorizedBinary";
 import { Button } from "../../shared/components/Button";
 import { EmptyState } from "../../shared/components/EmptyState";
+import { JalaliDateField } from "../../shared/components/JalaliDateField";
+import { useRegisterSaveAction } from "../../shared/shortcuts/useShortcut";
 import { classNames } from "../../shared/utils/classNames";
 import { getApiErrorMessage } from "../../shared/utils/apiError";
 import { getListResults } from "../../shared/utils/listResults";
@@ -77,6 +82,8 @@ import {
   invitationStatusLabel,
   isAlreadyGroupMemberError
 } from "./membershipAccess";
+import { GroupDeletionConfirmModal } from "./GroupDeletionConfirmModal";
+import { formatGroupDeletionError } from "./deletionPreview";
 
 type ResourceTab = "members" | "documents" | "files" | "links";
 
@@ -127,7 +134,19 @@ const NAME_MAX_LENGTH = 240;
 const SEARCH_DEBOUNCE_MS = 300;
 
 const inputClasses =
-  "h-11 w-full rounded-xl border border-ui-border-subtle bg-ui-surface/50 px-3 text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30";
+  "h-12 w-full rounded-xl border border-ui-border-subtle bg-ui-surface/50 px-3 text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30";
+
+const fieldLabelClasses = "block text-[13px] font-bold text-ui-text-secondary";
+
+const PROJECT_DELETE_HELPER_FA =
+  "با حذف پروژه تمام صورت بهاها پیام ها فایل ها و اطلاعات وابسته به آن برای همیشه حذف می شوند";
+
+const GROUP_DELETE_HELPER_FA =
+  "با حذف گروه پیام ها فایل ها و اطلاعات وابسته به آن برای همیشه حذف می شوند";
+
+const PROJECT_DELETE_WARNING_FA = PROJECT_DELETE_HELPER_FA;
+
+const GROUP_DELETE_WARNING_FA = GROUP_DELETE_HELPER_FA;
 
 function infoKindLabel(kind: GroupKind): string {
   if (kind === "public") return "عمومی";
@@ -199,7 +218,11 @@ function memberDisplayName(
 
 function AvatarCircle({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
   const sizeClass =
-    size === "lg" ? "h-20 w-20 text-2xl" : size === "sm" ? "h-8 w-8 text-[10px]" : "h-10 w-10 text-sm";
+    size === "lg"
+      ? "h-20 w-20 text-xl sm:h-[5.25rem] sm:w-[5.25rem]"
+      : size === "sm"
+        ? "h-8 w-8 text-[10px]"
+        : "h-11 w-11 text-sm";
   return (
     <span
       aria-hidden
@@ -232,6 +255,80 @@ async function collectGroupMessages(
   return [...byId.values()].sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
+type ProjectEditFields = {
+  name: string;
+  description: string;
+  project_code: string;
+  contract_number: string;
+  employer_name: string;
+  consultant_name: string;
+  contractor_name: string;
+  executive_agency_name: string;
+  base_year: string;
+  status: string;
+  starts_on: string;
+  ends_on: string;
+  include_all_company_members_in_group: boolean;
+};
+
+const PROJECT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "draft", label: "پیش‌نویس" },
+  { value: "active", label: "فعال" },
+  { value: "archived", label: "بایگانی" },
+  { value: "closed", label: "بسته" }
+];
+
+type EditBaseline =
+  | { mode: "project"; fields: ProjectEditFields }
+  | { mode: "group"; name: string; description: string };
+
+function readNestedProjectField(
+  project: Project | null | undefined,
+  nested: Record<string, unknown> | null | undefined,
+  key: keyof Project | string
+): string {
+  const fromProject = project ? (project as Record<string, unknown>)[key] : undefined;
+  if (fromProject != null && String(fromProject).trim() !== "") {
+    return String(fromProject);
+  }
+  const fromNested = nested?.[key];
+  if (fromNested != null && String(fromNested).trim() !== "") {
+    return String(fromNested);
+  }
+  return "";
+}
+
+function seedProjectEditFields(
+  activeGroup: CompanyGroup,
+  project: Project | null
+): ProjectEditFields {
+  const nested =
+    activeGroup.project && typeof activeGroup.project === "object"
+      ? (activeGroup.project as Record<string, unknown>)
+      : null;
+  const includeRaw =
+    project?.include_all_company_members_in_group ??
+    (typeof nested?.include_all_company_members_in_group === "boolean"
+      ? nested.include_all_company_members_in_group
+      : true);
+  return {
+    name: readNestedProjectField(project, nested, "name") || activeGroup.name,
+    description:
+      readNestedProjectField(project, nested, "description") || activeGroup.description || "",
+    project_code: readNestedProjectField(project, nested, "project_code"),
+    contract_number: readNestedProjectField(project, nested, "contract_number"),
+    employer_name: readNestedProjectField(project, nested, "employer_name"),
+    consultant_name: readNestedProjectField(project, nested, "consultant_name"),
+    contractor_name: readNestedProjectField(project, nested, "contractor_name"),
+    executive_agency_name: readNestedProjectField(project, nested, "executive_agency_name"),
+    base_year: readNestedProjectField(project, nested, "base_year"),
+    status: readNestedProjectField(project, nested, "status") || "draft",
+    starts_on: readNestedProjectField(project, nested, "starts_on"),
+    ends_on: readNestedProjectField(project, nested, "ends_on"),
+    include_all_company_members_in_group: Boolean(includeRaw)
+  };
+}
+
 export function GroupInfoDrawer({
   open,
   onClose,
@@ -239,7 +336,8 @@ export function GroupInfoDrawer({
   companyId,
   group,
   projects,
-  onAddFinancialDocument
+  onAddFinancialDocument,
+  onDeleted
 }: {
   open: boolean;
   onClose: () => void;
@@ -248,6 +346,11 @@ export function GroupInfoDrawer({
   group: CompanyGroup | null;
   projects: readonly Project[];
   onAddFinancialDocument?: () => void;
+  onDeleted?: (info: {
+    groupId: number;
+    projectId: number | null;
+    kind: GroupKind;
+  }) => void;
 }) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -261,9 +364,28 @@ export function GroupInfoDrawer({
   const [busyId, setBusyId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editBaseline, setEditBaseline] = useState<EditBaseline | null>(null);
+  const [projectEdit, setProjectEdit] = useState<ProjectEditFields>({
+    name: "",
+    description: "",
+    project_code: "",
+    contract_number: "",
+    employer_name: "",
+    consultant_name: "",
+    contractor_name: "",
+    executive_agency_name: "",
+    base_year: "",
+    status: "draft",
+    starts_on: "",
+    ends_on: "",
+    include_all_company_members_in_group: true
+  });
   const [editError, setEditError] = useState<string | null>(null);
-  const [sensitiveOpen, setSensitiveOpen] = useState(false);
-  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletionPreview, setDeletionPreview] = useState<DeletionPreview | null>(null);
+  const [deletionPreviewError, setDeletionPreviewError] = useState<unknown>(null);
+  const [isLoadingDeletionPreview, setIsLoadingDeletionPreview] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [memberMenuId, setMemberMenuId] = useState<number | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
   const [selectedMembersById, setSelectedMembersById] = useState<Record<number, CompanyMember>>({});
@@ -274,17 +396,26 @@ export function GroupInfoDrawer({
   const [fetchPage] = useLazyListGroupMessagesQuery();
 
   const groupId = group?.id ?? 0;
+  // Chat-list payloads often serialize can_edit=false without request actor context.
+  // Authoritative capabilities come from GET /api/company-groups/{id}/ when the drawer opens.
+  const { data: groupDetail } = useRetrieveCompanyGroupQuery(groupId, {
+    skip: !open || groupId <= 0
+  });
+  const listGroup = group;
+  const activeGroup = groupDetail ?? listGroup;
+  const hasAuthoritativeCapabilities = groupDetail != null;
+
   const { data: projectsFromQuery = [] } = useListCompanyProjectsQuery(companyId, {
-    skip: !open || !group
+    skip: !open || !listGroup
   });
   // Prefer parent-provided projects when present; fall back to query for refresh after project rename.
   const projectList = projects.length > 0 ? projects : projectsFromQuery;
-  const linkedProject = group ? findLinkedProject(group, projectList) : null;
-  const kind = group ? classifyCompanyGroup(group, projectList) : null;
-  const title = group ? resolveGroupDisplayName(group, projectList) : "";
+  const linkedProject = activeGroup ? findLinkedProject(activeGroup, projectList) : null;
+  const kind = activeGroup ? classifyCompanyGroup(activeGroup, projectList) : null;
+  const title = activeGroup ? resolveGroupDisplayName(activeGroup, projectList) : "";
 
   const { data: companyMembersData } = useListCompanyMembersQuery(companyId, {
-    skip: !open || !group
+    skip: !open || !listGroup
   });
   const companyMembers = getListResults(companyMembersData);
   const myMembership = findCurrentMembership(companyMembers, authUser?.id);
@@ -292,21 +423,38 @@ export function GroupInfoDrawer({
   const actorMemberId = myMembership?.is_active ? myMembership.id : null;
   const effectivePermissions =
     (myMembership?.effective_permissions as Record<string, unknown> | null | undefined) ?? null;
-  const canManage = group
-    ? canManageGroup(actorRole, actorMemberId, group, effectivePermissions)
+  const canManage = activeGroup
+    ? canManageGroup(actorRole, actorMemberId, activeGroup, effectivePermissions)
     : false;
   const canUpdateProjects =
     actorRole === "owner" || readPermissionFlag(effectivePermissions, "can_update_projects");
+  // Trust list can_edit only when true; false-negatives from lightweight list wait for detail.
+  const authoritativeCanEdit = hasAuthoritativeCapabilities
+    ? groupDetail.can_edit
+    : listGroup?.can_edit === true
+      ? true
+      : null;
+  const authoritativeCanDelete = hasAuthoritativeCapabilities
+    ? groupDetail.can_delete
+    : listGroup?.can_delete === true
+      ? true
+      : null;
   const groupCaps = resolveGroupInfoCapabilities({
     kind,
     canManage,
-    canUpdateProjects
+    canUpdateProjects,
+    canEdit: authoritativeCanEdit,
+    canDelete: authoritativeCanDelete,
+    allowEditFallback: false
   });
-  const canEditMeta = groupCaps.canEditGroup;
+  const canEditMeta =
+    Boolean(activeGroup?.is_active) && groupCaps.canEditGroup && kind !== "public";
   const canManageMembership = groupCaps.canManageMembers;
   const canInviteMembers = groupCaps.canInviteMembers;
-  const canDeactivateGroup = groupCaps.canDeactivateGroup;
+  const canDeleteGroup = groupCaps.canDeleteGroup && kind !== "public";
   const editViaProjectApi = groupCaps.editViaProjectApi;
+  const isProjectDelete = kind === "project" || activeGroup?.deletion_type === "project";
+  const deleteActionLabel = isProjectDelete ? "حذف پروژه" : "حذف گروه";
 
   const {
     data: membershipsData,
@@ -357,10 +505,13 @@ export function GroupInfoDrawer({
     { skip: !open || view.type !== "addMembers" }
   );
 
-  const [updateGroup, { isLoading: isUpdatingGroup }] = useUpdateCompanyGroupMutation();
-  const [updateProject, { isLoading: isUpdatingProject }] = useUpdateCompanyProjectMutation();
-  const isUpdating = isUpdatingGroup || isUpdatingProject;
-  const [deactivateGroup, { isLoading: isDeactivatingGroup }] = useDeactivateCompanyGroupMutation();
+  const [updateGroup, { isLoading: isUpdating }] = useUpdateCompanyGroupMutation();
+  const [fetchGroupDeletionPreview] = useLazyGetCompanyGroupDeletionPreviewQuery();
+  const [fetchProjectDeletionPreview] = useLazyGetProjectDeletionPreviewQuery();
+  const [deleteCompanyGroup, { isLoading: isDeletingCompanyGroup }] =
+    useDeleteCompanyGroupMutation();
+  const [deleteProject, { isLoading: isDeletingProject }] = useDeleteProjectMutation();
+  const isDeleting = isDeletingCompanyGroup || isDeletingProject;
   const [addGroupMember] = useAddCompanyGroupMemberMutation();
   const [deactivateMembership, { isLoading: isDeactivatingMembership }] =
     useDeactivateCompanyGroupMembershipMutation();
@@ -368,23 +519,37 @@ export function GroupInfoDrawer({
     useRemoveCompanyGroupMembershipMutation();
 
   function seedEditFields(activeGroup: CompanyGroup, project: Project | null) {
-    if (project) {
-      setEditName(project.name);
-      setEditDescription(project.description ?? activeGroup.description ?? "");
+    if (
+      classifyCompanyGroup(activeGroup, projectList) === "project" ||
+      activeGroup.project_id != null
+    ) {
+      const fields = seedProjectEditFields(activeGroup, project);
+      setProjectEdit(fields);
+      setEditName(fields.name);
+      setEditDescription(fields.description);
+      setEditBaseline({ mode: "project", fields });
       return;
     }
-    setEditName(activeGroup.name);
-    setEditDescription(activeGroup.description ?? "");
+    const name = activeGroup.name;
+    const description = activeGroup.description ?? "";
+    setEditName(name);
+    setEditDescription(description);
+    setEditBaseline({ mode: "group", name, description });
   }
 
   useEffect(() => {
     if (!open || !group) return;
     setView({ type: "overview" });
     setTab("members");
-    seedEditFields(group, findLinkedProject(group, projectList));
+    seedEditFields(
+      groupDetail ?? group,
+      findLinkedProject(groupDetail ?? group, projectList)
+    );
     setEditError(null);
-    setSensitiveOpen(false);
-    setConfirmDeactivate(false);
+    setDeleteModalOpen(false);
+    setDeletionPreview(null);
+    setDeletionPreviewError(null);
+    setDeleteError(null);
     setMemberMenuId(null);
     setSelectedMemberIds([]);
     setSelectedMembersById({});
@@ -572,54 +737,141 @@ export function GroupInfoDrawer({
 
   async function handleSaveEdit() {
     if (!group || !canEditMeta || isUpdating) return;
-    const name = editName.trim();
-    if (!name) {
-      setEditError("نام گروه الزامی است.");
-      return;
-    }
-    if (name.length > NAME_MAX_LENGTH) {
-      setEditError(`نام گروه حداکثر ${NAME_MAX_LENGTH} نویسه می‌تواند باشد.`);
-      return;
-    }
     setEditError(null);
     try {
       if (editViaProjectApi) {
-        const projectId = linkedProject?.id ?? group.project_id;
-        if (projectId == null) {
-          setEditError("پروژه مرتبط یافت نشد.");
+        const name = projectEdit.name.trim();
+        if (!name) {
+          setEditError("نام پروژه الزامی است.");
           return;
         }
-        await updateProject({
+        if (name.length > NAME_MAX_LENGTH) {
+          setEditError(`نام پروژه حداکثر ${NAME_MAX_LENGTH} نویسه می‌تواند باشد.`);
+          return;
+        }
+        const baseYearRaw = projectEdit.base_year.trim();
+        const baseYear =
+          baseYearRaw === ""
+            ? null
+            : Number(baseYearRaw);
+        if (baseYearRaw !== "" && (!Number.isInteger(baseYear) || (baseYear as number) <= 0)) {
+          setEditError("سال پایه باید یک عدد صحیح مثبت باشد.");
+          return;
+        }
+        await updateGroup({
           companyId,
-          projectId,
+          groupId: group.id,
           body: {
             name,
-            description: editDescription.trim(),
+            description: projectEdit.description.trim(),
+            project_code: projectEdit.project_code.trim() || null,
+            contract_number: projectEdit.contract_number.trim(),
+            employer_name: projectEdit.employer_name.trim(),
+            consultant_name: projectEdit.consultant_name.trim(),
+            contractor_name: projectEdit.contractor_name.trim(),
+            executive_agency_name: projectEdit.executive_agency_name.trim(),
+            base_year: baseYear,
+            status: (projectEdit.status || "draft") as Project["status"],
+            starts_on: projectEdit.starts_on.trim() || null,
+            ends_on: projectEdit.ends_on.trim() || null,
             include_all_company_members_in_group:
-              linkedProject?.include_all_company_members_in_group ?? true
+              projectEdit.include_all_company_members_in_group
           }
         }).unwrap();
+        dispatch(addToast({ message: "اطلاعات پروژه ذخیره شد.", type: "success" }));
       } else {
+        const name = editName.trim();
+        if (!name) {
+          setEditError("نام گروه الزامی است.");
+          return;
+        }
+        if (name.length > NAME_MAX_LENGTH) {
+          setEditError(`نام گروه حداکثر ${NAME_MAX_LENGTH} نویسه می‌تواند باشد.`);
+          return;
+        }
         await updateGroup({
           companyId,
           groupId: group.id,
           body: { name, description: editDescription.trim() }
         }).unwrap();
+        dispatch(addToast({ message: "گروه به‌روز شد.", type: "success" }));
       }
       setView({ type: "overview" });
     } catch (err) {
-      setEditError(getApiErrorMessage(err, "ذخیره گروه انجام نشد."));
+      setEditError(
+        getApiErrorMessage(
+          err,
+          editViaProjectApi ? "ذخیره اطلاعات پروژه انجام نشد." : "ذخیره گروه انجام نشد."
+        )
+      );
     }
   }
 
-  async function handleDeactivateGroup() {
-    if (!group || !canDeactivateGroup || isDeactivatingGroup) return;
+  async function openDeleteModal() {
+    if (!group || !canDeleteGroup) return;
+    setDeleteModalOpen(true);
+    setDeleteError(null);
+    setDeletionPreview(null);
+    setDeletionPreviewError(null);
+    setIsLoadingDeletionPreview(true);
     try {
-      await deactivateGroup({ companyId, groupId: group.id }).unwrap();
-      dispatch(addToast({ message: "گروه غیرفعال شد.", type: "success" }));
-      onClose();
+      const projectId = linkedProject?.id ?? group.project_id;
+      const preview =
+        isProjectDelete && projectId != null
+          ? await fetchProjectDeletionPreview(projectId).unwrap()
+          : await fetchGroupDeletionPreview(group.id).unwrap();
+      setDeletionPreview(preview);
+      if (preview.can_delete === false) {
+        setDeleteError("مجوز حذف این مورد را ندارید.");
+      }
     } catch (err) {
-      dispatch(addToast({ message: getApiErrorMessage(err), type: "error" }));
+      setDeletionPreviewError(err);
+    } finally {
+      setIsLoadingDeletionPreview(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!group || !canDeleteGroup || isDeleting || !deletionPreview?.confirmation_required) {
+      return;
+    }
+    setDeleteError(null);
+    const confirmation = deletionPreview.confirmation_required;
+    const projectId = linkedProject?.id ?? group.project_id ?? deletionPreview.project_id;
+    try {
+      if (isProjectDelete) {
+        if (projectId == null) {
+          setDeleteError("پروژه مرتبط یافت نشد.");
+          return;
+        }
+        await deleteProject({
+          companyId,
+          projectId,
+          groupId: group.id,
+          body: { confirmation }
+        }).unwrap();
+        dispatch(addToast({ message: "پروژه حذف شد.", type: "success" }));
+      } else {
+        await deleteCompanyGroup({
+          companyId,
+          groupId: group.id,
+          body: { confirmation }
+        }).unwrap();
+        dispatch(addToast({ message: "گروه حذف شد.", type: "success" }));
+      }
+      const deletedGroupId = group.id;
+      const deletedKind = kind ?? "custom";
+      setDeleteModalOpen(false);
+      onClose();
+      onDeleted?.({
+        groupId: deletedGroupId,
+        projectId: projectId ?? null,
+        kind: deletedKind
+      });
+    } catch (err) {
+      setDeleteError(
+        formatGroupDeletionError(err, getApiErrorMessage(err, "حذف انجام نشد."))
+      );
     }
   }
 
@@ -713,10 +965,46 @@ export function GroupInfoDrawer({
 
   if (!open) return null;
 
+  const isEditDirty = (() => {
+    if (!editBaseline) return false;
+    if (editBaseline.mode === "project") {
+      return JSON.stringify(projectEdit) !== JSON.stringify(editBaseline.fields);
+    }
+    return (
+      editName.trim() !== editBaseline.name.trim() ||
+      editDescription !== editBaseline.description
+    );
+  })();
+
+  const isEditValid = (() => {
+    if (editViaProjectApi) {
+      const name = projectEdit.name.trim();
+      if (!name || name.length > NAME_MAX_LENGTH) return false;
+      const baseYearRaw = projectEdit.base_year.trim();
+      if (baseYearRaw !== "") {
+        const baseYear = Number(baseYearRaw);
+        if (!Number.isInteger(baseYear) || baseYear <= 0) return false;
+      }
+      return true;
+    }
+    const name = editName.trim();
+    return Boolean(name) && name.length <= NAME_MAX_LENGTH;
+  })();
+
+  const canSaveEdit = isEditDirty && isEditValid && !isUpdating;
+
+  useRegisterSaveAction(
+    view.type === "edit" && canEditMeta && canSaveEdit
+      ? () => {
+          void handleSaveEdit();
+        }
+      : null
+  );
+
   const shellClass =
     mode === "inline"
-      ? "flex h-full w-[24rem] max-w-[27.5rem] shrink-0 flex-col border-l border-ui-border-subtle bg-ui-surface xl:w-[26rem]"
-      : "fixed inset-0 z-40 flex h-dvh w-full flex-col bg-ui-surface ";
+      ? "flex h-full w-[25rem] max-w-[26rem] shrink-0 flex-col border-l border-ui-border-subtle bg-ui-surface xl:w-[26rem]"
+      : "fixed inset-0 z-40 flex h-dvh w-full flex-col bg-ui-surface pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]";
 
   function renderHeader(
     titleText: string,
@@ -727,11 +1015,12 @@ export function GroupInfoDrawer({
     }
   ) {
     return (
-      <header className="flex h-14 shrink-0 items-center gap-1 border-b border-ui-border-subtle px-2">
+      <header className="flex h-14 shrink-0 items-center gap-1 border-b border-ui-border-subtle px-2 sm:px-2.5">
         {options?.onBack ? (
           <button
             aria-label="بازگشت"
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-ui-text-secondary transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ui-text-secondary transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
+            data-testid="group-info-back"
             onClick={options.onBack}
             type="button"
           >
@@ -740,17 +1029,17 @@ export function GroupInfoDrawer({
         ) : (
           <button
             aria-label={options?.closeLabel ?? "بستن"}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-ui-text-secondary transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ui-text-secondary transition hover:bg-ui-surface-subtle hover:text-ui-text-primary"
             onClick={onClose}
             type="button"
           >
             {mode === "overlay" ? <ArrowRight className="h-4 w-4" /> : <X className="h-4 w-4" />}
           </button>
         )}
-        <h2 className="min-w-0 flex-1 truncate text-sm font-black text-ui-text-primary">
+        <h2 className="min-w-0 flex-1 truncate text-center text-[16px] font-black text-ui-text-primary sm:text-[17px]">
           {titleText}
         </h2>
-        {options?.trailing ?? <span className="w-10" />}
+        {options?.trailing ?? <span className="inline-block h-9 w-9 shrink-0" />}
       </header>
     );
   }
@@ -765,19 +1054,20 @@ export function GroupInfoDrawer({
   }
 
   if (view.type === "edit" && canEditMeta) {
+    const editTitle = editViaProjectApi ? "ویرایش پروژه" : "ویرایش گروه";
     return (
-      <aside aria-label="ویرایش گروه" className={shellClass} data-testid="group-info-panel">
-        {renderHeader("ویرایش گروه", {
+      <aside aria-label={editTitle} className={shellClass} data-testid="group-info-panel">
+        {renderHeader(editTitle, {
           onBack: () => {
             setEditError(null);
-            seedEditFields(group, linkedProject);
+            seedEditFields(activeGroup ?? group, linkedProject);
             setView({ type: "overview" });
           },
           trailing: (
             <button
-              className="px-3 text-sm font-black text-ui-primary disabled:opacity-45"
+              className="flex h-9 min-w-9 items-center justify-center rounded-xl px-2 text-sm font-black text-ui-primary disabled:opacity-45"
               data-testid="group-info-edit-save"
-              disabled={isUpdating}
+              disabled={!canSaveEdit}
               onClick={() => void handleSaveEdit()}
               type="button"
             >
@@ -785,37 +1075,265 @@ export function GroupInfoDrawer({
             </button>
           )
         })}
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
+        <div
+          className="min-h-0 flex-1 space-y-3.5 overflow-y-auto px-4 py-4 sm:space-y-4 sm:px-5 [scrollbar-width:thin]"
+          data-testid="group-info-edit-scroll"
+        >
           {editViaProjectApi ? (
-            <p className="rounded-lg bg-ui-surface-subtle px-3 py-2 text-[11px] leading-5 text-ui-text-muted">
-              نام و توضیحات این گروه پروژه از طریق پروژه مرتبط ذخیره می‌شود و پیوند پروژه تغییر نمی‌کند.
-            </p>
-          ) : null}
-          <label className="block space-y-1.5">
-            <span className="text-sm font-bold text-ui-text-secondary">نام گروه</span>
-            <input
-              aria-invalid={Boolean(editError)}
-              className={inputClasses}
-              maxLength={NAME_MAX_LENGTH}
-              onChange={(event) => {
-                setEditName(event.target.value);
-                setEditError(null);
-              }}
-              value={editName}
-            />
-          </label>
-          <label className="block space-y-1.5">
-            <span className="text-sm font-bold text-ui-text-secondary">توضیحات</span>
-            <textarea
-              className={classNames(inputClasses, "min-h-[6rem] py-2.5")}
-              onChange={(event) => setEditDescription(event.target.value)}
-              value={editDescription}
-            />
-          </label>
+            <>
+              <p className="rounded-lg bg-ui-surface-subtle px-3 py-2 text-[11px] leading-5 text-ui-text-muted">
+                اطلاعات پروژه مرتبط از همین فرم ذخیره می‌شود و نام گروه پروژه هم‌زمان به‌روز می‌شود. پیوند پروژه تغییر نمی‌کند.
+              </p>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>نام پروژه</span>
+                <input
+                  aria-invalid={Boolean(editError)}
+                  className={inputClasses}
+                  maxLength={NAME_MAX_LENGTH}
+                  onChange={(event) => {
+                    setProjectEdit((current) => ({ ...current, name: event.target.value }));
+                    setEditError(null);
+                  }}
+                  value={projectEdit.name}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>توضیحات</span>
+                <textarea
+                  className={classNames(inputClasses, "min-h-[6rem] py-2.5")}
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      description: event.target.value
+                    }))
+                  }
+                  value={projectEdit.description}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>کد پروژه</span>
+                <input
+                  className={inputClasses}
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      project_code: event.target.value
+                    }))
+                  }
+                  value={projectEdit.project_code}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>شماره قرارداد</span>
+                <input
+                  className={inputClasses}
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      contract_number: event.target.value
+                    }))
+                  }
+                  value={projectEdit.contract_number}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>کارفرما</span>
+                <input
+                  className={inputClasses}
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      employer_name: event.target.value
+                    }))
+                  }
+                  value={projectEdit.employer_name}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>مشاور</span>
+                <input
+                  className={inputClasses}
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      consultant_name: event.target.value
+                    }))
+                  }
+                  value={projectEdit.consultant_name}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>پیمانکار</span>
+                <input
+                  className={inputClasses}
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      contractor_name: event.target.value
+                    }))
+                  }
+                  value={projectEdit.contractor_name}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>دستگاه اجرایی</span>
+                <input
+                  className={inputClasses}
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      executive_agency_name: event.target.value
+                    }))
+                  }
+                  value={projectEdit.executive_agency_name}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>سال پایه</span>
+                <input
+                  className={inputClasses}
+                  inputMode="numeric"
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      base_year: event.target.value
+                    }))
+                  }
+                  value={projectEdit.base_year}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>وضعیت</span>
+                <select
+                  className={inputClasses}
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      status: event.target.value
+                    }))
+                  }
+                  value={projectEdit.status}
+                >
+                  {PROJECT_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>شروع</span>
+                <JalaliDateField
+                  inputClass={inputClasses}
+                  onChange={(iso) =>
+                    setProjectEdit((current) => ({ ...current, starts_on: iso }))
+                  }
+                  value={projectEdit.starts_on}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>پایان</span>
+                <JalaliDateField
+                  inputClass={inputClasses}
+                  onChange={(iso) =>
+                    setProjectEdit((current) => ({ ...current, ends_on: iso }))
+                  }
+                  value={projectEdit.ends_on}
+                />
+              </label>
+              <label className="flex items-start gap-3 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-3 py-3">
+                <input
+                  checked={projectEdit.include_all_company_members_in_group}
+                  className="mt-1 h-4 w-4"
+                  onChange={(event) =>
+                    setProjectEdit((current) => ({
+                      ...current,
+                      include_all_company_members_in_group: event.target.checked
+                    }))
+                  }
+                  type="checkbox"
+                />
+                <span className="text-xs leading-6 text-ui-text-secondary">
+                  همه اعضای فعال شرکت در گروه پروژه باشند
+                </span>
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>نام گروه</span>
+                <input
+                  aria-invalid={Boolean(editError)}
+                  className={inputClasses}
+                  maxLength={NAME_MAX_LENGTH}
+                  onChange={(event) => {
+                    setEditName(event.target.value);
+                    setEditError(null);
+                  }}
+                  value={editName}
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className={fieldLabelClasses}>توضیحات</span>
+                <textarea
+                  className={classNames(inputClasses, "min-h-[6rem] py-2.5")}
+                  onChange={(event) => setEditDescription(event.target.value)}
+                  value={editDescription}
+                />
+              </label>
+            </>
+          )}
           {editError ? (
             <p className="text-xs font-bold text-rose-300">{editError}</p>
           ) : null}
+
+          {canDeleteGroup ? (
+            <section
+              className="mt-6 space-y-3 border-t border-ui-border-subtle pt-6"
+              data-testid="group-info-danger-section"
+            >
+              <p className="text-[13px] font-bold text-rose-300/90">اقدامات حساس</p>
+              <div className="rounded-xl border border-rose-400/25 bg-rose-500/10 p-3.5">
+                <p className="text-[11px] leading-6 text-rose-100/90">
+                  {isProjectDelete ? PROJECT_DELETE_HELPER_FA : GROUP_DELETE_HELPER_FA}
+                </p>
+                <Button
+                  className="mt-3 h-12 w-full rounded-xl"
+                  data-testid="group-info-delete-action"
+                  disabled={isDeleting}
+                  onClick={() => void openDeleteModal()}
+                  type="button"
+                  variant="danger"
+                >
+                  {deleteActionLabel}
+                </Button>
+              </div>
+            </section>
+          ) : null}
         </div>
+
+        {deleteModalOpen ? (
+          <GroupDeletionConfirmModal
+            confirmLabel={deleteActionLabel}
+            deleting={isDeleting}
+            errorMessage={deleteError}
+            onCancel={() => {
+              if (isDeleting) return;
+              setDeleteModalOpen(false);
+              setDeleteError(null);
+              setDeletionPreview(null);
+              setDeletionPreviewError(null);
+            }}
+            onConfirm={() => void handleConfirmDelete()}
+            preview={deletionPreview}
+            previewError={deletionPreviewError}
+            previewLoading={isLoadingDeletionPreview}
+            title={deleteActionLabel}
+            warningFallback={
+              isProjectDelete ? PROJECT_DELETE_WARNING_FA : GROUP_DELETE_WARNING_FA
+            }
+          />
+        ) : null}
       </aside>
     );
   }
@@ -1037,46 +1555,49 @@ export function GroupInfoDrawer({
       {renderHeader("اطلاعات گروه", {
         trailing: canEditMeta ? (
           <button
-            aria-label="ویرایش گروه"
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-ui-primary transition hover:bg-ui-primary/10 hover:text-ui-primary"
+            aria-label="ویرایش"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-ui-primary transition hover:bg-ui-primary/10 hover:text-ui-primary"
             data-testid="group-info-edit-action"
             onClick={() => {
-              seedEditFields(group, linkedProject);
+              if (!activeGroup) return;
+              seedEditFields(activeGroup, linkedProject);
               setEditError(null);
               setView({ type: "edit" });
             }}
             type="button"
           >
-            <Pencil aria-hidden className="h-5 w-5" strokeWidth={2.25} />
+            <Pencil aria-hidden className="h-4 w-4" strokeWidth={2.25} />
           </button>
         ) : (
-          <span className="w-10" />
+          <span className="inline-block h-9 w-9 shrink-0" />
         )
       })}
 
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="shrink-0 border-b border-ui-border-subtle px-4 pb-4 pt-5 text-center">
+        <div className="shrink-0 border-b border-ui-border-subtle px-4 pb-3 pt-3 text-center">
           <div className="mx-auto flex justify-center">
             <AvatarCircle name={title} size="lg" />
           </div>
-          <h3 className="mt-3 text-lg font-black text-ui-text-primary">{title}</h3>
-          <p className="mt-1 text-xs font-bold text-ui-text-muted">{memberCountLabel}</p>
+          <h3 className="mt-2.5 text-[20px] font-black leading-tight text-ui-text-primary">
+            {title}
+          </h3>
+          <p className="mt-1 text-[13px] font-bold text-ui-text-muted">{memberCountLabel}</p>
           {kind ? (
-            <p className="mt-1 text-[11px] text-ui-text-muted">{infoKindLabel(kind)}</p>
+            <p className="mt-0.5 text-[13px] text-ui-text-muted">{infoKindLabel(kind)}</p>
           ) : null}
-          {group.description || linkedProject?.description ? (
-            <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-ui-text-muted">
-              {group.description || linkedProject?.description}
+          {activeGroup?.description || linkedProject?.description ? (
+            <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-5 text-ui-text-muted">
+              {activeGroup?.description || linkedProject?.description}
             </p>
           ) : null}
           {linkedProject ? (
-            <p className="mt-2 text-[11px] text-ui-text-muted">
+            <p className="mt-1 text-[13px] text-ui-text-muted">
               پروژه مرتبط: {cleanDisplayText(linkedProject.name, "پروژه")}
             </p>
           ) : null}
           {onAddFinancialDocument ? (
             <button
-              className="mx-auto mt-3 flex h-8 items-center justify-center gap-1.5 rounded-lg border border-ui-primary/25 bg-ui-primary-soft px-3 text-[11px] font-bold text-ui-primary transition hover:bg-ui-surface-selected"
+              className="mx-auto mt-2.5 flex h-11 items-center justify-center gap-1.5 rounded-xl border border-ui-primary/25 bg-ui-primary-soft px-3.5 text-[12px] font-bold text-ui-primary transition hover:bg-ui-surface-selected"
               data-tour="drawer-add-financial-document"
               onClick={onAddFinancialDocument}
               type="button"
@@ -1088,7 +1609,7 @@ export function GroupInfoDrawer({
         </div>
 
         <div
-          className="shrink-0 overflow-x-auto border-b border-ui-border-subtle px-2 py-2 [scrollbar-width:thin]"
+          className="shrink-0 overflow-x-auto border-b border-ui-border-subtle px-2 py-1.5 [scrollbar-width:thin]"
           role="tablist"
         >
           <div className="flex min-w-max gap-1 rounded-xl bg-ui-surface-subtle p-1">
@@ -1096,7 +1617,7 @@ export function GroupInfoDrawer({
               <button
                 aria-selected={tab === item.id}
                 className={classNames(
-                  "shrink-0 rounded-lg px-2.5 py-2 text-[11px] font-bold transition",
+                  "h-11 shrink-0 rounded-lg px-2.5 text-[12px] font-bold transition whitespace-nowrap",
                   tab === item.id
                     ? "bg-ui-primary-soft text-ui-primary"
                     : "text-ui-text-muted hover:text-ui-text-primary "
@@ -1137,7 +1658,7 @@ export function GroupInfoDrawer({
                     const name = memberDisplayName(membership);
                     return (
                       <li
-                        className="relative flex min-h-[56px] items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-ui-surface-subtle"
+                        className="relative flex min-h-[52px] items-center gap-2.5 rounded-xl px-2 py-1 hover:bg-ui-surface-subtle"
                         key={membership.id}
                       >
                         <AvatarCircle name={name} />
@@ -1207,7 +1728,7 @@ export function GroupInfoDrawer({
               {canInviteMembers ? (
                 <button
                   aria-label="افزودن عضو"
-                  className="absolute bottom-4 left-4 flex h-12 w-12 items-center justify-center rounded-full border border-ui-primary/30 bg-ui-primary text-ui-primary-foreground shadow-ui transition hover:bg-ui-primary-hover"
+                  className="absolute bottom-4 left-4 flex h-14 w-14 items-center justify-center rounded-full border border-ui-primary/30 bg-ui-primary text-ui-primary-foreground shadow-ui transition hover:bg-ui-primary-hover"
                   data-testid="group-info-add-member"
                   onClick={() => {
                     setSelectedMemberIds([]);
@@ -1357,53 +1878,6 @@ export function GroupInfoDrawer({
             )
           ) : null}
         </div>
-
-        {canDeactivateGroup ? (
-          <div className="shrink-0 border-t border-ui-border-subtle px-3 py-2">
-            <button
-              className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-xs font-bold text-ui-text-muted transition hover:bg-ui-surface-subtle hover:text-ui-text-secondary"
-              onClick={() => setSensitiveOpen((value) => !value)}
-              type="button"
-            >
-              اقدامات حساس
-              <ChevronLeft className={classNames("h-3.5 w-3.5 transition", sensitiveOpen && "-rotate-90")} />
-            </button>
-            {sensitiveOpen ? (
-              <div className="space-y-2 px-1 pb-2">
-                {!confirmDeactivate ? (
-                  <Button
-                    className="w-full"
-                    disabled={!group.is_active || isDeactivatingGroup}
-                    onClick={() => setConfirmDeactivate(true)}
-                    type="button"
-                    variant="secondary"
-                  >
-                    غیرفعال‌سازی گروه
-                  </Button>
-                ) : (
-                  <div className="space-y-2 rounded-xl border border-rose-300/30 bg-rose-500/10 p-3">
-                    <p className="text-xs leading-5 text-rose-100">
-                      گروه غیرفعال می‌شود. ادامه می‌دهید؟
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button onClick={() => setConfirmDeactivate(false)} type="button" variant="secondary">
-                        انصراف
-                      </Button>
-                      <Button
-                        disabled={isDeactivatingGroup}
-                        onClick={() => void handleDeactivateGroup()}
-                        type="button"
-                      >
-                        {isDeactivatingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        تأیید
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
       </div>
     </aside>
   );

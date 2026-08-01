@@ -1179,6 +1179,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/CompanyGroup'
           description: ''
+    delete:
+      operationId: company_groups_destroy
+      description: Hard-delete an ordinary custom group (confirmation=DELETE_GROUP)
+        or the linked project for a project group (confirmation=DELETE_PROJECT). Public
+        groups are always rejected.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Group or linked project deleted.
   /api/company-groups/{id}/deactivate/:
     post:
       operationId: company_groups_deactivate_create
@@ -1200,6 +1220,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyGroup'
+          description: ''
+  /api/company-groups/{id}/deletion-preview/:
+    get:
+      operationId: company_groups_deletion_preview_retrieve
+      description: Non-destructive deletion preview. Ordinary groups return group
+        counts; project groups return project deletion counts.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این company group را شناسایی میکند.
+        required: true
+      tags:
+      - company-groups
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionPreview'
           description: ''
   /api/company-groups/{id}/financial-documents/:
     get:
@@ -1790,6 +1834,91 @@ paths:
               schema:
                 $ref: '#/components/schemas/FinancialDocument'
           description: ''
+  /api/financial-documents/{id}/document-pricebooks/:
+    get:
+      operationId: financial_documents_document_pricebooks_list
+      description: List pricebook editions selected on this financial document.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FinancialDocumentPricebook'
+          description: ''
+    post:
+      operationId: financial_documents_document_pricebooks_create
+      description: Add a pricebook edition selection to a draft financial document.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      tags:
+      - financial-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinancialDocumentPricebookAddRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FinancialDocumentPricebookAddRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FinancialDocumentPricebookAddRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialDocumentPricebook'
+          description: ''
+  /api/financial-documents/{id}/document-pricebooks/{selection_id}/:
+    delete:
+      operationId: financial_documents_document_pricebooks_destroy
+      description: Remove a pricebook selection from a draft document. Rejected when
+        the selection still has lines or is the last remaining selection.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این financial document را شناسایی میکند.
+        required: true
+      - in: path
+        name: selection_id
+        schema:
+          type: integer
+        description: FinancialDocumentPricebook selection id.
+        required: true
+      tags:
+      - financial-documents
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Document pricebook selection removed.
   /api/financial-documents/{id}/exports/:
     post:
       operationId: financial_documents_exports_create
@@ -2751,6 +2880,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/Project'
           description: ''
+    delete:
+      operationId: projects_destroy
+      description: Hard-delete the project and its linked project group. Requires
+        confirmation=DELETE_PROJECT.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project را شناسایی میکند.
+        required: true
+      tags:
+      - projects
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Project and linked project group deleted.
   /api/projects/{id}/coefficient-sets/:
     get:
       operationId: projects_coefficient_sets_list
@@ -2811,6 +2959,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectCoefficientSet'
+          description: ''
+  /api/projects/{id}/deletion-preview/:
+    get:
+      operationId: projects_deletion_preview_retrieve
+      description: Non-destructive preview of records removed by project deletion.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: یک مقداد عدد یکتا که این project را شناسایی میکند.
+        required: true
+      tags:
+      - projects
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionPreview'
           description: ''
   /api/projects/{id}/financial-documents/:
     get:
@@ -3324,6 +3495,12 @@ components:
         group_type:
           type: string
           readOnly: true
+        group_kind:
+          type: string
+          readOnly: true
+        is_public:
+          type: boolean
+          readOnly: true
         pin_priority:
           type: integer
           readOnly: true
@@ -3342,6 +3519,19 @@ components:
           additionalProperties: {}
           nullable: true
           readOnly: true
+        can_edit:
+          type: boolean
+          readOnly: true
+        can_delete:
+          type: boolean
+          readOnly: true
+        deletion_type:
+          type: string
+          nullable: true
+          readOnly: true
+        deletion_preview_available:
+          type: boolean
+          readOnly: true
         is_active:
           type: boolean
           readOnly: true
@@ -3354,13 +3544,19 @@ components:
           format: date-time
           readOnly: true
       required:
+      - can_delete
+      - can_edit
       - company_id
       - created_at
       - created_by_member_id
+      - deletion_preview_available
+      - deletion_type
+      - group_kind
       - group_type
       - id
       - is_active
       - is_default
+      - is_public
       - last_activity_at
       - name
       - pin_priority
@@ -3889,6 +4085,52 @@ components:
       - IRR
       type: string
       description: '* `IRR` - Iranian rial'
+    DeletionPreview:
+      type: object
+      properties:
+        deletion_type:
+          $ref: '#/components/schemas/DeletionTypeEnum'
+        warning_key:
+          type: string
+        warning_message_fa:
+          type: string
+        confirmation_required:
+          type: string
+        group_id:
+          type: integer
+          nullable: true
+        group_name:
+          type: string
+          nullable: true
+        project_id:
+          type: integer
+          nullable: true
+        project_name:
+          type: string
+          nullable: true
+        can_delete:
+          type: boolean
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - can_delete
+      - confirmation_required
+      - counts
+      - deletion_type
+      - group_id
+      - project_id
+      - warning_key
+      - warning_message_fa
+    DeletionTypeEnum:
+      enum:
+      - group
+      - project
+      type: string
+      description: |-
+        * `group` - group
+        * `project` - project
     DemoCommerceDisabled:
       type: object
       properties:
@@ -4054,6 +4296,11 @@ components:
         price_set_id:
           type: integer
           readOnly: true
+        selected_pricebooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinancialDocumentPricebook'
+          readOnly: true
         coefficient_set_id:
           type: integer
           readOnly: true
@@ -4115,6 +4362,7 @@ components:
       - pricebook_edition_id
       - project_id
       - report_title
+      - selected_pricebooks
       - status
       - title
       - totals_snapshot_json
@@ -4213,12 +4461,14 @@ components:
           type: integer
         price_set_id:
           type: integer
+        pricebook_edition_ids:
+          type: array
+          items:
+            type: integer
         coefficient_set_id:
           type: integer
           nullable: true
       required:
-      - price_set_id
-      - pricebook_edition_id
       - title
     FinancialDocumentExport:
       type: object
@@ -4294,6 +4544,10 @@ components:
         document_id:
           type: integer
           readOnly: true
+        document_pricebook_id:
+          type: integer
+          readOnly: true
+          nullable: true
         line_no:
           type: integer
           readOnly: true
@@ -4386,6 +4640,7 @@ components:
       - created_at
       - description_snapshot
       - document_id
+      - document_pricebook_id
       - id
       - line_coefficients
       - line_no
@@ -4460,6 +4715,11 @@ components:
         pricebook_item_id:
           type: integer
           nullable: true
+        document_pricebook_id:
+          type: integer
+          nullable: true
+          description: Optional document pricebook selection when the document has
+            multiple editions.
         calculation_receipt_id:
           type: integer
           nullable: true
@@ -4521,6 +4781,66 @@ components:
           nullable: true
           description: Map of footnote_code to bool — applied checkboxes for this
             calculation.
+    FinancialDocumentPricebook:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        pricebook_edition_id:
+          type: integer
+          readOnly: true
+        family_code:
+          type: string
+          readOnly: true
+        family_title_fa:
+          type: string
+          readOnly: true
+        year:
+          type: integer
+          readOnly: true
+        price_set_id:
+          type: integer
+          readOnly: true
+        price_set_code:
+          type: string
+          readOnly: true
+        is_edition_active:
+          type: boolean
+          readOnly: true
+        is_edition_stale:
+          type: boolean
+          readOnly: true
+        is_base_year:
+          type: boolean
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - family_code
+      - family_title_fa
+      - id
+      - is_base_year
+      - is_edition_active
+      - is_edition_stale
+      - price_set_code
+      - price_set_id
+      - pricebook_edition_id
+      - sort_order
+      - year
+    FinancialDocumentPricebookAddRequest:
+      type: object
+      properties:
+        pricebook_edition_id:
+          type: integer
+      required:
+      - pricebook_edition_id
     FinancialDocumentStatusEnum:
       enum:
       - draft
@@ -4575,6 +4895,10 @@ components:
           type: integer
         price_set_id:
           type: integer
+        pricebook_edition_ids:
+          type: array
+          items:
+            type: integer
         coefficient_set_id:
           type: integer
           nullable: true
@@ -4582,8 +4906,6 @@ components:
           type: integer
           minimum: 1
       required:
-      - price_set_id
-      - pricebook_edition_id
       - title
     GroupInvitationCreateRequest:
       type: object

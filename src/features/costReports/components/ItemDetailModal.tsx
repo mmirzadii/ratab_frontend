@@ -32,6 +32,8 @@ import {
 import { Button } from "../../../shared/components/Button";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { InsufficientTokenModal } from "../../../shared/components/InsufficientTokenModal";
+import { MathNumericInput } from "../../../shared/math/MathNumericInput";
+import { useEscapeLayer } from "../../../shared/shortcuts/useShortcut";
 import { cleanDisplayText, formatDecimal, formatMoneyAmount } from "../../../shared/utils/formatters";
 import { getApiErrorMessage } from "../../../shared/utils/apiError";
 import { classNames } from "../../../shared/utils/classNames";
@@ -299,7 +301,7 @@ function ModalHeader({ action, onClose, title }: ModalHeaderProps) {
       <h2 className="min-w-0 flex-1 truncate text-right text-base font-black text-ui-text-primary">
         {title}
       </h2>
-      <div className="col-span-2 flex min-w-0 w-full flex-wrap items-end justify-end gap-2 sm:col-auto sm:w-auto sm:min-w-[12rem]">{action}</div>
+      <div className="col-span-2 flex min-w-0 w-full items-center justify-end gap-2 sm:col-auto sm:w-auto sm:min-w-[12rem]">{action}</div>
     </div>
   );
 }
@@ -327,6 +329,7 @@ function getCompactRowDescription(title: string, description?: string | null): s
 function ItemDetailContent({
   coefficientSets,
   document,
+  documentPricebookId,
   item,
   onClose,
   onDocumentUpdated,
@@ -336,6 +339,7 @@ function ItemDetailContent({
 }: {
   coefficientSets: ProjectCoefficientSet[];
   document: FinancialDocument | null;
+  documentPricebookId: number | null;
   item: PricebookItemDetail;
   onClose: () => void;
   onDocumentUpdated: (document: FinancialDocument) => void;
@@ -1397,7 +1401,10 @@ function ItemDetailContent({
 
     const lineBody: FinancialDocumentLineCreatePayload = {
       calculation_receipt_id: receipt.id,
-      idempotency_key: lineIdempotencyRef.current.key
+      idempotency_key: lineIdempotencyRef.current.key,
+      ...(documentPricebookId != null
+        ? { document_pricebook_id: documentPricebookId }
+        : {})
     };
 
     try {
@@ -1442,6 +1449,7 @@ function ItemDetailContent({
     currentReceipt,
     document,
     documentLocked,
+    documentPricebookId,
     executeCalculation,
     insufficientBalance,
     markFootnoteInputsTouched,
@@ -1588,13 +1596,14 @@ function ItemDetailContent({
   }, []);
 
   const headerAction = (
-    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
-      <label className="min-w-0 space-y-1">
-        <span className="block text-xs font-bold text-ui-text-muted">
-          ضرایب
-        </span>
+    <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+      <label className="flex min-w-0 items-center">
+        <span className="sr-only">ضرایب</span>
         <select
-          className={classNames(inputClasses, "h-9 w-full min-w-0 px-2 text-xs sm:h-10 sm:w-40 sm:max-w-[10rem]")}
+          className={classNames(
+            inputClasses,
+            "h-10 w-full min-w-0 px-2 text-xs sm:w-40 sm:max-w-[10rem]"
+          )}
           disabled={isAddingLine || isCalculating}
           onChange={(event) =>
             handleSelectedCoefficientSetIdChange(
@@ -1604,7 +1613,7 @@ function ItemDetailContent({
           title={
             coefficientSets.length === 0
               ? "برای ساخت مجموعه ضرایب به مرحله ضرایب بروید."
-              : undefined
+              : "ضرایب"
           }
           value={selectedCoefficientSetId ?? ""}
         >
@@ -1618,7 +1627,7 @@ function ItemDetailContent({
         </select>
       </label>
       <Button
-        className="min-w-24 px-3 sm:min-w-28 sm:px-4"
+        className="h-10 min-w-24 px-3 sm:min-w-28 sm:px-4"
         disabled={headerAddDisabled}
         onClick={handleAddLine}
         type="button"
@@ -1823,20 +1832,21 @@ function ItemDetailContent({
                         <div className="flex shrink-0 items-center gap-1">
                           {isEditing ? (
                             <>
-                              <input
+                              <MathNumericInput
                                 ref={(element) => { rowPriceInputRefs.current[row.row_code] = element; }}
                                 aria-label={isMissingStarredPrice ? `باید قیمت ردیف ${row.row_code} را تعیین کنید` : `ویرایش قیمت ردیف ${row.row_code}`}
                                 className="h-7 w-24 max-w-[7rem] rounded-md border border-ui-border-subtle bg-ui-surface/45 px-2 text-left text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30"
                                 dir="ltr"
                                 disabled={priceControlsDisabled}
                                 inputMode="decimal"
-                                onChange={(event) =>
+                                onChange={(next) =>
                                   isMissingPriceEdit
-                                    ? setMissingStarredDraftPrices((current) => ({ ...current, [row.row_code]: event.target.value }))
-                                    : handleEditingRowPriceChange(row.row_code, event.target.value)
+                                    ? setMissingStarredDraftPrices((current) => ({ ...current, [row.row_code]: next }))
+                                    : handleEditingRowPriceChange(row.row_code, next)
                                 }
                                 placeholder={hasOfficialPrice ? String(row.unit_price) : "بهای واحد"}
                                 value={currentEditingPrice}
+                                wrapperClassName="inline-flex min-w-0 flex-col"
                               />
                               <button
                                 aria-label="ثبت بهای واحد"
@@ -1965,20 +1975,21 @@ function ItemDetailContent({
                       <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:justify-end">
                         {isEditing ? (
                           <>
-                              <input
+                              <MathNumericInput
                               ref={(element) => { rowPriceInputRefs.current[row.row_code] = element; }}
                               aria-label={isMissingStarredPrice ? `باید قیمت ردیف ${row.row_code} را تعیین کنید` : `ویرایش قیمت ردیف ${row.row_code}`}
                               className="h-8 w-32 rounded-md border border-ui-border-subtle bg-ui-surface/45 px-2 text-left text-sm text-ui-text-primary outline-none transition placeholder:text-ui-text-muted focus:border-ui-primary/30"
                               dir="ltr"
                               disabled={priceControlsDisabled}
                               inputMode="decimal"
-                              onChange={(event) =>
+                              onChange={(next) =>
                                 isMissingPriceEdit
-                                  ? setMissingStarredDraftPrices((current) => ({ ...current, [row.row_code]: event.target.value }))
-                                  : handleEditingRowPriceChange(row.row_code, event.target.value)
+                                  ? setMissingStarredDraftPrices((current) => ({ ...current, [row.row_code]: next }))
+                                  : handleEditingRowPriceChange(row.row_code, next)
                               }
                               placeholder={hasOfficialPrice ? String(row.unit_price) : "بهای واحد"}
                               value={currentEditingPrice}
+                              wrapperClassName="inline-flex min-w-0 flex-col"
                             />
                             <button
                               aria-label="ثبت بهای واحد"
@@ -2103,6 +2114,7 @@ function ItemDetailContent({
 export function ItemDetailModal({
   coefficientSets,
   document,
+  documentPricebookId,
   itemId,
   onClose,
   onDocumentUpdated,
@@ -2112,6 +2124,7 @@ export function ItemDetailModal({
 }: {
   coefficientSets: ProjectCoefficientSet[];
   document: FinancialDocument | null;
+  documentPricebookId?: number | null;
   itemId: number;
   onClose: () => void;
   onDocumentUpdated: (document: FinancialDocument) => void;
@@ -2122,17 +2135,7 @@ export function ItemDetailModal({
   const { data: item, error, isLoading } = useRetrievePricebookItemQuery(itemId);
   const { secondaryNav } = useAppShell();
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-    window.document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose]);
+  useEscapeLayer(onClose, true, "item-detail-modal");
 
   return (
     <div
@@ -2154,6 +2157,7 @@ export function ItemDetailModal({
           <ItemDetailContent
             coefficientSets={coefficientSets}
             document={document}
+            documentPricebookId={documentPricebookId ?? null}
             item={item}
             onClose={onClose}
             onDocumentUpdated={onDocumentUpdated}

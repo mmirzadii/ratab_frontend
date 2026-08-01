@@ -5,18 +5,33 @@ export type GroupKind = "public" | "project" | "custom";
 
 export function classifyCompanyGroup(
   group: Pick<CompanyGroup, "id" | "is_default"> &
-    Partial<Pick<CompanyGroup, "group_type">>,
+    Partial<
+      Pick<
+        CompanyGroup,
+        "group_type" | "group_kind" | "is_public" | "project_id"
+      >
+    >,
   projects: readonly Pick<Project, "group_id" | "name">[] = []
 ): GroupKind {
-  if (group.is_default || group.group_type === "public") {
+  // Prefer authoritative backend kind / public flags — never title or list position.
+  if (
+    group.group_kind === "public" ||
+    group.is_public === true ||
+    group.is_default ||
+    group.group_type === "public"
+  ) {
     return "public";
   }
-  // Prefer backend group_type so project groups stay project even before projects load.
   if (
+    group.group_kind === "project" ||
     group.group_type === "project" ||
+    group.project_id != null ||
     projects.some((project) => project.group_id === group.id)
   ) {
     return "project";
+  }
+  if (group.group_kind === "custom") {
+    return "custom";
   }
   return "custom";
 }
@@ -28,12 +43,20 @@ export function groupKindLabel(kind: GroupKind): string {
 }
 
 export function resolveGroupDisplayName(
-  group: Pick<CompanyGroup, "id" | "name" | "is_default">,
+  group: Pick<CompanyGroup, "id" | "name" | "is_default"> &
+    Partial<Pick<CompanyGroup, "project">>,
   projects: readonly Pick<Project, "group_id" | "name">[] = []
 ): string {
   const project = projects.find((item) => item.group_id === group.id);
   if (project?.name) {
     return project.name;
+  }
+  const nestedName =
+    group.project && typeof group.project === "object" && "name" in group.project
+      ? group.project.name
+      : null;
+  if (typeof nestedName === "string" && nestedName.trim()) {
+    return nestedName;
   }
   return group.name;
 }

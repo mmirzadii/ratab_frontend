@@ -4,6 +4,10 @@ import type { components } from "../../shared/api/generated/schema";
 export type FinancialDocument = components["schemas"]["FinancialDocument"];
 export type FinancialDocumentCreateRequest =
   components["schemas"]["FinancialDocumentCreateRequest"];
+export type FinancialDocumentPricebook =
+  components["schemas"]["FinancialDocumentPricebook"];
+export type FinancialDocumentPricebookAddRequest =
+  components["schemas"]["FinancialDocumentPricebookAddRequest"];
 export type FinancialDocumentLine = components["schemas"]["FinancialDocumentLine"];
 export type FinancialDocumentLineCreateRequest =
   components["schemas"]["FinancialDocumentLineCreateRequest"];
@@ -34,6 +38,8 @@ export type StandaloneStarredFinancialDocumentLineCreatePayload =
 export type ReceiptFinancialDocumentLineCreatePayload = {
   calculation_receipt_id: number;
   idempotency_key?: string;
+  /** Required by backend when the document has more than one selected pricebook. */
+  document_pricebook_id?: number | null;
 };
 export type FinancialDocumentLineCreatePayload =
   | PricebookFinancialDocumentLineCreatePayload
@@ -287,11 +293,37 @@ export const financialDocumentApi = baseApi.injectEndpoints({
             ] as const)
           : [])
       ]
+    }),
+    addFinancialDocumentPricebook: builder.mutation<
+      FinancialDocumentPricebook,
+      { documentId: number; body: FinancialDocumentPricebookAddRequest }
+    >({
+      query: ({ documentId, body }) => ({
+        url: `/api/financial-documents/${documentId}/document-pricebooks/`,
+        method: "POST",
+        body
+      }),
+      invalidatesTags: (_result, _error, { documentId }) => [
+        { type: "FinancialDocument", id: documentId }
+      ]
+    }),
+    removeFinancialDocumentPricebook: builder.mutation<
+      void,
+      { documentId: number; selectionId: number }
+    >({
+      query: ({ documentId, selectionId }) => ({
+        url: `/api/financial-documents/${documentId}/document-pricebooks/${selectionId}/`,
+        method: "DELETE"
+      }),
+      invalidatesTags: (_result, _error, { documentId }) => [
+        { type: "FinancialDocument", id: documentId }
+      ]
     })
   })
 });
 
 export const {
+  useAddFinancialDocumentPricebookMutation,
   useCreateFinancialDocumentExportMutation,
   useCreateFinancialDocumentLineMutation,
   useCreateOfficialCalculationMutation,
@@ -306,6 +338,7 @@ export const {
   useLazyListProjectFinancialDocumentsQuery,
   useListProjectFinancialDocumentsQuery,
   useRecalculateFinancialDocumentMutation,
+  useRemoveFinancialDocumentPricebookMutation,
   useLazyRetrieveFinancialDocumentPreviewQuery,
   useRetrieveFinancialDocumentQuery,
   useUpdateFinancialDocumentLineMutation,

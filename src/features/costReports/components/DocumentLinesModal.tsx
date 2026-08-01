@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2, Pencil, Save, Trash2, X } from "lucide-react";
 
 import type { FinancialDocument, FinancialDocumentLine } from "../../financialDocuments/financialDocumentApi";
@@ -19,6 +19,10 @@ import {
   isPositiveDecimal,
   normalizeQuantityValue
 } from "../costReportUtils";
+import {
+  formatPricebookSelectionLabel,
+  resolveDocumentSelectedPricebooks
+} from "../pricebookFamilyYear";
 
 export function DocumentLinesModal({
   document,
@@ -44,6 +48,17 @@ export function DocumentLinesModal({
   );
   const isLocked = isFinancialDocumentLocked(document);
   const isBusy = recalculateState.isLoading || deletingLineId !== null || savingLineId !== null;
+  const selectedPricebooks = useMemo(
+    () => resolveDocumentSelectedPricebooks(document),
+    [document]
+  );
+  const pricebookById = useMemo(() => {
+    const map = new Map(
+      selectedPricebooks.map((selection) => [selection.id, selection] as const)
+    );
+    return map;
+  }, [selectedPricebooks]);
+  const showPricebookSource = selectedPricebooks.length > 1;
 
   function startEditing(line: FinancialDocumentLine) {
     setEditingLineId(line.id);
@@ -138,6 +153,17 @@ export function DocumentLinesModal({
               const isDeletingThis = deletingLineId === line.id;
               const isSavingThis = savingLineId === line.id;
               const displayRows = getLineDisplayRows(line);
+              const linePricebook =
+                line.document_pricebook_id != null
+                  ? pricebookById.get(line.document_pricebook_id)
+                  : undefined;
+              const pricebookSourceLabel =
+                showPricebookSource && linePricebook && linePricebook.year > 0
+                  ? formatPricebookSelectionLabel({
+                      familyTitleFa: linePricebook.family_title_fa,
+                      year: linePricebook.year
+                    })
+                  : null;
 
               return (
                 <GlassCard className="p-2.5 sm:p-3" key={line.id}>
@@ -148,6 +174,11 @@ export function DocumentLinesModal({
                       </p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-ui-text-muted">
                         <span>خط {formatDecimal(line.line_no)}</span>
+                        {pricebookSourceLabel ? (
+                          <span data-testid="document-line-pricebook-source">
+                            {pricebookSourceLabel}
+                          </span>
+                        ) : null}
                         {displayRows.length > 1 ? (
                           <span>{formatDecimal(displayRows.length)} ردیف محاسبه‌شده</span>
                         ) : null}

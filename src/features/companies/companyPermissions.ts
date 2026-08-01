@@ -486,20 +486,22 @@ export function canDeactivateOrRemoveMember(
 }
 
 /**
- * Group Info action capabilities.
- *
- * The synchronized CompanyGroup schema does **not** expose `can_edit_group` /
- * `can_invite_members` / `can_manage_members`. Until the backend adds those
- * fields, the frontend mirrors `AccessPolicyService.require_group_manager`
- * plus documented group-type rules (public immutable; project rename via
- * project API; custom via group PATCH).
+ * Prefer backend CompanyGroup.can_edit / can_delete when present.
+ * Invite/manage still use require_group_manager-style canManage until those
+ * capability fields exist on the group payload.
  */
 export type GroupInfoCapabilities = {
   canEditGroup: boolean;
   canInviteMembers: boolean;
   canManageMembers: boolean;
+  /** Soft archive (custom only); secondary to hard delete. */
   canDeactivateGroup: boolean;
-  /** Project groups edit name/description through PATCH /api/projects/{id}/. */
+  /** Hard delete when backend can_delete is true. */
+  canDeleteGroup: boolean;
+  /**
+   * Project settings edit via PATCH /api/company-groups/{id}/ with project fields
+   * (one mutation; syncs linked project + group display name).
+   */
   editViaProjectApi: boolean;
 };
 
@@ -507,33 +509,58 @@ export function resolveGroupInfoCapabilities(input: {
   kind: "public" | "project" | "custom" | null;
   canManage: boolean;
   canUpdateProjects: boolean;
+  canEdit?: boolean | null;
+  canDelete?: boolean | null;
+  /**
+   * When false, a missing `can_edit` does not fall back to role flags.
+   * Use while waiting for authoritative group detail so list false-negatives
+   * do not flash an edit affordance, and roles are not inferred in React.
+   */
+  allowEditFallback?: boolean;
 }): GroupInfoCapabilities {
-  const { kind, canManage, canUpdateProjects } = input;
+  const {
+    kind,
+    canManage,
+    canUpdateProjects,
+    canEdit,
+    canDelete,
+    allowEditFallback = true
+  } = input;
   if (kind == null || kind === "public") {
     return {
       canEditGroup: false,
       canInviteMembers: false,
       canManageMembers: false,
       canDeactivateGroup: false,
+      canDeleteGroup: false,
       editViaProjectApi: false
     };
   }
+
+  const backendCanEdit = typeof canEdit === "boolean" ? canEdit : null;
+  const backendCanDelete = typeof canDelete === "boolean" ? canDelete : null;
+  const roleEditFallback =
+    kind === "project" ? canUpdateProjects : canManage;
+
   if (kind === "project") {
-    // Invite/manage: require_group_manager. Display name/description: project PATCH.
     return {
-      canEditGroup: canUpdateProjects,
+      canEditGroup:
+        backendCanEdit ?? (allowEditFallback ? roleEditFallback : false),
       canInviteMembers: canManage,
       canManageMembers: canManage,
       canDeactivateGroup: false,
+      // Delete never falls back to roles — only backend can_delete.
+      canDeleteGroup: backendCanDelete ?? false,
       editViaProjectApi: true
     };
   }
-  // custom — group PATCH + deactivate when require_group_manager succeeds
+
   return {
-    canEditGroup: canManage,
+    canEditGroup: backendCanEdit ?? (allowEditFallback ? roleEditFallback : false),
     canInviteMembers: canManage,
     canManageMembers: canManage,
     canDeactivateGroup: canManage,
+    canDeleteGroup: backendCanDelete ?? false,
     editViaProjectApi: false
   };
 }

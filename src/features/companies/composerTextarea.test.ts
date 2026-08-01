@@ -93,10 +93,10 @@ describe("MessagesSection composer wiring", () => {
   it("uses scrollHeight auto-resize and bottom-aligned controls", () => {
     assert.ok(messages.includes("applyComposerTextareaAutoResize"));
     assert.ok(messages.includes("useLayoutEffect"));
-    assert.ok(messages.includes("items-end"));
+    assert.ok(messages.includes("items-center"));
     assert.ok(messages.includes("shouldSendOnEnterKey"));
     assert.ok(messages.includes("متن پیام"));
-    assert.ok(messages.includes("<textarea"));
+    assert.ok(messages.includes("ComposerMathTextarea"));
     assert.ok(!messages.includes("max-h-28"));
     assert.ok(!messages.includes("rows={4}"));
   });
@@ -110,7 +110,7 @@ describe("MessagesSection composer wiring", () => {
   it("keeps attachment preview above the expanding textarea", () => {
     const areaStart = messages.indexOf('data-tour="message-input-area"');
     const previewIdx = messages.indexOf("pendingAttachments.length > 0", areaStart);
-    const textareaIdx = messages.indexOf("<textarea", areaStart);
+    const textareaIdx = messages.indexOf("ComposerMathTextarea", areaStart);
     assert.ok(areaStart > 0 && previewIdx > areaStart && textareaIdx > previewIdx);
   });
 });

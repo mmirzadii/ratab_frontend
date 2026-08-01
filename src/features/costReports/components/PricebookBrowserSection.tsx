@@ -19,6 +19,9 @@ const DEFAULT_LEFT_TOP = 180;
 
 export function PricebookBrowserSection({
   activeChapterFilter,
+  activePricebookLabel,
+  activePricebookOptions,
+  activePricebookSelectionId,
   chaptersError,
   filteredChapters,
   groups,
@@ -28,6 +31,7 @@ export function PricebookBrowserSection({
   isLoadingGroups,
   items,
   itemsError,
+  onActivePricebookChange,
   onChapterFilterChange,
   onChapterSelect,
   onGroupSelect,
@@ -40,6 +44,9 @@ export function PricebookBrowserSection({
   summarySlot
 }: {
   activeChapterFilter: string;
+  activePricebookLabel?: string | null;
+  activePricebookOptions?: Array<{ id: number; label: string }>;
+  activePricebookSelectionId?: number | null;
   chaptersError: unknown;
   filteredChapters: PricebookChapter[];
   groups: PricebookGroup[];
@@ -49,6 +56,7 @@ export function PricebookBrowserSection({
   isLoadingGroups: boolean;
   items: PricebookItemList[];
   itemsError: unknown;
+  onActivePricebookChange?: (selectionId: number) => void;
   onChapterFilterChange: (filterId: string) => void;
   onChapterSelect: (chapter: PricebookChapter) => void;
   onGroupSelect: (groupId: number | null) => void;
@@ -282,6 +290,32 @@ export function PricebookBrowserSection({
     </>
   );
 
+  const showPricebookSwitcher =
+    (activePricebookOptions?.length ?? 0) > 1 && typeof onActivePricebookChange === "function";
+
+  const pricebookSwitcher = showPricebookSwitcher ? (
+    <div className="shrink-0" data-testid="pricebook-browser-selector">
+      <label className="mb-1.5 block text-[11px] font-bold text-ui-text-muted">
+        فهرست‌بهای فعال مرور
+      </label>
+      <select
+        aria-label="فهرست‌بهای فعال مرور"
+        className="h-11 w-full rounded-lg border border-ui-border-subtle bg-ui-surface/45 px-3 text-sm font-bold text-ui-text-primary outline-none transition focus:border-ui-primary/30"
+        onChange={(event) => onActivePricebookChange?.(Number(event.target.value))}
+        value={activePricebookSelectionId ?? ""}
+      >
+        {activePricebookOptions?.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {activePricebookLabel ? (
+        <p className="mt-1 text-[11px] text-ui-text-muted">{activePricebookLabel}</p>
+      ) : null}
+    </div>
+  ) : null;
+
   // ══════════════════════════════════════════════════════════════════════════
   // DESKTOP — full-height flex, RTL, draggable divider
   // RIGHT: summary + chapters  |  LEFT: items header + items list
@@ -293,6 +327,7 @@ export function PricebookBrowserSection({
         className="flex shrink-0 flex-col gap-3 min-h-0"
         style={{ width: rightWidth }}
       >
+        {pricebookSwitcher}
         {/* Summary slot — compact, fixed height */}
         {summarySlot ? <div className="shrink-0">{summarySlot}</div> : null}
 
@@ -408,6 +443,9 @@ export function PricebookBrowserSection({
       className="flex h-[calc(100dvh-8.75rem)] min-h-0 flex-col overflow-hidden p-0 lg:hidden"
       dir="rtl"
     >
+      {pricebookSwitcher ? (
+        <div className="shrink-0 border-b border-ui-border-subtle px-4 py-3">{pricebookSwitcher}</div>
+      ) : null}
       {mobileView === "chapters" ? (
         // ── Chapters pane ──────────────────────────────────────────────
         <>

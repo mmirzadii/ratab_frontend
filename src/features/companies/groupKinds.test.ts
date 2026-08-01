@@ -42,6 +42,27 @@ describe("group classification", () => {
     assert.equal(groupKindLabel("public"), "عمومی شرکت");
   });
 
+  it("prefers group_kind and is_public over titles", () => {
+    assert.equal(
+      classifyCompanyGroup({
+        id: 1,
+        is_default: false,
+        group_kind: "public",
+        is_public: true
+      }),
+      "public"
+    );
+    assert.equal(
+      classifyCompanyGroup({
+        id: 2,
+        is_default: false,
+        group_kind: "project",
+        project_id: 9
+      }),
+      "project"
+    );
+  });
+
   it("marks groups linked by project.group_id as project groups", () => {
     const kind = classifyCompanyGroup({ id: 33, is_default: false }, [
       { group_id: 33, name: "All5263473" }

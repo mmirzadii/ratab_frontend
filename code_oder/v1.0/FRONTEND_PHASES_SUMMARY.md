@@ -12,4 +12,9 @@
 | 8 | Re-sync with the final backend contract, remove obsolete compatibility code, run regression checks, and finalize v1 documentation. |
 | 9 | Conversation-first company workspace: remove permanent Projects/Groups nav; ordered conversation list; create menu; composer **افزودن** (فایل \| صورت‌بها); list-first financial-document selector; empty-chat/drawer **افزودن صورت‌بها**; group drawer tabs صورت‌بهاها / فایل‌ها / لینک‌ها / اعضا — without inventing backend features. |
 | 10 | Messenger-like message lifecycle: in-bubble pending/sent/failed status (single check = server persistence); no send-success toast; desktop right-click + mobile long-press actions; composer edit; soft-delete tombstone; same-company forward modal; actions gated by backend `can_edit` / `can_delete` / `can_forward`. |
-| 11 | Separate pricebook family and year: Document Info `نوع فهرست‌بها` (`title_fa`) + `سال` (edition years newest-first); submit exact Edition ID; existing documents read-only; no ABN1404 / hardcoded 1404 authority. |
+| 11 | Multi-pricebook Document Info: family + year add-to-list (`افزودن` chips); create via `pricebook_edition_ids`; browser selector when count > 1; lines carry `document_pricebook_id`; no ABN1404 / singular-Edition assumption. |
+
+Corrections (not new phases):
+
+- **2026-07-30:** calculation-based token billing + company wallet donation.
+- **2026-07-31:** Group Info hard delete (`حذف گروه` / `حذف پروژه` + deletion-preview) and project metadata edit via group PATCH; see `GROUP_PROJECT_DELETION_CORRECTION.md`.

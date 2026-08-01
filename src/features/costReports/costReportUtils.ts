@@ -10,6 +10,7 @@ import type {
   PricebookItemFootnote,
   PricebookItemInputSpec
 } from "../pricebooks/pricebookApi";
+import { evaluateMathExpression } from "../../shared/math/mathExpression.ts";
 import { getApiErrorMessage } from "../../shared/utils/apiError";
 import { normalizeNumberInput, normalizeRowCode } from "../../shared/utils/numberText";
 
@@ -26,7 +27,7 @@ function validateFootnoteNumber(
   rawValue: string
 ): { message: string; ok: false } | { ok: true; value: string } {
   const label = input.label_fa || "مقدار";
-  const value = normalizeNumberInput(rawValue).replace(/٫/g, ".");
+  const value = normalizeQuantityValue(rawValue);
   if (!value) return { message: `${label} را وارد کنید.`, ok: false };
   if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)) {
     return { message: `${label} باید عددی باشد.`, ok: false };
@@ -250,7 +251,15 @@ export function matchesChapterFilter(
   return chapterNumber >= filter.min && chapterNumber <= filter.max;
 }
 
+/**
+ * Normalize a financial quantity/price string for local validation and backend payloads.
+ * Valid meaningful math expressions are evaluated first; the backend never receives raw expressions.
+ */
 export function normalizeQuantityValue(value: string): string {
+  const evaluated = evaluateMathExpression(value);
+  if (evaluated.ok) {
+    return evaluated.formatted;
+  }
   return normalizeNumberInput(value).replace(/[٬,]/g, "").replace(/٫/g, ".");
 }
 

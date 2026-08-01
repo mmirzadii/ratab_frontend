@@ -1,4 +1,108 @@
+import type { FinancialDocument, FinancialDocumentPricebook } from "../financialDocuments/financialDocumentApi";
 import type { Pricebook, PricebookEdition } from "../pricebooks/pricebookApi";
+
+/** Draft picker entry before the FinancialDocument exists. */
+export type DraftPricebookPick = {
+  editionId: number;
+  familyTitleFa: string;
+  year: number;
+};
+
+export function toPersianDigits(value: string | number): string {
+  return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)] ?? digit);
+}
+
+export function formatPricebookSelectionLabel(input: {
+  familyTitleFa: string;
+  year: number;
+}): string {
+  const title = input.familyTitleFa.trim() || "—";
+  return `${title} — ${toPersianDigits(input.year)}`;
+}
+
+/**
+ * Authoritative selected-pricebooks list from the document response.
+ * Falls back to legacy singular edition/set fields for older payloads.
+ */
+export function resolveDocumentSelectedPricebooks(
+  document: FinancialDocument | null | undefined
+): FinancialDocumentPricebook[] {
+  if (!document) return [];
+  const fromApi = document.selected_pricebooks;
+  if (Array.isArray(fromApi) && fromApi.length > 0) {
+    return [...fromApi].sort((first, second) => first.sort_order - second.sort_order || first.id - second.id);
+  }
+  if (document.pricebook_edition_id != null && document.price_set_id != null) {
+    // Legacy singular payload: id 0 is local-only and must never be sent as document_pricebook_id.
+    return [
+      {
+        id: 0,
+        pricebook_edition_id: document.pricebook_edition_id,
+        family_code: "",
+        family_title_fa: "فهرست‌بها",
+        year: 0,
+        price_set_id: document.price_set_id,
+        price_set_code: "",
+        is_edition_active: true,
+        is_edition_stale: false,
+        is_base_year: false,
+        sort_order: 0,
+        created_at: document.created_at
+      }
+    ];
+  }
+  return [];
+}
+
+export function reconcileActiveDocumentPricebookId(
+  selections: readonly FinancialDocumentPricebook[],
+  currentId: number | null | undefined
+): number | null {
+  if (selections.length === 0) return null;
+  if (currentId != null && selections.some((item) => item.id === currentId)) {
+    return currentId;
+  }
+  return selections[0]?.id ?? null;
+}
+
+export function formatDocumentPricebookRemoveError(
+  error: unknown,
+  fallback = "حذف فهرست‌بها از صورت‌بها انجام نشد."
+): string {
+  if (!error || typeof error !== "object") return fallback;
+  const data = (error as { data?: unknown }).data;
+  const texts: string[] = [];
+  if (typeof data === "string") texts.push(data);
+  else if (data && typeof data === "object") {
+    const record = data as Record<string, unknown>;
+    for (const key of ["detail", "non_field_errors", "selection_id", "pricebook_edition_id"]) {
+      const value = record[key];
+      if (typeof value === "string") texts.push(value);
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item === "string") texts.push(item);
+        }
+      }
+    }
+  }
+  const joined = texts.join(" ").toLowerCase();
+  if (/line|ردیف|has lines|referenced/.test(joined)) {
+    return "این فهرست‌بها ردیف دارد و تا وقتی ردیف‌هایش حذف نشده‌اند قابل حذف نیست.";
+  }
+  if (/last|final|only|آخرین|تنها/.test(joined)) {
+    return "حداقل یک فهرست‌بها باید روی صورت‌بها باقی بماند.";
+  }
+  if (/lock|locked|نهایی|قفل/.test(joined)) {
+    return "صورت‌بهای قفل‌شده قابل تغییر فهرست‌بها نیست.";
+  }
+  if (/inactive|stale|منسوخ|غیرفعال/.test(joined)) {
+    return "نسخه فهرست‌بهای انتخاب‌شده دیگر قابل استفاده نیست.";
+  }
+  if (texts.length > 0 && !/<html|<!doctype/i.test(joined)) {
+    return texts[0]!;
+  }
+  return fallback;
+}
 
 /** Active families in backend sort_order (stable id tie-break). */
 export function sortActivePricebookFamilies(
