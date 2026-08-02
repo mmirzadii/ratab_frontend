@@ -266,7 +266,6 @@ export function MembersSection({
                 <input
                   className={panelInputClasses}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="اختیاری"
                   value={displayName}
                 />
               </label>
@@ -275,7 +274,6 @@ export function MembersSection({
                 <input
                   className={panelInputClasses}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="اختیاری"
                   value={title}
                 />
               </label>

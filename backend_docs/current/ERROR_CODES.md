@@ -125,6 +125,54 @@ codes. Field names match APIException JSON bodies unless noted.
 | Retry | Not useful |
 | Action required | Use a different custom group name / action |
 
+### Public group delete forbidden
+
+| | |
+| --- | --- |
+| Code | `PUBLIC_GROUP_DELETE_FORBIDDEN` |
+| HTTP | 400 |
+| Operations | `DELETE /api/company-groups/{id}/` or deletion-preview on the public group |
+| Meaning | The company public group can never be hard-deleted |
+| Frontend | Never show a delete control for `group_kind=public` / `is_public=true` |
+| Retry | Not useful |
+| Action required | None |
+
+### Group / project delete forbidden
+
+| | |
+| --- | --- |
+| Codes | `GROUP_DELETE_FORBIDDEN`, `PROJECT_DELETE_FORBIDDEN`, `PROJECT_EDIT_FORBIDDEN` |
+| HTTP | 403 |
+| Operations | Hard delete group/project; project edit from settings |
+| Meaning | Effective permission / manage path does not allow the action |
+| Frontend | Trust `can_edit` / `can_delete`; do not reconstruct from role labels alone |
+| Retry | After permissions change |
+| Action required | Admin/Owner grant |
+
+### Deletion confirmation required
+
+| | |
+| --- | --- |
+| Code | `DELETION_CONFIRMATION_REQUIRED` |
+| HTTP | 400 |
+| Operations | `DELETE` group or project without exact confirmation token |
+| Meaning | Body must include `confirmation` equal to `DELETE_GROUP` or `DELETE_PROJECT` |
+| Frontend | Modal must send the preview's `confirmation_required` value |
+| Retry | Safe with correct confirmation |
+| Action required | Client |
+
+### Project group missing project / deletion conflict
+
+| | |
+| --- | --- |
+| Codes | `PROJECT_GROUP_MISSING_PROJECT`, `DELETION_CONFLICT` |
+| HTTP | 409 |
+| Operations | Project-group settings/delete when link is broken; protected dependency during delete |
+| Meaning | Linked project missing, or a protected FK blocked hard delete |
+| Frontend | Refresh group/project; surface non-retryable conflict |
+| Retry | Usually not useful until data is repaired |
+| Action required | Support / refresh |
+
 ### Invalid custom-group member selection
 
 | | |
@@ -504,6 +552,78 @@ codes. Field names match APIException JSON bodies unless noted.
 | Frontend | Optional ops banner; do not expose internals |
 | Retry | Later |
 | Action required | Ops |
+
+### Platform admin required
+
+| | |
+| --- | --- |
+| Code | `PLATFORM_ADMIN_REQUIRED` |
+| HTTP | 403 |
+| Operations | `/api/platform-admin/*` |
+| Meaning | Caller is not root Superuser or active Platform Admin |
+| Frontend | Hide admin shell; do not invent capabilities |
+| Retry | After Superuser grants Admin membership |
+| Action required | Superuser |
+
+### Platform Superuser required
+
+| | |
+| --- | --- |
+| Code | `PLATFORM_SUPERUSER_REQUIRED` |
+| HTTP | 403 |
+| Operations | `/api/platform-admin/superuser/*` |
+| Meaning | Only the single root Superuser may manage Admins |
+| Frontend | Hide Admin-management UI unless `me.is_superuser` |
+| Retry | No |
+| Action required | Root Superuser |
+
+### Platform capability required
+
+| | |
+| --- | --- |
+| Code | `PLATFORM_CAPABILITY_REQUIRED` |
+| HTTP | 403 |
+| Operations | Capability-gated platform admin endpoints |
+| Meaning | Effective capabilities lack the required code |
+| Frontend | Disable action; refresh `/platform-admin/me/` |
+| Retry | After Superuser updates grants |
+| Action required | Superuser |
+
+### Platform admin step-up required / failed
+
+| | |
+| --- | --- |
+| Code | `PLATFORM_ADMIN_STEP_UP_REQUIRED` / `PLATFORM_ADMIN_STEP_UP_FAILED` |
+| HTTP | 403 |
+| Operations | Sensitive platform admin mutations; `POST /api/platform-admin/step-up/` |
+| Meaning | Password re-verification missing or incorrect |
+| Frontend | Prompt for current password; never log/store it |
+| Retry | After successful step-up |
+| Action required | User |
+
+### Platform Admin phone promotion errors
+
+| | |
+| --- | --- |
+| Codes | `PLATFORM_ADMIN_PHONE_EXACT_MATCH_REQUIRED`, `PLATFORM_ADMIN_TARGET_NOT_FOUND`, `PLATFORM_ADMIN_TARGET_INACTIVE`, `PLATFORM_ADMIN_ALREADY_ACTIVE`, `PLATFORM_ADMIN_CAPABILITY_UNKNOWN`, `PLATFORM_ADMIN_BASELINE_CAPABILITY_IMMUTABLE` |
+| HTTP | 400 |
+| Operations | Superuser Admin create/update/lookup |
+| Meaning | Exact-phone promotion/capability rules failed |
+| Frontend | Show stable message; do not create accounts client-side |
+| Retry | With corrected exact phone / whitelist capability |
+| Action required | Superuser |
+
+### Support ticket access / closed / internal note
+
+| | |
+| --- | --- |
+| Codes | `SUPPORT_TICKET_ACCESS_DENIED`, `SUPPORT_TICKET_CLOSED`, `SUPPORT_INTERNAL_NOTE_FORBIDDEN` |
+| HTTP | 403/404/400 depending on path |
+| Operations | `/api/support/*`, admin ticket note endpoints |
+| Meaning | Ticket isolation or closed-ticket rule |
+| Frontend | Never show another user's ticket or internal notes in user UI |
+| Retry | Own open ticket only |
+| Action required | User / Admin |
 
 ## Notes
 

@@ -29,6 +29,14 @@
 - [ ] After company create, pin `group_type=public` / `pin_priority=0` (`عمومی`);
       never offer delete/rename/retype for that group. Order other groups by
       response `last_activity_at` from the backend list (not client-side message scans).
+      Trust `group_kind`, `is_public`, `project_id`, `can_edit`, `can_delete`, and
+      `deletion_preview_available` — do not infer project ownership from titles.
+- [ ] Group/project hard delete: `GET .../deletion-preview/`, then `DELETE` with
+      exact `confirmation` (`DELETE_GROUP` / `DELETE_PROJECT`). Handle
+      `PUBLIC_GROUP_DELETE_FORBIDDEN`, `DELETION_CONFIRMATION_REQUIRED`,
+      `GROUP_DELETE_FORBIDDEN`, `PROJECT_DELETE_FORBIDDEN`.
+- [ ] Project-group settings edit project fields via
+      `PATCH /api/company-groups/{id}/` (or projects PATCH); rename syncs group name.
 - [ ] Project create uses `include_all_company_members_in_group` (default true);
       refresh via returned `group_id` and group `project` fields. Future company
       accepts auto-join only when the policy remains true.
@@ -130,3 +138,10 @@
 - [ ] Automated tests for auth, CSRF failure refresh, and charged-line retry.
 - [ ] Never store passwords/session IDs in web storage.
 - [ ] Never use Token/`dev-login` as the normal browser auth path.
+- [ ] Platform admin shell uses only `/api/platform-admin/me/` capabilities;
+      company roles never unlock it.
+- [ ] Superuser Admin-management UI is hidden unless `me.is_superuser`.
+- [ ] Every active Admin sees Support ticket list/reply; advanced actions
+      respect optional ticket capabilities.
+- [ ] User support UI never renders internal notes.
+- [ ] Sensitive admin mutations prompt step-up + reason and are not optimistic.

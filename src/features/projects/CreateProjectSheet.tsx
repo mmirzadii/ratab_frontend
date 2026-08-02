@@ -105,7 +105,6 @@ export function CreateProjectSheet({
             <input
               className={panelInputClasses}
               onChange={(e) => updateField("project_code", e.target.value)}
-              placeholder="اختیاری"
               value={form.project_code}
             />
           </label>
@@ -114,7 +113,6 @@ export function CreateProjectSheet({
             <input
               className={panelInputClasses}
               onChange={(e) => updateField("contract_number", e.target.value)}
-              placeholder="اختیاری"
               value={form.contract_number}
             />
           </label>
@@ -124,7 +122,6 @@ export function CreateProjectSheet({
           <input
             className={panelInputClasses}
             onChange={(e) => updateField("employer_name", e.target.value)}
-            placeholder="اختیاری"
             value={form.employer_name}
           />
         </label>

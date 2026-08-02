@@ -137,8 +137,17 @@ planned future work as implemented.
 
 - Interactive schema/docs are disabled in production by default
   (`ENABLE_API_DOCS=false`, `API_DOCS_PUBLIC=false`).
-- OpenAPI generation currently reports **23 warnings (17 unique)** for
-  pre-existing coefficient/financial serializer method type hints. Errors: **0**.
+- OpenAPI generation currently reports warnings for pre-existing
+  coefficient/financial serializer method type hints and some operationId
+  collisions. Errors: **0** after Phase 12.
+
+## Platform admin / support (Phase 12)
+
+- Platform admin is separate from company Owner/Admin/Employee.
+- There is exactly one root Superuser; Admins cannot manage other Admins.
+- Online payment verification/retry remains unavailable while
+  `PAYMENTS_ENABLED=false` (demo commerce may still be enabled locally).
+- Internal support notes never appear in user ticket APIs.
 
 ## Obsolete behavior (not current frontend contract)
 

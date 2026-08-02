@@ -18,7 +18,7 @@
     "test:composer-textarea": "node --experimental-strip-types --test src/features/companies/composerTextarea.test.ts",
     "test:message-lifecycle": "node --experimental-strip-types --test src/features/companies/messageLifecycle.test.ts",
     "test:forward-message": "node --experimental-strip-types --test src/features/companies/forwardMessage.test.ts",
-    "test:company-list-layout": "node --experimental-strip-types --test src/features/companies/companyListLayout.test.ts",
+    "test:company-list-layout": "node --experimental-strip-types --test src/features/companies/companyListLayout.test.ts src/features/companies/companySummaryMeta.test.ts src/features/companies/companySlugSuggest.test.ts src/shared/components/contextualHelp.test.ts",
     "test:company-permissions": "node --experimental-strip-types --test src/features/companies/companyPermissions.test.ts",
     "test:project-selector": "node --experimental-strip-types --test src/features/costReports/projectSelector.test.ts",
     "test:text-cleanup": "node --experimental-strip-types --test src/features/ui/textCleanup.test.ts",
@@ -30,7 +30,8 @@
     "test:token-balance-chip": "node --experimental-strip-types --test src/shared/components/tokenBalanceChip.test.ts",
     "test:math-expression": "node --experimental-strip-types --test src/shared/math/mathExpression.test.ts src/shared/math/mathUi.contract.test.ts",
     "test:shortcuts": "node --experimental-strip-types --test src/shared/shortcuts/shortcutRegistry.test.ts src/shared/focus/focusNavigation.test.ts",
-    "test:mobile-drawer-nav": "node --experimental-strip-types --test src/shared/components/mobileDrawerNav.test.ts"
+    "test:mobile-drawer-nav": "node --experimental-strip-types --test src/shared/components/mobileDrawerNav.test.ts",
+    "test:platform-admin": "node --experimental-strip-types --test src/features/platformAdmin/platformAdmin.contract.test.ts"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.6",

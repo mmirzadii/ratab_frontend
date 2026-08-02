@@ -1,17 +1,30 @@
-import { Building2, CircleHelp, Coins, LogOut, Moon, Settings, Sun, UserPlus } from "lucide-react";
+import {
+  Building2,
+  CircleHelp,
+  Coins,
+  Headset,
+  LogOut,
+  Moon,
+  Settings,
+  Shield,
+  Sun,
+  UserPlus
+} from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { performLogout } from "../../features/auth/logout";
+import { usePlatformAdmin } from "../../features/platformAdmin/usePlatformAdmin";
 import { toggleTheme } from "../../features/ui/uiSlice";
 import { classNames } from "../utils/classNames";
 import { IconButton } from "./IconButton";
 import { ThemeToggle } from "./ThemeToggle";
 import { Tooltip } from "./Tooltip";
 
-const navItems = [
+const baseNavItems = [
   { label: "لیست شرکت‌ها", icon: Building2, to: "/companies" },
   { label: "افزودن شرکت", icon: UserPlus, to: "/companies/new" },
+  { label: "پشتیبانی", icon: Headset, to: "/support/tickets" },
   { label: "راهنما", icon: CircleHelp, to: "/help" }
 ] as const;
 
@@ -30,6 +43,8 @@ function useNavActive(to: string): boolean {
   }
   if (to === "/companies/new") return pathname === "/companies/new";
   if (to === "/companies") return pathname.startsWith("/companies") && pathname !== "/companies/new";
+  if (to === "/admin") return pathname.startsWith("/admin");
+  if (to === "/support/tickets") return pathname.startsWith("/support");
   return pathname.startsWith(to);
 }
 
@@ -71,7 +86,15 @@ function DrawerNavButton({
   );
 }
 
-function RailNavItem({ label, icon: Icon, to }: (typeof navItems)[number]) {
+function RailNavItem({
+  label,
+  icon: Icon,
+  to
+}: {
+  label: string;
+  icon: typeof Building2;
+  to: string;
+}) {
   const isActive = useNavActive(to);
   const navigate = useNavigate();
 
@@ -124,6 +147,14 @@ export function PrimaryNavContent({ variant = "rail", onNavigate }: Props) {
   const navigate = useNavigate();
   const theme = useAppSelector((state) => state.ui.theme);
   const isDark = theme === "dark";
+  const authStatus = useAppSelector((state) => state.auth.status);
+  const { isPlatformAdmin } = usePlatformAdmin();
+  const navItems = [
+    ...baseNavItems,
+    ...(authStatus === "authenticated" && isPlatformAdmin
+      ? ([{ label: "مدیریت پلتفرم", icon: Shield, to: "/admin" }] as const)
+      : [])
+  ];
 
   async function handleLogout() {
     await performLogout(dispatch);
@@ -185,7 +216,7 @@ export function PrimaryNavContent({ variant = "rail", onNavigate }: Props) {
 
       <nav aria-label="ناوبری اصلی" className="flex flex-1 flex-col items-center gap-4">
         {navItems.map((item) => (
-          <RailNavItem key={item.to} {...item} />
+          <RailNavItem icon={item.icon} key={item.to} label={item.label} to={item.to} />
         ))}
       </nav>
 

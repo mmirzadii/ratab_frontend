@@ -199,6 +199,41 @@ X-CSRFToken: masked-csrf-token-example
 Omit `include_all_company_members_in_group` to get the same default (`true`).
 Pass `false` to add only the creator; do not send a membership list.
 
+Project-group settings edit (updates linked Project; syncs group display name):
+
+```http
+PATCH /api/company-groups/9/
+Content-Type: application/json
+
+{"name": "Site A Renamed", "description": "به‌روز شد", "employer_name": "کارفرما"}
+```
+
+Deletion preview then hard delete (ordinary custom group):
+
+```http
+GET /api/company-groups/12/deletion-preview/
+DELETE /api/company-groups/12/
+Content-Type: application/json
+
+{"confirmation": "DELETE_GROUP"}
+```
+
+Project (or project-group) hard delete:
+
+```http
+GET /api/projects/5/deletion-preview/
+DELETE /api/projects/5/
+Content-Type: application/json
+
+{"confirmation": "DELETE_PROJECT"}
+```
+
+Public group delete is always rejected:
+
+```json
+{"code": "PUBLIC_GROUP_DELETE_FORBIDDEN", "detail": "The company public group cannot be deleted."}
+```
+
 ### Custom/normal group create (atomic)
 
 Frontend collects name + selected active members, then submits once:
@@ -1039,3 +1074,60 @@ X-CSRFToken: masked-csrf-token-example
 HTTP **201** on first success. Exact replay → **200** +
 `Idempotent-Replayed: true` (no second credit). Same key with another package
 → **409** `IDEMPOTENCY_KEY_REUSED`. Never invent balance in the UI.
+
+## Platform admin (Phase 12)
+
+```http
+GET /api/platform-admin/me/
+```
+
+```json
+{
+  "is_platform_admin": true,
+  "is_superuser": false,
+  "baseline_capabilities": [
+    "admin.dashboard.view",
+    "admin.tickets.view",
+    "admin.tickets.reply"
+  ],
+  "granted_capabilities": ["admin.orders.view"],
+  "capabilities": [
+    "admin.dashboard.view",
+    "admin.orders.view",
+    "admin.tickets.reply",
+    "admin.tickets.view"
+  ],
+  "step_up": {"verified": false, "expires_at": null}
+}
+```
+
+```http
+POST /api/platform-admin/step-up/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"password": "***"}
+```
+
+```http
+POST /api/platform-admin/superuser/admin-candidates/lookup-by-phone/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"phone_number": "0912xxxxxxx"}
+```
+
+Superuser-only. Exact normalized match of an existing active user. Baseline
+ticket capabilities are added by the backend and are not client-controlled.
+
+## Support tickets (user)
+
+```http
+POST /api/support/tickets/
+Content-Type: application/json
+X-CSRFToken: masked-csrf-token-example
+
+{"subject": "Billing question", "category": "billing", "body": "Need help"}
+```
+
+User APIs never include `internal_note` messages.

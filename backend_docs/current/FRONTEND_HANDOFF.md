@@ -474,3 +474,22 @@ See `ERROR_CODES.md`. Prefer stable `code` fields when present.
 
 - `/api/health/` and `/api/health/live/` — liveness
 - `/api/health/ready/` — 200 ready / 503 degraded with check map
+
+## Platform admin (Phase 12)
+
+Platform admin is **not** a company role. Company Owner/Admin/Employee never
+unlock these APIs.
+
+1. `GET /api/platform-admin/me/` returns:
+   - `is_platform_admin`
+   - `is_superuser` (root Superuser only)
+   - `baseline_capabilities` (always dashboard + ticket view/reply for active Admins)
+   - `granted_capabilities`
+   - `capabilities` (effective union)
+   - `step_up`
+2. Route guards are UX only; Backend capability checks are authoritative.
+3. Admin-management UI (`/api/platform-admin/superuser/...`) is root-Superuser-only.
+4. Every active Admin can list/detail/reply to support tickets without extra grants.
+5. Advanced ticket actions need `admin.tickets.internal_note|assign|manage_priority|manage_status`.
+6. Sensitive mutations require CSRF + password step-up (`POST /api/platform-admin/step-up/`) + reason.
+7. User tickets: `/api/support/tickets/` (own tickets only; internal notes never appear).

@@ -1143,6 +1143,870 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform-admin/audit-events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_audit_events_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/companies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_companies_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/companies/{company_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_companies_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/companies/{company_id}/restore/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_companies_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/companies/{company_id}/suspend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_companies_suspend_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/companies/{company_id}/transfer-ownership/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_companies_transfer_ownership_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/dashboard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_dashboard_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/financial-adjustments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_financial_adjustments_retrieve"];
+        put?: never;
+        post: operations["platform_admin_financial_adjustments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/financial-adjustments/{adjustment_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_financial_adjustments_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/financial-adjustments/{adjustment_id}/apply/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_financial_adjustments_apply_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/financial-adjustments/{adjustment_id}/approve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_financial_adjustments_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/financial-adjustments/{adjustment_id}/reject/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_financial_adjustments_reject_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/me/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_me_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/operations/health/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_operations_health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/operations/pricebooks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_operations_pricebooks_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/operations/quotas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_operations_quotas_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/payment-orders/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_payment_orders_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/payment-orders/{order_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_payment_orders_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/payment-orders/{order_id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_payment_orders_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/payment-orders/{order_id}/retry-verification/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_payment_orders_retry_verification_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/step-up/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_step_up_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/subscription-plans/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_subscription_plans_retrieve"];
+        put?: never;
+        post: operations["platform_admin_subscription_plans_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/subscription-plans/{plan_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_subscription_plans_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["platform_admin_subscription_plans_partial_update"];
+        trace?: never;
+    };
+    "/api/platform-admin/subscription-plans/{plan_id}/archive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_subscription_plans_archive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/superuser/admin-candidates/lookup-by-phone/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_superuser_admin_candidates_lookup_by_phone_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/superuser/admins/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_superuser_admins_retrieve"];
+        put?: never;
+        post: operations["platform_admin_superuser_admins_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/superuser/admins/{membership_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_superuser_admins_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["platform_admin_superuser_admins_partial_update"];
+        trace?: never;
+    };
+    "/api/platform-admin/superuser/admins/{membership_id}/history/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_superuser_admins_history_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/superuser/admins/{membership_id}/reactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_superuser_admins_reactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/superuser/admins/{membership_id}/revoke/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_superuser_admins_revoke_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/superuser/capability-catalog/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_superuser_capability_catalog_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/superuser/transfer/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_superuser_transfer_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/support/tickets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_support_tickets_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/support/tickets/{ticket_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_support_tickets_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/support/tickets/{ticket_id}/assign/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_support_tickets_assign_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/support/tickets/{ticket_id}/change-priority/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_support_tickets_change_priority_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/support/tickets/{ticket_id}/close/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_support_tickets_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/support/tickets/{ticket_id}/internal-notes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_support_tickets_internal_notes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/support/tickets/{ticket_id}/reopen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_support_tickets_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/support/tickets/{ticket_id}/reply/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_support_tickets_reply_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/support/tickets/{ticket_id}/resolve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_support_tickets_resolve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/token-packages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_token_packages_retrieve"];
+        put?: never;
+        post: operations["platform_admin_token_packages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/token-packages/{package_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_token_packages_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["platform_admin_token_packages_partial_update"];
+        trace?: never;
+    };
+    "/api/platform-admin/token-packages/{package_id}/archive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_token_packages_archive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/users/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_users_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/users/{user_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_users_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/users/{user_id}/reactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_users_reactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/users/{user_id}/revoke-sessions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_users_revoke_sessions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/users/{user_id}/subscriptions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_users_subscriptions_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/users/{user_id}/subscriptions/activate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_users_subscriptions_activate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/users/{user_id}/subscriptions/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_users_subscriptions_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/users/{user_id}/suspend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_users_suspend_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/users/{user_id}/wallet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_users_wallet_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/wallet-transactions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_wallet_transactions_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pricebook-chapters/{id}/groups/": {
         parameters: {
             query?: never;
@@ -1390,6 +2254,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/support/tickets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["support_tickets_list"];
+        put?: never;
+        post: operations["support_tickets_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/support/tickets/{ticket_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["support_tickets_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/support/tickets/{ticket_id}/close/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["support_tickets_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/support/tickets/{ticket_id}/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["support_tickets_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/support/tickets/{ticket_id}/reopen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["support_tickets_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/support/unread-count/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["support_unread_count_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/token-wallet/": {
         parameters: {
             query?: never;
@@ -1434,6 +2394,58 @@ export interface components {
             readonly title_fa: string;
             readonly is_active: boolean;
         };
+        Adjustment: {
+            readonly id: number;
+            readonly target_user_id: number;
+            kind: components["schemas"]["AdjustmentKindEnum"];
+            /** Format: decimal */
+            amount: string;
+            reason: string;
+            reference?: string;
+            status?: components["schemas"]["AdjustmentStatusEnum"];
+            readonly requested_by_id: number;
+            readonly approved_by_id: number | null;
+            readonly applied_by_id: number | null;
+            break_glass?: boolean;
+            idempotency_key: string;
+            readonly ledger_transaction_id: number | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            approved_at?: string | null;
+            /** Format: date-time */
+            applied_at?: string | null;
+        };
+        /**
+         * @description * `grant` - Grant
+         *     * `debit` - Debit
+         *     * `refund` - Refund
+         *     * `reversal` - Reversal
+         * @enum {string}
+         */
+        AdjustmentKindEnum: "grant" | "debit" | "refund" | "reversal";
+        AdjustmentRequest: {
+            kind: components["schemas"]["AdjustmentKindEnum"];
+            /** Format: decimal */
+            amount: string;
+            reason: string;
+            reference?: string;
+            status?: components["schemas"]["AdjustmentStatusEnum"];
+            break_glass?: boolean;
+            idempotency_key: string;
+            /** Format: date-time */
+            approved_at?: string | null;
+            /** Format: date-time */
+            applied_at?: string | null;
+        };
+        /**
+         * @description * `requested` - Requested
+         *     * `approved` - Approved
+         *     * `rejected` - Rejected
+         *     * `applied` - Applied
+         * @enum {string}
+         */
+        AdjustmentStatusEnum: "requested" | "approved" | "rejected" | "applied";
         AppUser: {
             readonly id: number;
             readonly phone_number: string;
@@ -1445,12 +2457,44 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
+        AppUserAdmin: {
+            readonly id: number;
+            phone_number: string;
+            display_name?: string;
+            is_active?: boolean;
+            readonly is_suspended: boolean;
+            /** Format: date-time */
+            suspended_at?: string | null;
+            suspension_reason?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            /** Format: date-time */
+            last_login?: string | null;
+        };
         /**
          * @description * `file` - File
          *     * `financial_document` - Financial document
          * @enum {string}
          */
         AttachmentTypeEnum: "file" | "financial_document";
+        AuditEvent: {
+            readonly id: number;
+            readonly actor_id: number | null;
+            actor_type: string;
+            effective_capabilities?: unknown;
+            action: string;
+            target_type?: string;
+            target_id?: string;
+            request_id?: string;
+            outcome?: string;
+            reason?: string;
+            before_diff?: unknown;
+            after_diff?: unknown;
+            /** Format: date-time */
+            created_at?: string;
+        };
         CalculationBillingReceipt: {
             readonly id: number;
             readonly calculation_type: components["schemas"]["CalculationTypeEnum"];
@@ -1498,6 +2542,19 @@ export interface components {
          * @enum {string}
          */
         CalculationTypeEnum: "official" | "starred";
+        /**
+         * @description * `account` - Account
+         *     * `billing` - Billing
+         *     * `payment` - Payment
+         *     * `subscription` - Subscription
+         *     * `pricebook` - Pricebook
+         *     * `financial_document` - Financial document
+         *     * `company` - Company
+         *     * `technical` - Technical
+         *     * `other` - Other
+         * @enum {string}
+         */
+        CategoryEnum: "account" | "billing" | "payment" | "subscription" | "pricebook" | "financial_document" | "company" | "technical" | "other";
         /** @description Documents ``InsufficientCombinedTokenBalance`` (personal + company). */
         CombinedTokenBillingError: {
             code: string;
@@ -1535,6 +2592,22 @@ export interface components {
             readonly owner_member_id: number;
             readonly public_group_id: number | null;
             readonly is_active: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        CompanyAdmin: {
+            readonly id: number;
+            name: string;
+            legal_name?: string;
+            active_slug?: string | null;
+            is_active?: boolean;
+            readonly is_suspended: boolean;
+            /** Format: date-time */
+            suspended_at?: string | null;
+            suspension_reason?: string;
+            readonly owner_member_id: number | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -2486,6 +3559,21 @@ export interface components {
             readonly previous: string | null;
             readonly results: components["schemas"]["SharedLinkResource"][];
         };
+        PaginatedSupportTicketList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SupportTicket"][];
+        };
         PaginatedTokenWalletTransaction: {
             readonly count: number;
             /** Format: uri */
@@ -2540,6 +3628,17 @@ export interface components {
         PatchedGroupMessageEditRequest: {
             text?: string;
         };
+        PatchedPlatformAdminMembershipRequest: {
+            is_active?: boolean;
+            grant_reason?: string;
+            /** Format: date-time */
+            starts_at?: string;
+            /** Format: date-time */
+            expires_at?: string | null;
+            /** Format: date-time */
+            revoked_at?: string | null;
+            revocation_reason?: string;
+        };
         PatchedProjectCoefficientValueRequest: {
             coefficient_key?: string;
             scope?: components["schemas"]["ScopeEnum"];
@@ -2568,9 +3667,39 @@ export interface components {
             /** @default true */
             include_all_company_members_in_group: boolean;
         };
+        PatchedSubscriptionPlanAdminRequest: {
+            code?: string;
+            title_fa?: string;
+            description_fa?: string;
+            daily_message_limit?: number | null;
+            /** Format: int64 */
+            max_attachment_bytes_per_message?: number | null;
+            duration_days?: number;
+            /** Format: decimal */
+            price_amount?: string;
+            currency?: string;
+            is_active?: boolean;
+            display_order?: number;
+            /** Format: date-time */
+            archived_at?: string | null;
+        };
+        PatchedTokenPackageAdminRequest: {
+            code?: string;
+            title_fa?: string;
+            description_fa?: string;
+            /** Format: decimal */
+            token_amount?: string;
+            /** Format: decimal */
+            price_amount?: string;
+            currency?: components["schemas"]["CurrencyEnum"];
+            is_active?: boolean;
+            display_order?: number;
+            /** Format: date-time */
+            archived_at?: string | null;
+        };
         PaymentOrder: {
             readonly id: number;
-            readonly status: components["schemas"]["PaymentOrderStatusEnum"];
+            readonly status: components["schemas"]["StatusCabEnum"];
             readonly package_code_snapshot: string;
             /** Format: decimal */
             readonly token_amount_snapshot: string;
@@ -2583,6 +3712,28 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        PaymentOrderAdmin: {
+            readonly id: number;
+            readonly user_id: number;
+            readonly token_package_id: number;
+            status?: components["schemas"]["StatusCabEnum"];
+            package_code_snapshot: string;
+            /** Format: decimal */
+            token_amount_snapshot: string;
+            /** Format: decimal */
+            price_amount_snapshot: string;
+            currency_snapshot: string;
+            provider: string;
+            provider_reference: string;
+            failure_reason?: string;
+            readonly ledger_transaction_id: number | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            /** Format: date-time */
+            fulfilled_at?: string | null;
+        };
         /**
          * @description Only a package code and an optional retry key may be sent.
          *
@@ -2593,18 +3744,48 @@ export interface components {
             package_code: string;
             idempotency_key?: string;
         };
-        /**
-         * @description * `created` - Created
-         *     * `pending_provider` - Pending provider
-         *     * `fulfilled` - Fulfilled
-         *     * `failed` - Failed
-         *     * `cancelled` - Cancelled
-         * @enum {string}
-         */
-        PaymentOrderStatusEnum: "created" | "pending_provider" | "fulfilled" | "failed" | "cancelled";
         PaymentsDisabled: {
             readonly code: string;
             readonly detail: string;
+        };
+        PhoneLookup: {
+            phone_number: string;
+        };
+        PhoneLookupRequest: {
+            phone_number: string;
+        };
+        PlatformAdminMembership: {
+            readonly id: number;
+            readonly user_id: number;
+            readonly phone_number: string;
+            readonly display_name: string;
+            is_active?: boolean;
+            grant_reason: string;
+            /** Format: date-time */
+            starts_at?: string;
+            /** Format: date-time */
+            expires_at?: string | null;
+            /** Format: date-time */
+            revoked_at?: string | null;
+            revocation_reason?: string;
+            readonly granted_capabilities: string;
+            readonly baseline_capabilities: string;
+            readonly capabilities: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        PlatformAdminMembershipRequest: {
+            is_active?: boolean;
+            grant_reason: string;
+            /** Format: date-time */
+            starts_at?: string;
+            /** Format: date-time */
+            expires_at?: string | null;
+            /** Format: date-time */
+            revoked_at?: string | null;
+            revocation_reason?: string;
         };
         Pricebook: {
             readonly id: number;
@@ -2752,6 +3933,14 @@ export interface components {
             long_description_fa: string;
             row_id: string;
         };
+        /**
+         * @description * `low` - Low
+         *     * `normal` - Normal
+         *     * `high` - High
+         *     * `urgent` - Urgent
+         * @enum {string}
+         */
+        PriorityEnum: "low" | "normal" | "high" | "urgent";
         PrivateFileUploadRequest: {
             /** Format: binary */
             file: string;
@@ -2884,6 +4073,12 @@ export interface components {
             service: string;
             checks: components["schemas"]["ReadinessChecks"];
         };
+        Reason: {
+            reason: string;
+        };
+        ReasonRequest: {
+            reason: string;
+        };
         /**
          * @description * `owner` - Owner
          *     * `admin` - Admin
@@ -2985,6 +4180,15 @@ export interface components {
             coefficient_set_id?: number | null;
         };
         /**
+         * @description * `created` - Created
+         *     * `pending_provider` - Pending provider
+         *     * `fulfilled` - Fulfilled
+         *     * `failed` - Failed
+         *     * `cancelled` - Cancelled
+         * @enum {string}
+         */
+        StatusCabEnum: "created" | "pending_provider" | "fulfilled" | "failed" | "cancelled";
+        /**
          * @description Catalog plan with explicit availability / current / fallback flags.
          *
          *     ``is_active`` on the model means catalog availability. Frontend-facing
@@ -3007,6 +4211,118 @@ export interface components {
             readonly is_free_fallback: boolean;
             readonly can_activate: boolean;
         };
+        SubscriptionPlanAdmin: {
+            readonly id: number;
+            code: string;
+            title_fa: string;
+            description_fa?: string;
+            daily_message_limit?: number | null;
+            /** Format: int64 */
+            max_attachment_bytes_per_message?: number | null;
+            duration_days: number;
+            /** Format: decimal */
+            price_amount?: string;
+            currency?: string;
+            is_active?: boolean;
+            display_order?: number;
+            /** Format: date-time */
+            archived_at?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        SubscriptionPlanAdminRequest: {
+            code: string;
+            title_fa: string;
+            description_fa?: string;
+            daily_message_limit?: number | null;
+            /** Format: int64 */
+            max_attachment_bytes_per_message?: number | null;
+            duration_days: number;
+            /** Format: decimal */
+            price_amount?: string;
+            currency?: string;
+            is_active?: boolean;
+            display_order?: number;
+            /** Format: date-time */
+            archived_at?: string | null;
+        };
+        SupportTicket: {
+            readonly id: number;
+            readonly public_id: string;
+            subject: string;
+            category?: components["schemas"]["CategoryEnum"];
+            priority?: components["schemas"]["PriorityEnum"];
+            status?: components["schemas"]["SupportTicketStatusEnum"];
+            readonly company_id: number | null;
+            readonly assigned_to_admin_id: number | null;
+            /** Format: date-time */
+            last_user_message_at?: string | null;
+            /** Format: date-time */
+            last_admin_message_at?: string | null;
+            /** Format: date-time */
+            resolved_at?: string | null;
+            /** Format: date-time */
+            closed_at?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly messages: string;
+        };
+        SupportTicketCreateRequest: {
+            subject: string;
+            /** @default other */
+            category: components["schemas"]["CategoryEnum"];
+            /** @default normal */
+            priority: components["schemas"]["PriorityEnum"];
+            body: string;
+            company_id?: number | null;
+        };
+        SupportTicketMessage: {
+            readonly id: number;
+            kind: components["schemas"]["SupportTicketMessageKindEnum"];
+            body: string;
+            readonly author_user_id: number | null;
+            readonly author_admin_membership_id: number | null;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        SupportTicketMessageCreateRequest: {
+            body: string;
+        };
+        /**
+         * @description * `user_message` - User message
+         *     * `admin_reply` - Admin reply
+         *     * `internal_note` - Internal note
+         *     * `system_event` - System event
+         * @enum {string}
+         */
+        SupportTicketMessageKindEnum: "user_message" | "admin_reply" | "internal_note" | "system_event";
+        SupportTicketRequest: {
+            subject: string;
+            category?: components["schemas"]["CategoryEnum"];
+            priority?: components["schemas"]["PriorityEnum"];
+            status?: components["schemas"]["SupportTicketStatusEnum"];
+            /** Format: date-time */
+            last_user_message_at?: string | null;
+            /** Format: date-time */
+            last_admin_message_at?: string | null;
+            /** Format: date-time */
+            resolved_at?: string | null;
+            /** Format: date-time */
+            closed_at?: string | null;
+        };
+        /**
+         * @description * `open` - Open
+         *     * `waiting_for_staff` - Waiting for staff
+         *     * `waiting_for_user` - Waiting for user
+         *     * `resolved` - Resolved
+         *     * `closed` - Closed
+         * @enum {string}
+         */
+        SupportTicketStatusEnum: "open" | "waiting_for_staff" | "waiting_for_user" | "resolved" | "closed";
         TokenBillingError: {
             code: string;
             detail: string;
@@ -3025,6 +4341,39 @@ export interface components {
             readonly currency: components["schemas"]["CurrencyEnum"];
             readonly display_order: number;
             readonly is_active: boolean;
+        };
+        TokenPackageAdmin: {
+            readonly id: number;
+            code: string;
+            title_fa: string;
+            description_fa?: string;
+            /** Format: decimal */
+            token_amount: string;
+            /** Format: decimal */
+            price_amount: string;
+            currency?: components["schemas"]["CurrencyEnum"];
+            is_active?: boolean;
+            display_order?: number;
+            /** Format: date-time */
+            archived_at?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        TokenPackageAdminRequest: {
+            code: string;
+            title_fa: string;
+            description_fa?: string;
+            /** Format: decimal */
+            token_amount: string;
+            /** Format: decimal */
+            price_amount: string;
+            currency?: components["schemas"]["CurrencyEnum"];
+            is_active?: boolean;
+            display_order?: number;
+            /** Format: date-time */
+            archived_at?: string | null;
         };
         /**
          * @description Renders ``TokenWalletService.get_wallet_summary`` output.
@@ -3071,9 +4420,27 @@ export interface components {
          *     * `calculation_usage` - Calculation usage
          *     * `company_donation_debit` - Company donation debit
          *     * `demo_package_credit` - Demo package credit
+         *     * `admin_adjustment_grant` - Admin adjustment grant
+         *     * `admin_adjustment_debit` - Admin adjustment debit
+         *     * `admin_adjustment_refund` - Admin adjustment refund
+         *     * `admin_adjustment_reversal` - Admin adjustment reversal
          * @enum {string}
          */
-        TransactionTypeEnum: "initial_grant" | "manual_grant" | "pricebook_line_usage" | "token_package_purchase" | "calculation_usage" | "company_donation_debit" | "demo_package_credit";
+        TransactionTypeEnum: "initial_grant" | "manual_grant" | "pricebook_line_usage" | "token_package_purchase" | "calculation_usage" | "company_donation_debit" | "demo_package_credit" | "admin_adjustment_grant" | "admin_adjustment_debit" | "admin_adjustment_refund" | "admin_adjustment_reversal";
+        TransferRoot: {
+            phone_number?: string;
+            user_id?: number;
+            reason: string;
+            /** @default true */
+            keep_previous_as_admin: boolean;
+        };
+        TransferRootRequest: {
+            phone_number?: string;
+            user_id?: number;
+            reason: string;
+            /** @default true */
+            keep_previous_as_admin: boolean;
+        };
         /**
          * @description * `pending` - Pending
          *     * `ready` - Ready
@@ -3104,6 +4471,19 @@ export interface components {
             readonly ends_at: string | null;
             readonly effective_daily_message_limit: number | null;
             readonly effective_max_attachment_bytes: number | null;
+        };
+        WalletTransactionAdmin: {
+            readonly id: number;
+            readonly wallet_id: number;
+            transaction_type: components["schemas"]["TransactionTypeEnum"];
+            /** Format: decimal */
+            amount: string;
+            /** Format: decimal */
+            balance_after: string;
+            readonly actor_user_id: number | null;
+            reason?: string;
+            /** Format: date-time */
+            readonly created_at: string;
         };
     };
     responses: never;
@@ -5595,6 +6975,1452 @@ export interface operations {
             };
         };
     };
+    platform_admin_audit_events_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEvent"];
+                };
+            };
+        };
+    };
+    platform_admin_companies_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_companies_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_companies_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_companies_suspend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_companies_transfer_ownership_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_dashboard_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_financial_adjustments_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Adjustment"];
+                };
+            };
+        };
+    };
+    platform_admin_financial_adjustments_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustmentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AdjustmentRequest"];
+                "multipart/form-data": components["schemas"]["AdjustmentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Adjustment"];
+                };
+            };
+        };
+    };
+    platform_admin_financial_adjustments_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adjustment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Adjustment"];
+                };
+            };
+        };
+    };
+    platform_admin_financial_adjustments_apply_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adjustment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_financial_adjustments_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adjustment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_financial_adjustments_reject_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adjustment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_me_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        is_platform_admin?: boolean;
+                        is_superuser?: boolean;
+                        baseline_capabilities?: string[];
+                        granted_capabilities?: string[];
+                        capabilities?: string[];
+                        step_up?: Record<string, never>;
+                    };
+                };
+            };
+        };
+    };
+    platform_admin_operations_health_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_operations_pricebooks_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_operations_quotas_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_payment_orders_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOrderAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_payment_orders_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOrderAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_payment_orders_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_payment_orders_retry_verification_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_step_up_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_subscription_plans_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionPlanAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_subscription_plans_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionPlanAdminRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SubscriptionPlanAdminRequest"];
+                "multipart/form-data": components["schemas"]["SubscriptionPlanAdminRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionPlanAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_subscription_plans_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionPlanAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_subscription_plans_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSubscriptionPlanAdminRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSubscriptionPlanAdminRequest"];
+                "multipart/form-data": components["schemas"]["PatchedSubscriptionPlanAdminRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionPlanAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_subscription_plans_archive_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_admin_candidates_lookup_by_phone_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhoneLookupRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PhoneLookupRequest"];
+                "multipart/form-data": components["schemas"]["PhoneLookupRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhoneLookup"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_admins_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformAdminMembership"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_admins_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformAdminMembershipRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlatformAdminMembershipRequest"];
+                "multipart/form-data": components["schemas"]["PlatformAdminMembershipRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformAdminMembership"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_admins_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformAdminMembership"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_admins_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPlatformAdminMembershipRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPlatformAdminMembershipRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPlatformAdminMembershipRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformAdminMembership"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_admins_history_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_admins_reactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_admins_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_capability_catalog_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_transfer_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRootRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TransferRootRequest"];
+                "multipart/form-data": components["schemas"]["TransferRootRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferRoot"];
+                };
+            };
+        };
+    };
+    platform_admin_support_tickets_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportTicket"];
+                };
+            };
+        };
+    };
+    platform_admin_support_tickets_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportTicket"];
+                };
+            };
+        };
+    };
+    platform_admin_support_tickets_assign_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_support_tickets_change_priority_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_support_tickets_close_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_support_tickets_internal_notes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_support_tickets_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_support_tickets_reply_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_support_tickets_resolve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_token_packages_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPackageAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_token_packages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenPackageAdminRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TokenPackageAdminRequest"];
+                "multipart/form-data": components["schemas"]["TokenPackageAdminRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPackageAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_token_packages_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                package_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPackageAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_token_packages_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                package_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTokenPackageAdminRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTokenPackageAdminRequest"];
+                "multipart/form-data": components["schemas"]["PatchedTokenPackageAdminRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPackageAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_token_packages_archive_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                package_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_users_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppUserAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_users_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppUserAdmin"];
+                };
+            };
+        };
+    };
+    platform_admin_users_reactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_users_revoke_sessions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_users_subscriptions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_users_subscriptions_activate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_users_subscriptions_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_users_suspend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_users_wallet_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_wallet_transactions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletTransactionAdmin"];
+                };
+            };
+        };
+    };
     pricebook_chapters_groups_list: {
         parameters: {
             query?: {
@@ -6107,6 +8933,176 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubscriptionPlan"][];
+                };
+            };
+        };
+    };
+    support_tickets_list: {
+        parameters: {
+            query?: {
+                /** @description یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSupportTicketList"];
+                };
+            };
+        };
+    };
+    support_tickets_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportTicketCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupportTicketCreateRequest"];
+                "multipart/form-data": components["schemas"]["SupportTicketCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportTicket"];
+                };
+            };
+        };
+    };
+    support_tickets_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportTicket"];
+                };
+            };
+        };
+    };
+    support_tickets_close_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportTicketRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupportTicketRequest"];
+                "multipart/form-data": components["schemas"]["SupportTicketRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportTicket"];
+                };
+            };
+        };
+    };
+    support_tickets_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportTicketMessageCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupportTicketMessageCreateRequest"];
+                "multipart/form-data": components["schemas"]["SupportTicketMessageCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportTicketMessage"];
+                };
+            };
+        };
+    };
+    support_tickets_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportTicketRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupportTicketRequest"];
+                "multipart/form-data": components["schemas"]["SupportTicketRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportTicket"];
+                };
+            };
+        };
+    };
+    support_unread_count_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unread_count?: number;
+                    };
                 };
             };
         };

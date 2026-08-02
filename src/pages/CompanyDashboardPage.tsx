@@ -64,6 +64,7 @@ import { useListCompanyProjectsQuery } from "../features/projects/projectApi";
 import { CreateProjectSheet } from "../features/projects/CreateProjectSheet";
 import { Button } from "../shared/components/Button";
 import { CompanyWalletSection } from "../shared/components/CompanyWalletSection";
+import { ContextualHelp } from "../shared/components/ContextualHelp";
 import { EmptyState } from "../shared/components/EmptyState";
 import { GlassCard } from "../shared/components/GlassCard";
 import { StatusBadge } from "../shared/components/StatusBadge";
@@ -209,28 +210,34 @@ function CompanyEditModal({
         <form className="space-y-3" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="space-y-1.5">
-              <span className="text-sm font-bold text-ui-text-secondary">نام شرکت</span>
+              <span className="text-sm font-bold text-ui-text-secondary">
+                نام شرکت <span className="text-ui-primary">*</span>
+              </span>
               <input
                 className={panelInputClasses}
                 disabled={!canEdit}
                 onChange={(e) => updateField("name", e.target.value)}
-                placeholder="نام شرکت"
                 readOnly={!canEdit}
                 required
                 value={form.name}
               />
             </label>
-            <label className="space-y-1.5">
-              <span className="text-sm font-bold text-ui-text-secondary">نام حقوقی</span>
+            <div className="space-y-1.5">
+              <span className="flex items-center gap-1">
+                <span className="text-sm font-bold text-ui-text-secondary">نام حقوقی</span>
+                <ContextualHelp
+                  label="راهنمای نام حقوقی"
+                  text="نام ثبت‌شده در اسناد رسمی؛ در صورت تفاوت با نام نمایشی شرکت تکمیل شود."
+                />
+              </span>
               <input
                 className={panelInputClasses}
                 disabled={!canEdit}
                 onChange={(e) => updateField("legal_name", e.target.value)}
-                placeholder="اختیاری"
                 readOnly={!canEdit}
                 value={form.legal_name}
               />
-            </label>
+            </div>
             <label className="space-y-1.5">
               <span className="text-sm font-bold text-ui-text-secondary">شماره ثبت</span>
               <input
@@ -238,7 +245,6 @@ function CompanyEditModal({
                 disabled={!canEdit}
                 inputMode="numeric"
                 onChange={(e) => updateField("registration_number", e.target.value)}
-                placeholder="اختیاری"
                 readOnly={!canEdit}
                 value={form.registration_number}
               />
@@ -250,23 +256,28 @@ function CompanyEditModal({
                 disabled={!canEdit}
                 inputMode="numeric"
                 onChange={(e) => updateField("national_id", e.target.value)}
-                placeholder="اختیاری"
                 readOnly={!canEdit}
                 value={form.national_id}
               />
             </label>
-            <label className="space-y-1.5 sm:col-span-2">
-              <span className="text-sm font-bold text-ui-text-secondary">شناسه کوتاه شرکت</span>
+            <div className="space-y-1.5 sm:col-span-2">
+              <span className="flex items-center gap-1">
+                <span className="text-sm font-bold text-ui-text-secondary">شناسه کوتاه شرکت</span>
+                <ContextualHelp
+                  label="راهنمای شناسه کوتاه شرکت"
+                  text="شناسه کوتاه لاتین برای آدرس و ارجاع داخلی شرکت. فقط حروف کوچک، عدد و خط تیره."
+                />
+              </span>
               <input
                 className={classNames(panelInputClasses, "text-left")}
                 dir="ltr"
                 disabled={!canEdit}
                 onChange={(e) => updateField("active_slug", e.target.value)}
-                placeholder="optional-company-slug"
+                placeholder="مثلا metril-tehran"
                 readOnly={!canEdit}
                 value={form.active_slug}
               />
-            </label>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 pt-1 sm:flex sm:justify-end sm:gap-3">

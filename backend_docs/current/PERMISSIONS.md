@@ -105,6 +105,9 @@ PATCH accepts `permission_settings` (preferred) or `permissions`.
 | Invite employee | if `can_invite_employees` | Y (inherited) | Y |
 | Invite admin | N | if `can_add_admins` | Y |
 | Create project / custom group / FD / upload / attach | if Employee switches | inherited | Y |
+| Update project | if `can_update_projects` | inherited | Y |
+| Delete project (and linked project group) | if `can_delete_projects` | inherited | Y |
+| Delete custom group | if `can_delete_custom_groups` + manage path | manage-all + inherited delete | Y |
 | Update company / slug | N | if `can_manage_company_profile` | Y |
 | Manage invitations | N | if `can_manage_invitations` | Y |
 | Deactivate/remove employees | N | if `can_deactivate_employees` | Y |
@@ -144,5 +147,17 @@ company membership. There is no company-scoped subscription concept.
 Company owner/admin roles never grant Django admin, wallet mutation
 (personal or company), `TokenBillingPolicy` edits, subscription plan
 activation/renewal/cancellation (admin-only via Django admin or the
-`activate_subscription` management command), payment fulfillment, or
-cross-company access.
+`activate_subscription` management command), payment fulfillment,
+cross-company access, or **platform admin** access.
+
+## Platform admin capabilities (Phase 12)
+
+Platform access is independent of company roles.
+
+- Exactly one root Superuser (`is_superuser` from `/api/platform-admin/me/`).
+- Only that Superuser manages Admins via `/api/platform-admin/superuser/...`.
+- Active Admins always receive baseline:
+  `admin.dashboard.view`, `admin.tickets.view`, `admin.tickets.reply`.
+- Optional capabilities are direct grants from the backend whitelist; frontend
+  must not hardcode role packs.
+- Effective list always comes from `GET /api/platform-admin/me/`.

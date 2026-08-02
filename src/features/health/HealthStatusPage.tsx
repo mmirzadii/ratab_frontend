@@ -17,31 +17,21 @@ export function HealthStatusPage() {
   const isReady = Boolean(data) && !error;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-3 px-3 pb-6 pt-3 sm:gap-6 sm:px-6 sm:pb-10 sm:pt-6 lg:px-8">
-      <section className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-        <GlassCard className="relative min-w-0 overflow-hidden p-4 sm:p-8">
-          <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-l from-transparent via-ui-primary/70 to-transparent" />
-          <div className="flex flex-col gap-4 sm:gap-7">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-              <div className="min-w-0 space-y-2 sm:space-y-3">
-                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-ui-primary/25 bg-ui-primary-soft px-3 py-1.5 text-xs font-bold text-ui-primary">
-                  <span className="h-2 w-2 rounded-full bg-ui-primary shadow-[0_0_16px_color-mix(in_srgb,var(--ui-primary)_85%,transparent)]" />
-                  Frontend v1.0
-                </div>
-                <div className="space-y-2">
-                  <h1 className="text-xl font-black leading-tight text-white sm:text-4xl">
-                    وضعیت اتصال
-                  </h1>
-                  <p className="hidden max-w-2xl text-sm leading-7 text-ui-text-secondary sm:block">
-                    بررسی اتصال به سرویس و نمایش وضعیت پاسخ‌دهی.
-                  </p>
-                </div>
+    <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-3 px-3 pb-6 pt-3 sm:gap-4 sm:px-6 sm:pb-8 sm:pt-4 lg:px-8">
+      <section className="grid min-w-0 gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+        <GlassCard className="relative min-w-0 overflow-hidden p-4 sm:p-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <h1 className="text-xl font-black tracking-tight text-ui-text-primary sm:text-2xl">
+                  وضعیت اتصال
+                </h1>
               </div>
 
               <button
                 type="button"
                 onClick={() => void refetch()}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-ui-border-subtle bg-ui-surface-subtle px-4 text-sm font-bold text-ui-text-primary transition hover:border-ui-primary/30 hover:bg-ui-primary-soft hover:text-ui-primary sm:w-auto"
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[11px] border border-ui-border-default bg-ui-surface px-4 text-sm font-bold text-ui-text-primary transition hover:bg-ui-surface-hover sm:w-auto"
               >
                 <RefreshCcw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
                 بررسی دوباره

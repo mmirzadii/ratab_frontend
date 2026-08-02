@@ -133,6 +133,26 @@ describe("no raw English backend text in error messages", () => {
   });
 });
 
+describe("authenticated marketing phrases stay out of product screens", () => {
+  const productFiles = tsxFiles.filter((f) => !f.includes("LandingPage.tsx"));
+  const productSource = productFiles.map((f) => readFileSync(f, "utf-8")).join("\n");
+  const banned = [
+    "فضای شرکت‌های متریل",
+    "فضای حرفه‌ای شما",
+    "تجربه‌ای متفاوت",
+    "مدیریت هوشمند",
+    "همه چیز در یک نگاه",
+    "آماده شروع هستید",
+    "optional-company-slug"
+  ];
+
+  for (const phrase of banned) {
+    it(`should not contain "${phrase}" outside landing`, () => {
+      assert.ok(!productSource.includes(phrase), `Found banned copy: "${phrase}"`);
+    });
+  }
+});
+
 describe("accessibility labels remain", () => {
   const sub = readFileSync(
     join(srcDir, "features", "subscription", "SubscriptionSection.tsx"),

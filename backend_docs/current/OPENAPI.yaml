@@ -2594,6 +2594,1505 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaymentsDisabled'
           description: ''
+  /api/platform-admin/audit-events/:
+    get:
+      operationId: platform_admin_audit_events_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEvent'
+          description: ''
+  /api/platform-admin/companies/:
+    get:
+      operationId: platform_admin_companies_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyAdmin'
+          description: ''
+  /api/platform-admin/companies/{company_id}/:
+    get:
+      operationId: platform_admin_companies_retrieve_2
+      parameters:
+      - in: path
+        name: company_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyAdmin'
+          description: ''
+  /api/platform-admin/companies/{company_id}/restore/:
+    post:
+      operationId: platform_admin_companies_restore_create
+      parameters:
+      - in: path
+        name: company_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/companies/{company_id}/suspend/:
+    post:
+      operationId: platform_admin_companies_suspend_create
+      parameters:
+      - in: path
+        name: company_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/companies/{company_id}/transfer-ownership/:
+    post:
+      operationId: platform_admin_companies_transfer_ownership_create
+      parameters:
+      - in: path
+        name: company_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/dashboard/:
+    get:
+      operationId: platform_admin_dashboard_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/financial-adjustments/:
+    get:
+      operationId: platform_admin_financial_adjustments_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Adjustment'
+          description: ''
+    post:
+      operationId: platform_admin_financial_adjustments_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Adjustment'
+          description: ''
+  /api/platform-admin/financial-adjustments/{adjustment_id}/:
+    get:
+      operationId: platform_admin_financial_adjustments_retrieve_2
+      parameters:
+      - in: path
+        name: adjustment_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Adjustment'
+          description: ''
+  /api/platform-admin/financial-adjustments/{adjustment_id}/apply/:
+    post:
+      operationId: platform_admin_financial_adjustments_apply_create
+      parameters:
+      - in: path
+        name: adjustment_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/financial-adjustments/{adjustment_id}/approve/:
+    post:
+      operationId: platform_admin_financial_adjustments_approve_create
+      parameters:
+      - in: path
+        name: adjustment_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/financial-adjustments/{adjustment_id}/reject/:
+    post:
+      operationId: platform_admin_financial_adjustments_reject_create
+      parameters:
+      - in: path
+        name: adjustment_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/me/:
+    get:
+      operationId: platform_admin_me_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_platform_admin:
+                    type: boolean
+                  is_superuser:
+                    type: boolean
+                  baseline_capabilities:
+                    type: array
+                    items:
+                      type: string
+                  granted_capabilities:
+                    type: array
+                    items:
+                      type: string
+                  capabilities:
+                    type: array
+                    items:
+                      type: string
+                  step_up:
+                    type: object
+          description: ''
+  /api/platform-admin/operations/health/:
+    get:
+      operationId: platform_admin_operations_health_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/operations/pricebooks/:
+    get:
+      operationId: platform_admin_operations_pricebooks_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/operations/quotas/:
+    get:
+      operationId: platform_admin_operations_quotas_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/payment-orders/:
+    get:
+      operationId: platform_admin_payment_orders_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderAdmin'
+          description: ''
+  /api/platform-admin/payment-orders/{order_id}/:
+    get:
+      operationId: platform_admin_payment_orders_retrieve_2
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderAdmin'
+          description: ''
+  /api/platform-admin/payment-orders/{order_id}/cancel/:
+    post:
+      operationId: platform_admin_payment_orders_cancel_create
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/payment-orders/{order_id}/retry-verification/:
+    post:
+      operationId: platform_admin_payment_orders_retry_verification_create
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/step-up/:
+    post:
+      operationId: platform_admin_step_up_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/subscription-plans/:
+    get:
+      operationId: platform_admin_subscription_plans_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlanAdmin'
+          description: ''
+    post:
+      operationId: platform_admin_subscription_plans_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanAdminRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanAdminRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanAdminRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlanAdmin'
+          description: ''
+  /api/platform-admin/subscription-plans/{plan_id}/:
+    get:
+      operationId: platform_admin_subscription_plans_retrieve_2
+      parameters:
+      - in: path
+        name: plan_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlanAdmin'
+          description: ''
+    patch:
+      operationId: platform_admin_subscription_plans_partial_update
+      parameters:
+      - in: path
+        name: plan_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscriptionPlanAdminRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscriptionPlanAdminRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscriptionPlanAdminRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlanAdmin'
+          description: ''
+  /api/platform-admin/subscription-plans/{plan_id}/archive/:
+    post:
+      operationId: platform_admin_subscription_plans_archive_create
+      parameters:
+      - in: path
+        name: plan_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/superuser/admin-candidates/lookup-by-phone/:
+    post:
+      operationId: platform_admin_superuser_admin_candidates_lookup_by_phone_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhoneLookupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PhoneLookupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PhoneLookupRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhoneLookup'
+          description: ''
+  /api/platform-admin/superuser/admins/:
+    get:
+      operationId: platform_admin_superuser_admins_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminMembership'
+          description: ''
+    post:
+      operationId: platform_admin_superuser_admins_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlatformAdminMembershipRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlatformAdminMembershipRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlatformAdminMembershipRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminMembership'
+          description: ''
+  /api/platform-admin/superuser/admins/{membership_id}/:
+    get:
+      operationId: platform_admin_superuser_admins_retrieve_2
+      parameters:
+      - in: path
+        name: membership_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminMembership'
+          description: ''
+    patch:
+      operationId: platform_admin_superuser_admins_partial_update
+      parameters:
+      - in: path
+        name: membership_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPlatformAdminMembershipRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPlatformAdminMembershipRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPlatformAdminMembershipRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformAdminMembership'
+          description: ''
+  /api/platform-admin/superuser/admins/{membership_id}/history/:
+    get:
+      operationId: platform_admin_superuser_admins_history_retrieve
+      parameters:
+      - in: path
+        name: membership_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/superuser/admins/{membership_id}/reactivate/:
+    post:
+      operationId: platform_admin_superuser_admins_reactivate_create
+      parameters:
+      - in: path
+        name: membership_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/superuser/admins/{membership_id}/revoke/:
+    post:
+      operationId: platform_admin_superuser_admins_revoke_create
+      parameters:
+      - in: path
+        name: membership_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/superuser/capability-catalog/:
+    get:
+      operationId: platform_admin_superuser_capability_catalog_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/superuser/transfer/:
+    post:
+      operationId: platform_admin_superuser_transfer_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRootRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRootRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRootRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferRoot'
+          description: ''
+  /api/platform-admin/support/tickets/:
+    get:
+      operationId: platform_admin_support_tickets_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicket'
+          description: ''
+  /api/platform-admin/support/tickets/{ticket_id}/:
+    get:
+      operationId: platform_admin_support_tickets_retrieve_2
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicket'
+          description: ''
+  /api/platform-admin/support/tickets/{ticket_id}/assign/:
+    post:
+      operationId: platform_admin_support_tickets_assign_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/support/tickets/{ticket_id}/change-priority/:
+    post:
+      operationId: platform_admin_support_tickets_change_priority_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/support/tickets/{ticket_id}/close/:
+    post:
+      operationId: platform_admin_support_tickets_close_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/support/tickets/{ticket_id}/internal-notes/:
+    post:
+      operationId: platform_admin_support_tickets_internal_notes_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/support/tickets/{ticket_id}/reopen/:
+    post:
+      operationId: platform_admin_support_tickets_reopen_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/support/tickets/{ticket_id}/reply/:
+    post:
+      operationId: platform_admin_support_tickets_reply_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/support/tickets/{ticket_id}/resolve/:
+    post:
+      operationId: platform_admin_support_tickets_resolve_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/token-packages/:
+    get:
+      operationId: platform_admin_token_packages_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPackageAdmin'
+          description: ''
+    post:
+      operationId: platform_admin_token_packages_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenPackageAdminRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenPackageAdminRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenPackageAdminRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPackageAdmin'
+          description: ''
+  /api/platform-admin/token-packages/{package_id}/:
+    get:
+      operationId: platform_admin_token_packages_retrieve_2
+      parameters:
+      - in: path
+        name: package_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPackageAdmin'
+          description: ''
+    patch:
+      operationId: platform_admin_token_packages_partial_update
+      parameters:
+      - in: path
+        name: package_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTokenPackageAdminRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTokenPackageAdminRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTokenPackageAdminRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPackageAdmin'
+          description: ''
+  /api/platform-admin/token-packages/{package_id}/archive/:
+    post:
+      operationId: platform_admin_token_packages_archive_create
+      parameters:
+      - in: path
+        name: package_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/users/:
+    get:
+      operationId: platform_admin_users_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserAdmin'
+          description: ''
+  /api/platform-admin/users/{user_id}/:
+    get:
+      operationId: platform_admin_users_retrieve_2
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserAdmin'
+          description: ''
+  /api/platform-admin/users/{user_id}/reactivate/:
+    post:
+      operationId: platform_admin_users_reactivate_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/users/{user_id}/revoke-sessions/:
+    post:
+      operationId: platform_admin_users_revoke_sessions_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/users/{user_id}/subscriptions/:
+    get:
+      operationId: platform_admin_users_subscriptions_retrieve
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/users/{user_id}/subscriptions/activate/:
+    post:
+      operationId: platform_admin_users_subscriptions_activate_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/users/{user_id}/subscriptions/cancel/:
+    post:
+      operationId: platform_admin_users_subscriptions_cancel_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/users/{user_id}/suspend/:
+    post:
+      operationId: platform_admin_users_suspend_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/users/{user_id}/wallet/:
+    get:
+      operationId: platform_admin_users_wallet_retrieve
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/wallet-transactions/:
+    get:
+      operationId: platform_admin_wallet_transactions_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletTransactionAdmin'
+          description: ''
   /api/pricebook-chapters/{id}/groups/:
     get:
       operationId: pricebook_chapters_groups_list
@@ -3140,6 +4639,185 @@ paths:
                 items:
                   $ref: '#/components/schemas/SubscriptionPlan'
           description: ''
+  /api/support/tickets/:
+    get:
+      operationId: support_tickets_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: یک شماره صفحه‌ در مجموعه نتایج صفحه‌بندی شده.
+        schema:
+          type: integer
+      tags:
+      - support
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupportTicketList'
+          description: ''
+    post:
+      operationId: support_tickets_create
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupportTicketCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupportTicketCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicket'
+          description: ''
+  /api/support/tickets/{ticket_id}/:
+    get:
+      operationId: support_tickets_retrieve
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicket'
+          description: ''
+  /api/support/tickets/{ticket_id}/close/:
+    post:
+      operationId: support_tickets_close_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupportTicketRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupportTicketRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicket'
+          description: ''
+  /api/support/tickets/{ticket_id}/messages/:
+    post:
+      operationId: support_tickets_messages_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketMessageCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupportTicketMessageCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupportTicketMessageCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicketMessage'
+          description: ''
+  /api/support/tickets/{ticket_id}/reopen/:
+    post:
+      operationId: support_tickets_reopen_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportTicketRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupportTicketRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupportTicketRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportTicket'
+          description: ''
+  /api/support/unread-count/:
+    get:
+      operationId: support_unread_count_retrieve
+      tags:
+      - support
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unread_count:
+                    type: integer
+          description: ''
   /api/token-wallet/:
     get:
       operationId: token_wallet_retrieve
@@ -3199,6 +4877,134 @@ components:
       - id
       - is_active
       - title_fa
+    Adjustment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        target_user_id:
+          type: integer
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/AdjustmentKindEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        reason:
+          type: string
+          maxLength: 500
+        reference:
+          type: string
+          maxLength: 120
+        status:
+          $ref: '#/components/schemas/AdjustmentStatusEnum'
+        requested_by_id:
+          type: integer
+          readOnly: true
+        approved_by_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        applied_by_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        break_glass:
+          type: boolean
+        idempotency_key:
+          type: string
+          maxLength: 128
+        ledger_transaction_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        applied_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - amount
+      - applied_by_id
+      - approved_by_id
+      - created_at
+      - id
+      - idempotency_key
+      - kind
+      - ledger_transaction_id
+      - reason
+      - requested_by_id
+      - target_user_id
+    AdjustmentKindEnum:
+      enum:
+      - grant
+      - debit
+      - refund
+      - reversal
+      type: string
+      description: |-
+        * `grant` - Grant
+        * `debit` - Debit
+        * `refund` - Refund
+        * `reversal` - Reversal
+    AdjustmentRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/AdjustmentKindEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        reference:
+          type: string
+          maxLength: 120
+        status:
+          $ref: '#/components/schemas/AdjustmentStatusEnum'
+        break_glass:
+          type: boolean
+        idempotency_key:
+          type: string
+          minLength: 1
+          maxLength: 128
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        applied_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - amount
+      - idempotency_key
+      - kind
+      - reason
+    AdjustmentStatusEnum:
+      enum:
+      - requested
+      - approved
+      - rejected
+      - applied
+      type: string
+      description: |-
+        * `requested` - Requested
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `applied` - Applied
     AppUser:
       type: object
       properties:
@@ -3233,6 +5039,48 @@ components:
       - is_staff
       - phone_number
       - updated_at
+    AppUserAdmin:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        phone_number:
+          type: string
+          maxLength: 20
+        display_name:
+          type: string
+          maxLength: 160
+        is_active:
+          type: boolean
+        is_suspended:
+          type: boolean
+          readOnly: true
+        suspended_at:
+          type: string
+          format: date-time
+          nullable: true
+        suspension_reason:
+          type: string
+          maxLength: 500
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - id
+      - is_suspended
+      - phone_number
+      - updated_at
     AttachmentTypeEnum:
       enum:
       - file
@@ -3241,6 +5089,48 @@ components:
       description: |-
         * `file` - File
         * `financial_document` - Financial document
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        actor_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        actor_type:
+          type: string
+          maxLength: 20
+        effective_capabilities: {}
+        action:
+          type: string
+          maxLength: 80
+        target_type:
+          type: string
+          maxLength: 80
+        target_id:
+          type: string
+          maxLength: 80
+        request_id:
+          type: string
+          maxLength: 128
+        outcome:
+          type: string
+          maxLength: 40
+        reason:
+          type: string
+          maxLength: 500
+        before_diff: {}
+        after_diff: {}
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - action
+      - actor_id
+      - actor_type
+      - id
     CalculationBillingReceipt:
       type: object
       properties:
@@ -3364,6 +5254,28 @@ components:
       description: |-
         * `official` - Official pricebook calculation
         * `starred` - Standalone starred calculation
+    CategoryEnum:
+      enum:
+      - account
+      - billing
+      - payment
+      - subscription
+      - pricebook
+      - financial_document
+      - company
+      - technical
+      - other
+      type: string
+      description: |-
+        * `account` - Account
+        * `billing` - Billing
+        * `payment` - Payment
+        * `subscription` - Subscription
+        * `pricebook` - Pricebook
+        * `financial_document` - Financial document
+        * `company` - Company
+        * `technical` - Technical
+        * `other` - Other
     CombinedTokenBillingError:
       type: object
       description: Documents ``InsufficientCombinedTokenBalance`` (personal + company).
@@ -3474,6 +5386,53 @@ components:
       - name
       - owner_member_id
       - public_group_id
+      - updated_at
+    CompanyAdmin:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 180
+        legal_name:
+          type: string
+          maxLength: 240
+        active_slug:
+          type: string
+          nullable: true
+          maxLength: 80
+        is_active:
+          type: boolean
+        is_suspended:
+          type: boolean
+          readOnly: true
+        suspended_at:
+          type: string
+          format: date-time
+          nullable: true
+        suspension_reason:
+          type: string
+          maxLength: 500
+        owner_member_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_suspended
+      - name
+      - owner_member_id
       - updated_at
     CompanyGroup:
       type: object
@@ -5877,6 +7836,29 @@ components:
       - next
       - previous
       - results
+    PaginatedSupportTicketList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportTicket'
     PaginatedTokenWalletTransaction:
       type: object
       properties:
@@ -6004,6 +7986,29 @@ components:
       properties:
         text:
           type: string
+    PatchedPlatformAdminMembershipRequest:
+      type: object
+      properties:
+        is_active:
+          type: boolean
+        grant_reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        starts_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revocation_reason:
+          type: string
+          maxLength: 500
     PatchedProjectCoefficientValueRequest:
       type: object
       properties:
@@ -6072,6 +8077,85 @@ components:
         include_all_company_members_in_group:
           type: boolean
           default: true
+    PatchedSubscriptionPlanAdminRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        title_fa:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description_fa:
+          type: string
+        daily_message_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_attachment_bytes_per_message:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        duration_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+        currency:
+          type: string
+          minLength: 1
+          maxLength: 8
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        archived_at:
+          type: string
+          format: date-time
+          nullable: true
+    PatchedTokenPackageAdminRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        title_fa:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description_fa:
+          type: string
+        token_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        archived_at:
+          type: string
+          format: date-time
+          nullable: true
     PaymentOrder:
       type: object
       properties:
@@ -6080,7 +8164,7 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/PaymentOrderStatusEnum'
+          - $ref: '#/components/schemas/StatusCabEnum'
           readOnly: true
         package_code_snapshot:
           type: string
@@ -6120,6 +8204,72 @@ components:
       - provider
       - status
       - token_amount_snapshot
+    PaymentOrderAdmin:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+          readOnly: true
+        token_package_id:
+          type: integer
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusCabEnum'
+        package_code_snapshot:
+          type: string
+          maxLength: 40
+        token_amount_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        price_amount_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+        currency_snapshot:
+          type: string
+          maxLength: 8
+        provider:
+          type: string
+          maxLength: 40
+        provider_reference:
+          type: string
+          maxLength: 128
+        failure_reason:
+          type: string
+          maxLength: 240
+        ledger_transaction_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        fulfilled_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - currency_snapshot
+      - id
+      - ledger_transaction_id
+      - package_code_snapshot
+      - price_amount_snapshot
+      - provider
+      - provider_reference
+      - token_amount_snapshot
+      - token_package_id
+      - updated_at
+      - user_id
     PaymentOrderCreateRequest:
       type: object
       description: |-
@@ -6137,20 +8287,6 @@ components:
           maxLength: 128
       required:
       - package_code
-    PaymentOrderStatusEnum:
-      enum:
-      - created
-      - pending_provider
-      - fulfilled
-      - failed
-      - cancelled
-      type: string
-      description: |-
-        * `created` - Created
-        * `pending_provider` - Pending provider
-        * `fulfilled` - Fulfilled
-        * `failed` - Failed
-        * `cancelled` - Cancelled
     PaymentsDisabled:
       type: object
       properties:
@@ -6163,6 +8299,110 @@ components:
       required:
       - code
       - detail
+    PhoneLookup:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          maxLength: 20
+      required:
+      - phone_number
+    PhoneLookupRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 20
+      required:
+      - phone_number
+    PlatformAdminMembership:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+        grant_reason:
+          type: string
+          maxLength: 500
+        starts_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revocation_reason:
+          type: string
+          maxLength: 500
+        granted_capabilities:
+          type: string
+          readOnly: true
+        baseline_capabilities:
+          type: string
+          readOnly: true
+        capabilities:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - baseline_capabilities
+      - capabilities
+      - created_at
+      - display_name
+      - grant_reason
+      - granted_capabilities
+      - id
+      - phone_number
+      - updated_at
+      - user_id
+    PlatformAdminMembershipRequest:
+      type: object
+      properties:
+        is_active:
+          type: boolean
+        grant_reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        starts_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revocation_reason:
+          type: string
+          maxLength: 500
+      required:
+      - grant_reason
     Pricebook:
       type: object
       properties:
@@ -6614,6 +8854,18 @@ components:
       - long_description_fa
       - row_id
       - short_name_fa
+    PriorityEnum:
+      enum:
+      - low
+      - normal
+      - high
+      - urgent
+      type: string
+      description: |-
+        * `low` - Low
+        * `normal` - Normal
+        * `high` - High
+        * `urgent` - Urgent
     PrivateFileUploadRequest:
       type: object
       properties:
@@ -6968,6 +9220,23 @@ components:
       - checks
       - service
       - status
+    Reason:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+      required:
+      - reason
+    ReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - reason
     RoleEnum:
       enum:
       - owner
@@ -7276,6 +9545,20 @@ components:
       - quantity
       - unit
       - unit_price
+    StatusCabEnum:
+      enum:
+      - created
+      - pending_provider
+      - fulfilled
+      - failed
+      - cancelled
+      type: string
+      description: |-
+        * `created` - Created
+        * `pending_provider` - Pending provider
+        * `fulfilled` - Fulfilled
+        * `failed` - Failed
+        * `cancelled` - Cancelled
     SubscriptionPlan:
       type: object
       description: |-
@@ -7342,6 +9625,295 @@ components:
       - max_attachment_bytes_per_message
       - price_amount
       - title_fa
+    SubscriptionPlanAdmin:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 40
+        title_fa:
+          type: string
+          maxLength: 160
+        description_fa:
+          type: string
+        daily_message_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_attachment_bytes_per_message:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        duration_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+        currency:
+          type: string
+          maxLength: 8
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        archived_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - duration_days
+      - id
+      - title_fa
+      - updated_at
+    SubscriptionPlanAdminRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        title_fa:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description_fa:
+          type: string
+        daily_message_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        max_attachment_bytes_per_message:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        duration_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+        currency:
+          type: string
+          minLength: 1
+          maxLength: 8
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        archived_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - code
+      - duration_days
+      - title_fa
+    SupportTicket:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        public_id:
+          type: string
+          readOnly: true
+        subject:
+          type: string
+          maxLength: 240
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        status:
+          $ref: '#/components/schemas/SupportTicketStatusEnum'
+        company_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        assigned_to_admin_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        last_user_message_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_admin_message_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        messages:
+          type: string
+          readOnly: true
+      required:
+      - assigned_to_admin_id
+      - company_id
+      - created_at
+      - id
+      - messages
+      - public_id
+      - subject
+      - updated_at
+    SupportTicketCreateRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 240
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          default: other
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          default: normal
+        body:
+          type: string
+          minLength: 1
+        company_id:
+          type: integer
+          nullable: true
+      required:
+      - body
+      - subject
+    SupportTicketMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/SupportTicketMessageKindEnum'
+        body:
+          type: string
+        author_user_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        author_admin_membership_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - author_admin_membership_id
+      - author_user_id
+      - body
+      - id
+      - kind
+    SupportTicketMessageCreateRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+      required:
+      - body
+    SupportTicketMessageKindEnum:
+      enum:
+      - user_message
+      - admin_reply
+      - internal_note
+      - system_event
+      type: string
+      description: |-
+        * `user_message` - User message
+        * `admin_reply` - Admin reply
+        * `internal_note` - Internal note
+        * `system_event` - System event
+    SupportTicketRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 240
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        status:
+          $ref: '#/components/schemas/SupportTicketStatusEnum'
+        last_user_message_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_admin_message_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - subject
+    SupportTicketStatusEnum:
+      enum:
+      - open
+      - waiting_for_staff
+      - waiting_for_user
+      - resolved
+      - closed
+      type: string
+      description: |-
+        * `open` - Open
+        * `waiting_for_staff` - Waiting for staff
+        * `waiting_for_user` - Waiting for user
+        * `resolved` - Resolved
+        * `closed` - Closed
     TokenBillingError:
       type: object
       properties:
@@ -7394,6 +9966,94 @@ components:
       - currency
       - display_order
       - is_active
+      - price_amount
+      - title_fa
+      - token_amount
+    TokenPackageAdmin:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 40
+        title_fa:
+          type: string
+          maxLength: 160
+        description_fa:
+          type: string
+        token_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        archived_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - id
+      - price_amount
+      - title_fa
+      - token_amount
+      - updated_at
+    TokenPackageAdminRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        title_fa:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description_fa:
+          type: string
+        token_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,4})?$
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        is_active:
+          type: boolean
+        display_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        archived_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - code
       - price_amount
       - title_fa
       - token_amount
@@ -7506,6 +10166,10 @@ components:
       - calculation_usage
       - company_donation_debit
       - demo_package_credit
+      - admin_adjustment_grant
+      - admin_adjustment_debit
+      - admin_adjustment_refund
+      - admin_adjustment_reversal
       type: string
       description: |-
         * `initial_grant` - Initial grant
@@ -7515,6 +10179,44 @@ components:
         * `calculation_usage` - Calculation usage
         * `company_donation_debit` - Company donation debit
         * `demo_package_credit` - Demo package credit
+        * `admin_adjustment_grant` - Admin adjustment grant
+        * `admin_adjustment_debit` - Admin adjustment debit
+        * `admin_adjustment_refund` - Admin adjustment refund
+        * `admin_adjustment_reversal` - Admin adjustment reversal
+    TransferRoot:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          maxLength: 20
+        user_id:
+          type: integer
+        reason:
+          type: string
+          maxLength: 500
+        keep_previous_as_admin:
+          type: boolean
+          default: true
+      required:
+      - reason
+    TransferRootRequest:
+      type: object
+      properties:
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 20
+        user_id:
+          type: integer
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        keep_previous_as_admin:
+          type: boolean
+          default: true
+      required:
+      - reason
     UploadStatusEnum:
       enum:
       - pending
@@ -7594,6 +10296,44 @@ components:
       - plan_title_fa
       - starts_at
       - status
+    WalletTransactionAdmin:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        wallet_id:
+          type: integer
+          readOnly: true
+        transaction_type:
+          $ref: '#/components/schemas/TransactionTypeEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        balance_after:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,20}(?:\.\d{0,0})?$
+        actor_user_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        reason:
+          type: string
+          maxLength: 240
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actor_user_id
+      - amount
+      - balance_after
+      - created_at
+      - id
+      - transaction_type
+      - wallet_id
   securitySchemes:
     cookieAuth:
       type: apiKey

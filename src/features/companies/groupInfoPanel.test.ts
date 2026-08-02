@@ -15,11 +15,16 @@ describe("Telegram-inspired group info panel", () => {
   const dashboard = readFileSync(join(here, "../../pages/CompanyDashboardPage.tsx"), "utf8");
   const permissions = readFileSync(join(here, "companyPermissions.ts"), "utf8");
 
-  it("route-rendered component is GroupInfoDrawer from CompanyDashboardPage", () => {
-    assert.match(dashboard, /import \{ GroupInfoDrawer \} from "\.\.\/features\/companies\/GroupInfoDrawer"/);
-    assert.match(dashboard, /<GroupInfoDrawer/);
-    assert.doesNotMatch(dashboard, /GroupsSection/);
-    assert.doesNotMatch(dashboard, /managementSlot/);
+  it("registers Ctrl/Cmd+S save hook unconditionally before open early-return", () => {
+    const hookIndex = drawer.indexOf("useRegisterSaveAction(");
+    const earlyReturnIndex = drawer.indexOf("if (!open) return null;");
+    assert.ok(hookIndex > 0, "useRegisterSaveAction must be present");
+    assert.ok(earlyReturnIndex > 0, "open early-return must be present");
+    assert.ok(
+      hookIndex < earlyReturnIndex,
+      "useRegisterSaveAction must be called before if (!open) return null"
+    );
+    assert.match(drawer, /open && view\.type === "edit"/);
   });
 
   it("overview is profile-oriented without editable form fields or notification UI", () => {

@@ -31,6 +31,7 @@ const CONSTANT_NAMES = new Set(["pi", "e"]);
 
 /** Horizontal Unicode whitespace removed before tokenization. */
 const HORIZONTAL_WS =
+  // eslint-disable-next-line no-control-regex -- Unicode horizontal whitespace matching
   /[\u0009\u000B\u000C\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000\u200B\uFEFF\u180E]/g;
 
 const PERSIAN_ZERO = "۰".charCodeAt(0);

@@ -5,19 +5,33 @@ export function getWorkspaceHeaderCopy(pathname: string): {
   if (pathname === "/status") {
     return {
       title: "وضعیت سرویس",
-      description: "بررسی اتصال متریل به سرویس توسعه"
+      description: ""
     };
   }
 
   if (pathname === "/help") {
     return {
-      title: "راهنمای متریل",
-      description: "پاسخ‌های کوتاه برای مسیرهای اصلی نسخه آزمایشی"
+      title: "راهنما",
+      description: ""
+    };
+  }
+
+  if (pathname.startsWith("/admin")) {
+    return {
+      title: "مدیریت پلتفرم",
+      description: ""
+    };
+  }
+
+  if (pathname.startsWith("/support")) {
+    return {
+      title: "پشتیبانی",
+      description: ""
     };
   }
 
   return {
-    title: "فضای کار متریل",
-    description: "شرکت، پروژه، صورت‌بها و فهرست‌بها در یک فضای کاری"
+    title: "متریل",
+    description: ""
   };
 }

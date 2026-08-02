@@ -26,6 +26,7 @@ describe("mobile drawer labeled navigation", () => {
     assert.ok(nav.includes('variant === "drawer"'));
     assert.ok(nav.includes("لیست شرکت‌ها"));
     assert.ok(nav.includes("افزودن شرکت"));
+    assert.ok(nav.includes("پشتیبانی"));
     assert.ok(nav.includes("راهنما"));
     assert.ok(nav.includes("کیف توکن"));
     assert.ok(nav.includes("تنظیمات حساب"));

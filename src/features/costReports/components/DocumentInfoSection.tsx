@@ -261,7 +261,6 @@ export function DocumentInfoSection({
             <input
               className={inputClasses}
               onChange={(event) => onFieldChange("report_title", event.target.value)}
-              placeholder="اختیاری"
               value={form.report_title}
             />
           </Field>
@@ -269,7 +268,6 @@ export function DocumentInfoSection({
             <input
               className={inputClasses}
               onChange={(event) => onFieldChange("document_number", event.target.value)}
-              placeholder="اختیاری"
               value={form.document_number}
             />
           </Field>

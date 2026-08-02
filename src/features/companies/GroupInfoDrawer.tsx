@@ -963,8 +963,6 @@ export function GroupInfoDrawer({
     }
   }
 
-  if (!open) return null;
-
   const isEditDirty = (() => {
     if (!editBaseline) return false;
     if (editBaseline.mode === "project") {
@@ -993,13 +991,16 @@ export function GroupInfoDrawer({
 
   const canSaveEdit = isEditDirty && isEditValid && !isUpdating;
 
+  // Must stay above every conditional return so hook order is stable when open flips.
   useRegisterSaveAction(
-    view.type === "edit" && canEditMeta && canSaveEdit
+    open && view.type === "edit" && canEditMeta && canSaveEdit
       ? () => {
           void handleSaveEdit();
         }
       : null
   );
+
+  if (!open) return null;
 
   const shellClass =
     mode === "inline"

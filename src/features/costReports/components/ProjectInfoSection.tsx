@@ -13,18 +13,13 @@ export function ProjectInfoSection({
   onFieldChange: (field: keyof WizardFormState, value: string) => void;
 }) {
   return (
-    <GlassCard className="p-5 sm:p-6">
-      <div className="mb-5 flex items-start gap-3">
-        <FolderKanban className="mt-1 h-5 w-5 text-ui-primary" />
-        <div>
-          <h2 className="text-xl font-black text-ui-text-primary">اطلاعات پروژه</h2>
-          <p className="mt-2 text-sm leading-7 text-ui-text-secondary">
-            سال پایه به صورت پیش‌فرض ۱۴۰۴ است و برای این صورت‌بها استفاده می‌شود.
-          </p>
-        </div>
+    <GlassCard className="p-4 sm:p-5">
+      <div className="mb-4 flex items-center gap-3">
+        <FolderKanban className="h-5 w-5 text-ui-primary" />
+        <h2 className="text-lg font-black text-ui-text-primary sm:text-xl">اطلاعات پروژه</h2>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         <Field label="نام پروژه" required>
           <input
             className={inputClasses}
@@ -38,7 +33,6 @@ export function ProjectInfoSection({
           <input
             className={inputClasses}
             onChange={(event) => onFieldChange("project_code", event.target.value)}
-            placeholder="اختیاری"
             value={form.project_code}
           />
         </Field>
@@ -46,11 +40,13 @@ export function ProjectInfoSection({
           <input
             className={inputClasses}
             onChange={(event) => onFieldChange("contract_number", event.target.value)}
-            placeholder="اختیاری"
             value={form.contract_number}
           />
         </Field>
-        <Field label="سال پایه">
+        <Field
+          help="سال پایه فهرست‌بها برای این صورت‌بها؛ پیش‌فرض ۱۴۰۴ است."
+          label="سال پایه"
+        >
           <input
             className={inputClasses}
             inputMode="numeric"
@@ -62,7 +58,6 @@ export function ProjectInfoSection({
           <input
             className={inputClasses}
             onChange={(event) => onFieldChange("employer_name", event.target.value)}
-            placeholder="اختیاری"
             value={form.employer_name}
           />
         </Field>
@@ -70,7 +65,6 @@ export function ProjectInfoSection({
           <input
             className={inputClasses}
             onChange={(event) => onFieldChange("consultant_name", event.target.value)}
-            placeholder="اختیاری"
             value={form.consultant_name}
           />
         </Field>
@@ -78,7 +72,6 @@ export function ProjectInfoSection({
           <input
             className={inputClasses}
             onChange={(event) => onFieldChange("contractor_name", event.target.value)}
-            placeholder="اختیاری"
             value={form.contractor_name}
           />
         </Field>
@@ -88,7 +81,6 @@ export function ProjectInfoSection({
             onChange={(event) =>
               onFieldChange("executive_agency_name", event.target.value)
             }
-            placeholder="اختیاری"
             value={form.executive_agency_name}
           />
         </Field>
@@ -110,12 +102,10 @@ export function ProjectInfoSection({
           <textarea
             className={textareaClasses}
             onChange={(event) => onFieldChange("description", event.target.value)}
-            placeholder="اختیاری"
             value={form.description}
           />
         </Field>
       </div>
-
     </GlassCard>
   );
 }

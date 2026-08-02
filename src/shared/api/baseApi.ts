@@ -148,10 +148,12 @@ export const baseApi = createApi({
     "GroupMessage",
     "Health",
     "MessageQuota",
+    "PlatformAdmin",
     "Pricebook",
     "PrivateFile",
     "Project",
     "Subscription",
+    "SupportTicket",
     "Wallet"
   ],
   endpoints: () => ({})
