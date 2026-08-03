@@ -103,12 +103,20 @@ describe("platform admin source contracts", () => {
     assert.ok(userDetail.includes("useReplyMySupportTicketMutation"));
   });
 
-  it("step-up dialog does not store password", () => {
-    const dialog = read("features/platformAdmin/StepUpDialog.tsx");
-    assert.ok(dialog.includes('type="password"'));
-    assert.ok(!dialog.includes("localStorage"));
-    assert.ok(!dialog.includes("sessionStorage"));
-    assert.ok(dialog.includes('setPassword("")'));
+  it("passkey enrollment does not store account password", () => {
+    const enrollment = read("features/platformAdmin/AdminPasskeyScreens.tsx");
+    assert.ok(enrollment.includes('type="password"'));
+    assert.ok(enrollment.includes("رمز ورود حساب"));
+    assert.ok(!enrollment.includes("localStorage"));
+    assert.ok(!enrollment.includes("sessionStorage"));
+    assert.ok(enrollment.includes('setPassword("")'));
+  });
+
+  it("admin shell uses AdminSecurityProvider gate instead of password step-up", () => {
+    const router = read("app/router.tsx");
+    assert.ok(router.includes("AdminSecurityProvider"));
+    assert.ok(router.includes("AdminGate"));
+    assert.ok(!router.includes("StepUpProvider"));
   });
 
   it("admin nav entry is driven by platform-admin/me, not company roles", () => {

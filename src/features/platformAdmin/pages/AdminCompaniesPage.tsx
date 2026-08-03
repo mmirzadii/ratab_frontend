@@ -14,14 +14,14 @@ import {
   useTransferAdminCompanyOwnershipMutation
 } from "../platformAdminApi";
 import { formatPlatformAdminError } from "../platformAdminErrors";
-import { useStepUp } from "../stepUpContext";
+import { useAdminPasskeyStepUp } from "../adminSecurityContext";
 
 const inputCls =
   "w-full rounded-lg border border-ui-border-default bg-ui-surface px-3 py-2 text-sm";
 
 export function AdminCompaniesPage() {
   const dispatch = useAppDispatch();
-  const { runWithStepUp } = useStepUp();
+  const { runWithPasskeyStepUp: runWithStepUp } = useAdminPasskeyStepUp();
   const [params, setParams] = useSearchParams();
   const page = Math.max(1, Number(params.get("page") ?? 1));
   const search = params.get("search") ?? "";

@@ -53,7 +53,7 @@ export function CompanyWorkspaceRail({
     <aside
       aria-label="ناوبری فضای کار شرکت"
       className={classNames(
-        "flex w-[4.25rem] shrink-0 flex-col items-center border-l border-ui-border-subtle bg-ui-overlay py-3 backdrop-blur-xl",
+        "flex w-[4.25rem] shrink-0 flex-col items-center border-l border-ui-border-subtle bg-ui-surface/90 py-3 backdrop-blur-xl",
         className
       )}
     >

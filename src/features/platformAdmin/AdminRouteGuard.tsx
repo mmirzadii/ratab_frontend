@@ -1,8 +1,8 @@
 import type { PropsWithChildren } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
-import { GlassCard } from "../../shared/components/GlassCard";
 import { hasAnyCapability, hasCapability } from "./platformAdminCapabilities";
+import { useAdminSecurity } from "./adminSecurityContext";
 import { usePlatformAdmin } from "./usePlatformAdmin";
 
 type Props = PropsWithChildren<{
@@ -11,34 +11,15 @@ type Props = PropsWithChildren<{
   anyOf?: readonly string[];
   /** Root Superuser only. */
   superuser?: boolean;
-  /** When true, only checks identity (used by nested page guards). */
-  nest?: boolean;
 }>;
 
-export function AdminRouteGuard({ children, capability, anyOf, superuser, nest = false }: Props) {
-  const location = useLocation();
-  const { isPlatformAdmin, isSuperuser, capabilities, isLoading, isFetching, isError, error } =
-    usePlatformAdmin();
+/** Nested capability/superuser gate. Entry identity is handled by AdminGate. */
+export function AdminRouteGuard({ children, capability, anyOf, superuser }: Props) {
+  const { gate } = useAdminSecurity();
+  const { isSuperuser, capabilities } = usePlatformAdmin();
 
-  if (isLoading || (!nest && isFetching && !isPlatformAdmin)) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center p-6">
-        <GlassCard className="max-w-sm p-6 text-center">
-          <p className="text-sm font-bold text-ui-text-secondary">در حال بررسی دسترسی مدیریت…</p>
-        </GlassCard>
-      </div>
-    );
-  }
-
-  if (!nest && (isError || !isPlatformAdmin)) {
-    const status =
-      typeof error === "object" && error && "status" in error
-        ? (error as { status?: unknown }).status
-        : null;
-    if (status === 401) {
-      return <Navigate replace state={{ from: location }} to="/login" />;
-    }
-    return <Navigate replace to="/companies" />;
+  if (gate !== "admin_dashboard") {
+    return null;
   }
 
   if (superuser && !isSuperuser) {

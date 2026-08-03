@@ -1399,6 +1399,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform-admin/passkeys/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_passkeys_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/passkeys/{passkey_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["platform_admin_passkeys_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["platform_admin_passkeys_partial_update"];
+        trace?: never;
+    };
+    "/api/platform-admin/passkeys/enrollment/reauthenticate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_passkeys_enrollment_reauthenticate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/passkeys/registration/options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_passkeys_registration_options_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/passkeys/registration/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_passkeys_registration_verify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform-admin/payment-orders/": {
         parameters: {
             query?: never;
@@ -1463,7 +1543,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/platform-admin/step-up/": {
+    "/api/platform-admin/security/action-proof/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        get: operations["platform_admin_security_action_proof_retrieve"];
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        put: operations["platform_admin_security_action_proof_update"];
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        post: operations["platform_admin_security_action_proof_create"];
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        delete: operations["platform_admin_security_action_proof_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        patch: operations["platform_admin_security_action_proof_partial_update"];
+        trace?: never;
+    };
+    "/api/platform-admin/security/recovery/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        get: operations["platform_admin_security_recovery_retrieve"];
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        put: operations["platform_admin_security_recovery_update"];
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        post: operations["platform_admin_security_recovery_create"];
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        delete: operations["platform_admin_security_recovery_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        patch: operations["platform_admin_security_recovery_partial_update"];
+        trace?: never;
+    };
+    "/api/platform-admin/security/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_admin_security_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/security/totp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        get: operations["platform_admin_security_totp_retrieve"];
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        put: operations["platform_admin_security_totp_update"];
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        post: operations["platform_admin_security_totp_create"];
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        delete: operations["platform_admin_security_totp_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Compatibility shim for retired TOTP / action-proof / password step-up routes. */
+        patch: operations["platform_admin_security_totp_partial_update"];
+        trace?: never;
+    };
+    "/api/platform-admin/session/": {
         parameters: {
             query?: never;
             header?: never;
@@ -1472,7 +1631,92 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        post?: never;
+        delete: operations["platform_admin_session_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/session/webauthn/options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_session_webauthn_options_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/session/webauthn/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_session_webauthn_verify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/step-up/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retired password step-up endpoint (HTTP 410). */
+        get: operations["platform_admin_step_up_retrieve"];
+        /** @description Retired password step-up endpoint (HTTP 410). */
+        put: operations["platform_admin_step_up_update"];
+        /** @description Retired password step-up endpoint (HTTP 410). */
         post: operations["platform_admin_step_up_create"];
+        /** @description Retired password step-up endpoint (HTTP 410). */
+        delete: operations["platform_admin_step_up_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Retired password step-up endpoint (HTTP 410). */
+        patch: operations["platform_admin_step_up_partial_update"];
+        trace?: never;
+    };
+    "/api/platform-admin/step-up/webauthn/options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_step_up_webauthn_options_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/step-up/webauthn/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_admin_step_up_webauthn_verify_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1601,6 +1845,23 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["platform_admin_superuser_admins_reactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform-admin/superuser/admins/{membership_id}/reset-passkeys/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Root-only force reset of a delegated Admin's Passkeys. */
+        post: operations["platform_admin_superuser_admins_reset_passkeys_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3630,6 +3891,9 @@ export interface components {
         };
         PatchedPlatformAdminMembershipRequest: {
             is_active?: boolean;
+            status?: components["schemas"]["PlatformAdminMembershipStatusEnum"];
+            full_access?: boolean;
+            full_access_catalog_version?: number;
             grant_reason?: string;
             /** Format: date-time */
             starts_at?: string;
@@ -3666,6 +3930,9 @@ export interface components {
             description?: string;
             /** @default true */
             include_all_company_members_in_group: boolean;
+        };
+        PatchedReasonRequest: {
+            reason?: string;
         };
         PatchedSubscriptionPlanAdminRequest: {
             code?: string;
@@ -3760,6 +4027,9 @@ export interface components {
             readonly phone_number: string;
             readonly display_name: string;
             is_active?: boolean;
+            status?: components["schemas"]["PlatformAdminMembershipStatusEnum"];
+            full_access?: boolean;
+            full_access_catalog_version?: number;
             grant_reason: string;
             /** Format: date-time */
             starts_at?: string;
@@ -3778,6 +4048,9 @@ export interface components {
         };
         PlatformAdminMembershipRequest: {
             is_active?: boolean;
+            status?: components["schemas"]["PlatformAdminMembershipStatusEnum"];
+            full_access?: boolean;
+            full_access_catalog_version?: number;
             grant_reason: string;
             /** Format: date-time */
             starts_at?: string;
@@ -3787,6 +4060,14 @@ export interface components {
             revoked_at?: string | null;
             revocation_reason?: string;
         };
+        /**
+         * @description * `pending_passkey_enrollment` - Pending Passkey Enrollment
+         *     * `active` - Active
+         *     * `suspended` - Suspended
+         *     * `revoked` - Revoked
+         * @enum {string}
+         */
+        PlatformAdminMembershipStatusEnum: "pending_passkey_enrollment" | "active" | "suspended" | "revoked";
         Pricebook: {
             readonly id: number;
             readonly code: string;
@@ -7297,10 +7578,11 @@ export interface operations {
                     "application/json": {
                         is_platform_admin?: boolean;
                         is_superuser?: boolean;
+                        is_root_superuser?: boolean;
                         baseline_capabilities?: string[];
                         granted_capabilities?: string[];
                         capabilities?: string[];
-                        step_up?: Record<string, never>;
+                        security?: Record<string, never>;
                     };
                 };
             };
@@ -7352,6 +7634,147 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_passkeys_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_passkeys_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_admin_passkeys_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedReasonRequest"];
+                "multipart/form-data": components["schemas"]["PatchedReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_passkeys_enrollment_reauthenticate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_passkeys_registration_options_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_passkeys_registration_verify_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -7457,7 +7880,569 @@ export interface operations {
             };
         };
     };
+    platform_admin_security_action_proof_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_action_proof_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_action_proof_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_action_proof_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_admin_security_action_proof_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedReasonRequest"];
+                "multipart/form-data": components["schemas"]["PatchedReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_recovery_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_recovery_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_recovery_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_recovery_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_admin_security_recovery_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedReasonRequest"];
+                "multipart/form-data": components["schemas"]["PatchedReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    platform_admin_security_totp_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_totp_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_totp_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_security_totp_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_admin_security_totp_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedReasonRequest"];
+                "multipart/form-data": components["schemas"]["PatchedReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_session_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_admin_session_webauthn_options_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_session_webauthn_verify_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_step_up_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_step_up_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
     platform_admin_step_up_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_step_up_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_admin_step_up_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedReasonRequest"];
+                "multipart/form-data": components["schemas"]["PatchedReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_step_up_webauthn_options_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_step_up_webauthn_verify_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -7740,6 +8725,33 @@ export interface operations {
         };
     };
     platform_admin_superuser_admins_reactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reason"];
+                };
+            };
+        };
+    };
+    platform_admin_superuser_admins_reset_passkeys_create: {
         parameters: {
             query?: never;
             header?: never;

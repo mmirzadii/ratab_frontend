@@ -57,7 +57,7 @@ export function DocumentSummaryBox({
           ردیف‌ها
         </button>
         <button
-          className="flex h-9 items-center justify-center gap-1 rounded-lg border border-amber-300/20 bg-amber-400/10 px-2 text-[11px] font-bold text-amber-100 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-55 sm:h-auto sm:gap-1.5 sm:py-2 sm:text-xs"
+          className="flex h-9 items-center justify-center gap-1 rounded-lg border border-ui-warning/20 bg-ui-warning-soft px-2 text-[11px] font-bold text-ui-warning transition hover:bg-ui-warning/15 disabled:cursor-not-allowed disabled:opacity-55 sm:h-auto sm:gap-1.5 sm:py-2 sm:text-xs"
           disabled={Boolean(starredDisabledReason) || !onOpenStarredItem}
           onClick={onOpenStarredItem}
           title={starredDisabledReason ?? "افزودن آیتم ستاره‌دار"}
@@ -78,7 +78,7 @@ export function DocumentSummaryBox({
 
       {/* Alert: no lines yet */}
       {lineCount === 0 ? (
-        <div className="mt-2 hidden items-center gap-1.5 rounded-lg border border-amber-300/25 bg-amber-400/10 px-2.5 py-1.5 text-xs text-amber-200 sm:flex">
+        <div className="mt-2 hidden items-center gap-1.5 rounded-lg border border-ui-warning/25 bg-ui-warning-soft px-2.5 py-1.5 text-xs text-ui-warning sm:flex">
           <AlertTriangle className="h-3 w-3 shrink-0" />
           هنوز ردیفی اضافه نشده است
         </div>

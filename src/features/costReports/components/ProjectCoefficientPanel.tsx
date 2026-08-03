@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useId, useMemo, useState } from "react";
 import { CheckCircle2, Loader2, Pencil, Plus, Power, Trash2, X } from "lucide-react";
 
 import {
@@ -148,6 +148,8 @@ export function ProjectCoefficientPanel({
   const [mobilePane, setMobilePane] = useState<"add" | "list">("add");
   const [valueError, setValueError] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  const createScopeLabelId = useId();
+  const editScopeLabelId = useId();
 
   const [createSet, createSetState] = useCreateProjectCoefficientSetMutation();
   const [createValue, createValueState] = useCreateCoefficientValueMutation();
@@ -399,13 +401,22 @@ export function ProjectCoefficientPanel({
 
   function renderScopeControls(
     form: CoefficientValueFormState,
-    setter: (updater: (current: CoefficientValueFormState) => CoefficientValueFormState) => void
+    setter: (updater: (current: CoefficientValueFormState) => CoefficientValueFormState) => void,
+    scopeLabelId: string
   ) {
     return (
       <>
-        <div className="grid grid-cols-3 gap-2">
+        <span className="sr-only" id={scopeLabelId}>
+          دامنه اعمال ضریب
+        </span>
+        <div
+          aria-labelledby={scopeLabelId}
+          className="grid grid-cols-3 gap-2"
+          role="group"
+        >
           {coefficientScopeOptions.map((option) => (
             <button
+              aria-pressed={form.scope === option.id}
               className={classNames(
                 "rounded-lg border px-3 py-2 text-sm font-bold transition",
                 form.scope === option.id
@@ -438,7 +449,7 @@ export function ProjectCoefficientPanel({
               ))}
             </select>
             {availableChapters.length === 0 ? (
-              <p className="mt-1 text-xs leading-6 text-amber-100">
+              <p className="mt-1 text-xs leading-6 text-ui-warning">
                 فصل‌های سال فهرست‌بهای فعال هنوز بارگذاری نشده‌اند.
               </p>
             ) : null}
@@ -462,7 +473,7 @@ export function ProjectCoefficientPanel({
               ))}
             </select>
             {rowTargets.length === 0 ? (
-              <p className="mt-1 text-xs leading-6 text-amber-100">
+              <p className="mt-1 text-xs leading-6 text-ui-warning">
                 برای ضریب ردیف، ابتدا یک ردیف از مرور فهرست‌بها به سند اضافه کنید.
               </p>
             ) : null}
@@ -474,11 +485,12 @@ export function ProjectCoefficientPanel({
 
   function renderValueFormFields(
     form: CoefficientValueFormState,
-    setter: (updater: (current: CoefficientValueFormState) => CoefficientValueFormState) => void
+    setter: (updater: (current: CoefficientValueFormState) => CoefficientValueFormState) => void,
+    scopeLabelId: string
   ) {
     return (
       <>
-        {renderScopeControls(form, setter)}
+        {renderScopeControls(form, setter, scopeLabelId)}
         <Field label="نوع ضریب">
           <select
             className={inputClasses}
@@ -563,7 +575,7 @@ export function ProjectCoefficientPanel({
           </div>
         ) : null}
         {setsError ? (
-          <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-2.5 text-xs text-rose-100">
+          <div className="rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-2.5 text-xs text-ui-danger">
             {getApiErrorMessage(setsError)}
           </div>
         ) : null}
@@ -616,7 +628,7 @@ export function ProjectCoefficientPanel({
                 </div>
 
                 {valuesError ? (
-                  <div className="mt-3 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+                  <div className="mt-3 rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
                     {getApiErrorMessage(valuesError)}
                   </div>
                 ) : null}
@@ -635,7 +647,7 @@ export function ProjectCoefficientPanel({
                     >
                       {editingValueId === value.id ? (
                         <form className="space-y-3" onSubmit={handleUpdateValue}>
-                          {renderValueFormFields(editForm, setEditForm)}
+                          {renderValueFormFields(editForm, setEditForm, editScopeLabelId)}
                           <div className="flex flex-wrap gap-2">
                             <Button className="flex-1 sm:flex-none" disabled={updateValueState.isLoading} type="submit">
                               {updateValueState.isLoading ? (
@@ -656,7 +668,7 @@ export function ProjectCoefficientPanel({
                             </Button>
                           </div>
                           {editError ? (
-                            <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+                            <p className="rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
                               {editError}
                             </p>
                           ) : null}
@@ -747,7 +759,7 @@ export function ProjectCoefficientPanel({
             )}
           >
             {!isLoadingSets && !setsError && coefficientSets.length === 0 ? (
-              <div className="rounded-lg border border-amber-300/20 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100">
+              <div className="rounded-lg border border-ui-warning/20 bg-ui-warning-soft p-3 text-xs leading-6 text-ui-warning">
                 ابتدا یک مجموعه بسازید؛ سپس ضریب‌های آن را ثبت کنید.
               </div>
             ) : null}
@@ -780,7 +792,7 @@ export function ProjectCoefficientPanel({
                   ساخت مجموعه
                 </Button>
                 {setError ? (
-                  <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+                  <p className="rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
                     {setError}
                   </p>
                 ) : null}
@@ -794,7 +806,7 @@ export function ProjectCoefficientPanel({
                 </p>
                 <Plus className="h-4 w-4 text-ui-primary" />
               </div>
-              {renderValueFormFields(valueForm, setValueForm)}
+              {renderValueFormFields(valueForm, setValueForm, createScopeLabelId)}
               <Button
                 className="w-full sm:w-auto"
                 disabled={!selectedSet || createValueState.isLoading || updateValueState.isLoading}
@@ -808,7 +820,7 @@ export function ProjectCoefficientPanel({
                 ثبت ضریب
               </Button>
               {valueError ? (
-                <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+                <p className="rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
                   {valueError}
                 </p>
               ) : null}

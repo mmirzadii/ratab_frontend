@@ -22,7 +22,7 @@ import {
 import { formatPlatformAdminError } from "../platformAdminErrors";
 import { hasCapability } from "../platformAdminCapabilities";
 import { usePlatformAdmin } from "../usePlatformAdmin";
-import { useStepUp } from "../stepUpContext";
+import { useAdminPasskeyStepUp } from "../adminSecurityContext";
 
 const inputCls =
   "w-full rounded-lg border border-ui-border-default bg-ui-surface px-3 py-2 text-sm";
@@ -31,7 +31,7 @@ export function AdminTicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>();
   const id = Number(ticketId);
   const dispatch = useAppDispatch();
-  const { runWithStepUp } = useStepUp();
+  const { runWithPasskeyStepUp: runWithStepUp } = useAdminPasskeyStepUp();
   const { capabilities } = usePlatformAdmin();
   const canSeeInternal = hasCapability(capabilities, "admin.tickets.internal_note");
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ChevronDown, Plus, X, XCircle } from "lucide-react";
 
 import type { FinancialDocumentPricebook } from "../../financialDocuments/financialDocumentApi";
@@ -73,6 +73,10 @@ export function DocumentInfoSection({
         form.period_end_on
     )
   );
+  const yearSelectId = useId();
+  const documentDateInputId = useId();
+  const periodStartInputId = useId();
+  const periodEndInputId = useId();
 
   const yearSelectDisabled =
     isLoadingEditions || !selectedFamily || editions.length === 0;
@@ -130,6 +134,7 @@ export function DocumentInfoSection({
                 className={`${inputClasses} min-w-0 flex-1 px-2 sm:px-4`}
                 data-testid="document-info-year-select"
                 disabled={!canMutateSelections || yearSelectDisabled}
+                id={yearSelectId}
                 onChange={(event) => onEditionChange(event.target.value)}
                 value={selectedEdition?.id ?? ""}
               >
@@ -168,7 +173,7 @@ export function DocumentInfoSection({
         <div className="mt-3 space-y-2" data-testid="document-info-selected-pricebooks">
           <p className="text-[11px] font-bold text-ui-text-muted">فهرست‌بهای انتخاب‌شده</p>
           {listEmpty ? (
-            <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs leading-6 text-amber-100">
+            <p className="rounded-lg border border-ui-warning/25 bg-ui-warning-soft px-3 py-2 text-xs leading-6 text-ui-warning">
               حداقل یک فهرست‌بها باید با «افزودن» به فهرست اضافه شود.
             </p>
           ) : (
@@ -188,7 +193,7 @@ export function DocumentInfoSection({
                       {canMutateSelections ? (
                         <button
                           aria-label="حذف فهرست‌بها"
-                          className="rounded-full p-1 text-ui-text-muted transition hover:bg-ui-surface hover:text-rose-300 disabled:opacity-40"
+                          className="rounded-full p-1 text-ui-text-muted transition hover:bg-ui-surface hover:text-ui-danger disabled:opacity-40"
                           disabled={isRemovingSelectionId === selection.id}
                           onClick={() => onRemovePersistedSelection(selection.id)}
                           type="button"
@@ -211,7 +216,7 @@ export function DocumentInfoSection({
                       </span>
                       <button
                         aria-label="حذف فهرست‌بها"
-                        className="rounded-full p-1 text-ui-text-muted transition hover:bg-ui-surface hover:text-rose-300"
+                        className="rounded-full p-1 text-ui-text-muted transition hover:bg-ui-surface hover:text-ui-danger"
                         onClick={() => onRemoveDraftPick(pick.editionId)}
                         type="button"
                       >
@@ -273,6 +278,7 @@ export function DocumentInfoSection({
           </Field>
           <Field label="تاریخ سند">
             <JalaliDateField
+              id={documentDateInputId}
               inputClass={inputClasses}
               onChange={(iso) => onFieldChange("document_date", iso)}
               value={form.document_date}
@@ -280,6 +286,7 @@ export function DocumentInfoSection({
           </Field>
           <Field label="شروع دوره">
             <JalaliDateField
+              id={periodStartInputId}
               inputClass={inputClasses}
               onChange={(iso) => onFieldChange("period_start_on", iso)}
               value={form.period_start_on}
@@ -287,6 +294,7 @@ export function DocumentInfoSection({
           </Field>
           <Field label="پایان دوره">
             <JalaliDateField
+              id={periodEndInputId}
               inputClass={inputClasses}
               onChange={(iso) => onFieldChange("period_end_on", iso)}
               value={form.period_end_on}
@@ -295,14 +303,14 @@ export function DocumentInfoSection({
         </div>
 
         {pricebooksError || editionsError ? (
-          <div className="mt-4 rounded-lg border border-rose-300/25 bg-rose-500/10 p-4 text-sm leading-7 text-rose-100">
+          <div className="mt-4 rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-4 text-sm leading-7 text-ui-danger">
             دریافت فهرست‌بهای فعال با خطا روبه‌رو شد. لطفاً اتصال به سرویس را بررسی کنید و
             دوباره تلاش کنید.
           </div>
         ) : null}
 
         {!isLoadingPricebooks && !pricebooksError && families.length === 0 ? (
-          <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+          <div className="mt-4 rounded-lg border border-ui-warning/25 bg-ui-warning-soft p-4 text-sm leading-7 text-ui-warning">
             هنوز فهرست‌بهایی برای مرور در دسترس نیست.
           </div>
         ) : null}
@@ -312,7 +320,7 @@ export function DocumentInfoSection({
         !editionsError &&
         editions.length === 0 ? (
           <div
-            className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100"
+            className="mt-4 rounded-lg border border-ui-warning/25 bg-ui-warning-soft p-4 text-sm leading-7 text-ui-warning"
             data-testid="document-info-no-editions"
           >
             برای این نوع فهرست‌بها هنوز سال فعالی ثبت نشده است.
@@ -320,7 +328,7 @@ export function DocumentInfoSection({
         ) : null}
 
         {selectionActionError ? (
-          <div className="mt-4 flex items-start gap-2 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+          <div className="mt-4 flex items-start gap-2 rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
             <XCircle className="mt-1 h-4 w-4 shrink-0" />
             {selectionActionError}
           </div>
@@ -328,7 +336,7 @@ export function DocumentInfoSection({
       </GlassCard>
 
       {formError ? (
-        <div className="flex items-start gap-2 rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+        <div className="flex items-start gap-2 rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
           <XCircle className="mt-1 h-4 w-4 shrink-0" />
           {formError}
         </div>

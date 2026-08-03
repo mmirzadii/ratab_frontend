@@ -227,7 +227,8 @@ describe("shared donation modal wiring", () => {
     assert.ok(badge.includes("useGetCompanyTokenWalletQuery"));
     assert.ok(badge.includes("company-token-badge"));
     assert.ok(badge.includes("موجودی توکن شرکت"));
-    assert.ok(badge.includes("bg-sky-400/15"));
+    assert.ok(badge.includes("bg-ui-info-soft"));
+    assert.ok(badge.includes("text-ui-info"));
     assert.ok(contextHeader.includes("CompanyTokenBadge"));
     assert.ok(contextHeader.includes("companyId"));
     assert.ok(dashboard.includes("companyId={company.id}"));
@@ -239,9 +240,10 @@ describe("shared donation modal wiring", () => {
 
   it("keeps personal and company header chips visually distinct", () => {
     assert.ok(chip.includes("موجودی توکن شخصی"));
-    assert.ok(chip.includes("bg-amber-400/20"));
-    assert.ok(badge.includes("bg-sky-400/15"));
-    assert.ok(!badge.includes("bg-amber-400/20"));
+    assert.ok(chip.includes("bg-ui-token-soft"));
+    assert.ok(badge.includes("bg-ui-info-soft"));
+    assert.ok(!badge.includes("bg-ui-token-soft"));
+    assert.ok(!chip.includes("bg-ui-info-soft"));
     assert.ok(!chip.includes("CompanyToken"));
   });
 

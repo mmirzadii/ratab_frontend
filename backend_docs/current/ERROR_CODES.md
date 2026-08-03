@@ -560,34 +560,79 @@ codes. Field names match APIException JSON bodies unless noted.
 | Code | `PLATFORM_ADMIN_REQUIRED` |
 | HTTP | 403 |
 | Operations | `/api/platform-admin/*` |
-| Meaning | Caller is not root Superuser or active Platform Admin |
+| Meaning | Caller is not an eligible Platform Admin (Root or membership) |
 | Frontend | Hide admin shell; do not invent capabilities |
 | Retry | After Superuser grants Admin membership |
 | Action required | Superuser |
 
-### Platform Superuser required
+### Platform Admin suspended / revoked
 
 | | |
 | --- | --- |
-| Code | `PLATFORM_SUPERUSER_REQUIRED` |
+| Codes | `PLATFORM_ADMIN_SUSPENDED`, `PLATFORM_ADMIN_REVOKED` |
+| HTTP | 403 |
+| Meaning | Membership is suspended or revoked |
+| Frontend | Route via `GET /api/platform-admin/security/status/` `next_step` |
+
+### Root Superuser required
+
+| | |
+| --- | --- |
+| Code | `ROOT_SUPERUSER_REQUIRED` (legacy alias may appear as `PLATFORM_SUPERUSER_REQUIRED`) |
 | HTTP | 403 |
 | Operations | `/api/platform-admin/superuser/*` |
-| Meaning | Only the single root Superuser may manage Admins |
-| Frontend | Hide Admin-management UI unless `me.is_superuser` |
+| Meaning | Only the single root Superuser may manage Admins / Root policy |
+| Frontend | Hide Admin-management UI unless `security.is_root_superuser` |
 | Retry | No |
 | Action required | Root Superuser |
+
+### Passkey enrollment / Admin session
+
+| | |
+| --- | --- |
+| Codes | `ADMIN_PASSKEY_ENROLLMENT_REQUIRED`, `ADMIN_ADDITIONAL_ROOT_PASSKEY_REQUIRED`, `ADMIN_SESSION_REQUIRED`, `ADMIN_SESSION_EXPIRED`, `ADMIN_PASSKEY_STEP_UP_REQUIRED` |
+| HTTP | 403 |
+| Meaning | Passkey enrollment incomplete, Admin session missing/expired, or critical op needs fresh Passkey step-up |
+| Frontend | Follow `GET /api/platform-admin/security/status/` `next_step`; run WebAuthn ceremony; never store challenges client-side long-term |
+
+### WebAuthn ceremony failures
+
+| | |
+| --- | --- |
+| Codes | `ADMIN_WEBAUTHN_NOT_CONFIGURED`, `ADMIN_WEBAUTHN_CHALLENGE_EXPIRED`, `ADMIN_WEBAUTHN_CHALLENGE_INVALID`, `ADMIN_WEBAUTHN_CHALLENGE_CONSUMED`, `ADMIN_WEBAUTHN_ORIGIN_INVALID`, `ADMIN_WEBAUTHN_RP_ID_INVALID`, `ADMIN_WEBAUTHN_VERIFICATION_FAILED`, `ADMIN_PASSKEY_ALREADY_REGISTERED`, `ADMIN_PASSKEY_NOT_FOUND`, `ADMIN_PASSKEY_MINIMUM_REQUIRED` |
+| HTTP | 403 |
+| Meaning | Safe classification of WebAuthn / Passkey failures (details not leaked) |
+| Frontend | Restart ceremony from options endpoint; show generic failure |
+
+### Legacy security flow retired
+
+| | |
+| --- | --- |
+| Code | `ADMIN_SECURITY_FLOW_RETIRED` |
+| HTTP | 410 |
+| Operations | Legacy TOTP / recovery / action-proof / password step-up routes |
+| Meaning | Old Admin security flow removed; use Passkeys |
+| Frontend | `next_step=passkey_enrollment` where provided |
 
 ### Platform capability required
 
 | | |
 | --- | --- |
-| Code | `PLATFORM_CAPABILITY_REQUIRED` |
+| Codes | `ADMIN_CAPABILITY_REQUIRED` / `PLATFORM_CAPABILITY_REQUIRED` |
 | HTTP | 403 |
 | Operations | Capability-gated platform admin endpoints |
 | Meaning | Effective capabilities lack the required code |
-| Frontend | Disable action; refresh `/platform-admin/me/` |
+| Frontend | Disable action; refresh `/platform-admin/me/` and `/platform-admin/security/status/` |
 | Retry | After Superuser updates grants |
 | Action required | Superuser |
+
+### Admin reason required
+
+| | |
+| --- | --- |
+| Codes | `ADMIN_REASON_REQUIRED` / `PLATFORM_ADMIN_REASON_REQUIRED` |
+| HTTP | 400 |
+| Meaning | Critical / Root mutations require a reason |
 
 ### Platform admin step-up required / failed
 

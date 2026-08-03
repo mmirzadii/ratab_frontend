@@ -1,6 +1,10 @@
 import type { components, paths } from "../../shared/api/generated/schema";
 
 import { normalizeCapabilityList } from "./platformAdminCapabilities";
+import {
+  normalizeAdminSecurityStatus,
+  type AdminSecurityStatus
+} from "./adminSecurityTypes";
 
 export type PlatformAdminMeResponse =
   paths["/api/platform-admin/me/"]["get"]["responses"][200]["content"]["application/json"];
@@ -8,13 +12,11 @@ export type PlatformAdminMeResponse =
 export type PlatformAdminMe = {
   is_platform_admin: boolean;
   is_superuser: boolean;
+  is_root_superuser: boolean;
   baseline_capabilities: string[];
   granted_capabilities: string[];
   capabilities: string[];
-  step_up: {
-    verified: boolean;
-    expires_at: string | null;
-  };
+  security: AdminSecurityStatus;
 };
 
 export type CapabilityCatalog = {
@@ -52,10 +54,6 @@ export type AdminUpdateBody = {
   expires_at?: string | null;
   is_active?: boolean;
   reason: string;
-};
-
-export type StepUpBody = {
-  password: string;
 };
 
 export type ReasonBody = {
@@ -107,17 +105,17 @@ export type TransferRootRequest = components["schemas"]["TransferRootRequest"];
 export type ReasonRequest = components["schemas"]["ReasonRequest"];
 
 export function normalizePlatformAdminMe(raw: PlatformAdminMeResponse | undefined): PlatformAdminMe {
-  const step = raw?.step_up as { verified?: boolean; expires_at?: string | null } | undefined;
+  const data = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const security = normalizeAdminSecurityStatus(data.security ?? data);
+  const isRoot = Boolean(data.is_root_superuser ?? data.is_superuser ?? security.is_root_superuser);
   return {
-    is_platform_admin: Boolean(raw?.is_platform_admin),
-    is_superuser: Boolean(raw?.is_superuser),
-    baseline_capabilities: normalizeCapabilityList(raw?.baseline_capabilities),
-    granted_capabilities: normalizeCapabilityList(raw?.granted_capabilities),
-    capabilities: normalizeCapabilityList(raw?.capabilities),
-    step_up: {
-      verified: Boolean(step?.verified),
-      expires_at: typeof step?.expires_at === "string" ? step.expires_at : null
-    }
+    is_platform_admin: Boolean(data.is_platform_admin ?? security.is_platform_admin),
+    is_superuser: isRoot,
+    is_root_superuser: isRoot,
+    baseline_capabilities: normalizeCapabilityList(data.baseline_capabilities),
+    granted_capabilities: normalizeCapabilityList(data.granted_capabilities),
+    capabilities: normalizeCapabilityList(data.capabilities),
+    security
   };
 }
 

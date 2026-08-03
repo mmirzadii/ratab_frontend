@@ -66,15 +66,15 @@ export function ProjectSelectorSection({
           در حال دریافت پروژه‌ها
         </div>
       ) : error ? (
-        <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+        <p className="rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
           دریافت پروژه‌ها ناموفق بود. دوباره تلاش کنید.
         </p>
       ) : projects.length === 0 ? (
         <div
-          className="space-y-3 rounded-lg border border-amber-300/25 bg-amber-400/10 p-3 sm:p-4"
+          className="space-y-3 rounded-lg border border-ui-warning/25 bg-ui-warning-soft p-3 sm:p-4"
           data-tour="wizard-project-empty"
         >
-          <p className="text-sm leading-7 text-amber-100">
+          <p className="text-sm leading-7 text-ui-warning">
             هنوز پروژه‌ای برای این شرکت ثبت نشده است. یک پروژه جدید بسازید تا ادامه دهید.
           </p>
           {!isLocked ? (

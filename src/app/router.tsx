@@ -5,6 +5,8 @@ import { CreateCompanyGroupPanel } from "../features/companies/CreateCompanyGrou
 import { HealthStatusPage } from "../features/health/HealthStatusPage";
 import { AdminRouteGuard } from "../features/platformAdmin/AdminRouteGuard";
 import { AdminShell } from "../features/platformAdmin/AdminShell";
+import { AdminGate } from "../features/platformAdmin/AdminGate";
+import { AdminSecurityProvider } from "../features/platformAdmin/AdminSecurityProvider";
 import { AdminAdminDetailPage } from "../features/platformAdmin/pages/AdminAdminDetailPage";
 import { AdminAdminsPage } from "../features/platformAdmin/pages/AdminAdminsPage";
 import { AdminAdjustmentsPage } from "../features/platformAdmin/pages/AdminAdjustmentsPage";
@@ -15,6 +17,7 @@ import { AdminOperationsPage } from "../features/platformAdmin/pages/AdminOperat
 import { AdminOrdersPage } from "../features/platformAdmin/pages/AdminOrdersPage";
 import { AdminPackagesPage } from "../features/platformAdmin/pages/AdminPackagesPage";
 import { AdminPlansPage } from "../features/platformAdmin/pages/AdminPlansPage";
+import { AdminSecurityPage } from "../features/platformAdmin/pages/AdminSecurityPage";
 import { AdminSubscriptionsPage } from "../features/platformAdmin/pages/AdminSubscriptionsPage";
 import { AdminTicketDetailPage } from "../features/platformAdmin/pages/AdminTicketDetailPage";
 import { AdminTicketsPage } from "../features/platformAdmin/pages/AdminTicketsPage";
@@ -108,18 +111,21 @@ export const router = createBrowserRouter([
       {
         path: "admin",
         element: (
-          <AdminRouteGuard>
-            <AdminShell />
-          </AdminRouteGuard>
+          <AdminSecurityProvider>
+            <AdminGate>
+              <AdminShell />
+            </AdminGate>
+          </AdminSecurityProvider>
         ),
         children: [
           { index: true, element: <AdminDashboardPage /> },
+          { path: "security", element: <AdminSecurityPage /> },
           { path: "support/tickets", element: <AdminTicketsPage /> },
           { path: "support/tickets/:ticketId", element: <AdminTicketDetailPage /> },
           {
             path: "users",
             element: (
-              <AdminRouteGuard nest capability="admin.users.view">
+              <AdminRouteGuard capability="admin.users.view">
                 <AdminUsersPage />
               </AdminRouteGuard>
             )
@@ -127,7 +133,7 @@ export const router = createBrowserRouter([
           {
             path: "companies",
             element: (
-              <AdminRouteGuard nest capability="admin.companies.view">
+              <AdminRouteGuard capability="admin.companies.view">
                 <AdminCompaniesPage />
               </AdminRouteGuard>
             )
@@ -135,7 +141,7 @@ export const router = createBrowserRouter([
           {
             path: "commerce/packages",
             element: (
-              <AdminRouteGuard nest capability="admin.packages.view">
+              <AdminRouteGuard capability="admin.packages.view">
                 <AdminPackagesPage />
               </AdminRouteGuard>
             )
@@ -143,7 +149,7 @@ export const router = createBrowserRouter([
           {
             path: "commerce/plans",
             element: (
-              <AdminRouteGuard nest capability="admin.plans.view">
+              <AdminRouteGuard capability="admin.plans.view">
                 <AdminPlansPage />
               </AdminRouteGuard>
             )
@@ -151,7 +157,7 @@ export const router = createBrowserRouter([
           {
             path: "commerce/orders",
             element: (
-              <AdminRouteGuard nest capability="admin.orders.view">
+              <AdminRouteGuard capability="admin.orders.view">
                 <AdminOrdersPage />
               </AdminRouteGuard>
             )
@@ -160,7 +166,6 @@ export const router = createBrowserRouter([
             path: "commerce/adjustments",
             element: (
               <AdminRouteGuard
-                nest
                 anyOf={[
                   "admin.wallets.adjust.request",
                   "admin.wallets.adjust.approve",
@@ -174,7 +179,7 @@ export const router = createBrowserRouter([
           {
             path: "subscriptions",
             element: (
-              <AdminRouteGuard nest capability="admin.subscriptions.view">
+              <AdminRouteGuard capability="admin.subscriptions.view">
                 <AdminSubscriptionsPage />
               </AdminRouteGuard>
             )
@@ -182,7 +187,7 @@ export const router = createBrowserRouter([
           {
             path: "audit",
             element: (
-              <AdminRouteGuard nest capability="admin.audit.view">
+              <AdminRouteGuard capability="admin.audit.view">
                 <AdminAuditPage />
               </AdminRouteGuard>
             )
@@ -190,7 +195,7 @@ export const router = createBrowserRouter([
           {
             path: "operations",
             element: (
-              <AdminRouteGuard nest capability="admin.operations.view">
+              <AdminRouteGuard capability="admin.operations.view">
                 <AdminOperationsPage />
               </AdminRouteGuard>
             )
@@ -198,7 +203,7 @@ export const router = createBrowserRouter([
           {
             path: "admins",
             element: (
-              <AdminRouteGuard nest superuser>
+              <AdminRouteGuard superuser>
                 <AdminAdminsPage />
               </AdminRouteGuard>
             )
@@ -206,11 +211,15 @@ export const router = createBrowserRouter([
           {
             path: "admins/:membershipId",
             element: (
-              <AdminRouteGuard nest superuser>
+              <AdminRouteGuard superuser>
                 <AdminAdminDetailPage />
               </AdminRouteGuard>
             )
-          }
+          },
+          // Legacy TOTP / MFA paths redirect safely into AdminGate.
+          { path: "mfa/*", element: <Navigate replace to="/admin" /> },
+          { path: "enroll/*", element: <Navigate replace to="/admin" /> },
+          { path: "unlock", element: <Navigate replace to="/admin" /> }
         ]
       }
     ]

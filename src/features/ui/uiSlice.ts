@@ -78,11 +78,18 @@ const uiSlice = createSlice({
       state.activeTourStep = 0;
     },
     addToast(state, action: PayloadAction<{ message: string; type: ToastType }>) {
+      const duplicate = state.toasts.some(
+        (toast) => toast.message === action.payload.message && toast.type === action.payload.type
+      );
+      if (duplicate) return;
       const id =
         typeof globalThis.crypto?.randomUUID === "function"
           ? globalThis.crypto.randomUUID()
           : Math.random().toString(36).slice(2) + Date.now().toString(36);
       state.toasts.push({ ...action.payload, id });
+      if (state.toasts.length > 4) {
+        state.toasts.splice(0, state.toasts.length - 4);
+      }
     },
     removeToast(state, action: PayloadAction<string>) {
       state.toasts = state.toasts.filter((t) => t.id !== action.payload);

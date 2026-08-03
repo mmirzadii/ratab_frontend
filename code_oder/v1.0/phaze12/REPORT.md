@@ -1,83 +1,52 @@
 # Phase 12 Frontend Report
 
-Status: **complete** (frontend only)
+Status: **complete** (Passkey / WebAuthn security model)
 
-## Goal delivered
+## Goal
 
-Secure platform-admin UI with:
+Secure platform-admin UX with Passkey enrollment/verification, Admin session, Passkey step-up for critical mutations, capability-driven modules, and Root-only Admin management.
 
-- one root Superuser Admin-management surface
-- exact phone lookup promotion + optional capability grants
-- mandatory locked baseline ticket view/reply for every active Admin
-- capability-driven navigation and section gates
-- commerce admin (packages/plans/orders/adjustments)
-- user support tickets + admin support tickets
-- shared password Step-up dialog (no storage)
+## Obsolete removed
 
-## Contract sync
+- Password `StepUpDialog` / `StepUpProvider` / `stepUpContext`
+- Legacy `/api/platform-admin/step-up/` client usage
+- No TOTP/QR/otpauth/recovery/action-proof UI remained in this tree (prior state was password step-up)
 
-1. Backend Phase 12 marked complete (`514` backend tests; OpenAPI errors `0`).
-2. Synced `ratab_backend/codexphaze/frontend_docs/*` → `backend_docs/current/*`.
-3. Applied existing GroupMessage OpenAPI spectacular fix script, then `npm run generate:api`.
-4. Generated `schema.ts` not hand-edited.
+## Passkey components added
 
-## Identity / guards
+- `AdminSecurityProvider` + `AdminGate`
+- `AdminPasskeyScreens` (enrollment, Root second key, verification, blocked states)
+- `AdminPasskeyStepUpDialog`
+- `AdminSecurityPage` (`/admin/security`)
+- `adminPasskeyClient` (fetch ceremonies; no RTK cache for challenges)
+- `webauthnBase64url` + `adminWebAuthn`
+- Root reset Passkeys on `AdminAdminDetailPage`
 
-| Piece | Location |
-| --- | --- |
-| `usePlatformAdmin` | `src/features/platformAdmin/usePlatformAdmin.ts` |
-| `AdminRouteGuard` | `src/features/platformAdmin/AdminRouteGuard.tsx` |
-| `Can` | `src/features/platformAdmin/Can.tsx` |
-| `requireCapability` / helpers | `src/features/platformAdmin/platformAdminCapabilities.ts` |
+## AdminGate
 
-Authority source: `GET /api/platform-admin/me/` (`is_platform_admin`, `is_superuser`, baseline/granted/effective capabilities, step-up). Company roles / `is_staff` never unlock admin routes.
+Routes via Backend `security/status.next_step`. Protected Admin modules render only for `admin_dashboard`.
 
-## Admin shell & routes
+## Critical step-up
 
-Routes under authenticated `AppShell`:
+`runWithPasskeyStepUp`: attempt mutation → on `ADMIN_PASSKEY_STEP_UP_REQUIRED` run WebAuthn get → retry once.
 
-- `/admin` dashboard
-- `/admin/support/tickets` (+ detail)
-- `/admin/users`, `/admin/companies`
-- `/admin/commerce/packages|plans|orders|adjustments`
-- `/admin/subscriptions`, `/admin/audit`, `/admin/operations`
-- `/admin/admins` (+ detail) — **superuser only**
-- `/support/tickets` (+ detail) — user support
+## Generated API
 
-Primary nav shows **پشتیبانی** for all authenticated users and **مدیریت پلتفرم** only when `is_platform_admin`.
-
-## Superuser Admin management
-
-- Exact phone lookup (`lookup-by-phone`), safe candidate preview
-- Capability catalog from Backend; baseline ticket capabilities locked/read-only with copy: «پاسخ‌گویی به تیکت‌ها برای همه مدیران فعال است»
-- Create / update / revoke / reactivate / history / root transfer with Step-up + reason
-
-## Tickets
-
-- All Admins: list/detail/public reply
-- Advanced controls gated: internal note, assign, priority, status
-- User APIs never call internal-note endpoints; UI filters `internal_note`
-
-## Commerce / ops
-
-Packages, plans, orders, adjustments, audit, operations pages wired to platform-admin endpoints. Sensitive mutations use `runWithStepUp`. Money shown as Decimal-safe strings; currency totals separated on dashboard.
-
-## Security UX
-
-- Step-up dialog: password only, cleared after use, no local/session storage, Escape/close cancel, resumes pending action
-- UI gates are UX only; backend 403/409/429 surfaced via `formatPlatformAdminError`
+Synced Backend `frontend_docs` → `backend_docs/current`, applied GroupMessage OpenAPI fix script, `npm run generate:api` (no hand-edit of `schema.ts`).
 
 ## Validation
 
-See `TEST_RESULTS.md`: focused platform-admin tests, tsc, lint (0 errors), build green.
+See `TEST_RESULTS.md`.
 
-## Limitations
+## Remaining limitations
 
-- Some OpenAPI operation request bodies remain loosely typed by spectacular (e.g. step-up body); runtime bodies follow Backend serializers / handoff.
-- Nested list pages render dense tables; mobile cards where implemented.
-- Online payment retry UX depends on backend provider availability while payments disabled.
+- OpenAPI stubs many WebAuthn bodies as `Reason`; runtime shapes follow Backend handoff/views.
+- `security_reset_required` / `membership_pending` supported in gate; Backend primarily emits `passkey_enrollment`.
+- Browser WebAuthn support required (secure context / PublicKeyCredential).
+- Manual device Passkey ceremony cannot be fully automated in Node contract tests.
 
-## Out of scope / not done
+## Out of scope
 
 - Backend code changes
+- Phase 13
 - Commit / push

@@ -87,7 +87,7 @@ export function HealthStatusPage() {
             </div>
 
             {error ? (
-              <div className="rounded-lg border border-amber-400/25 bg-amber-400/10 p-3 text-sm leading-6 text-amber-100 sm:p-4 sm:leading-7">
+              <div className="rounded-lg border border-ui-warning/25 bg-ui-warning-soft p-3 text-sm leading-6 text-ui-warning sm:p-4 sm:leading-7">
                 <div className="mb-2 flex items-center gap-2 font-bold">
                   <AlertTriangle className="h-4 w-4" />
                   اتصال تایید نشد

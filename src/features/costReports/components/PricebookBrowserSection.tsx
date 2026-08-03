@@ -84,44 +84,72 @@ export function PricebookBrowserSection({
   }
 
   // ─── Drag-to-resize handle ────────────────────────────────────────────────
-  function handleDragStart(e: React.MouseEvent) {
+  function handleDragStart(e: React.PointerEvent) {
     e.preventDefault();
     dragStartX.current = e.clientX;
     dragStartWidth.current = rightWidth;
 
-    function onMove(ev: MouseEvent) {
+    function onMove(ev: PointerEvent) {
       // RTL: dragging left (decreasing x) → right column grows
       const delta = dragStartX.current - ev.clientX;
       setRightWidth(Math.max(MIN_RIGHT_WIDTH, Math.min(MAX_RIGHT_WIDTH, dragStartWidth.current + delta)));
     }
 
     function onUp() {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
     }
 
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
   }
 
   // ─── Vertical drag-to-resize handle (left column) ────────────────────────
-  function handleVerticalDragStart(e: React.MouseEvent) {
+  function handleVerticalDragStart(e: React.PointerEvent) {
     e.preventDefault();
     vertDragStartY.current = e.clientY;
     vertDragStartHeight.current = leftTopHeight;
 
-    function onMove(ev: MouseEvent) {
+    function onMove(ev: PointerEvent) {
       const delta = ev.clientY - vertDragStartY.current;
       setLeftTopHeight(Math.max(MIN_LEFT_TOP, Math.min(MAX_LEFT_TOP, vertDragStartHeight.current + delta)));
     }
 
     function onUp() {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
     }
 
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+  }
+
+  function handleHorizontalResizeKey(event: React.KeyboardEvent) {
+    const step = event.shiftKey ? 32 : 16;
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    setRightWidth((current) => {
+      if (event.key === "Home") return MIN_RIGHT_WIDTH;
+      if (event.key === "End") return MAX_RIGHT_WIDTH;
+      const next = current + (event.key === "ArrowLeft" ? step : -step);
+      return Math.max(MIN_RIGHT_WIDTH, Math.min(MAX_RIGHT_WIDTH, next));
+    });
+  }
+
+  function handleVerticalResizeKey(event: React.KeyboardEvent) {
+    const step = event.shiftKey ? 32 : 16;
+    if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    setLeftTopHeight((current) => {
+      if (event.key === "Home") return MIN_LEFT_TOP;
+      if (event.key === "End") return MAX_LEFT_TOP;
+      const next = current + (event.key === "ArrowDown" ? step : -step);
+      return Math.max(MIN_LEFT_TOP, Math.min(MAX_LEFT_TOP, next));
+    });
   }
 
   // ─── Chapter filter pills ─────────────────────────────────────────────────
@@ -155,7 +183,7 @@ export function PricebookBrowserSection({
         </div>
       ) : null}
       {chaptersError ? (
-        <div className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+        <div className="rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
           دریافت فصل‌ها ناموفق بود.
         </div>
       ) : null}
@@ -209,7 +237,7 @@ export function PricebookBrowserSection({
         </span>
       ) : null}
       {groupsError ? (
-        <span className="text-sm font-bold text-rose-200">
+        <span className="text-sm font-bold text-ui-danger">
           دریافت گروه‌ها ناموفق بود.
         </span>
       ) : null}
@@ -235,7 +263,7 @@ export function PricebookBrowserSection({
   const itemRows = (
     <>
       {itemsError ? (
-        <div className="p-6 text-center text-sm leading-7 text-rose-100">
+        <div className="p-6 text-center text-sm leading-7 text-ui-danger">
           دریافت آیتم‌ها ناموفق بود.
         </div>
       ) : null}
@@ -339,7 +367,7 @@ export function PricebookBrowserSection({
           </div>
           <div className="mt-2.5 shrink-0">{chapterFilterPills}</div>
           <div
-            className="mt-2.5 flex-1 min-h-0 space-y-1.5 overflow-y-auto pr-0.5 [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.2)] [scrollbar-width:thin]"
+            className="mt-2.5 flex-1 min-h-0 space-y-1.5 overflow-y-auto pr-0.5"
             data-tour="chapter-list"
           >
             {chapterListContent}
@@ -349,12 +377,20 @@ export function PricebookBrowserSection({
 
       {/* ── Drag handle ────────────────────────────────────────────────── */}
       <div
-        className="group relative mx-1.5 flex w-2 shrink-0 cursor-col-resize items-center justify-center"
-        onMouseDown={handleDragStart}
+        aria-label="تغییر عرض ستون فصل‌ها"
+        aria-orientation="vertical"
+        aria-valuemax={MAX_RIGHT_WIDTH}
+        aria-valuemin={MIN_RIGHT_WIDTH}
+        aria-valuenow={rightWidth}
+        className="group relative mx-1 flex w-4 shrink-0 touch-none cursor-col-resize items-center justify-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
+        onKeyDown={handleHorizontalResizeKey}
+        onPointerDown={handleDragStart}
+        role="separator"
+        tabIndex={0}
         title="برای تغییر اندازه بکشید"
       >
         <div className="h-full w-px bg-ui-surface-subtle transition-colors group-hover:bg-ui-primary/40" />
-        <div className="absolute top-1/2 -translate-y-1/2 h-10 w-2 rounded-full bg-white/10 transition-all group-hover:bg-ui-primary/25 group-active:bg-ui-primary/40" />
+        <div className="absolute top-1/2 h-10 w-2 -translate-y-1/2 rounded-full bg-ui-border-default transition-colors group-hover:bg-ui-primary/25 group-active:bg-ui-primary/40" />
       </div>
 
       {/* ── LEFT column: items ─────────────────────────────────────────── */}
@@ -377,7 +413,7 @@ export function PricebookBrowserSection({
           {selectedChapter ? (
             <>
               {/* Group pills — fills available height, internally scrollable */}
-              <div className="mt-2.5 flex-1 min-h-0 overflow-y-auto [scrollbar-color:rgba(96,165,250,0.45)_transparent] [scrollbar-width:thin]">
+              <div className="mt-2.5 flex-1 min-h-0 overflow-y-auto">
                 {groupPillsContent}
               </div>
               {/* Search — sticks to bottom */}
@@ -398,12 +434,20 @@ export function PricebookBrowserSection({
           <>
           {/* Vertical drag handle */}
           <div
-            className="group relative flex h-2 shrink-0 cursor-row-resize items-center justify-center"
-            onMouseDown={handleVerticalDragStart}
+            aria-label="تغییر ارتفاع نوار گروه‌ها"
+            aria-orientation="horizontal"
+            aria-valuemax={MAX_LEFT_TOP}
+            aria-valuemin={MIN_LEFT_TOP}
+            aria-valuenow={leftTopHeight}
+            className="group relative flex h-4 shrink-0 touch-none cursor-row-resize items-center justify-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
+            onKeyDown={handleVerticalResizeKey}
+            onPointerDown={handleVerticalDragStart}
+            role="separator"
+            tabIndex={0}
             title="برای تغییر اندازه بکشید"
           >
             <div className="h-px w-full bg-ui-surface-subtle transition-colors group-hover:bg-ui-primary/40" />
-            <div className="absolute left-1/2 h-2 w-10 -translate-x-1/2 rounded-full bg-white/10 transition-all group-hover:bg-ui-primary/25 group-active:bg-ui-primary/40" />
+            <div className="absolute left-1/2 h-2 w-10 -translate-x-1/2 rounded-full bg-ui-border-default transition-colors group-hover:bg-ui-primary/25 group-active:bg-ui-primary/40" />
           </div>
 
           {/* Items list — fills remaining height, internal scroll */}
@@ -417,7 +461,7 @@ export function PricebookBrowserSection({
                 ) : null}
               </div>
             </div>
-            <div className="flex-1 min-h-0 divide-y divide-ui-border-subtle overflow-y-auto [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.2)] [scrollbar-width:thin]">
+            <div className="flex-1 min-h-0 divide-y divide-ui-border-subtle overflow-y-auto">
               {itemRows}
             </div>
           </GlassCard>
@@ -478,7 +522,7 @@ export function PricebookBrowserSection({
 
           {/* Chapter list — fills remaining, scrollable */}
           <div
-            className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-3 [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.2)] [scrollbar-width:thin]"
+            className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-3"
             data-tour="chapter-list"
           >
             {chapterListContent}
@@ -570,7 +614,7 @@ export function PricebookBrowserSection({
                 </span>
               ) : null}
               {groupsError ? (
-                <span className="shrink-0 text-xs font-bold text-rose-200">
+                <span className="shrink-0 text-xs font-bold text-ui-danger">
                   خطا
                 </span>
               ) : null}
@@ -601,7 +645,7 @@ export function PricebookBrowserSection({
 
           {/* Items list — fills remaining height */}
           {selectedChapter ? (
-            <div className="relative min-h-0 flex-1 divide-y divide-ui-border-subtle overflow-y-auto [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.2)] [scrollbar-width:thin]">
+            <div className="relative min-h-0 flex-1 divide-y divide-ui-border-subtle overflow-y-auto">
               {isFetchingItems ? (
                 <div className="pointer-events-none sticky top-0 z-10 flex h-0 justify-center">
                   <span className="mt-2 rounded-full border border-ui-primary/30 bg-ui-surface/90 p-1.5 text-ui-primary shadow-lg">
@@ -614,7 +658,7 @@ export function PricebookBrowserSection({
           ) : (
             <div className="flex flex-1 items-center justify-center p-6">
               <div className="text-center">
-                <BookOpen className="mx-auto h-10 w-10 text-slate-600" />
+                <BookOpen className="mx-auto h-10 w-10 text-ui-text-muted" />
                 <p className="mt-3 text-sm leading-7 text-ui-text-muted">
                   یک فصل را از منوی فصل‌ها انتخاب کنید
                 </p>

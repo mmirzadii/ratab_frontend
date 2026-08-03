@@ -17,7 +17,8 @@ import {
   useUpdatePlatformAdminMutation
 } from "../platformAdminApi";
 import { formatPlatformAdminError } from "../platformAdminErrors";
-import { useStepUp } from "../stepUpContext";
+import { useAdminPasskeyStepUp } from "../adminSecurityContext";
+import { resetAdminPasskeys } from "../adminPasskeyClient";
 
 const inputCls =
   "w-full rounded-lg border border-ui-border-default bg-ui-surface px-3 py-2 text-sm";
@@ -45,7 +46,7 @@ export function AdminAdminDetailPage() {
   const { membershipId } = useParams<{ membershipId: string }>();
   const id = Number(membershipId);
   const dispatch = useAppDispatch();
-  const { runWithStepUp } = useStepUp();
+  const { runWithPasskeyStepUp: runWithStepUp } = useAdminPasskeyStepUp();
   const { data: admin, error, isLoading } = useGetPlatformAdminQuery(id, { skip: !id });
   const { data: catalog } = useGetCapabilityCatalogQuery();
   const { data: historyRaw } = useGetPlatformAdminHistoryQuery(id, { skip: !id });
@@ -56,6 +57,8 @@ export function AdminAdminDetailPage() {
   const [caps, setCaps] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [actionReason, setActionReason] = useState("");
+  const [resetReason, setResetReason] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
 
   useEffect(() => {
     if (admin) setCaps([...admin.granted_capabilities]);
@@ -102,6 +105,19 @@ export function AdminAdminDetailPage() {
       dispatch(addToast({ message: "مدیر فعال شد.", type: "success" }));
       setActionReason("");
     } catch (err) {
+      dispatch(addToast({ message: formatPlatformAdminError(err), type: "error" }));
+    }
+  }
+
+  async function handleResetPasskeys() {
+    if (!resetReason.trim() || resetConfirm.trim() !== "بازنشانی امنیت") return;
+    try {
+      await runWithStepUp(() => resetAdminPasskeys(id, resetReason.trim()));
+      dispatch(addToast({ message: "امنیت ورود مدیر بازنشانی شد.", type: "success" }));
+      setResetReason("");
+      setResetConfirm("");
+    } catch (err) {
+      if (err instanceof Error && err.message === "PASSKEY_STEP_UP_CANCELLED") return;
       dispatch(addToast({ message: formatPlatformAdminError(err), type: "error" }));
     }
   }
@@ -166,6 +182,36 @@ export function AdminAdminDetailPage() {
                 </Button>
               )}
             </div>
+          </div>
+
+          <div className="rounded-xl border border-ui-border-subtle bg-ui-surface p-4 shadow-ui-sm">
+            <h2 className="text-sm font-black">بازنشانی امنیت ورود مدیر</h2>
+            <p className="mt-2 text-xs leading-6 text-ui-text-secondary">
+              تمام Passkeyها و نشست‌های مدیریت این کاربر لغو می‌شوند و کاربر باید دوباره Passkey ثبت
+              کند.
+            </p>
+            <Field className="mt-3" label="دلیل" required>
+              <input
+                className={inputCls}
+                onChange={(e) => setResetReason(e.target.value)}
+                value={resetReason}
+              />
+            </Field>
+            <Field className="mt-2" label='عبارت تایید: بازنشانی امنیت' required>
+              <input
+                className={inputCls}
+                onChange={(e) => setResetConfirm(e.target.value)}
+                value={resetConfirm}
+              />
+            </Field>
+            <Button
+              className="mt-3"
+              disabled={!resetReason.trim() || resetConfirm.trim() !== "بازنشانی امنیت"}
+              onClick={() => void handleResetPasskeys()}
+              variant="danger"
+            >
+              بازنشانی امنیت ورود مدیر
+            </Button>
           </div>
 
           <div className="rounded-xl border border-ui-border-subtle bg-ui-surface p-4 shadow-ui-sm">

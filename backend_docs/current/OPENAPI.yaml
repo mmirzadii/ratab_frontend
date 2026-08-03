@@ -2925,6 +2925,8 @@ paths:
                     type: boolean
                   is_superuser:
                     type: boolean
+                  is_root_superuser:
+                    type: boolean
                   baseline_capabilities:
                     type: array
                     items:
@@ -2937,7 +2939,7 @@ paths:
                     type: array
                     items:
                       type: string
-                  step_up:
+                  security:
                     type: object
           description: ''
   /api/platform-admin/operations/health/:
@@ -2973,6 +2975,144 @@ paths:
       operationId: platform_admin_operations_quotas_retrieve
       tags:
       - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/passkeys/:
+    get:
+      operationId: platform_admin_passkeys_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/passkeys/{passkey_id}/:
+    patch:
+      operationId: platform_admin_passkeys_partial_update
+      parameters:
+      - in: path
+        name: passkey_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    delete:
+      operationId: platform_admin_passkeys_destroy
+      parameters:
+      - in: path
+        name: passkey_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/platform-admin/passkeys/enrollment/reauthenticate/:
+    post:
+      operationId: platform_admin_passkeys_enrollment_reauthenticate_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/passkeys/registration/options/:
+    post:
+      operationId: platform_admin_passkeys_registration_options_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/passkeys/registration/verify/:
+    post:
+      operationId: platform_admin_passkeys_registration_verify_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
       security:
       - cookieAuth: []
       responses:
@@ -3080,9 +3220,535 @@ paths:
               schema:
                 $ref: '#/components/schemas/Reason'
           description: ''
+  /api/platform-admin/security/action-proof/:
+    get:
+      operationId: platform_admin_security_action_proof_retrieve
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    post:
+      operationId: platform_admin_security_action_proof_create
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    put:
+      operationId: platform_admin_security_action_proof_update
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    patch:
+      operationId: platform_admin_security_action_proof_partial_update
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    delete:
+      operationId: platform_admin_security_action_proof_destroy
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/platform-admin/security/recovery/:
+    get:
+      operationId: platform_admin_security_recovery_retrieve
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    post:
+      operationId: platform_admin_security_recovery_create
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    put:
+      operationId: platform_admin_security_recovery_update
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    patch:
+      operationId: platform_admin_security_recovery_partial_update
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    delete:
+      operationId: platform_admin_security_recovery_destroy
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/platform-admin/security/status/:
+    get:
+      operationId: platform_admin_security_status_retrieve
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/platform-admin/security/totp/:
+    get:
+      operationId: platform_admin_security_totp_retrieve
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    post:
+      operationId: platform_admin_security_totp_create
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    put:
+      operationId: platform_admin_security_totp_update
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    patch:
+      operationId: platform_admin_security_totp_partial_update
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    delete:
+      operationId: platform_admin_security_totp_destroy
+      description: Compatibility shim for retired TOTP / action-proof / password step-up
+        routes.
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/platform-admin/session/:
+    delete:
+      operationId: platform_admin_session_destroy
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/platform-admin/session/webauthn/options/:
+    post:
+      operationId: platform_admin_session_webauthn_options_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/session/webauthn/verify/:
+    post:
+      operationId: platform_admin_session_webauthn_verify_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
   /api/platform-admin/step-up/:
+    get:
+      operationId: platform_admin_step_up_retrieve
+      description: Retired password step-up endpoint (HTTP 410).
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
     post:
       operationId: platform_admin_step_up_create
+      description: Retired password step-up endpoint (HTTP 410).
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    put:
+      operationId: platform_admin_step_up_update
+      description: Retired password step-up endpoint (HTTP 410).
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    patch:
+      operationId: platform_admin_step_up_partial_update
+      description: Retired password step-up endpoint (HTTP 410).
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReasonRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+    delete:
+      operationId: platform_admin_step_up_destroy
+      description: Retired password step-up endpoint (HTTP 410).
+      tags:
+      - platform-admin
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/platform-admin/step-up/webauthn/options/:
+    post:
+      operationId: platform_admin_step_up_webauthn_options_create
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/step-up/webauthn/verify/:
+    post:
+      operationId: platform_admin_step_up_webauthn_verify_create
       tags:
       - platform-admin
       requestBody:
@@ -3365,6 +4031,39 @@ paths:
   /api/platform-admin/superuser/admins/{membership_id}/reactivate/:
     post:
       operationId: platform_admin_superuser_admins_reactivate_create
+      parameters:
+      - in: path
+        name: membership_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - platform-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reason'
+          description: ''
+  /api/platform-admin/superuser/admins/{membership_id}/reset-passkeys/:
+    post:
+      operationId: platform_admin_superuser_admins_reset_passkeys_create
+      description: Root-only force reset of a delegated Admin's Passkeys.
       parameters:
       - in: path
         name: membership_id
@@ -7991,6 +8690,14 @@ components:
       properties:
         is_active:
           type: boolean
+        status:
+          $ref: '#/components/schemas/PlatformAdminMembershipStatusEnum'
+        full_access:
+          type: boolean
+        full_access_catalog_version:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
         grant_reason:
           type: string
           minLength: 1
@@ -8077,6 +8784,13 @@ components:
         include_all_company_members_in_group:
           type: boolean
           default: true
+    PatchedReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
     PatchedSubscriptionPlanAdminRequest:
       type: object
       properties:
@@ -8333,6 +9047,14 @@ components:
           readOnly: true
         is_active:
           type: boolean
+        status:
+          $ref: '#/components/schemas/PlatformAdminMembershipStatusEnum'
+        full_access:
+          type: boolean
+        full_access_catalog_version:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
         grant_reason:
           type: string
           maxLength: 500
@@ -8383,6 +9105,14 @@ components:
       properties:
         is_active:
           type: boolean
+        status:
+          $ref: '#/components/schemas/PlatformAdminMembershipStatusEnum'
+        full_access:
+          type: boolean
+        full_access_catalog_version:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
         grant_reason:
           type: string
           minLength: 1
@@ -8403,6 +9133,18 @@ components:
           maxLength: 500
       required:
       - grant_reason
+    PlatformAdminMembershipStatusEnum:
+      enum:
+      - pending_passkey_enrollment
+      - active
+      - suspended
+      - revoked
+      type: string
+      description: |-
+        * `pending_passkey_enrollment` - Pending Passkey Enrollment
+        * `active` - Active
+        * `suspended` - Suspended
+        * `revoked` - Revoked
     Pricebook:
       type: object
       properties:

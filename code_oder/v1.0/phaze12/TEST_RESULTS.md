@@ -1,40 +1,36 @@
 # Phase 12 Frontend Test Results
 
-## Focused suite
+## Focused suites (executed)
 
 ```text
+npm run test:admin-passkey
+→ tests 14, pass 14
+
 npm run test:platform-admin
+→ tests 10, pass 10
 ```
 
-```text
-tests 9
-pass 9
-fail 0
-```
-
-Also verified:
-
-```text
-npm run test:mobile-drawer-nav
-→ pass 3
-```
-
-## Typecheck / lint / build
+## Typecheck / lint / build (executed)
 
 ```text
 npx tsc -b
 → ok
 
 npm run lint
-→ 0 errors (react-refresh warnings only)
+→ 0 errors (5 pre-existing react-refresh warnings in useShortcut)
 
 npm run build
-→ ok (chunk size warning pre-existing)
+→ ok
 ```
 
 ## Contract sync
 
-- Copied Backend Phase 12 `codexphaze/frontend_docs/*` → `backend_docs/current/`
-- OpenAPI spectacular errors: 0 (backend report)
-- Ran `scripts/fix-openapi-group-message.py` for known GroupMessage attachments/ForwardedFrom spectacular typing regression
-- Regenerated types via `npm run generate:api` (no hand-edit of `schema.ts`)
+- Synced Backend `codexphaze/frontend_docs/*` → `backend_docs/current/`
+- Ran `python scripts/fix-openapi-group-message.py`
+- `npm run generate:api`
+- No hand-edit of `schema.ts`
+
+## Notes
+
+- Backend tests were not run (per instructions)
+- Browser WebAuthn ceremonies are covered by source contracts + base64url unit tests; live device prompts require manual verification

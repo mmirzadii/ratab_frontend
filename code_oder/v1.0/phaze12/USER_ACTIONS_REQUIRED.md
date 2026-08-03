@@ -1,16 +1,20 @@
 # User Actions Required
 
-## Backend
+## Backend / ops
 
-- configure Step-up TTL and rate limits
-- create initial root Superuser using secure bootstrap command
-- document root transfer/recovery procedure
-- review capability catalog before production
-- configure audit retention and backups
+- Configure WebAuthn RP ID, RP name, and allowed origins (localhost for local; exact HTTPS in production)
+- Bootstrap Root Superuser and register **two** Passkeys
+- Document Root recovery via secure server command (no web bypass)
+- Review capability catalog before production
 
-## Frontend
+## Frontend (manual verification)
 
-- sync finalized Backend contracts
-- verify Superuser phone-based Admin creation manually
-- verify a baseline-only Admin can view/reply tickets but cannot access ungranted sections
-- verify light/dark/mobile admin UI
+- Ordinary user login unchanged; no Passkey prompt
+- Pending Admin → enrollment with account password → Passkey create
+- Root after first Passkey stays on second-Passkey screen
+- Admin entry uses Passkey verification (no TOTP / recovery / action password)
+- Public ticket reply does not open Passkey step-up
+- Critical Admin mutation triggers Passkey step-up then succeeds
+- `/admin/security` list/rename/add/delete respects minimum counts
+- Root can reset delegated Admin Passkeys with reason + step-up
+- Light/dark/mobile/RTL Passkey pages

@@ -525,7 +525,7 @@ export function CurrentDocumentPanel({
             </button>
             <button
               aria-label="حذف خط"
-              className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent p-1.5 text-ui-text-muted transition hover:bg-danger-500/10 hover:text-danger-400 disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent p-1.5 text-ui-text-muted transition hover:bg-ui-danger-soft hover:text-ui-danger disabled:cursor-not-allowed disabled:opacity-45 sm:h-8 sm:w-8"
               disabled={isActionBusy || isLocked}
               onClick={() => void handleDeleteLine(line)}
               title="حذف خط"
@@ -665,7 +665,7 @@ export function CurrentDocumentPanel({
       </div>
 
       {!document ? (
-        <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+        <div className="mt-4 rounded-lg border border-ui-warning/25 bg-ui-warning-soft p-4 text-sm leading-7 text-ui-warning">
           {setupNotice ?? "ابتدا پروژه و صورت‌بها را ثبت کنید تا بتوانید ردیف اضافه کنید."}
         </div>
       ) : null}
@@ -735,13 +735,13 @@ export function CurrentDocumentPanel({
             </p>
           ) : null}
           {actionError ? (
-            <p className="rounded-lg border border-danger-300/25 bg-danger-500/10 p-3 text-sm leading-7 text-danger-100">
+            <p className="rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
               {actionError}
             </p>
           ) : null}
 
           {previewHtml ? (
-            <section className="min-h-0 flex-1 overflow-hidden rounded-lg border border-brand-300/20 sm:flex-none">
+            <section className="min-h-0 flex-1 overflow-hidden rounded-lg border border-ui-primary/20 sm:flex-none">
               <iframe
                 className="h-full min-h-[20rem] w-full bg-white sm:h-[75vh]"
                 sandbox=""
@@ -803,7 +803,7 @@ export function CurrentDocumentPanel({
                         key={`${row.parentLineId}-${row.rowCode ?? "row"}-${index}`}
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <span className="font-mono text-xs font-bold text-brand-300">
+                          <span className="font-mono text-xs font-bold text-ui-primary">
                             {row.rowCode ?? "—"}
                           </span>
                           <span className="text-xs font-black text-ui-primary">
@@ -875,7 +875,7 @@ export function CurrentDocumentPanel({
                     هنوز خطی به صورت‌بها اضافه نشده است.
                   </div>
                 ) : null}
-                <div className="max-h-[36vh] overflow-y-auto [scrollbar-color:rgba(37,99,235,0.55)_rgba(15,23,42,0.25)] [scrollbar-width:thin]">
+                <div className="max-h-[36vh] overflow-y-auto">
                   {lines.map((line: FinancialDocumentLine) => {
                     const displayRows = getLineDisplayRows(line);
                     const isExpanded =
@@ -890,7 +890,7 @@ export function CurrentDocumentPanel({
                             key={`${row.parentLineId}-${row.rowCode ?? "row"}-${index}`}
                           >
                             <span>{index === 0 ? line.line_no : ""}</span>
-                            <span className="font-mono text-brand-300">
+                            <span className="font-mono text-ui-primary">
                               {row.rowCode ?? "—"}
                             </span>
                             <span

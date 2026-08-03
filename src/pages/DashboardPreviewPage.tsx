@@ -92,7 +92,7 @@ export function DashboardPreviewPage() {
         {previewCards.map((card) => {
           const Icon = card.icon;
           return (
-            <GlassCard className="p-4" interactive key={card.title}>
+            <GlassCard className="p-4" key={card.title}>
               <StatusBadge tone={card.tone}>{card.title}</StatusBadge>
               <div className="mt-3 flex h-10 w-10 items-center justify-center rounded-xl border border-ui-border-subtle bg-ui-surface-subtle text-ui-primary">
                 <Icon className="h-5 w-5" />

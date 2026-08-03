@@ -3,8 +3,6 @@ import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import gregorian from "react-date-object/calendars/gregorian";
 import gregorian_en from "react-date-object/locales/gregorian_en";
-import "react-multi-date-picker/styles/backgrounds/bg-dark.css";
-import "react-multi-date-picker/styles/colors/green.css";
 
 export function JalaliDateField({
   value,
@@ -46,7 +44,7 @@ export function JalaliDateField({
       containerClassName="w-full"
       placeholder={placeholder ?? "انتخاب تاریخ"}
       calendarPosition="bottom-right"
-      className="bg-dark green"
+      className="metril-date-picker"
       portal
       zIndex={9999}
       editable={false}

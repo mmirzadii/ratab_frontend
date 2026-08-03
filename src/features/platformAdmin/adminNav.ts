@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Building2,
   ClipboardList,
+  Fingerprint,
   Gauge,
   Headset,
   History,
@@ -85,6 +86,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     label: "عملیات",
     icon: ScrollText,
     capability: "admin.operations.view"
+  },
+  {
+    to: "/admin/security",
+    label: "امنیت حساب مدیریت",
+    icon: Fingerprint,
+    alwaysForAdmin: true
   },
   {
     to: "/admin/admins",

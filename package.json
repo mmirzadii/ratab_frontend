@@ -31,7 +31,9 @@
     "test:math-expression": "node --experimental-strip-types --test src/shared/math/mathExpression.test.ts src/shared/math/mathUi.contract.test.ts",
     "test:shortcuts": "node --experimental-strip-types --test src/shared/shortcuts/shortcutRegistry.test.ts src/shared/focus/focusNavigation.test.ts",
     "test:mobile-drawer-nav": "node --experimental-strip-types --test src/shared/components/mobileDrawerNav.test.ts",
-    "test:platform-admin": "node --experimental-strip-types --test src/features/platformAdmin/platformAdmin.contract.test.ts"
+    "test:platform-admin": "node --experimental-strip-types --test src/features/platformAdmin/platformAdmin.contract.test.ts",
+    "test:admin-passkey": "node --experimental-strip-types --test src/features/platformAdmin/webauthnBase64url.test.ts src/features/platformAdmin/adminPasskey.contract.test.ts",
+    "test:admin-security": "npm run test:admin-passkey"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.6",

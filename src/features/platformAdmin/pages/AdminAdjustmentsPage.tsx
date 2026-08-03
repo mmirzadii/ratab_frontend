@@ -16,7 +16,7 @@ import {
 } from "../platformAdminApi";
 import type { AdjustmentCreateBody } from "../platformAdminTypes";
 import { formatPlatformAdminError } from "../platformAdminErrors";
-import { useStepUp } from "../stepUpContext";
+import { useAdminPasskeyStepUp } from "../adminSecurityContext";
 
 const inputCls =
   "w-full rounded-lg border border-ui-border-default bg-ui-surface px-3 py-2 text-sm";
@@ -25,7 +25,7 @@ const KINDS = ["grant", "debit", "refund", "reversal"] as const;
 
 export function AdminAdjustmentsPage() {
   const dispatch = useAppDispatch();
-  const { runWithStepUp } = useStepUp();
+  const { runWithPasskeyStepUp: runWithStepUp } = useAdminPasskeyStepUp();
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [reason, setReason] = useState("");

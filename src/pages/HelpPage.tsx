@@ -153,7 +153,7 @@ export function HelpPage() {
         {helpSections.map((section) => {
           const Icon = section.icon;
           return (
-            <GlassCard className="p-4" interactive key={section.title}>
+            <GlassCard className="p-4" key={section.title}>
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-ui-primary/25 bg-ui-primary-soft text-ui-primary">
                   <Icon className="h-4 w-4" />

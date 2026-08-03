@@ -334,7 +334,7 @@ export function CreateCompanyGroupPanel() {
                 value={groupName}
               />
               {nameError ? (
-                <p className="text-xs text-rose-300">{nameError}</p>
+                <p className="text-xs text-ui-danger">{nameError}</p>
               ) : null}
             </label>
 
@@ -414,8 +414,8 @@ export function CreateCompanyGroupPanel() {
               </div>
             ) : membersError ? (
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-                <XCircle className="h-6 w-6 text-rose-300" />
-                <p className="text-sm font-bold text-rose-200">
+                <XCircle className="h-6 w-6 text-ui-danger" />
+                <p className="text-sm font-bold text-ui-danger">
                   اعضای شرکت دریافت نشدند.
                 </p>
               </div>
@@ -443,7 +443,7 @@ export function CreateCompanyGroupPanel() {
                       selected
                         ? "bg-ui-primary-soft"
                         : "hover:bg-ui-surface-subtle ",
-                      invalid && "ring-1 ring-inset ring-rose-400/50"
+                      invalid && "ring-1 ring-inset ring-ui-danger/50"
                     )}
                     key={member.id}
                     onClick={() => toggleMember(member)}
@@ -483,7 +483,7 @@ export function CreateCompanyGroupPanel() {
               برای اعضای انتخاب‌شده دعوت عضویت در گروه ارسال می‌شود.
             </p>
             {createError ? (
-              <p className="text-xs font-bold text-rose-300">{createError}</p>
+              <p className="text-xs font-bold text-ui-danger">{createError}</p>
             ) : null}
             <Button className="w-full" disabled={isCreating} onClick={() => void handleCreate()} type="button">
               {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

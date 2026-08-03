@@ -18,14 +18,14 @@ import {
 } from "../platformAdminApi";
 import type { AdminCandidate } from "../platformAdminTypes";
 import { formatPlatformAdminError } from "../platformAdminErrors";
-import { useStepUp } from "../stepUpContext";
+import { useAdminPasskeyStepUp } from "../adminSecurityContext";
 
 const inputCls =
   "w-full rounded-lg border border-ui-border-default bg-ui-surface px-3 py-2 text-sm";
 
 export function AdminAdminsPage() {
   const dispatch = useAppDispatch();
-  const { runWithStepUp } = useStepUp();
+  const { runWithPasskeyStepUp: runWithStepUp } = useAdminPasskeyStepUp();
   const [page, setPage] = useState(1);
   const { data, isLoading, error } = useListPlatformAdminsQuery({ page });
   const { data: catalog } = useGetCapabilityCatalogQuery();

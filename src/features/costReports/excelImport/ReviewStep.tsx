@@ -49,7 +49,7 @@ export function ReviewStep({
         </p>
       </div>
 
-      <div className="max-h-[50vh] space-y-2 overflow-y-auto [scrollbar-color:rgba(96,165,250,0.45)_rgba(15,23,42,0.25)] [scrollbar-width:thin]">
+      <div className="max-h-[50vh] space-y-2 overflow-y-auto">
         {lines.map((line, index) => (
           <GlassCard className="p-3" key={index}>
             <div className="flex items-center gap-3">
@@ -66,7 +66,7 @@ export function ReviewStep({
                   <span>{line.planItem.unit_fa}</span>
                 </div>
                 {line.error ? (
-                  <p className="mt-1 text-xs text-rose-300">{line.error}</p>
+                  <p className="mt-1 text-xs text-ui-danger">{line.error}</p>
                 ) : null}
               </div>
               <label className="flex shrink-0 items-center gap-1.5 text-xs">
@@ -85,13 +85,13 @@ export function ReviewStep({
       </div>
 
       {hasAnyError ? (
-        <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+        <p className="rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
           برخی ردیف‌ها خطا دارند. مقادیر را اصلاح کنید و دوباره ارسال کنید.
         </p>
       ) : null}
 
       {submitError ? (
-        <p className="rounded-lg border border-rose-300/25 bg-rose-500/10 p-3 text-sm leading-7 text-rose-100">
+        <p className="rounded-lg border border-ui-danger/25 bg-ui-danger-soft p-3 text-sm leading-7 text-ui-danger">
           {submitError}
         </p>
       ) : null}

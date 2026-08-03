@@ -18,7 +18,6 @@ import {
   type PlatformAdminMe,
   type PlatformAdminMembership,
   type ReasonBody,
-  type StepUpBody,
   type SubscriptionPlanAdmin,
   type SubscriptionPlanAdminRequest,
   type SupportTicket,
@@ -60,14 +59,6 @@ export const platformAdminApi = baseApi.injectEndpoints({
       transformResponse: (response: unknown) =>
         normalizePlatformAdminMe(response as Parameters<typeof normalizePlatformAdminMe>[0]),
       providesTags: [{ type: "PlatformAdmin", id: "ME" }]
-    }),
-    platformAdminStepUp: builder.mutation<{ step_up: PlatformAdminMe["step_up"] }, StepUpBody>({
-      query: (body) => ({
-        url: "/api/platform-admin/step-up/",
-        method: "POST",
-        body
-      }),
-      invalidatesTags: [{ type: "PlatformAdmin", id: "ME" }]
     }),
     getPlatformAdminDashboard: builder.query<PlatformAdminDashboard, void>({
       query: () => "/api/platform-admin/dashboard/",
@@ -578,7 +569,6 @@ export const platformAdminApi = baseApi.injectEndpoints({
 
 export const {
   useGetPlatformAdminMeQuery,
-  usePlatformAdminStepUpMutation,
   useGetPlatformAdminDashboardQuery,
   useLookupAdminCandidateByPhoneMutation,
   useListPlatformAdminsQuery,

@@ -107,13 +107,13 @@ export function LandingPage() {
 
       <section className="relative z-10 mx-auto grid max-w-7xl items-center gap-7 px-3 py-8 sm:min-h-[calc(100vh-68px)] sm:gap-10 sm:px-6 sm:py-10 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
         <div className="space-y-5 text-center sm:space-y-7 lg:text-right">
-          <div className="inline-flex max-w-full items-center gap-2 rounded-2xl border border-ui-primary/30 bg-ui-overlay px-3 py-2 text-right text-xs font-black leading-6 text-ui-primary backdrop-blur sm:rounded-full sm:px-4">
+          <div className="inline-flex max-w-full items-center gap-2 rounded-2xl border border-ui-primary/30 bg-ui-surface/80 px-3 py-2 text-right text-xs font-black leading-6 text-ui-primary backdrop-blur sm:rounded-full sm:px-4">
             <Sparkles className="h-4 w-4 shrink-0" />
             نسخه آزمایشی برای جریان واقعی صورت‌بها
           </div>
 
           <div className="space-y-3 sm:space-y-5">
-            <h1 className="text-3xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="text-3xl font-black leading-tight text-ui-text-primary sm:text-5xl lg:text-6xl">
               متریل؛ صورت‌بها را دقیق‌تر، سریع‌تر و قابل پیگیری‌تر بسازید
             </h1>
             <p className="mx-auto max-w-2xl text-sm leading-7 text-ui-text-secondary sm:text-lg sm:leading-8 lg:mx-0">
@@ -145,11 +145,11 @@ export function LandingPage() {
           <div className="relative overflow-hidden rounded-2xl border border-ui-border-subtle bg-ui-surface/65 p-3 shadow-ui backdrop-blur-xl sm:rounded-3xl sm:p-5">
             <div className="flex items-center justify-between border-b border-ui-border-subtle pb-3 sm:pb-4">
               <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-rose-400/70" />
-                <span className="h-3 w-3 rounded-full bg-amber-300/70" />
+                <span className="h-3 w-3 rounded-full bg-ui-danger/70" />
+                <span className="h-3 w-3 rounded-full bg-ui-warning/70" />
                 <span className="h-3 w-3 rounded-full bg-ui-success/70" />
               </div>
-              <span className="rounded-lg border border-ui-border-subtle bg-ui-overlay px-3 py-1 text-[11px] font-bold text-ui-text-muted">
+              <span className="rounded-lg border border-ui-border-subtle bg-ui-surface/80 px-3 py-1 text-[11px] font-bold text-ui-text-muted">
                 فهرست‌بهای ابنیه ۱۴۰۴
               </span>
             </div>
@@ -164,7 +164,7 @@ export function LandingPage() {
                   className={classNames(
                     "min-w-0 rounded-xl border border-ui-border-subtle bg-ui-surface-subtle p-2 text-center sm:rounded-2xl sm:p-4",
                     index === 1 && "bg-ui-primary-soft",
-                    index === 2 && "bg-amber-400/10"
+                    index === 2 && "bg-ui-warning-soft"
                   )}
                   key={label}
                 >
@@ -179,7 +179,7 @@ export function LandingPage() {
                 <div
                   className={classNames(
                     "rounded-xl border border-ui-border-subtle bg-ui-surface-subtle p-3",
-                    index === 1 && "bg-amber-400/10"
+                    index === 1 && "bg-ui-warning-soft"
                   )}
                   key={code}
                 >
@@ -203,7 +203,7 @@ export function LandingPage() {
                   <div
                     className={classNames(
                       "grid grid-cols-[110px_1fr_120px] border-t border-ui-border-subtle px-4 py-4 text-sm ",
-                      index === 1 && "bg-amber-400/10"
+                      index === 1 && "bg-ui-warning-soft"
                     )}
                     key={code}
                   >
